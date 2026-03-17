@@ -1,0 +1,728 @@
+@extends('admin.layouts.master')
+
+@section('title', 'Edit Course - ' . $organisation->name)
+
+@push('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .ck-editor__editable {
+            min-height: 200px;
+        }
+
+        .select2-container .select2-selection--single {
+            height: 38px;
+            border: 1px solid #dee2e6;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+    </style>
+@endpush
+
+@section('content')
+    <div class="mb-4">
+        <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $organisation->id]) }}"
+            class="text-decoration-none text-muted">
+            <i class="fas fa-arrow-left me-1"></i> Back to Courses
+        </a>
+        <h3 class="fw-bold mt-2">Edit Course: {{ $organisationCourse->course->name ?? 'Unknown' }}</h3>
+    </div>
+
+    <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST">
+        @csrf
+        @method('PUT')
+
+        <div class="row g-4">
+            @php $typeId = $organisation->organisation_type_id; @endphp
+
+            {{-- ========================================== --}}
+            {{-- UNIVERSITY / COLLEGE (Type 1 & 2) --}}
+            {{-- ========================================== --}}
+            @if(in_array($typeId, [1, 2]))
+                <!-- Basic Info -->
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-info-circle me-2"></i>Basic Course
+                                Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Select Course <span class="text-danger">*</span></label>
+                                    <select name="course_id" class="form-select select2" required>
+                                        <option value="">-- Select Master Course --</option>
+                                        @foreach($masterCourses as $master)
+                                            <option value="{{ $master->id }}" {{ old('course_id', $organisationCourse->course_id) == $master->id ? 'selected' : '' }}>
+                                                {{ $master->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">If not listed, add to <a href="{{ route('admin.courses.index') }}"
+                                            target="_blank">Master Course List</a>.</div>
+                                    <div class="card mt-2 border-0 shadow-sm bg-light d-none course-details-card">
+                                        <div class="card-body p-3">
+                                            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-book-open me-2"></i>Course Details</h6>
+                                            <div class="small text-muted">
+                                                <div class="row g-2">
+                                                    <div class="col-6"><strong>Program Level:</strong> <span class="program-level">-</span></div>
+                                                    <div class="col-6"><strong>Stream:</strong> <span class="stream">-</span></div>
+                                                    <div class="col-6"><strong>Discipline:</strong> <span class="discipline">-</span></div>
+                                                    <div class="col-6"><strong>Duration:</strong> <span class="duration">-</span> Years</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="alert alert-soft-primary border-primary d-flex align-items-center" role="alert">
+                                        <i class="fas fa-graduation-cap me-2 fs-4"></i>
+                                        <div>
+                                            Editing Course under: 
+                                            <strong>{{ $organisation->name }}</strong>
+                                            @if($organisationCourse->campus)
+                                                - <strong>{{ $organisationCourse->campus->campus_name }}</strong>
+                                            @endif
+                                            @if($organisationCourse->department)
+                                                - <strong>{{ $organisationCourse->department->department_name }}</strong>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="campus_id" value="{{ $organisationCourse->campus_id }}">
+                                    <input type="hidden" name="department_id" value="{{ $organisationCourse->department_id }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Specialization Area</label>
+                                    <select name="specialization_id" class="form-select select2">
+                                        <option value="">-- Select Specialization --</option>
+                                        @foreach($specializations as $spec)
+                                            <option value="{{ $spec->id }}" {{ old('specialization_id', $organisationCourse->specialization_id) == $spec->id ? 'selected' : '' }}>
+                                                {{ $spec->title }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Exam Category (Filter)</label>
+                                    <select class="form-select select2 exam-category-filter">
+                                        <option value="">-- All Categories --</option>
+                                        @foreach($examCategories as $cat)
+                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Admission Route (Exams)</label>
+                                    <select name="entrance_exam_ids[]" class="form-select select2 entrance-exam-ids-select" multiple>
+                                        @php
+                                            $selectedExams = old('entrance_exam_ids', $organisationCourse->entrance_exam_ids ?? []);
+                                        @endphp
+                                        @foreach($exams as $exam)
+                                            <option value="{{ $exam->id }}" data-category="{{ is_array($exam->exam_category) ? implode(',', $exam->exam_category) : ($exam->exam_category ?? '') }}"
+                                                {{ in_array($exam->id, $selectedExams) ? 'selected' : '' }}>
+                                                {{ $exam->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Languages (Multiple)</label>
+                                    <select name="course_languages[]" class="form-select select2" multiple>
+                                        @php
+                                            $selectedLanguages = old('course_languages', $organisationCourse->course_languages ?? []);
+                                            if (!is_array($selectedLanguages)) {
+                                                $selectedLanguages = json_decode($selectedLanguages, true) ?? [];
+                                            }
+                                        @endphp
+                                        @foreach($languages as $lang)
+                                            <option value="{{ $lang->id }}" {{ in_array($lang->id, $selectedLanguages) ? 'selected' : '' }}>
+                                                {{ $lang->title }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Mode</label>
+                                    <input type="text" name="mode" class="form-control"
+                                        value="{{ old('mode', $organisationCourse->mode) }}" placeholder="e.g. Online">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Total Fees</label>
+                                    <input type="number" step="0.01" name="total_fees" class="form-control"
+                                        value="{{ old('total_fees', $organisationCourse->total_fees) }}" placeholder="e.g. 200000.00">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Rating (0-5)</label>
+                                    <input type="number" step="0.1" min="0" max="5" name="rating" class="form-control"
+                                        value="{{ old('rating', $organisationCourse->rating) }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">ROI</label>
+                                    <select name="roi" class="form-select">
+                                        <option value="">Select ROI</option>
+                                        <option value="Low" {{ old('roi', $organisationCourse->roi) == 'Low' ? 'selected' : '' }}>
+                                            Low</option>
+                                        <option value="Medium" {{ old('roi', $organisationCourse->roi) == 'Medium' ? 'selected' : '' }}>Medium</option>
+                                        <option value="High" {{ old('roi', $organisationCourse->roi) == 'High' ? 'selected' : '' }}>High</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Sort Order</label>
+                                    <input type="number" name="sort_order" class="form-control"
+                                        value="{{ old('sort_order', $organisationCourse->sort_order) }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status" id="status" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="status">Active</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Provisional Admission</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="provisional_admission"
+                                            id="provisional_admission" value="1" {{ old('provisional_admission', $organisationCourse->provisional_admission) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="provisional_admission">Available</label>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Info (Rich Text) -->
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-align-left me-2"></i>Detailed Course
+                                Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Admission Process</label>
+                                    <textarea name="admission_process"
+                                        class="editor">{{ old('admission_process', $organisationCourse->admission_process) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Eligibility Criteria</label>
+                                    <textarea name="eligibility"
+                                        class="editor">{{ old('eligibility', $organisationCourse->eligibility) }}</textarea>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Fees Structure Details</label>
+                                    <textarea name="fees_structure"
+                                        class="editor">{{ old('fees_structure', $organisationCourse->fees_structure) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Curriculum / Syllabus</label>
+                                    <textarea name="curriculum"
+                                        class="editor">{{ old('curriculum', $organisationCourse->curriculum) }}</textarea>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Career Prospects</label>
+                                    <textarea name="career_prospects"
+                                        class="editor">{{ old('career_prospects', $organisationCourse->career_prospects) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Placement Details</label>
+                                    <textarea name="placement_details"
+                                        class="editor">{{ old('placement_details', $organisationCourse->placement_details) }}</textarea>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Industrial & Academic Collaborators</label>
+                                    <textarea name="industrial_collaboration"
+                                        class="editor">{{ old('industrial_collaboration', $organisationCourse->industrial_collaboration) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Internship & Course Ranking</label>
+                                    <textarea name="internship_ranking"
+                                        class="editor">{{ old('internship_ranking', $organisationCourse->internship_ranking) }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ========================================== --}}
+            {{-- INSTITUTE (Type 3) --}}
+            {{-- ========================================== --}}
+            @if($typeId == 3)
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary">Core Academic Identity</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Institute / Academic Unit Name *</label>
+                                    <input type="text" name="academic_unit_name" class="form-control" required
+                                        value="{{ old('academic_unit_name', $organisationCourse->academic_unit_name) }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Select Master Course <span class="text-danger">*</span></label>
+                                    <select name="course_id" class="form-select select2" required>
+                                        <option value="">-- Select Master Course --</option>
+                                        @foreach($masterCourses as $master)
+                                            <option value="{{ $master->id }}" {{ old('course_id', $organisationCourse->course_id) == $master->id ? 'selected' : '' }}>
+                                                {{ $master->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">If not listed, add to <a href="{{ route('admin.courses.index') }}"
+                                            target="_blank">Master Course List</a>.</div>
+                                    <div class="card mt-2 border-0 shadow-sm bg-light d-none course-details-card">
+                                        <div class="card-body p-3">
+                                            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-book-open me-2"></i>Course Details</h6>
+                                            <div class="small text-muted">
+                                                <div class="row g-2">
+                                                    <div class="col-6"><strong>Program Level:</strong> <span class="program-level">-</span></div>
+                                                    <div class="col-6"><strong>Stream:</strong> <span class="stream">-</span></div>
+                                                    <div class="col-6"><strong>Discipline:</strong> <span class="discipline">-</span></div>
+                                                    <div class="col-6"><strong>Duration:</strong> <span class="duration">-</span> Years</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Exam Category (Filter)</label>
+                                    <select class="form-select select2 exam-category-filter">
+                                        <option value="">-- All Categories --</option>
+                                        @foreach($examCategories as $cat)
+                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Admission Route (Exams)</label>
+                                    <select name="entrance_exam_ids[]" class="form-select select2 entrance-exam-ids-select" multiple>
+                                        @php
+                                            $selectedExams = old('entrance_exam_ids', $organisationCourse->entrance_exam_ids ?? []);
+                                        @endphp
+                                        @foreach($exams as $exam)
+                                            <option value="{{ $exam->id }}" data-category="{{ is_array($exam->exam_category) ? implode(',', $exam->exam_category) : ($exam->exam_category ?? '') }}"
+                                                {{ in_array($exam->id, $selectedExams) ? 'selected' : '' }}>
+                                                {{ $exam->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Campus / Centre (Optional)</label>
+                                    <select name="campus_id" class="form-select select2">
+                                        <option value="">-- Select Centre --</option>
+                                        @foreach($campuses as $campus)
+                                            <option value="{{ $campus->id }}" {{ old('campus_id', $organisationCourse->campus_id) == $campus->id ? 'selected' : '' }}>
+                                                {{ $campus->campus_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Department (Optional)</label>
+                                    <select name="department_id" class="form-select select2" data-selected="{{ old('department_id', $organisationCourse->department_id) }}">
+                                        <option value="">-- Select Department --</option>
+                                        <!-- Populated via JS -->
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Delivery Mode</label>
+                                    <select name="delivery_mode" class="form-select">
+                                        <option value="">Select Mode</option>
+                                        <option value="Offline" {{ old('delivery_mode', $organisationCourse->delivery_mode) == 'Offline' ? 'selected' : '' }}>Offline</option>
+                                        <option value="Online" {{ old('delivery_mode', $organisationCourse->delivery_mode) == 'Online' ? 'selected' : '' }}>Online</option>
+                                        <option value="Hybrid" {{ old('delivery_mode', $organisationCourse->delivery_mode) == 'Hybrid' ? 'selected' : '' }}>Hybrid</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Fees</label>
+                                    <input type="number" step="0.01" name="total_fees" class="form-control"
+                                        value="{{ old('total_fees', $organisationCourse->total_fees) }}">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Course Languages (Multiple)</label>
+                                    <select name="course_languages[]" class="form-select select2" multiple>
+                                        @php
+                                            $selectedLanguages = old('course_languages', $organisationCourse->course_languages ?? []);
+                                            if (!is_array($selectedLanguages)) {
+                                                $selectedLanguages = json_decode($selectedLanguages, true) ?? [];
+                                            }
+                                        @endphp
+                                        @foreach($languages as $lang)
+                                            <option value="{{ $lang->id }}" {{ in_array($lang->id, $selectedLanguages) ? 'selected' : '' }}>
+                                                {{ $lang->title }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary">Results & Fees</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Selections (All Time)</label>
+                                    <input type="text" name="total_selections_all_time" class="form-control"
+                                        value="{{ old('total_selections_all_time', $organisationCourse->total_selections_all_time) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Highest Rank Achieved</label>
+                                    <input type="text" name="highest_rank_achieved" class="form-control"
+                                        value="{{ old('highest_rank_achieved', $organisationCourse->highest_rank_achieved) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Avg Course Fee Range</label>
+                                    <input type="text" name="average_course_fee_range" class="form-control"
+                                        value="{{ old('average_course_fee_range', $organisationCourse->average_course_fee_range) }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ========================================== --}}
+            {{-- SCHOOL (Type 4) --}}
+            {{-- ========================================== --}}
+            @if($typeId == 4)
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary">School Identity</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">School Name *</label>
+                                    <input type="text" name="academic_unit_name" class="form-control" required
+                                        value="{{ old('academic_unit_name', $organisationCourse->academic_unit_name) }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">School Type</label>
+                                    <select name="school_type" class="form-select">
+                                        <option value="">Select Type</option>
+                                        <option value="Day School" {{ old('school_type', $organisationCourse->school_type) == 'Day School' ? 'selected' : '' }}>Day School</option>
+                                        <option value="Boarding School" {{ old('school_type', $organisationCourse->school_type) == 'Boarding School' ? 'selected' : '' }}>Boarding
+                                            School</option>
+                                        <option value="Day-cum-Boarding" {{ old('school_type', $organisationCourse->school_type) == 'Day-cum-Boarding' ? 'selected' : '' }}>
+                                            Day-cum-Boarding</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Exam Category (Filter)</label>
+                                    <select class="form-select select2 exam-category-filter">
+                                        <option value="">-- All Categories --</option>
+                                        @foreach($examCategories as $cat)
+                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Admission Route (Exams)</label>
+                                    <select name="entrance_exam_ids[]" class="form-select select2 entrance-exam-ids-select" multiple>
+                                        @php
+                                            $selectedExams = old('entrance_exam_ids', $organisationCourse->entrance_exam_ids ?? []);
+                                        @endphp
+                                        @foreach($exams as $exam)
+                                            <option value="{{ $exam->id }}" data-category="{{ is_array($exam->exam_category) ? implode(',', $exam->exam_category) : ($exam->exam_category ?? '') }}"
+                                                {{ in_array($exam->id, $selectedExams) ? 'selected' : '' }}>
+                                                {{ $exam->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Languages (Multiple)</label>
+                                    <select name="course_languages[]" class="form-select select2" multiple>
+                                        @php
+                                            $selectedLanguages = old('course_languages', $organisationCourse->course_languages ?? []);
+                                            if (!is_array($selectedLanguages)) {
+                                                $selectedLanguages = json_decode($selectedLanguages, true) ?? [];
+                                            }
+                                        @endphp
+                                        @foreach($languages as $lang)
+                                            <option value="{{ $lang->id }}" {{ in_array($lang->id, $selectedLanguages) ? 'selected' : '' }}>
+                                                {{ $lang->title }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Total Fees</label>
+                                    <input type="number" step="0.01" name="total_fees" class="form-control"
+                                        value="{{ old('total_fees', $organisationCourse->total_fees) }}">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Campus / Location</label>
+                                    <select name="campus_id" class="form-select select2">
+                                        <option value="">-- Select Campus --</option>
+                                        @foreach($campuses as $campus)
+                                            <option value="{{ $campus->id }}" {{ old('campus_id', $organisationCourse->campus_id) == $campus->id ? 'selected' : '' }}>
+                                                {{ $campus->campus_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Department (Optional)</label>
+                                    <select name="department_id" class="form-select select2" data-selected="{{ old('department_id', $organisationCourse->department_id) }}">
+                                        <option value="">-- Select Department --</option>
+                                        <!-- Populated via JS -->
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status" id="school_status"
+                                            value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="school_status">Active</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary">Board & Affiliation</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Education Board</label>
+                                    <select name="education_board" class="form-select select2">
+                                        <option value="">Select Board</option>
+                                        @foreach(['CBSE', 'ICSE', 'State Board', 'IB', 'IGCSE'] as $board)
+                                            <option value="{{ $board }}" {{ old('education_board', $organisationCourse->education_board) == $board ? 'selected' : '' }}>{{ $board }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Grade Range</label>
+                                    <input type="text" name="grade_range" class="form-control"
+                                        placeholder="e.g. Pre-Primary to XII"
+                                        value="{{ old('grade_range', $organisationCourse->grade_range) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Medium of Instruction</label>
+                                    <input type="text" name="medium_of_instruction" class="form-control"
+                                        placeholder="e.g. English"
+                                        value="{{ old('medium_of_instruction', $organisationCourse->medium_of_instruction) }}">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Streams Offered</label>
+                                    <select name="streams_offered[]" class="form-select select2" multiple>
+                                        @foreach(['Science', 'Commerce', 'Humanities'] as $stream)
+                                            <option value="{{ $stream }}" {{ in_array($stream, old('streams_offered', $organisationCourse->streams_offered ?? [])) ? 'selected' : '' }}>{{ $stream }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary">Stats & Facilities</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Student Strength</label>
+                                    <input type="text" name="student_strength" class="form-control"
+                                        value="{{ old('student_strength', $organisationCourse->student_strength) }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Total Teachers</label>
+                                    <input type="text" name="total_teachers" class="form-control"
+                                        value="{{ old('total_teachers', $organisationCourse->total_teachers) }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Class Size</label>
+                                    <input type="text" name="average_class_size" class="form-control"
+                                        value="{{ old('average_class_size', $organisationCourse->average_class_size) }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Board Result %</label>
+                                    <input type="text" name="average_board_result_percentage" class="form-control"
+                                        value="{{ old('average_board_result_percentage', $organisationCourse->average_board_result_percentage) }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="transport_fee" value="1" {{ old('transport_fee', $organisationCourse->transport_fee) ? 'checked' : '' }}>
+                                        <!-- Assuming transport_fee is treated as presence boolean temporarily based on previous logic, or adjust to input if it's amount strings -->
+                                        <label class="form-check-label">Transport Available</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="hostel_fee" value="1" {{ old('hostel_fee', $organisationCourse->hostel_fee) ? 'checked' : '' }}>
+                                        <label class="form-check-label">Hostel Available</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            @endif
+
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-save me-2"></i> Update Course
+                    </button>
+                </div>
+            </div>
+    </form>
+@endsection
+
+@push('js')
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.select2').select2({ width: '100%', placeholder: "Select an option", allowClear: true });
+
+            // Master Course Data
+            const masterCourses = @json($masterCourses);
+            const departments = @json($departments);
+
+            function filterDepartments(campusSelect) {
+                const campusId = $(campusSelect).val();
+                const deptSelect = $('select[name="department_id"]');
+                const selectedDept = deptSelect.attr('data-selected') || ''; 
+
+                deptSelect.empty().append('<option value="">-- Select Department --</option>');
+
+                if (campusId) {
+                    const filtered = departments.filter(d => d.campus_id == campusId);
+                    filtered.forEach(d => {
+                        const isSelected = d.id == selectedDept ? 'selected' : '';
+                        deptSelect.append(`<option value="${d.id}" ${isSelected}>${d.department_name}</option>`);
+                    });
+                }
+                deptSelect.trigger('change');
+            }
+
+            $('select[name="campus_id"]').on('change', function() {
+                filterDepartments(this);
+            });
+            
+            // Trigger on load if campus is selected
+            if ($('select[name="campus_id"]').val()) {
+                filterDepartments($('select[name="campus_id"]'));
+            }
+
+            // Function to update card
+            function updateCourseCard(select) {
+                const courseId = $(select).val();
+                const card = $(select).siblings('.course-details-card');
+                
+                if (courseId) {
+                    const course = masterCourses.find(c => c.id == courseId);
+                    if (course) {
+                        card.find('.program-level').text(course.program_level ? course.program_level.title : 'N/A');
+                        card.find('.stream').text(course.stream_offered ? course.stream_offered.title : 'N/A');
+                        card.find('.discipline').text(course.discipline ? course.discipline.title : 'N/A');
+                        card.find('.duration').text(course.duration || 'N/A');
+                        card.removeClass('d-none');
+                    } else {
+                        card.addClass('d-none');
+                    }
+                } else {
+                    card.addClass('d-none');
+                }
+            }
+
+            // Bind change event
+            $('select[name="course_id"]').on('change', function() {
+                updateCourseCard(this);
+            });
+
+            // Trigger on load for existing selection
+            $('select[name="course_id"]').each(function() {
+                if($(this).val()) {
+                    updateCourseCard(this);
+                }
+            });
+
+            // Initialize CKEditor for all textareas with class 'editor'
+            document.querySelectorAll('textarea.editor').forEach((element) => {
+                ClassicEditor
+                    .create(element)
+                    .catch(error => {
+                        console.error(error);
+                    });
+            });
+
+            // Exam filtering logic
+            $('.exam-category-filter').each(function() {
+                const categorySelect = $(this);
+                const examSelect = categorySelect.closest('.row').find('.entrance-exam-ids-select');
+                
+                if (examSelect.length === 0) return;
+
+                // Store original options for this specific pair
+                const allExamOptions = examSelect.find('option').clone();
+
+                function filterExams(selectedCategory) {
+                    const currentSelections = examSelect.val() || [];
+                    examSelect.empty();
+
+                    if (selectedCategory) {
+                        allExamOptions.each(function () {
+                            let catData = $(this).data('category');
+                            if (catData && String(catData).split(',').includes(selectedCategory)) {
+                                examSelect.append($(this).clone());
+                            }
+                        });
+                    } else {
+                        allExamOptions.each(function () {
+                            if ($(this).val() !== "") {
+                                examSelect.append($(this).clone());
+                            }
+                        });
+                    }
+
+                    examSelect.val(currentSelections);
+                    examSelect.trigger('change');
+                }
+
+                categorySelect.on('change', function () {
+                    filterExams($(this).val());
+                });
+
+                // Initial Filter on Load
+                if (categorySelect.val()) {
+                    filterExams(categorySelect.val());
+                }
+            });
+        });
+    </script>
+@endpush

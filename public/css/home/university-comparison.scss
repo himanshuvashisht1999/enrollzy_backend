@@ -1,0 +1,58 @@
+.comparison-section {
+  .comparison-table {
+    background: var(--plainclr);
+    border-radius: 16px;
+    border: 1px solid var(--themeprimaryclr);
+    box-shadow: var(--shadow-lg);
+
+    th {
+      background: var(--themeprimaryclr);
+      color: var(--plainclr);
+      font-weight: 600;
+      padding: 16px;
+    }
+
+    td {
+      padding: 16px;
+      vertical-align: middle;
+      transition: all 0.3s ease;
+    }
+
+    tbody tr {
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: var(--themeprimaryclr);
+
+      }
+    }
+  }
+
+  .uni-card {
+    background: var(--plainclr);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.35s ease;
+
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    h5 {
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+
+      li {
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+    }
+  }
+}

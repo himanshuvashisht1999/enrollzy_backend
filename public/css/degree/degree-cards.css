@@ -1,0 +1,115 @@
+@charset "UTF-8";
+.degree-section {
+  /* Degree Cards */
+}
+.degree-section .degree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.degree-section .degree-header h2 {
+  font-weight: 700;
+}
+.degree-section .filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.degree-section .filter-dropdown {
+  position: relative;
+  /* ✅ hover stays active on BOTH button + menu */
+}
+.degree-section .filter-dropdown .filter-btn {
+  background: none;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.degree-section .filter-dropdown .filter-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--plainclr);
+  box-shadow: var(--shadow-lg);
+  padding: 15px;
+  border-radius: 12px;
+  min-width: 200px;
+  z-index: 5;
+  /* 🔥 FIX */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+.degree-section .filter-dropdown .filter-menu label {
+  display: flex;
+  font-size: 14px;
+  margin-bottom: 8px;
+  align-items: center;
+  gap: 0.3rem;
+}
+.degree-section .filter-dropdown .filter-menu .filter-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.degree-section .filter-dropdown .filter-menu .filter-actions button {
+  font-size: 13px;
+  border: none;
+  background: none;
+  color: var(--themeprimaryclr);
+  cursor: pointer;
+}
+.degree-section .filter-dropdown:hover .filter-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-7px);
+  pointer-events: auto;
+}
+.degree-section .degree-card {
+  background: var(--plainclr);
+  border: 1px solid var(--borderclr);
+  border-radius: 16px;
+  padding: 18px;
+  height: 100%;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.35s ease;
+  animation: fadeUp 0.6s ease;
+}
+.degree-section .degree-card img {
+  max-height: 60px;
+  margin-bottom: 15px;
+}
+.degree-section .degree-card h6 {
+  font-size: 13px;
+  color: var(--linkclr);
+}
+.degree-section .degree-card h5 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 6px 0;
+}
+.degree-section .degree-card p {
+  font-size: 14px;
+  color: var(--textclr);
+}
+.degree-section .degree-card .deadline {
+  font-size: 12px;
+  color: var(--linkclr);
+}
+.degree-section .degree-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}/*# sourceMappingURL=degree-cards.css.map */

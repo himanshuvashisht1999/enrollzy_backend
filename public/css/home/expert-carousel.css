@@ -1,0 +1,111 @@
+.expert-section {
+  /* Card */
+  /* Slick arrows */
+}
+.expert-section .section-top {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.expert-section .section-top .badge-text {
+  color: var(--themeprimaryclr);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.expert-section .section-top h2 {
+  font-weight: 700;
+  font-size: 2.2rem;
+}
+.expert-section .section-top p {
+  max-width: 720px;
+  margin: 0.75rem auto 0;
+}
+.expert-section .expert-card {
+  background: var(--themetenthclr);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow1);
+  transform: scale(0.96);
+  transition: all 0.35s ease;
+}
+.expert-section .expert-card:hover {
+  transform: scale(1);
+}
+.expert-section .expert-card .image-wrap {
+  position: relative;
+}
+.expert-section .expert-card .image-wrap img {
+  width: 100%;
+  height: 260px;
+  -o-object-fit: cover;
+     object-fit: cover;
+}
+.expert-section .expert-card .image-wrap .rating {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--plainclr);
+  color: var(--darkclr);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.expert-section .expert-card .image-wrap .count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.expert-section .expert-card .card-body {
+  padding: 1rem;
+  text-align: center;
+}
+.expert-section .expert-card .card-body h5 {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.expert-section .expert-card .card-body .meta {
+  font-size: 0.8rem;
+  color: var(--themeprimaryclr);
+  margin-bottom: 0.25rem;
+}
+.expert-section .expert-card .card-body .exp {
+  font-size: 0.75rem;
+  color: var(--themeninthclr);
+}
+.expert-section .expert-card .skeleton {
+  position: relative;
+  background: var(--gray-200);
+  overflow: hidden;
+}
+.expert-section .expert-card .skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.expert-section .slick-prev,
+.expert-section .slick-next {
+  width: 42px;
+  height: 42px;
+  z-index: 2;
+}
+.expert-section .slick-prev:before,
+.expert-section .slick-next:before {
+  font-size: 28px;
+  color: var(--themeprimaryclr);
+}/*# sourceMappingURL=expert-carousel.css.map */

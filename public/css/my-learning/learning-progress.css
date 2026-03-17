@@ -1,0 +1,59 @@
+.learning-progress {
+  padding: 90px 0;
+  background: var(--gradient1);
+  /* Circle */
+  /* Cards */
+}
+.learning-progress .section-subtitle {
+  max-width: 650px;
+  margin: 12px auto 0;
+  font-size: 15px;
+  color: var(--textclr);
+}
+.learning-progress .progress-circle {
+  display: flex;
+  justify-content: center;
+}
+.learning-progress .progress-circle .circle {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(133, 9, 145, 0.15), rgba(0, 123, 255, 0.15));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+}
+.learning-progress .progress-circle .circle strong {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--themeprimaryclr);
+}
+.learning-progress .progress-circle .circle span {
+  font-size: 13px;
+  color: var(--linkclr);
+}
+.learning-progress .progress-card {
+  background: var(--plainclr);
+  padding: 22px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  height: 100%;
+  transition: 0.3s ease;
+}
+.learning-progress .progress-card:hover {
+  transform: translateY(-6px);
+}
+.learning-progress .progress-card h6 {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.learning-progress .progress-card p {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--textclr);
+}
+.learning-progress .progress-card.highlight {
+  background: linear-gradient(135deg, rgba(133, 9, 145, 0.12), rgba(0, 123, 255, 0.12));
+}/*# sourceMappingURL=learning-progress.css.map */

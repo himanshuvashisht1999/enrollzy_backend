@@ -1,0 +1,93 @@
+.blog-section {
+    padding: 2rem 0;
+
+    .slick-list{
+        padding: 1.4rem 0 !important;
+    }
+    .blog-card {
+        background:var(--lightprimary);
+        border-radius: 18px;
+        padding: 18px;
+        margin: 0 12px;
+        height: 100%;
+        box-shadow: var(--shadow-lg);
+        transition: 0.4s;
+        position: relative;
+
+        &:hover {
+            transform: translateY(-8px);
+        }
+    }
+
+    .blog-img {
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 15px;
+
+        img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+    }
+
+    .blog-content {
+        h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        p {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+    }
+
+    .read-more {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--themeprimaryclr);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .blog-meta {
+        border-top: 1px solid #ddd;
+        margin-top: 14px;
+        padding-top: 10px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* Slick dots */
+    .slick-dots {
+        bottom: -40px;
+
+        li button:before {
+            font-size: 10px;
+            color: #999;
+        }
+
+        li.slick-active button:before {
+            color: var(--themeprimaryclr);
+        }
+    }
+
+      .slick-prev,
+    .slick-next {
+        width: 42px;
+        height: 42px;
+        z-index: 2;
+
+        &:before {
+            font-size: 28px;
+            color: var(--themeprimaryclr);
+        }
+    }
+}

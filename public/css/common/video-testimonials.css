@@ -1,0 +1,79 @@
+.video-testimonial-section {
+  /* Slick arrows */
+}
+.video-testimonial-section .video-card {
+  background: var(--plainclr);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.35s ease;
+}
+.video-testimonial-section .video-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+.video-testimonial-section .video-card:hover .play-btn {
+  transform: scale(1.15);
+  background: var(--themeprimaryclr);
+}
+.video-testimonial-section .video-thumb {
+  height: 220px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-testimonial-section .play-btn {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--plainclr);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: all 0.3s ease;
+}
+.video-testimonial-section .video-info {
+  padding: 14px;
+  text-align: center;
+}
+.video-testimonial-section .video-info h6 {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.video-testimonial-section .video-info span {
+  font-size: 13px;
+  color: var(--linkclr);
+}
+.video-testimonial-section .video-slider {
+  margin: 0 -12px;
+}
+.video-testimonial-section .video-slider .slick-slide {
+  padding: 12px;
+}
+.video-testimonial-section .video-card {
+  background: var(--plainclr);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.35s ease;
+  border: 1px solid var(--borderclr);
+}
+.video-testimonial-section .video-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+.video-testimonial-section .slick-prev,
+.video-testimonial-section .slick-next {
+  width: 42px;
+  height: 42px;
+  z-index: 2;
+}
+.video-testimonial-section .slick-prev:before,
+.video-testimonial-section .slick-next:before {
+  font-size: 28px;
+  color: var(--themeprimaryclr);
+}/*# sourceMappingURL=video-testimonials.css.map */

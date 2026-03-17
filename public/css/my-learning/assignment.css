@@ -1,0 +1,57 @@
+.assignments {
+  padding: 80px 0;
+  background: var(--plainclr);
+}
+.assignments .section-subtitle {
+  max-width: 650px;
+  margin: 12px auto 0;
+  font-size: 15px;
+  color: var(--textclr);
+}
+.assignments .assignment-card {
+  background: var(--bgclr);
+  border-radius: 18px;
+  padding: 22px;
+  height: 100%;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.assignments .assignment-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+.assignments .assignment-info h5 {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.assignments .assignment-info .course {
+  font-size: 13px;
+  color: var(--linkclr);
+}
+.assignments .assignment-meta {
+  margin: 14px 0;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.assignments .assignment-meta span {
+  background: var(--plainclr);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.assignments .assignment-meta .status {
+  font-weight: 600;
+}
+.assignments .assignment-meta .status.pending {
+  color: #d9534f;
+}
+.assignments .assignment-meta .status.upcoming {
+  color: #f0ad4e;
+}
+.assignments .assignment-action {
+  text-align: right;
+}/*# sourceMappingURL=assignment.css.map */

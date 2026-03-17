@@ -1,0 +1,61 @@
+.learning-resources {
+    padding: 50px 0;
+    background: var(--plainclr);
+
+    .section-subtitle {
+        max-width: 650px;
+        margin: 12px auto 0;
+        font-size: 15px;
+        color: var(--textclr);
+    }
+
+    .resource-card {
+        background: var(--bgclr);
+        border-radius: 18px;
+        padding: 26px 22px;
+        height: 100%;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.35s ease;
+        text-align: center;
+        position: relative;
+
+        &:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            background: linear-gradient(
+                135deg,
+                rgba(133, 9, 145, 0.08),
+                rgba(0, 123, 255, 0.08)
+            );
+        }
+
+        .resource-icon {
+            font-size: 34px;
+            margin-bottom: 14px;
+        }
+
+        h5 {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--textclr);
+            margin-bottom: 12px;
+        }
+
+        .resource-count {
+            display: block;
+            font-size: 13px;
+            color: var(--linkclr);
+            margin-bottom: 14px;
+        }
+
+        .resource-link {
+            font-weight: 600;
+            color: var(--themeprimaryclr);
+            font-size: 14px;
+        }
+    }
+}

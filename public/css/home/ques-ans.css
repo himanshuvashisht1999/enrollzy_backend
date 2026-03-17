@@ -1,0 +1,27 @@
+.qa-preview-section {
+  padding: 60px 0;
+  background: var(--gradient1);
+}
+.qa-preview-section .qa-card {
+  background: var(--plainclr);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeUp 0.6s ease;
+}
+.qa-preview-section .qa-question {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.qa-preview-section .qa-answer {
+  font-size: 15px;
+  color: var(--textclr);
+  line-height: 1.7;
+}
+.qa-preview-section .qa-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}/*# sourceMappingURL=ques-ans.css.map */

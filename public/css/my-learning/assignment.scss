@@ -1,0 +1,70 @@
+.assignments {
+    padding: 80px 0;
+    background: var(--plainclr);
+
+    .section-subtitle {
+        max-width: 650px;
+        margin: 12px auto 0;
+        font-size: 15px;
+        color: var(--textclr);
+    }
+
+    .assignment-card {
+        background: var(--bgclr);
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        &:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+        }
+    }
+
+    .assignment-info {
+        h5 {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .course {
+            font-size: 13px;
+            color: var(--linkclr);
+        }
+    }
+
+    .assignment-meta {
+        margin: 14px 0;
+        font-size: 13px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        span {
+            background: var(--plainclr);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .status {
+            font-weight: 600;
+
+            &.pending {
+                color: #d9534f;
+            }
+
+            &.upcoming {
+                color: #f0ad4e;
+            }
+        }
+    }
+
+    .assignment-action {
+        text-align: right;
+    }
+}

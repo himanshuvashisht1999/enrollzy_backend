@@ -1,0 +1,208 @@
+@charset "UTF-8";
+
+/* ----------------------------------------------------
+   GLOBAL HEADER STYLING
+----------------------------------------------------- */
+.header-shadow {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+nav.navbar {
+  z-index: 999;
+}
+
+header {
+  /* by default hidden */
+  /* hover pe show */
+}
+
+header .navbar-brand span {
+  font-weight: 600;
+  font-size: 2rem;
+}
+
+header .add-flex-props {
+  justify-content: space-between;
+}
+
+header .navbar-nav.add-gap {
+  gap: 0.8rem;
+}
+
+header .auth-dropdown {
+  position: relative;
+}
+
+header .auth-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(15px);
+  /* niche */
+  transition: all 0.3s ease;
+}
+
+header .auth-dropdown:hover .auth-popup {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  /* upar */
+}
+
+/* ----------------------------------------------------
+   DESKTOP MEGA MENU (Full Width)
+----------------------------------------------------- */
+.mega-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  width: 100%;
+  background: var(--plainclr);
+  padding: 40px;
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  border-top: 1px solid #eee;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.mega-menu a {
+  position: relative;
+  text-decoration: none;
+  color: #222;
+  margin-bottom: 6px;
+  display: block;
+  font-size: 14px;
+  padding-right: 18px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.mega-menu a::after {
+  content: "→";
+  position: absolute;
+  left: -14px;
+  top: 40%;
+  transform: translateY(-50%) translateX(-6px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.mega-menu a:hover {
+  transform: translateX(10px);
+  /* move left */
+}
+
+.mega-menu a:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(-1);
+}
+
+.mega-menu .mega-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: var(--themeprimaryclr);
+}
+
+/* Show on desktop hover */
+.nav-item:hover .mega-menu {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nav-item .mega-menu.hide-menu {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* ----------------------------------------------------
+   MOBILE DRAWER SIDEBAR (Coursera Style)
+----------------------------------------------------- */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  display: none;
+  z-index: 998;
+}
+
+.mobile-overlay.show {
+  display: block;
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 320px;
+  height: 100%;
+  background: var(--plainclr);
+  border-right: 1px solid #e5e5e5;
+  transition: left 0.3s ease;
+  z-index: 999;
+  overflow-y: auto;
+}
+
+.mobile-drawer.open {
+  left: 0;
+}
+
+.mobile-drawer .drawer-header button {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.mobile-drawer .drawer-profile {
+  cursor: pointer;
+}
+
+.mobile-drawer .drawer-profile span {
+  font-size: 18px;
+}
+
+.mobile-drawer .drawer-item {
+  padding: 12px 0;
+  font-size: 16px;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.mobile-drawer .drawer-item:hover {
+  background: #f8f8f8;
+}
+
+/* ----------------------------------------------------
+   RESPONSIVE BEHAVIOR FOR MOBILE
+----------------------------------------------------- */
+@media (max-width: 992px) {
+  .mega-menu {
+    position: relative;
+    display: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    padding: 20px;
+    border-top: none;
+  }
+
+  .mobile-accordion .accordion-button {
+    background: var(--plainclr);
+    border: none;
+    box-shadow: none;
+    font-weight: 600;
+  }
+}
+
+/*# sourceMappingURL=header.css.map */

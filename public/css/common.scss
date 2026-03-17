@@ -1,0 +1,734 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+body {
+  position: relative;
+  height: auto !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 30px !important;
+  font-size: 1rem;
+  overflow-x: hidden;
+  font-family: var(--primaryfont);
+}
+
+.lang-change{
+text-align: right;
+}
+#main-view-scroll {
+  overflow-y: auto;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.fw-custom {
+  font-weight: 400;
+}
+
+section {
+  padding: 2rem 0 2rem 0;
+}
+
+@media (max-width: 767px) {
+  section {
+    padding: 1rem 0 1rem 0 !important;
+  }
+}
+
+footer {
+  margin-top: auto;
+}
+
+
+input {
+  font-size: 1rem;
+}
+
+input:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+input::placeholder {
+  font-size: 1rem;
+}
+input[type=checkbox] {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--borderclr);
+}
+
+textarea {
+  font-size: 1rem;
+}
+
+textarea:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+textarea::placeholder {
+  font-size: 1rem;
+}
+
+
+a {
+  font-size: 1rem;
+  text-decoration: none;
+  font-family: var(--secondaryfont);
+
+  &:hover {
+    color: var(--themehoverclr);
+  }
+}
+
+
+a:active {
+  color: var(--themeprimaryclr);
+}
+
+
+/* ------------------------------------header a , p , span ------------------------------------*/
+header{
+  position:sticky;
+  top: 0;
+  z-index: 10000;
+  background-color: var(--plainclr);
+}
+header a,
+header span,
+header p,
+header select {
+  font-size: 12px;
+  font-family: var(--primaryfont);
+  letter-spacing: 0.00938em;
+  font-weight: 600;
+
+}
+
+@media (max-width:767px) {
+
+  header a,
+  header span,
+  header p,
+  header select {
+    letter-spacing: unset;
+  }
+}
+
+header a:hover {
+  color: var(--themeprimaryclr);
+}
+
+/* ---------------------------------------footer a, p , span--------------------------------------- */
+footer{
+  position: relative;
+  margin-top: auto;
+}
+footer a,
+footer span,
+footer p {
+  font-size: 1rem;
+}
+
+footer a:hover {
+  color: var(--themeprimaryclr);
+}
+
+.active {
+  color: var(--themeprimaryclr) !important;
+}
+
+
+label {
+  font-size: 1rem;
+}
+
+p {
+  font-size: 1rem;
+  font-family: var(--secondaryfont);
+  line-height: 22px;
+}
+
+span {
+  font-size: 1rem;
+  font-family: var(--secondaryfont);
+}
+
+ul {
+  padding-left: 0px;
+  margin-bottom: 0px;
+}
+
+ul li {
+  list-style: none;
+}
+
+ol li {
+  list-style: none;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-family: var(--primaryfont);
+}
+
+h2 {
+  font-size: 2rem;
+  font-family: var(--primaryfont);
+}
+
+h3 {
+  font-size: 1.75rem;
+  font-family: var(--primaryfont);
+}
+
+h4 {
+  font-size: 1.5rem;
+  font-family: var(--primaryfont);
+}
+
+h5 {
+  font-size: 1.25rem;
+  font-family: var(--primaryfont);
+}
+
+h6 {
+  font-size: 1rem;
+  font-family: var(--primaryfont);
+}
+
+.fs-same {
+  font-size: 1rem !important;
+}
+
+.red {
+  color: #ff2b2b !important;
+}
+
+.green {
+  color: #04bd04 !important;
+}
+
+.orange {
+  color: #d68b00 !important;
+}
+
+.yellow {
+  color: #f2dc00 !important;
+}
+
+.blue {
+  color: #00f !important;
+}
+
+.theme{
+  color: var(--themeprimaryclr);
+}
+.sitename {
+  color: #1c75a1 !important;
+}
+
+
+/* ============================
+   THEME BUTTONS (SCSS VERSION)
+=============================== */
+.btn-base {
+  min-height: 36px;
+  font-size: .9rem;
+  border-radius: 31px;
+  width: auto;
+  font-family: var(--primaryfont);
+  font-weight: 600;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 100%;
+  padding: 16px 32px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 1200px) {
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 0.875rem;
+  }
+}
+
+
+
+/* --------------------------------------------------
+   Gradient Button Effect (Reusable)
+-------------------------------------------------- */
+@mixin btn-gradient-effect(
+  $grad-start,
+  $grad-mid,
+  $grad-end,
+  $text-clr: #fff,
+  $shadow-clr: rgba(0, 0, 0, 0.25)
+) {
+  background-image: linear-gradient(
+    45deg,
+    $grad-start 0%,
+    $grad-mid 51%,
+    $grad-end 100%
+  );
+  background-size: 200% auto;
+  color: $text-clr !important;
+  border: 0;
+  box-shadow: 0 0 14px -7px $shadow-clr;
+  transition: background-position 0.5s ease, transform 0.2s ease;
+
+  &:hover {
+    background-position: right center;
+    color: $text-clr !important;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+
+/* Button Theme One */
+.btn-theme-one {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--themeprimaryclr),
+    var(--themesecondaryclr),
+    var(--themeprimaryclr)
+  );
+}
+
+
+/* Button Theme Two */
+.btn-theme-two {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--darkclr),
+    var(--themeprimaryclr),
+    var(--themeprimaryclr),
+    var(--plainclr),
+    var(--themeprimaryclr)
+  );
+}
+
+
+/* Button Theme Three */
+.btn-theme-three {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--themefourthclr),
+    var(--themetenthclr),
+    var(--themefourthclr),
+    var(--darkclr)
+  );
+}
+
+
+
+/* Button Theme Four */
+.btn-theme-four {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--themesecondaryclr),
+    var(--themeprimaryclr),
+    var(--themesecondaryclr)
+  );
+}
+
+
+/* Button Theme Five */
+.btn-theme-five {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--themeninthclr),
+    var(--themeprimaryclr),
+    var(--themeninthclr)
+  );
+}
+
+
+
+/* Button Theme Six */
+.btn-theme-six {
+  @extend .btn-base;
+
+  @include btn-gradient-effect(
+    var(--themefifthclr),
+    var(--plainclr),
+    var(--themefifthclr),
+    var(--plainclr)
+  );
+}
+
+
+
+
+
+/* =========================================
+   OUTLINE BUTTON SYSTEM (SCSS)
+========================================= */
+
+.outline-btn-base {
+  min-height: 1.25rem;
+  font-size: 0.875rem;
+  border-radius: .5rem;
+  background: transparent;
+  font-family: var(--primaryfont);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all .3s linear;
+  line-height: 100%;
+  padding: 10px 13px;
+
+  &:hover {
+    transform: translateY(-2px) !important;
+  }
+}
+
+/* =============================
+   Outline Theme One
+============================= */
+.btn-outline-theme {
+  @extend .outline-btn-base;
+  border: 1px solid var(--themeprimaryclr);
+  color: var(--themeprimaryclr) !important;
+
+  &:hover {
+    border-color: var(--themehoverclr);
+    background: var(--themehoverclr) !important;
+    color: var(--darkclr) !important;
+  }
+
+  &:active {
+    background: var(--themehoverclr) !important;
+    color: var(--darkclr) !important;
+  }
+}
+
+/* =============================
+   Outline Theme Two
+============================= */
+.btn-outline-theme-two {
+  @extend .outline-btn-base;
+  border: 1px solid var(--themesecondaryclr);
+  color: var(--themesecondaryclr) !important;
+
+  &:hover {
+    border-color: var(--themesecondaryclr);
+    background: var(--themesecondaryclr) !important;
+    color: var(--plainclr) !important;
+  }
+
+  &:active {
+    background: var(--themesecondaryclr) !important;
+    color: var(--plainclr) !important;
+  }
+}
+
+/* =============================
+   Outline Theme Three
+============================= */
+.btn-outline-theme-three {
+  @extend .outline-btn-base;
+  border: 1px solid var(--themethirdclr);
+  color: var(--themethirdclr) !important;
+
+  &:hover {
+    border-color: var(--themethirdclr);
+    background: var(--themethirdclr) !important;
+    color: var(--plainclr) !important;
+  }
+
+  &:active {
+    background: var(--themethirdclr) !important;
+    color: var(--plainclr) !important;
+  }
+}
+
+/* =============================
+   Outline Theme Four
+============================= */
+.btn-outline-theme-four {
+  @extend .outline-btn-base;
+  border: 1px solid var(--themefourthclr);
+  color: var(--darkclr) !important;
+
+  &:hover {
+    border-color: var(--themefourthclr);
+    background: var(--themefourthclr) !important;
+    color: var(--darkclr) !important;
+  }
+
+  &:active {
+    background: var(--themefourthclr) !important;
+    color: var(--darkclr) !important;
+  }
+}
+
+/* =============================
+   Outline Theme Five
+============================= */
+.btn-outline-theme-five {
+  @extend .outline-btn-base;
+  border: 1px solid var(--themeninthclr);
+  color: var(--darkclr) !important;
+
+  &:hover {
+    border-color: var(--themeninthclr);
+    background: var(--themeninthclr) !important;
+    color: var(--plainclr) !important;
+  }
+
+  &:active {
+    background: var(--themeninthclr) !important;
+    color: var(--plainclr) !important;
+  }
+}
+
+
+
+.primary-heading {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--darkclr);
+  line-height: 1.2;
+}
+
+.main-heading {
+
+  font-size: 2.25rem !important;
+  color: var(--darkclr);
+  font-family: var(--primaryfont);
+  font-weight: 700;
+
+  .theme{
+    font-size: 2.25rem !important;
+    color: var(--themeprimaryclr);
+  }
+}
+
+.sub-heading-badge {
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  display: inline-block;
+  padding-left: 0.75rem;
+  background-color: #dbeafe;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+  color: #0e7490;
+  padding-right: 0.75rem;
+}
+
+.sub-heading-two-badge {
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  display: inline-block;
+  padding-left: 0.75rem;
+  background-color: #e6e1f9 !important;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+  color: #6f42c1 !important;
+  padding-right: 0.75rem;
+}
+
+.sub-heading {
+
+  font-size: 1.60rem !important;
+  color: var(--darkclr);
+  font-weight: 700 !important;
+  font-family: var(--primaryfont);
+}
+
+.sub-heading-two {
+  font-size: 1.25rem;
+  color: var(--darkclr);
+  font-weight: 700;
+  font-family: var(--primaryfont);
+}
+
+@media (max-width: 767px) {
+  .main-heading{
+      font-size: 1.50rem !important;
+  }
+}
+
+
+
+
+.checkbox {
+  width: 1em;
+  height: 1em;
+  margin-top: 0.3em;
+  background-color: var(--themeprimaryclr);
+  border: 1px solid var(--themeprimaryclr);
+  appearance: none;
+  print-color-adjust: exact;
+}
+
+.checkbox:checked {
+  background-color: var(--themeprimaryclr);
+  border-color: var(--themeprimaryclr);
+}
+
+.checkbox:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--plainclr), 0.25);
+}
+
+.radio-button {
+  border-radius: 50%;
+}
+
+.radio-button:checked {
+  background-color: var(--themeprimaryclr);
+  border-color: var(--themeprimaryclr);
+}
+
+.radio-button:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--plainclr), 0.25);
+}
+
+.table {
+  width: 100%;
+  margin-bottom: 1rem;
+  color: var(--bs-table-color);
+  vertical-align: top;
+  border-color: var(--themesecondaryclr);
+}
+
+th {
+  font-weight: bold;
+  text-align: start;
+  background-color: var(--bs-table-bg);
+  border-bottom: 2px solid var(--plainclr);
+}
+
+tr {
+  border-top: 1px solid var(--darkclr);
+}
+
+td {
+  padding: 0.75rem;
+  border-top: 1px solid var(--plainclr);
+}
+
+span.title {
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: var(--headingclr);
+  font-family: var(--primaryfont);
+}
+
+
+@media (max-width: 1200px) {
+  span {
+    font-size: 1rem
+  }
+
+  p {
+    font-size: 1rem
+  }
+
+  a {
+    font-size: 1rem
+  }
+
+  label {
+    font-size: 1rem
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+  }
+
+  h6 {
+    font-size: 1rem;
+  }
+
+  .main-heading {
+    font-size: 1.5rem;
+  }
+
+  .sub-heading {
+    font-size: 1.1rem !important;
+  }
+
+  .fs-same {
+    font-size: 1rem !important;
+  }
+
+  span.title {
+    font-size: 2.75rem;
+  }
+
+
+}
+
+@media (max-width: 1200px) {
+  label {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width:767px) {
+
+  .fs-same,
+  a,
+  p,
+  span {
+    font-size: 1rem !important;
+  }
+
+  span.title {
+    font-size: 1.75rem !important;
+  }
+
+  label {
+    font-size: 1rem;
+  }
+
+
+}

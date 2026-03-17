@@ -1,0 +1,52 @@
+.alumni-section {
+  background: var(--gradient1);
+}
+.alumni-section .alumni-card {
+  background: var(--plainclr);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all 0.35s ease;
+  animation: fadeUp 0.6s ease;
+}
+.alumni-section .alumni-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+.alumni-section .alumni-card img {
+  width: 100%;
+  height: 240px;
+  -o-object-fit: cover;
+     object-fit: cover;
+  -o-object-position: top;
+     object-position: top;
+}
+.alumni-section .alumni-card .alumni-content {
+  padding: 20px;
+  text-align: center;
+}
+.alumni-section .alumni-card .alumni-content h5 {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.alumni-section .alumni-card .alumni-content .degree {
+  font-size: 14px;
+  color: var(--themeprimaryclr);
+  margin-bottom: 4px;
+}
+.alumni-section .alumni-card .alumni-content .exp {
+  font-size: 13px;
+  color: var(--linkclr);
+}
+
+/* animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}/*# sourceMappingURL=talk-to-alumni.css.map */

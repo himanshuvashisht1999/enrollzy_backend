@@ -1,0 +1,55 @@
+.comparison-section .comparison-table {
+    background: var(--plainclr);
+    border-radius: 16px;
+    border: 1px solid var(--themeprimaryclr);
+    box-shadow: var(--shadow-lg);
+}
+
+.comparison-section .comparison-table th {
+    background: var(--themeprimaryclr);
+    color: var(--plainclr);
+    font-weight: 600;
+    padding: 16px;
+}
+
+.comparison-section .comparison-table td {
+    padding: 16px;
+    vertical-align: middle;
+    transition: all 0.3s ease;
+}
+
+.comparison-section .comparison-table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.comparison-section .comparison-table tbody tr:hover {
+    background: var(--themeprimaryclr);
+}
+
+.comparison-section .org-card {
+    background: var(--plainclr);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.35s ease;
+}
+
+.comparison-section .org-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+}
+
+.comparison-section .org-card h5 {
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.comparison-section .org-card ul {
+    padding: 0;
+    list-style: none;
+}
+
+.comparison-section .org-card ul li {
+    margin-bottom: 6px;
+    font-size: 14px;
+}

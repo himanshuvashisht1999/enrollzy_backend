@@ -1,0 +1,110 @@
+@charset "UTF-8";
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+/* @import url('https://fonts.cdnfonts.com/css/gilroy-bold'); */
+
+:root {
+    --themeprimaryclr: #805cd8;
+    --lightprimary:#fbe0ff;
+    --themesecondaryclr: #6e34ff;
+    --themethirdclr: #14ff1f;
+    --themefourthclr: #e4d500;
+    --themefifthclr: #ff9c1a;
+    --themesixthclr: #32ffbb;
+    --themeseventhclr: #fafafa;
+    --themeeighthclr: #1e1425;
+    --themeninthclr: #6b7280;
+    --themetenthclr: #ececec;
+
+    --themeeleventhclr: #571a1a;
+    --themetwelfthclr: #630466;
+    --themethirteenthclr: #b8ac03;
+    --themefourteenthclr: #4c7402;
+    --themefifteenthclr: #4cb685;
+    --themesixteenthclr: #c45c6d;
+    --themeseventeenthclr: #ff914c;
+    --themeeighteenthclr: #d68b00;
+    --themenineteenthclr: #374151;
+    --themetwentiethclr: #38bdf8;
+
+    --light-primaryclr: #faf5ff;
+
+    --customhover: #fff2f2;
+    --plainclr: #fff;
+    --darkclr: #000;
+    --lightbg: #f4f3ff;
+    --themehoverclr: #fbc108;
+    --themehovertwo: #c45c6d;
+    --bs-table-color: #cdcdcd;
+    --bodyclr: #212529;
+    --borderclr: #e6e6e6;
+    --border-bottom-clr: #b1b1b1;
+    --headingclr: #332c5c;
+
+
+    --textclr1:#e2e8f0;
+
+    /* font family */
+    --primaryfont: "Inter", sans-serif;
+    --secondaryfont: "Inter", sans-serif;
+
+    /* new addon */
+    --gallery-overlay: #05090ac2;
+    --closeclr: #ff0000;
+    --overlight: #343e45;
+    --footer-bg: #03114a;
+    --lihover-clr: #474747;
+    --mainclr: #212529bf;
+
+    --btntwo-hoverclr: #f3f4f6;
+    --footer-border: rgba(255, 255, 255, 0.03);
+
+    --border1: #f3f4f6;
+    --linkclr: #374151;
+    --bgclr: #eff6ff;
+    --successclr: #06d6a0;
+--warningclr: #ffd166;
+--gray-100: #f7fafc;
+--gray-200: #edf2f7;
+
+   
+ 
+
+  --gradient1: linear-gradient(
+    135deg,
+    #eef4ff 0%,
+    #f8fbff 100%
+  );
+  --gradient2: linear-gradient(135deg, var(--themesecondaryclr) 0%, #1f2d3a 100%);
+   --gradient3: linear-gradient(to right, #6a5acd, #20b2aa);
+  --gradient4: linear-gradient(to right, #20b2aa, #6a5acd);
+  --gradient5: linear-gradient(135deg, var(--themefifthclr) 0%, #2b4658 100%);
+  --gradient6: linear-gradient(135deg, var(--themesixthclr) 0%, #304f63 100%);
+  --gradient7: linear-gradient(135deg, var(--themeseventhclr) 0%, #35586e 100%);
+  --gradient8: linear-gradient(135deg, var(--themeeighthclr) 0%, #3a6179 100%);
+  --gradient9: linear-gradient(135deg, var(--themeninthclr) 0%, #3f6a84 100%);
+  --gradient10: linear-gradient(135deg, var(--themetenthclr) 0%, #447390 100%);
+
+
+    /* shadow  */
+    --shadow1:  rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+--shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+--shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+
+    --badge1: #e9edff;
+}
+
+body,
+a,
+p,
+div,
+span,
+li {
+    color: var(--bodyclr);
+    font-family: var(--primaryfont);
+}
+
+p {
+    font-family: var(--secondaryfont);
+}

@@ -1,0 +1,84 @@
+.company-marquee {
+  background: var(--plainclr);
+  overflow: hidden;
+
+  .marquee-wrapper {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding:2rem 0;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 25s linear infinite;
+
+    /* pause on hover */
+    &:hover {
+      animation-play-state: paused;
+    }
+  }
+
+  .marquee-group {
+    display: flex;
+  }
+
+  
+
+  .logo-card {
+    min-width: 180px;
+    height: 80px;
+    margin: 0 18px;
+    background: var(--plainclr);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+
+   
+    img {
+  max-width: 140px;
+  max-height: 40px;
+  object-fit: contain;
+  display: block;
+  filter: grayscale(100%);
+      transition: all 0.3s ease;
+}
+
+    &:hover {
+      transform: translateY(-6px) scale(1.05);
+      box-shadow: var(--shadow-lg);
+
+      img {
+        filter: grayscale(0%);
+      }
+    }
+  }
+}
+
+/* Infinite scroll animation */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .company-marquee {
+    .logo-card {
+      min-width: 140px;
+      height: 64px;
+
+      img {
+        max-height: 32px;
+      }
+    }
+  }
+}

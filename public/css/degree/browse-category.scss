@@ -1,0 +1,23 @@
+.browse-category {
+
+    .browse-card {
+        height: 70px;
+        background: #f2f7ff;
+        border-radius: 10px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--textclr);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+
+        &:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            color: var(--themeprimaryclr);
+        }
+    }
+}
