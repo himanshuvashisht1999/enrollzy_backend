@@ -39,8 +39,9 @@ class OrganisationCourseController extends Controller
 
         $department = $departmentId ? \App\Models\Department::find($departmentId) : null;
         $campus = $campusId ? \App\Models\Campus::find($campusId) : null;
+        $allSpecializations = \App\Models\Specialization::pluck('title', 'id');
 
-        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus'));
+        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus', 'allSpecializations'));
     }
 
     public function create(Request $request)
@@ -93,6 +94,7 @@ class OrganisationCourseController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
+            'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
         ];
 
@@ -202,6 +204,7 @@ class OrganisationCourseController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
+            'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
         ];
 

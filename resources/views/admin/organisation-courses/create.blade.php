@@ -128,11 +128,11 @@
                                 @endif
 
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold">Specialization Area</label>
-                                    <select name="specialization_id" class="form-select select2">
-                                        <option value="">-- Select Specialization --</option>
+                                    <label class="form-label fw-bold">Specialization Area (Multiple)</label>
+                                    <select name="specialization_ids[]" class="form-select select2" multiple>
                                         @foreach($specializations as $spec)
-                                            <option value="{{ $spec->id }}" {{ old('specialization_id') == $spec->id ? 'selected' : '' }}>{{ $spec->title }}</option>
+                                            <option value="{{ $spec->id }}" {{ in_array($spec->id, old('specialization_ids', [])) ? 'selected' : '' }}>
+                                                {{ $spec->title }}</option>
                                         @endforeach
                                     </select>
                                 </div>

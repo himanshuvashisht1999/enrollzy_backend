@@ -53,6 +53,7 @@
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4">Course Name</th>
+                                <th>Specialization Area</th>
                                 <th>Campus</th>
                                 <th>Mode</th>
                                 <th>Fees</th>
@@ -67,6 +68,17 @@
                                 <tr>
                                     <td class="ps-4 fw-bold">{{ $course->course->name ?? 'N/A' }}</td>
                                     <td>
+                                        @if($course->specialization_ids)
+                                            @foreach($course->specialization_ids as $specId)
+                                                <div class="mb-1">
+                                                    <span class="badge bg-light text-dark border">{{ $allSpecializations[$specId] ?? 'Unknown' }}</span>
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         @if($course->campus)
                                             <span class="badge bg-info text-dark">
                                                 {{ $course->campus->campus_name }}
@@ -76,8 +88,8 @@
                                         @endif
                                     </td>
                                     <td>{{ $course->mode }}</td>
-                                    <td class="text-primary fw-bold">{{ $course->fees }}</td>
-                                    <td>{{ $course->duration }}</td>
+                                    <td class="text-primary fw-bold">{{ $course->total_fees ?? $course->fees }}</td>
+                                    <td>{{ $course->duration ?? ($course->course->duration ?? 'N/A') }}</td>
                                     <td>
                                         <span class="badge {{ $course->status ? 'bg-success' : 'bg-danger' }}">
                                             {{ $course->status ? 'Active' : 'Inactive' }}
@@ -106,7 +118,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">
+                                    <td colspan="9" class="text-center py-5 text-muted">
                                         No courses found.
                                     </td>
                                 </tr>
