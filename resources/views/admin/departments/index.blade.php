@@ -105,7 +105,7 @@
         </div>
     </div>
 
-    @push('scripts')
+    @push('js')
         <script>
             function confirmDelete(form) {
                 if (confirm('Are you sure you want to delete this department?')) {

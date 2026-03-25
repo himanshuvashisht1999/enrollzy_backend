@@ -237,15 +237,15 @@
                                 <div class="row g-3">
                                     <div class="col-md-3">
                                         <label class="form-label">Labs Count</label>
-                                        <input type="number" name="department_labs_count" class="form-control" value="{{ old('department_labs_count', 0) }}">
+                                        <input type="text" name="department_labs_count" class="form-control" value="{{ old('department_labs_count', 0) }}">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Research Centers</label>
-                                        <input type="number" name="research_centers_under_department" class="form-control" value="{{ old('research_centers_under_department', 0) }}">
+                                        <input type="text" name="research_centers_under_department" class="form-control" value="{{ old('research_centers_under_department', 0) }}">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Classrooms</label>
-                                        <input type="number" name="classrooms_count" class="form-control" value="{{ old('classrooms_count', 0) }}">
+                                        <input type="text" name="classrooms_count" class="form-control" value="{{ old('classrooms_count', 0) }}">
                                     </div>
                                      <div class="col-md-3">
                                         <div class="form-check form-switch mt-4">
@@ -345,7 +345,7 @@
     </div>
 </div>
 
-@push('scripts')
+@push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         @if(!isset($selectedOrganisation))
