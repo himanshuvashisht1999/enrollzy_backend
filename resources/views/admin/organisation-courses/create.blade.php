@@ -139,10 +139,10 @@
 
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Exam Category (Filter)</label>
-                                    <select class="form-select select2 exam-category-filter">
+                                    <select name="entrance_exam_category" class="form-select select2 exam-category-filter">
                                         <option value="">-- All Categories --</option>
                                         @foreach($examCategories as $cat)
-                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                            <option value="{{ $cat }}" {{ old('entrance_exam_category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -317,10 +317,10 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Exam Category (Filter)</label>
-                                    <select class="form-select select2 exam-category-filter">
+                                    <select name="entrance_exam_category" class="form-select select2 exam-category-filter">
                                         <option value="">-- All Categories --</option>
                                         @foreach($examCategories as $cat)
-                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                            <option value="{{ $cat }}" {{ old('entrance_exam_category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -446,10 +446,10 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Exam Category (Filter)</label>
-                                    <select class="form-select select2 exam-category-filter">
+                                    <select name="entrance_exam_category" class="form-select select2 exam-category-filter">
                                         <option value="">-- All Categories --</option>
                                         @foreach($examCategories as $cat)
-                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                            <option value="{{ $cat }}" {{ old('entrance_exam_category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -602,7 +602,6 @@
 
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <script>
         $(document).ready(function () {
             $('.select2').select2({
@@ -674,14 +673,7 @@
                 updateCourseCard(this);
             });
 
-            // Initialize CKEditor for all textareas with class 'editor'
-            document.querySelectorAll('textarea.editor').forEach((element) => {
-                ClassicEditor
-                    .create(element)
-                    .catch(error => {
-                        console.error(error);
-                    });
-            });
+            initializeTinyMCE();
 
             // Exam filtering logic
             $('.exam-category-filter').each(function() {

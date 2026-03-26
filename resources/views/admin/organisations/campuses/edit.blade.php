@@ -585,7 +585,6 @@
 
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <script>
         $(document).ready(function () {
             // Initialize Select2
@@ -595,14 +594,7 @@
                 allowClear: true
             });
 
-            // Initialize CKEditor
-            document.querySelectorAll('.editor').forEach((element) => {
-                ClassicEditor
-                    .create(element)
-                    .catch(error => {
-                        console.error(error);
-                    });
-            });
+            initializeTinyMCE();
 
             const brandTypeSelect = document.getElementById('brand_type');
             const franchiseFields = document.getElementById('franchiseFields');

@@ -479,7 +479,6 @@
 
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <script>
         $(document).ready(function () {
             function initSelect2() {
@@ -493,10 +492,7 @@
 
             initSelect2();
 
-            // CKEditor
-            document.querySelectorAll('.editor').forEach(elem => {
-                ClassicEditor.create(elem).catch(error => console.error(error));
-            });
+            initializeTinyMCE();
 
             // Syllabus Repeater
             let unitIndex = {{ count(is_array($examSubject->syllabus_structure) ? $examSubject->syllabus_structure : []) }};

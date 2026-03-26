@@ -94,6 +94,7 @@ class OrganisationCourseController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
+            'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
         ];
@@ -204,6 +205,7 @@ class OrganisationCourseController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
+            'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
         ];

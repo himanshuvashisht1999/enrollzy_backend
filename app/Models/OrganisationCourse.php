@@ -36,6 +36,7 @@ class OrganisationCourse extends Model
         'department_id',
         'entrance_exam_id',
         'entrance_exam_ids',
+        'entrance_exam_category',
 
         // Core Identity
         'academic_unit_name',

@@ -848,7 +848,6 @@
             border: 1px solid #dee2e6;
         }
     </style>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
 @endpush
 
 @push('js')
@@ -862,10 +861,7 @@
                 width: '100%'
             });
 
-            // CKEditor
-            document.querySelectorAll('.editor').forEach(elem => {
-                ClassicEditor.create(elem).catch(error => console.error(error));
-            });
+            initializeTinyMCE();
 
             // Generic Repeater Logic
             function setupRepeater(config) {

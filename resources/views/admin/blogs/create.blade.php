@@ -122,13 +122,8 @@
 </div>
 
 @push('js')
-<script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 <script>
-    ClassicEditor
-        .create(document.querySelector('#editor'))
-        .catch(error => {
-            console.error(error);
-        });
+    initializeTinyMCE('#editor');
 
     // Image Preview
     document.getElementById('imageInput').onchange = function (evt) {
@@ -141,7 +136,7 @@
     };
 </script>
 <style>
-    .ck-editor__editable { min-height: 300px; }
+    .tox-tinymce { border-radius: 8px !important; border: 1px solid #dee2e6 !important; }
 </style>
 @endpush
 

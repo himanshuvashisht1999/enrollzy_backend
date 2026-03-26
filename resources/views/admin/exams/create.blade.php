@@ -835,7 +835,6 @@
 @endsection
 
 @push('js')
-    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function () {
@@ -889,10 +888,7 @@
                 refreshCategoryOptions('#security-deposit-container');
             });
 
-            const editors = document.querySelectorAll('.editor');
-            editors.forEach(elem => {
-                ClassicEditor.create(elem).catch(error => console.error(error));
-            });
+            initializeTinyMCE();
 
             // Generic Repeater Logic
             function setupRepeater(config) {

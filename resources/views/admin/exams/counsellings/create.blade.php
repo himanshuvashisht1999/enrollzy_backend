@@ -644,14 +644,14 @@
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="small">Fresh Reg Fee</label>
-                                                        <input type="number"
+                                                        <input type="text"
                                                             name="round_specific_fee_rules[{{$i}}][fresh_registration_fee]"
                                                             class="form-control form-control-sm"
                                                             value="{{ old("round_specific_fee_rules.$i.fresh_registration_fee") }}">
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="small">Addl. Security Deposit</label>
-                                                        <input type="number"
+                                                        <input type="text"
                                                             name="round_specific_fee_rules[{{$i}}][additional_security_deposit]"
                                                             class="form-control form-control-sm"
                                                             value="{{ old("round_specific_fee_rules.$i.additional_security_deposit") }}">
@@ -826,14 +826,11 @@
 
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <script>
         $(document).ready(function () {
             $('.select2').select2({ width: '100%' });
 
-            document.querySelectorAll('.editor').forEach((element) => {
-                ClassicEditor.create(element).catch(error => console.error(error));
-            });
+            initializeTinyMCE();
 
             $(document).on('click', '.remove-session-btn', function () {
                 $(this).closest('.session-row').remove();
@@ -1097,11 +1094,11 @@
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="small">Fresh Reg Fee</label>
-                                                        <input type="number" name="round_specific_fee_rules[${i}][fresh_registration_fee]" class="form-control form-control-sm">
+                                                        <input type="text" name="round_specific_fee_rules[${i}][fresh_registration_fee]" class="form-control form-control-sm">
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="small">Addl. Security Deposit</label>
-                                                        <input type="number" name="round_specific_fee_rules[${i}][additional_security_deposit]" class="form-control form-control-sm">
+                                                        <input type="text" name="round_specific_fee_rules[${i}][additional_security_deposit]" class="form-control form-control-sm">
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="small">Refundable</label>
