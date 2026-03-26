@@ -26,7 +26,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $organisation->id]) }}"
+        <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $organisation->id, 'campus_id' => $campusId ?? null, 'department_id' => $departmentId ?? null]) }}"
             class="text-decoration-none text-muted">
             <i class="fas fa-arrow-left me-1"></i> Back to Courses
         </a>

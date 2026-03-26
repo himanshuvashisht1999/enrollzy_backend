@@ -158,11 +158,14 @@ class OrganisationCourseController extends Controller
 
         OrganisationCourse::create($data);
 
-        return redirect()->route('admin.organisation-courses.index', ['organisation_id' => $request->organisation_id])
-            ->with('success', 'Created successfully.');
+        return redirect()->route('admin.organisation-courses.index', [
+            'organisation_id' => $request->organisation_id,
+            'campus_id' => $request->campus_id,
+            'department_id' => $request->department_id
+        ])->with('success', 'Created successfully.');
     }
 
-    public function edit(OrganisationCourse $organisationCourse)
+    public function edit(Request $request, OrganisationCourse $organisationCourse)
     {
         $organisation = $organisationCourse->organisation;
 
@@ -180,6 +183,9 @@ class OrganisationCourseController extends Controller
             ->values();
         $exams = Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
 
+        $campusId = $request->query('campus_id');
+        $departmentId = $request->query('department_id');
+
         return view('admin.organisation-courses.edit', compact(
             'organisationCourse',
             'organisation',
@@ -189,7 +195,9 @@ class OrganisationCourseController extends Controller
             'campuses',
             'exams',
             'examCategories',
-            'departments'
+            'departments',
+            'campusId',
+            'departmentId'
         ));
     }
 
@@ -265,17 +273,25 @@ class OrganisationCourseController extends Controller
 
         $organisationCourse->update($data);
 
-        return redirect()->route('admin.organisation-courses.index', ['organisation_id' => $organisation->id])
-            ->with('success', 'Updated successfully.');
+        return redirect()->route('admin.organisation-courses.index', [
+            'organisation_id' => $organisation->id,
+            'campus_id' => $request->campus_id,
+            'department_id' => $request->department_id
+        ])->with('success', 'Updated successfully.');
     }
 
     public function destroy(OrganisationCourse $organisationCourse)
     {
         $organisationId = $organisationCourse->organisation_id;
+        $campusId = $organisationCourse->campus_id;
+        $departmentId = $organisationCourse->department_id;
         $organisationCourse->delete();
 
-        return redirect()->route('admin.organisation-courses.index', ['organisation_id' => $organisationId])
-            ->with('success', 'Deleted successfully.');
+        return redirect()->route('admin.organisation-courses.index', [
+            'organisation_id' => $organisationId,
+            'campus_id' => $campusId,
+            'department_id' => $departmentId
+        ])->with('success', 'Deleted successfully.');
     }
 
     public function duplicate($id)
@@ -291,7 +307,10 @@ class OrganisationCourseController extends Controller
 
         $newCourse->save();
 
-        return redirect()->route('admin.organisation-courses.index', ['organisation_id' => $originalCourse->organisation_id])
-            ->with('success', 'Course duplicated successfully.');
+        return redirect()->route('admin.organisation-courses.index', [
+            'organisation_id' => $originalCourse->organisation_id,
+            'campus_id' => $originalCourse->campus_id,
+            'department_id' => $originalCourse->department_id
+        ])->with('success', 'Course duplicated successfully.');
     }
 }

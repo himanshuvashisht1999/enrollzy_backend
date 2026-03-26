@@ -130,7 +130,7 @@
 
             @if(is_object($courses) && method_exists($courses, 'hasPages') && $courses->hasPages())
                 <div class="card-footer bg-white">
-                    {{ $courses->links() }}
+                    {{ $courses->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>
@@ -198,7 +198,7 @@
 
             @if(is_object($schoolCourses) && method_exists($schoolCourses, 'hasPages') && $schoolCourses->hasPages())
                 <div class="card-footer bg-white">
-                    {{ $schoolCourses->links() }}
+                    {{ $schoolCourses->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

@@ -126,7 +126,7 @@ class Department extends Model
      */
     protected static function slugExists($slug, $ignoreId = null)
     {
-        $query = static::where('slug', $slug);
+        $query = static::withTrashed()->where('slug', $slug);
 
         if ($ignoreId) {
             $query->where('id', '!=', $ignoreId);
