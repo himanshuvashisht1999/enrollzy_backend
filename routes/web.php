@@ -122,9 +122,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
         'update' => 'admin.organisations.campuses.update',
         'destroy' => 'admin.organisations.campuses.destroy',
     ]);
+    Route::post('/admin/organisations/{organisation}/campuses/store-draft', [\App\Http\Controllers\Admin\CampusController::class, 'storeDraft'])->name('admin.organisations.campuses.store-draft');
+    Route::post('/admin/organisations/{organisation}/campuses/{campus}/autosave-tab', [\App\Http\Controllers\Admin\CampusController::class, 'autosaveTab'])->name('admin.organisations.campuses.autosave-tab');
 
     // Departments (Nested under Campuses contextually, but flat resource for now)
     Route::resource('/admin/departments', DepartmentController::class)->names('admin.departments');
+    Route::post('/admin/departments/store-draft', [DepartmentController::class, 'storeDraft'])->name('admin.departments.store-draft');
+    Route::post('/admin/departments/{department}/autosave-tab', [DepartmentController::class, 'autosaveTab'])->name('admin.departments.autosave-tab');
 
     // Exams
     Route::resource('/admin/exams', \App\Http\Controllers\Admin\ExamController::class)->names('admin.exams');
@@ -149,6 +153,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
         'update' => 'admin.exams.counsellings.update',
         'destroy' => 'admin.exams.counsellings.destroy',
     ]);
+    Route::post('/admin/exams/{exam}/counsellings/store-draft', [\App\Http\Controllers\Admin\CounsellingController::class, 'storeDraft'])->name('admin.exams.counsellings.store-draft');
+    Route::post('/admin/exams/{exam}/counsellings/{counselling}/autosave', [\App\Http\Controllers\Admin\CounsellingController::class, 'autosave'])->name('admin.exams.counsellings.autosave');
+    Route::post('/admin/exams/{exam}/counsellings/{counselling}/autosave-tab', [\App\Http\Controllers\Admin\CounsellingController::class, 'autosaveTab'])->name('admin.exams.counsellings.autosave-tab');
+
 
     Route::get('/admin/get-sub-types', [OrganisationController::class, 'getSubTypes'])->name('admin.organisations.get-sub-types');
 
@@ -209,6 +217,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::delete('organisation-school/{id}', [OrganisationCourseController::class, 'schoolDestroy'])
         ->name('admin.organisation-school.destroy');
+
+    Route::post('/admin/organisation-courses/store-draft', [OrganisationCourseController::class, 'storeDraft'])->name('admin.organisation-courses.store-draft');
+    Route::post('/admin/organisation-courses/{organisation}/courses/{course}/autosave-tab', [OrganisationCourseController::class, 'autosaveTab'])->name('admin.organisation-courses.autosave-tab');
 
     // Master Course Management
     Route::resource('/admin/courses', CourseController::class)->names([

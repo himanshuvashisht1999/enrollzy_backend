@@ -18,15 +18,55 @@
             line-height: 38px;
         }
 
+        /* Traditional Tab Styles - Match Screenshot */
+        .nav-tabs-custom {
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-tabs-custom .nav-item {
+            margin-bottom: -1px;
+        }
+
         .nav-tabs-custom .nav-link {
-            color: #495057;
+            border: 1px solid transparent;
+            border-top-left-radius: .25rem;
+            border-top-right-radius: .25rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 14px;
+            color: #0d6efd;
+            /* Blue color from screenshot */
+            background: none;
+            text-decoration: none;
+            display: block;
         }
 
         .nav-tabs-custom .nav-link.active {
-            color: #556ee6;
-            background-color: transparent;
-            border-color: transparent transparent #556ee6 transparent;
-            border-bottom-width: 3px;
+            color: #212529 !important;
+            background-color: #fff !important;
+            border-color: #dee2e6 #dee2e6 #fff !important;
+            font-weight: 500;
+        }
+
+        .nav-tabs-custom .nav-link.completed {
+            color: #34c38f;
+        }
+
+        #autosave-status {
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        .step-footer {
+            display: flex;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            margin-top: 30px;
         }
     </style>
 @endpush
@@ -57,35 +97,42 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.exams.counsellings.store', $exam->id) }}" method="POST">
+            <form id="counselling-form" action="{{ route('admin.exams.counsellings.store', $exam->id) }}" method="POST">
                 @csrf
                 <div class="card">
                     <div class="card-body">
-                        <!-- Tabs -->
-                        <ul class="nav nav-tabs nav-tabs-custom nav-justified" role="tablist">
-                            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#identity"
+                        <!-- Auto-save Status -->
+                        <div class="d-flex justify-content-end align-items-center mb-3">
+                            <div id="autosave-status" class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-success me-1"></i> <span
+                                    class="status-text text-muted small">Auto-saved</span>
+                            </div>
+                        </div>
+
+                        <!-- Traditional Tabs -->
+                        <ul class="nav nav-tabs-custom" id="counsellingTabs" role="tablist">
+                            <li class="nav-item"><a class="nav-link active" href="#identity"
                                     role="tab">Identity</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#scope" role="tab">Scope</a>
+                            <li class="nav-item"><a class="nav-link" href="#scope" role="tab">Scope</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#eligibility"
+                            <li class="nav-item"><a class="nav-link" href="#eligibility"
                                     role="tab">Eligibility</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#rounds"
+                            <li class="nav-item"><a class="nav-link" href="#rounds"
                                     role="tab">Rounds</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#process"
+                            <li class="nav-item"><a class="nav-link" href="#process"
                                     role="tab">Process</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#dates" role="tab">Dates</a>
+                            <li class="nav-item"><a class="nav-link" href="#dates" role="tab">Dates</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#allocation"
+                            <li class="nav-item"><a class="nav-link" href="#allocation"
                                     role="tab">Allocation</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#documents"
+                            <li class="nav-item"><a class="nav-link" href="#documents"
                                     role="tab">Documents</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#fees"
-                                    role="tab">Application & Fees</a>
-                            </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#support"
+                            <li class="nav-item"><a class="nav-link" href="#fees"
+                                    role="tab">Application & Fees</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#support"
                                     role="tab">Support</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#seo" role="tab">SEO &
-                                    Meta</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#seo" role="tab">SEO</a>
+                            </li>
                         </ul>
 
                         <div class="tab-content p-3 text-muted">
@@ -757,7 +804,8 @@
                                         </div>
                                     </div>
                                     <div class="col-md-8">
-                                        <div class="row" id="transaction_charges_section" style="{{ old('transaction_charges_applicable') ? '' : 'display:none;' }}">
+                                        <div class="row" id="transaction_charges_section"
+                                            style="{{ old('transaction_charges_applicable') ? '' : 'display:none;' }}">
                                             <div class="col-md-6">
                                                 <label class="form-label">Charges Borne By</label>
                                                 <select name="transaction_charge_borne_by" class="form-select">
@@ -768,7 +816,8 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Payment Gateway Name</label>
                                                 <input type="text" name="payment_gateway_name" class="form-control"
-                                                    placeholder="e.g. Razorpay, BillDesk" value="{{ old('payment_gateway_name') }}">
+                                                    placeholder="e.g. Razorpay, BillDesk"
+                                                    value="{{ old('payment_gateway_name') }}">
                                             </div>
                                         </div>
                                     </div>
@@ -815,12 +864,21 @@
 
                         </div> <!-- Tab Content -->
                     </div>
-                    <div class="card-footer text-end">
-                        <button type="submit" class="btn btn-primary">Create Counselling</button>
+                    <div class="step-footer">
+                        <button type="button" class="btn btn-primary mb-1" id="prevBtn"
+                            onclick="nextPrev(-1)">Previous</button>
+                        <div class="d-flex align-items-center ms-auto">
+                            <span id="save-message" class="me-3 text-muted small" style="opacity: 0;">Saving...</span>
+                            <button type="button" class="btn btn-primary mb-1" id="nextBtn" onclick="nextPrev(1)">Next
+                                Step</button>
+                            <button type="submit" class="btn btn-success mb-1" id="submitBtn" style="display:none;">Finish &
+                                Publish</button>
+                        </div>
                     </div>
                 </div>
-            </form>
         </div>
+        </form>
+    </div>
     </div>
 @endsection
 
@@ -849,6 +907,211 @@
             $('#tx_charges').on('change', function () {
                 $('#transaction_charges_section').toggle(this.checked);
             });
+
+            // STEP FORM & AUTO SAVE LOGIC
+            let currentTab = 0;
+            const tabs = $('#counsellingTabs .nav-link');
+            let counsellingId = null;
+            let isSaving = false;
+
+            // Allow direct tab clicking
+            tabs.each(function (index) {
+                $(this).on('click', function (e) {
+                    e.preventDefault();
+                    if (index > currentTab && !validateCurrentStep()) {
+                        return false;
+                    }
+
+                    // Bulk save current tab before switching
+                    saveStepData();
+
+                    currentTab = index;
+                    showTab(currentTab);
+                });
+            });
+
+            window.nextPrev = function (n) {
+                if (n == 1 && !validateCurrentStep()) return false;
+
+                // Bulk save current tab when moving forward
+                saveStepData();
+
+                currentTab = currentTab + n;
+                showTab(currentTab);
+            }
+
+            function showTab(n) {
+                const tabId = $(tabs[n]).attr('href');
+                const bootstrapTab = new bootstrap.Tab(tabs[n]);
+                bootstrapTab.show();
+
+                // Buttons
+                if (n == 0) {
+                    $('#prevBtn').css('display', 'none');
+                } else {
+                    $('#prevBtn').css('display', 'inline');
+                }
+
+                if (n == (tabs.length - 1)) {
+                    $('#nextBtn').css('display', 'none');
+                    $('#submitBtn').css('display', 'inline');
+                } else {
+                    $('#nextBtn').css('display', 'inline');
+                    $('#nextBtn').text('Next Step');
+                    $('#submitBtn').css('display', 'none');
+                }
+
+
+                // Keep scroll at top
+                window.scrollTo(0, 0);
+            }
+
+            function validateCurrentStep() {
+                const currentTabId = $(tabs[currentTab]).attr('href');
+                let valid = true;
+                $(currentTabId + ' [required]').each(function () {
+                    if (!this.checkValidity()) {
+                        this.reportValidity();
+                        valid = false;
+                        return false;
+                    }
+                });
+                return valid;
+            }
+
+            function saveStepData() {
+                if (isSaving) return;
+                const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
+
+                if (!counsellingId && currentTabId === 'basic_info') {
+                    // Create Draft
+                    const formData = {
+                        counselling_name: $('input[name="counselling_name"]').val(),
+                        counselling_type: $('select[name="counselling_type"]').val(),
+                        _token: '{{ csrf_token() }}'
+                    };
+
+                    if (!formData.counselling_name) return;
+
+                    isSaving = true;
+                    showAutoSaveStatus('saving');
+                    $.ajax({
+                        url: '{{ route("admin.exams.counsellings.store-draft", $exam->id) }}',
+                        method: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            counsellingId = response.counselling_id;
+                            $(tabs[currentTab]).addClass('completed');
+                            showAutoSaveStatus('saved');
+
+                            // Transform form to UPDATE mode to prevent duplicate on final submit
+                            const updateUrl = `/admin/exams/{{ $exam->id }}/counsellings/${counsellingId}`;
+                            $('#counselling-form').attr('action', updateUrl);
+                            if ($('#counselling-form input[name="_method"]').length === 0) {
+                                $('#counselling-form').append('<input type="hidden" name="_method" value="PUT">');
+                            }
+                        },
+                        complete: function() {
+                            isSaving = false;
+                        }
+                    });
+                } else if (counsellingId) {
+                    // Bulk save current tab
+                    const formData = {};
+                    const fieldsInStep = getFieldsInStep(currentTabId);
+
+                    fieldsInStep.forEach(fieldName => {
+                        formData[fieldName] = getInputValue(fieldName);
+                    });
+
+                    isSaving = true;
+                    showAutoSaveStatus('saving');
+                    $.ajax({
+                        url: `/admin/exams/{{ $exam->id }}/counsellings/${counsellingId}/autosave-tab`,
+                        method: 'POST',
+                        data: {
+                            ...formData,
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function () {
+                            showAutoSaveStatus('saved');
+                            $(tabs[currentTab]).addClass('completed');
+                        },
+                        complete: function() {
+                            isSaving = false;
+                        }
+                    });
+                }
+            }
+
+            function getFieldsInStep(stepId) {
+                const fields = [];
+                $(`#${stepId} [name]`).each(function () {
+                    const name = $(this).attr('name').split('[')[0]; // Get base name
+                    if (!fields.includes(name)) fields.push(name);
+                });
+                return fields;
+            }
+
+            function getInputValue(fieldName) {
+                // For array/repeater fields
+                if ($(`[name^="${fieldName}["]`).length) {
+                    const values = {};
+                    $(`[name^="${fieldName}["]`).each(function () {
+                        const fullPath = $(this).attr('name');
+                        const value = getSingleInputValue($(this));
+
+                        const matches = fullPath.match(/(\w+)\[(\d+)\]\[?(\w+)?\]?/);
+                        if (matches) {
+                            const [_, base, index, key] = matches;
+                            if (!values[index]) values[index] = {};
+                            if (key) {
+                                values[index][key] = value;
+                            } else {
+                                values[index] = value;
+                            }
+                        }
+                    });
+
+                    // Simple select multiple handle
+                    const multSelect = $(`select[name="${fieldName}[]"]`);
+                    if (multSelect.length) return multSelect.val();
+
+                    return Object.values(values);
+                }
+
+                return getSingleInputValue($(`[name="${fieldName}"]`));
+            }
+
+            function getSingleInputValue(el) {
+                if (el.is(':checkbox')) {
+                    return el.is(':checked') ? 1 : 0;
+                }
+                if (el.is('select[multiple]')) {
+                    return el.val();
+                }
+                if (el.hasClass('editor')) {
+                    const editor = tinymce.get(el.attr('id'));
+                    return editor ? editor.getContent() : el.val();
+                }
+                return el.val();
+            }
+
+            function showAutoSaveStatus(status) {
+                const statusEl = $('#autosave-status');
+                const msgEl = $('#save-message');
+                if (status === 'saving') {
+                    statusEl.html('<i class="fas fa-spinner fa-spin me-1"></i> Saving Tab...');
+                    msgEl.css('opacity', 1).text('Saving...');
+                } else {
+                    statusEl.html('<i class="fas fa-check-circle text-success me-1"></i> Changes saved');
+                    msgEl.text('Saved').animate({ opacity: 0 }, 2000);
+                }
+            }
+
+            // Initial view
+            showTab(currentTab);
+
 
             // Generic Repeater Logic
             function setupRepeater(config) {
@@ -935,39 +1198,39 @@
                 requireOne: true,
                 initialIndex: {{ count(old('registration_fee_structure', [[]])) }},
                 template: (i) => `
-                                        <div class="card border mb-2 registration-fee-item">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-3">
-                                                        <label class="small">Categories</label>
-                                                        <select name="registration_fee_structure[${i}][categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                            ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="small">Amount</label>
-                                                        <input type="number" name="registration_fee_structure[${i}][amount]" class="form-control form-control-sm">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Currency</label>
-                                                        <input type="text" name="registration_fee_structure[${i}][currency]" class="form-control form-control-sm" value="INR">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Refundable</label>
-                                                        <select name="registration_fee_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                            <option value="No">No</option>
-                                                            <option value="Yes">Yes</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2 d-flex align-items-end">
-                                                        <button type="button" class="btn btn-sm btn-danger remove-reg-fee w-100">Remove</button>
-                                                    </div>
-                                                    <div class="col-md-12 mt-2">
-                                                        <input type="text" name="registration_fee_structure[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>`,
+                                                    <div class="card border mb-2 registration-fee-item">
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                <div class="col-md-3">
+                                                                    <label class="small">Categories</label>
+                                                                    <select name="registration_fee_structure[${i}][categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
+                                                                        ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label class="small">Amount</label>
+                                                                    <input type="number" name="registration_fee_structure[${i}][amount]" class="form-control form-control-sm">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Currency</label>
+                                                                    <input type="text" name="registration_fee_structure[${i}][currency]" class="form-control form-control-sm" value="INR">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Refundable</label>
+                                                                    <select name="registration_fee_structure[${i}][refundable]" class="form-select form-select-sm">
+                                                                        <option value="No">No</option>
+                                                                        <option value="Yes">Yes</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-sm btn-danger remove-reg-fee w-100">Remove</button>
+                                                                </div>
+                                                                <div class="col-md-12 mt-2">
+                                                                    <input type="text" name="registration_fee_structure[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>`,
                 afterAdd: ($row) => {
                     $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
                     refreshCategoryOptions('#registration-fee-container');
@@ -983,39 +1246,39 @@
                 requireOne: true,
                 initialIndex: {{ count(old('late_fee_rules', [[]])) }},
                 template: (i) => `
-                                        <div class="card border mb-2 late-fee-item bg-light">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-3">
-                                                        <label class="small">Condition</label>
-                                                        <select name="late_fee_rules[${i}][condition]" class="form-select form-select-sm">
-                                                            ${['Late registration', 'Missed reporting', 'Choice not locked'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Type</label>
-                                                        <select name="late_fee_rules[${i}][penalty_type]" class="form-select form-select-sm">
-                                                            <option value="Flat">Flat</option>
-                                                            <option value="Percentage">Percentage</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Amount</label>
-                                                        <input type="number" name="late_fee_rules[${i}][penalty_amount]" class="form-control form-control-sm">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Cap</label>
-                                                        <input type="number" name="late_fee_rules[${i}][maximum_penalty_cap]" class="form-control form-control-sm" placeholder="Max Cap">
-                                                    </div>
-                                                    <div class="col-md-3 d-flex align-items-end">
-                                                        <button type="button" class="btn btn-sm btn-danger remove-late-fee w-100">Remove</button>
-                                                    </div>
-                                                    <div class="col-md-12 mt-2">
-                                                        <input type="text" name="late_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>`
+                                                    <div class="card border mb-2 late-fee-item bg-light">
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                <div class="col-md-3">
+                                                                    <label class="small">Condition</label>
+                                                                    <select name="late_fee_rules[${i}][condition]" class="form-select form-select-sm">
+                                                                        ${['Late registration', 'Missed reporting', 'Choice not locked'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Type</label>
+                                                                    <select name="late_fee_rules[${i}][penalty_type]" class="form-select form-select-sm">
+                                                                        <option value="Flat">Flat</option>
+                                                                        <option value="Percentage">Percentage</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Amount</label>
+                                                                    <input type="number" name="late_fee_rules[${i}][penalty_amount]" class="form-control form-control-sm">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Cap</label>
+                                                                    <input type="number" name="late_fee_rules[${i}][maximum_penalty_cap]" class="form-control form-control-sm" placeholder="Max Cap">
+                                                                </div>
+                                                                <div class="col-md-3 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-sm btn-danger remove-late-fee w-100">Remove</button>
+                                                                </div>
+                                                                <div class="col-md-12 mt-2">
+                                                                    <input type="text" name="late_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>`
             });
 
             setupRepeater({
@@ -1026,50 +1289,50 @@
                 requireOne: true,
                 initialIndex: {{ count(old('security_deposit_structure', [[]])) }},
                 template: (i) => `
-                                        <div class="card border mb-2 security-deposit-item">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-2">
-                                                        <label class="small">Categories</label>
-                                                        <select name="security_deposit_structure[${i}][candidate_categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                            ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">College Type</label>
-                                                        <select name="security_deposit_structure[${i}][college_type]" class="form-select form-select-sm">
-                                                            ${['Government', 'Private', 'Deemed'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Quota</label>
-                                                        <select name="security_deposit_structure[${i}][quota_type]" class="form-select form-select-sm">
-                                                            ${['All India', 'State'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Amount</label>
-                                                        <input type="number" name="security_deposit_structure[${i}][amount]" class="form-control form-control-sm">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Refundable</label>
-                                                        <select name="security_deposit_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                            <option value="Yes">Yes</option>
-                                                            <option value="No">No</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2 d-flex align-items-end">
-                                                        <button type="button" class="btn btn-sm btn-danger remove-sd w-100">Remove</button>
-                                                    </div>
-                                                    <div class="col-md-6 mt-2">
-                                                        <input type="text" name="security_deposit_structure[${i}][refund_conditions]" class="form-control form-control-sm" placeholder="Refund Conditions">
-                                                    </div>
-                                                    <div class="col-md-6 mt-2">
-                                                        <input type="text" name="security_deposit_structure[${i}][forfeiture_conditions]" class="form-control form-control-sm" placeholder="Forfeiture Conditions">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>`,
+                                                    <div class="card border mb-2 security-deposit-item">
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Categories</label>
+                                                                    <select name="security_deposit_structure[${i}][candidate_categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
+                                                                        ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">College Type</label>
+                                                                    <select name="security_deposit_structure[${i}][college_type]" class="form-select form-select-sm">
+                                                                        ${['Government', 'Private', 'Deemed'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Quota</label>
+                                                                    <select name="security_deposit_structure[${i}][quota_type]" class="form-select form-select-sm">
+                                                                        ${['All India', 'State'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Amount</label>
+                                                                    <input type="number" name="security_deposit_structure[${i}][amount]" class="form-control form-control-sm">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Refundable</label>
+                                                                    <select name="security_deposit_structure[${i}][refundable]" class="form-select form-select-sm">
+                                                                        <option value="Yes">Yes</option>
+                                                                        <option value="No">No</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-sm btn-danger remove-sd w-100">Remove</button>
+                                                                </div>
+                                                                <div class="col-md-6 mt-2">
+                                                                    <input type="text" name="security_deposit_structure[${i}][refund_conditions]" class="form-control form-control-sm" placeholder="Refund Conditions">
+                                                                </div>
+                                                                <div class="col-md-6 mt-2">
+                                                                    <input type="text" name="security_deposit_structure[${i}][forfeiture_conditions]" class="form-control form-control-sm" placeholder="Forfeiture Conditions">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>`,
                 afterAdd: ($row) => {
                     $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
                     refreshCategoryOptions('#security-deposit-container');
@@ -1085,37 +1348,37 @@
                 requireOne: true,
                 initialIndex: {{ count(old('round_specific_fee_rules', [[]])) }},
                 template: (i) => `
-                                        <div class="card border mb-2 round-fee-item bg-light">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-3">
-                                                        <label class="small">Round Name</label>
-                                                        <input type="text" name="round_specific_fee_rules[${i}][round_name]" class="form-control form-control-sm" placeholder="e.g. Mop-up Round">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Fresh Reg Fee</label>
-                                                        <input type="text" name="round_specific_fee_rules[${i}][fresh_registration_fee]" class="form-control form-control-sm">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="small">Addl. Security Deposit</label>
-                                                        <input type="text" name="round_specific_fee_rules[${i}][additional_security_deposit]" class="form-control form-control-sm">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Refundable</label>
-                                                        <select name="round_specific_fee_rules[${i}][refund_applicable]" class="form-select form-select-sm">
-                                                            <option value="Yes">Yes</option>
-                                                            <option value="No">No</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2 d-flex align-items-end">
-                                                        <button type="button" class="btn btn-sm btn-danger remove-round-fee w-100">Remove</button>
-                                                    </div>
-                                                    <div class="col-md-12 mt-2">
-                                                        <input type="text" name="round_specific_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>`
+                                                    <div class="card border mb-2 round-fee-item bg-light">
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                <div class="col-md-3">
+                                                                    <label class="small">Round Name</label>
+                                                                    <input type="text" name="round_specific_fee_rules[${i}][round_name]" class="form-control form-control-sm" placeholder="e.g. Mop-up Round">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Fresh Reg Fee</label>
+                                                                    <input type="text" name="round_specific_fee_rules[${i}][fresh_registration_fee]" class="form-control form-control-sm">
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label class="small">Addl. Security Deposit</label>
+                                                                    <input type="text" name="round_specific_fee_rules[${i}][additional_security_deposit]" class="form-control form-control-sm">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small">Refundable</label>
+                                                                    <select name="round_specific_fee_rules[${i}][refund_applicable]" class="form-select form-select-sm">
+                                                                        <option value="Yes">Yes</option>
+                                                                        <option value="No">No</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-sm btn-danger remove-round-fee w-100">Remove</button>
+                                                                </div>
+                                                                <div class="col-md-12 mt-2">
+                                                                    <input type="text" name="round_specific_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>`
             });
 
             setupRepeater({
@@ -1126,13 +1389,13 @@
                 requireOne: true,
                 initialIndex: {{ count(old('forfeiture_scenarios', [[]])) }},
                 template: (i) => `
-                                        <div class="input-group mb-2 forfeiture-item">
-                                            <select name="forfeiture_scenarios[${i}][scenario]" class="form-select">
-                                                ${['Seat allotted but not joined', 'Upgradation declined', 'False information'].map(s => `<option value="${s}">${s}</option>`).join('')}
-                                            </select>
-                                            <input type="text" name="forfeiture_scenarios[${i}][remarks]" class="form-control w-50" placeholder="Optional remarks">
-                                            <button class="btn btn-outline-danger remove-forfeit" type="button">Remove</button>
-                                        </div>`
+                                                    <div class="input-group mb-2 forfeiture-item">
+                                                        <select name="forfeiture_scenarios[${i}][scenario]" class="form-select">
+                                                            ${['Seat allotted but not joined', 'Upgradation declined', 'False information'].map(s => `<option value="${s}">${s}</option>`).join('')}
+                                                        </select>
+                                                        <input type="text" name="forfeiture_scenarios[${i}][remarks]" class="form-control w-50" placeholder="Optional remarks">
+                                                        <button class="btn btn-outline-danger remove-forfeit" type="button">Remove</button>
+                                                    </div>`
             });
 
             setupRepeater({
@@ -1143,34 +1406,34 @@
                 requireOne: true,
                 initialIndex: {{ count(old('rounds', [[]])) }},
                 template: (i) => `
-                                <div class="rounds-repeater-item border p-3 mb-2 rounded mt-2">
-                                    <div class="row g-2">
-                                        <div class="col-md-3">
-                                            <input type="text" name="rounds[${i}][round_name]" class="form-control" placeholder="Round Name">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <select name="rounds[${i}][round_type]" class="form-select">
-                                                <option value="Regular">Regular</option>
-                                                <option value="Special">Special</option>
-                                                <option value="Mop-Up">Mop-Up</option>
-                                                <option value="Stray">Stray Vacancy</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-check mt-2">
-                                                <input type="checkbox" name="rounds[${i}][upgrade_allowed]" value="1" class="form-check-input"> <label>Upgrade</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-check mt-2">
-                                                <input type="checkbox" name="rounds[${i}][fresh_reg]" value="1" class="form-check-input"> <label>Fresh Reg</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-sm btn-danger remove-round w-100">Remove</button>
-                                        </div>
-                                    </div>
-                                </div>`
+                                            <div class="rounds-repeater-item border p-3 mb-2 rounded mt-2">
+                                                <div class="row g-2">
+                                                    <div class="col-md-3">
+                                                        <input type="text" name="rounds[${i}][round_name]" class="form-control" placeholder="Round Name">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <select name="rounds[${i}][round_type]" class="form-select">
+                                                            <option value="Regular">Regular</option>
+                                                            <option value="Special">Special</option>
+                                                            <option value="Mop-Up">Mop-Up</option>
+                                                            <option value="Stray">Stray Vacancy</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="form-check mt-2">
+                                                            <input type="checkbox" name="rounds[${i}][upgrade_allowed]" value="1" class="form-check-input"> <label>Upgrade</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="form-check mt-2">
+                                                            <input type="checkbox" name="rounds[${i}][fresh_reg]" value="1" class="form-check-input"> <label>Fresh Reg</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button type="button" class="btn btn-sm btn-danger remove-round w-100">Remove</button>
+                                                    </div>
+                                                </div>
+                                            </div>`
             });
         });
     </script>

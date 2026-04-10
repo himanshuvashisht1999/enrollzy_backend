@@ -1,62 +1,152 @@
 @extends('admin.layouts.master')
 
 @section('content')
-<div class="container-fluid">
+
+    @push('css')
+        <style>
+            /* Premium Tab Styles - Standardized */
+            .nav-tabs-custom {
+                border-bottom: 2px solid #ebeef1;
+                background: #fff;
+                padding: 0 10px;
+                margin-bottom: 25px;
+                display: flex;
+                flex-wrap: wrap;
+                list-style: none;
+            }
+
+            .nav-tabs-custom .nav-item {
+                margin-bottom: -2px;
+            }
+
+            .nav-tabs-custom .nav-link {
+                border: none;
+                border-bottom: 2px solid transparent;
+                color: #495057;
+                font-weight: 500;
+                padding: 12px 20px;
+                transition: all 0.3s;
+                text-decoration: none;
+                display: block;
+                font-size: 14px;
+                background: none;
+            }
+
+            .nav-tabs-custom .nav-link:hover {
+                color: #0d6efd;
+                background: rgba(13, 110, 253, 0.05);
+            }
+
+            .nav-tabs-custom .nav-link.active {
+                color: #0d6efd !important;
+                border-bottom: 2px solid #0d6efd;
+                background: none;
+                font-weight: 600;
+            }
+
+            .nav-tabs-custom .nav-link.completed {
+                color: #34c38f;
+            }
+
+            /* Sticky Footer for Navigation */
+            .step-footer {
+                position: sticky;
+                bottom: 0;
+                background: #fff;
+                padding: 15px 25px;
+                border-top: 1px solid #dee2e6;
+                margin: 0 -25px -25px -25px;
+                z-index: 99;
+                box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05);
+            }
+
+            .tab-pane {
+                display: none;
+                padding: 20px 0;
+            }
+
+            .tab-pane.active {
+                display: block;
+            }
+
+            #autosave-status {
+                font-size: 11px;
+                color: #6c757d;
+            }
+        </style>
+    @endpush
+
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Add New Department</h4>
-                    <a href="{{ route('admin.departments.index', ['organisation_id' => $selectedOrganisation->id ?? null, 'campus_id' => $selectedCampus->id ?? null]) }}" class="btn btn-secondary btn-sm float-end">Back</a>
-                </div>
-                <div class="card-body">
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                <h4 class="mb-sm-0">Add New Department</h4>
+            </div>
+        </div>
+    </div>
 
-                    <form action="{{ route('admin.departments.store') }}" method="POST">
-                        @csrf
-                        
-                        <!-- Tabs Navigation -->
-                        <ul class="nav nav-tabs mb-3" id="departmentTab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core" type="button" role="tab" aria-controls="core" aria-selected="true">Core Info</button>
+    <div class="row">
+        <div class="col-12">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('admin.departments.store') }}" id="department-form" method="POST">
+                @csrf
+
+                <div class="card">
+                    <div class="card-header bg-white border-bottom-0 pb-0">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill">
+                                    <i class="fas fa-building me-1"></i> Department Setup
+                                </span>
+                            </div>
+                            <div id="autosave-status" class="small text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i> Auto-saved
+                            </div>
+                        </div>
+
+                        <ul class="nav nav-tabs-custom" id="departmentTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#core" role="tab">Core Info</a>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="false">Academic</button>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#academic" role="tab">Academic</a>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="governance-tab" data-bs-toggle="tab" data-bs-target="#governance" type="button" role="tab" aria-controls="governance" aria-selected="false">Governance</button>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#governance" role="tab">Governance</a>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="infrastructure-tab" data-bs-toggle="tab" data-bs-target="#infrastructure" type="button" role="tab" aria-controls="infrastructure" aria-selected="false">Infrastructure</button>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#infrastructure" role="tab">Infrastructure</a>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="digital-tab" data-bs-toggle="tab" data-bs-target="#digital" type="button" role="tab" aria-controls="digital" aria-selected="false">Digital & SEO</button>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#digital" role="tab">Digital & SEO</a>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#settings" role="tab">Settings</a>
                             </li>
                         </ul>
+                    </div>
 
-                        <div class="tab-content" id="departmentTabContent">
-                            
+                    <div class="card-body">
+                        <div class="tab-content text-muted p-2">
                             <!-- 1. Core Info -->
-                            <div class="tab-pane fade show active" id="core" role="tabpanel" aria-labelledby="core-tab">
+                            <div class="tab-pane active" id="core" role="tabpanel">
                                 <div class="row g-3">
                                     @if(isset($selectedOrganisation) && isset($selectedCampus))
                                         <div class="col-12">
-                                            <div class="alert alert-soft-primary border-primary d-flex align-items-center" role="alert">
+                                            <div class="alert alert-soft-primary border-primary d-flex align-items-center"
+                                                role="alert">
                                                 <i class="fas fa-university me-2 fs-4"></i>
                                                 <div>
-                                                    Creating Department under: <strong>{{ $selectedOrganisation->name }}</strong> - <strong>{{ $selectedCampus->campus_name }}</strong>
+                                                    Creating Department under: <strong>{{ $selectedOrganisation->name }}</strong>
+                                                    - <strong>{{ $selectedCampus->campus_name }}</strong>
                                                 </div>
                                             </div>
                                             <input type="hidden" name="organisation_id" value="{{ $selectedOrganisation->id }}">
@@ -74,7 +164,8 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Campus <span class="text-danger">*</span></label>
-                                            <select name="campus_id" id="campus_id" class="form-select" required {{ old('organisation_id') ? '' : 'disabled' }}>
+                                            <select name="campus_id" id="campus_id" class="form-select" required
+                                                {{ old('organisation_id') ? '' : 'disabled' }}>
                                                 <option value="">Select Campus</option>
                                                 @if(isset($campuses) && !isset($selectedCampus))
                                                     @foreach($campuses as $campus)
@@ -84,10 +175,12 @@
                                             </select>
                                         </div>
                                     @endif
-                                    
+
                                     <div class="col-md-6">
                                         <label class="form-label">Department Name <span class="text-danger">*</span></label>
-                                        <input type="text" name="department_name" class="form-control" value="{{ old('department_name') }}" required placeholder="e.g. Department of Physics">
+                                        <input type="text" name="department_name" class="form-control"
+                                            value="{{ old('department_name') }}" required
+                                            placeholder="e.g. Department of Physics">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Department Code</label>
@@ -311,7 +404,7 @@
                                     <div class="col-md-3">
                                         <label class="form-label">Status</label>
                                         <select name="status" class="form-select">
-                                            <option value="Active" {{ old('status') == 'Active' ? 'selected' : '' }}>Active</option>
+                                            <option value="Active" {{ old('status', 'Active') == 'Active' ? 'selected' : '' }}>Active</option>
                                             <option value="Inactive" {{ old('status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                                             <option value="Archived" {{ old('status') == 'Archived' ? 'selected' : '' }}>Archived</option>
                                         </select>
@@ -333,50 +426,210 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div> <!-- End Tab Content -->
 
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">Create Department</button>
+                        <!-- Footer Navigation -->
+                        <div class="step-footer d-flex align-items-center">
+                            <button type="button" class="btn btn-primary" id="prevBtn"
+                                onclick="nextPrev(-1)">Previous</button>
+                            <div class="ms-auto d-flex align-items-center">
+                                <span id="save-message" class="text-muted small me-3" style="opacity: 0;">Saving...</span>
+                                <button type="button" class="btn btn-primary" id="nextBtn" onclick="nextPrev(1)">Next
+                                    Step</button>
+                                <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">Finish &
+                                    Save</button>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-</div>
 
 @push('js')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        @if(!isset($selectedOrganisation))
-            const orgSelect = document.getElementById('organisation_id');
-            const campusSelect = document.getElementById('campus_id');
-            
-            if (orgSelect && campusSelect) {
-                orgSelect.addEventListener('change', function () {
-                    const orgId = this.value;
-                    campusSelect.innerHTML = '<option value="">Select Campus</option>';
-                    
-                    if (orgId) {
-                        campusSelect.disabled = false;
-                        fetch(`/admin/organisations/${orgId}/campuses-json`)
-                            .then(response => response.json())
-                            .then(data => {
-                                data.forEach(campus => {
-                                    const option = document.createElement('option');
-                                    option.value = campus.id;
-                                    option.textContent = campus.campus_name;
-                                    campusSelect.appendChild(option);
-                                });
-                            })
-                            .catch(error => console.error('Error fetching campuses:', error));
-                    } else {
-                        campusSelect.disabled = true;
+    <script>
+        $(document).ready(function () {
+            // organisation context handled elsewhere or usually pre-filled
+            @if(!isset($selectedOrganisation))
+            $('#organisation_id').on('change', function () {
+                const orgId = $(this).val();
+                $('#campus_id').html('<option value="">Select Campus</option>').prop('disabled', true);
+                if (orgId) {
+                    $('#campus_id').prop('disabled', false);
+                    $.get(`/admin/organisations/${orgId}/campuses-json`, function (data) {
+                        data.forEach(campus => {
+                            $('#campus_id').append(`<option value="${campus.id}">${campus.campus_name}</option>`);
+                        });
+                    });
+                }
+            });
+            @endif
+
+            // STEP FORM & AUTO SAVE LOGIC
+            let currentTab = 0;
+            const tabs = $('#departmentTabs .nav-link');
+            let departmentId = null;
+            let isSaving = false;
+
+            // Allow direct tab clicking
+            tabs.each(function (index) {
+                $(this).on('click', function (e) {
+                    e.preventDefault();
+                    if (index > currentTab && !validateCurrentStep()) {
+                        return false;
+                    }
+                    saveStepData();
+                    currentTab = index;
+                    showTab(currentTab);
+                });
+            });
+
+            window.nextPrev = function (n) {
+                if (n == 1 && !validateCurrentStep()) return false;
+                saveStepData();
+                currentTab = currentTab + n;
+                showTab(currentTab);
+            }
+
+            function showTab(n) {
+                const bootstrapTab = new bootstrap.Tab(tabs[n]);
+                bootstrapTab.show();
+
+                $('#prevBtn').css('display', n == 0 ? 'none' : 'inline');
+                if (n == (tabs.length - 1)) {
+                    $('#nextBtn').css('display', 'none');
+                    $('#submitBtn').css('display', 'inline');
+                } else {
+                    $('#nextBtn').css('display', 'inline').text('Next Step');
+                    $('#submitBtn').css('display', 'none');
+                }
+            }
+
+            function validateCurrentStep() {
+                const currentTabId = $(tabs[currentTab]).attr('href');
+                let valid = true;
+                $(currentTabId + ' [required]').each(function () {
+                    if (!this.checkValidity()) {
+                        this.reportValidity();
+                        valid = false;
+                        return false;
                     }
                 });
+                return valid;
             }
-        @endif
-    });
-</script>
+
+            function saveStepData() {
+                if (isSaving) return;
+                const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
+
+                if (!departmentId && currentTabId === 'core') {
+                    // Create Draft
+                    const formData = {
+                        organisation_id: $('[name="organisation_id"]').val(),
+                        campus_id: $('[name="campus_id"]').val(),
+                        department_name: $('input[name="department_name"]').val(),
+                        department_type: $('select[name="department_type"]').val(),
+                        _token: '{{ csrf_token() }}'
+                    };
+
+                    if (!formData.department_name || !formData.organisation_id || !formData.campus_id) return;
+
+                    isSaving = true;
+                    showAutoSaveStatus('saving');
+                    $.ajax({
+                        url: '{{ route("admin.departments.store-draft") }}',
+                        method: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            departmentId = response.department_id;
+                            $(tabs[currentTab]).addClass('completed');
+                            showAutoSaveStatus('saved');
+
+                            // Transform form to UPDATE mode
+                            const updateUrl = `/admin/departments/${departmentId}`;
+                            $('#department-form').attr('action', updateUrl);
+                            if ($('#department-form input[name="_method"]').length === 0) {
+                                $('#department-form').append('<input type="hidden" name="_method" value="PUT">');
+                            }
+                        },
+                        complete: function () {
+                            isSaving = false;
+                        }
+                    });
+                } else if (departmentId) {
+                    // Bulk save current tab
+                    const formData = {};
+                    const fieldsInStep = getFieldsInStep(currentTabId);
+
+                    fieldsInStep.forEach(fieldName => {
+                        formData[fieldName] = getInputValue(fieldName);
+                    });
+
+                    isSaving = true;
+                    showAutoSaveStatus('saving');
+                    $.ajax({
+                        url: `/admin/departments/${departmentId}/autosave-tab`,
+                        method: 'POST',
+                        data: {
+                            ...formData,
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function () {
+                            showAutoSaveStatus('saved');
+                            $(tabs[currentTab]).addClass('completed');
+                        },
+                        complete: function () {
+                            isSaving = false;
+                        }
+                    });
+                }
+            }
+
+            function getFieldsInStep(stepId) {
+                const fields = [];
+                $(`#${stepId} [name]`).each(function () {
+                    const name = $(this).attr('name').split('[')[0]; // Get base name
+                    if (!fields.includes(name)) fields.push(name);
+                });
+                return fields;
+            }
+
+            function getInputValue(fieldName) {
+                const inputs = $(`[name^="${fieldName}"]`);
+                if (inputs.length > 1 || (inputs.length === 1 && inputs.attr('name').includes('[]'))) {
+                    // Array or multi-select
+                    const values = [];
+                    inputs.each(function () {
+                        if ($(this).is(':checkbox')) {
+                            if ($(this).is(':checked')) values.push($(this).val());
+                        } else if ($(this).val()) {
+                            values.push($(this).val());
+                        }
+                    });
+                    return values;
+                }
+
+                const el = $(`[name="${fieldName}"]`);
+                if (el.is(':checkbox')) {
+                    return el.is(':checked') ? 1 : 0;
+                }
+                return el.val();
+            }
+
+            function showAutoSaveStatus(status) {
+                const msgEl = $('#save-message');
+                const statusIcon = $('#autosave-status i');
+                if (status === 'saving') {
+                    msgEl.css('opacity', 1).text('Saving...');
+                    statusIcon.removeClass('fa-check-circle text-success').addClass('fa-spinner fa-spin');
+                } else {
+                    msgEl.text('Saved').animate({ opacity: 0 }, 2000);
+                    statusIcon.removeClass('fa-spinner fa-spin').addClass('fa-check-circle text-success');
+                }
+            }
+
+            showTab(0);
+        });
+    </script>
 @endpush
 @endsection

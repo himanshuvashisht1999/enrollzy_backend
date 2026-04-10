@@ -200,7 +200,14 @@ class DepartmentController extends Controller
             $request->merge([$field => $request->has($field) ? 1 : 0]);
         }
 
-        $department->update($request->all());
+        $data = $request->all();
+
+        // Handle slug: if empty, let model handle it (or use existing one)
+        if (array_key_exists('slug', $data) && empty($data['slug'])) {
+            unset($data['slug']);
+        }
+
+        $department->update($data);
 
         return redirect()->route('admin.departments.index', [
             'organisation_id' => $department->organisation_id,
@@ -218,5 +225,92 @@ class DepartmentController extends Controller
             'organisation_id' => $orgId,
             'campus_id' => $campusId
         ])->with('success', 'Department deleted successfully.');
+    }
+
+    public function storeDraft(Request $request)
+    {
+        $request->validate([
+            'organisation_id' => 'required',
+            'campus_id' => 'required',
+            'department_name' => 'required',
+        ]);
+
+        $data = $request->only(['organisation_id', 'campus_id', 'department_name', 'department_type', 'slug']);
+        $data['status'] = $data['status'] ?? 'Active'; // Default to Active
+
+        // Handle slug: if empty, let model auto-generate
+        if (array_key_exists('slug', $data) && empty($data['slug'])) {
+            unset($data['slug']);
+        }
+
+        $department = Department::create($data);
+
+        return response()->json([
+            'success' => true,
+            'department_id' => $department->id,
+            'message' => 'Draft created successfully'
+        ]);
+    }
+
+    public function autosaveTab(Request $request, Department $department)
+    {
+        $data = $request->all();
+
+        // Handle slug: if empty, don't update it to avoid null constraint violation
+        if (array_key_exists('slug', $data) && empty($data['slug'])) {
+            unset($data['slug']);
+        }
+
+        // Handle boolean/switch fields
+        $booleanFields = [
+            'is_interdisciplinary',
+            'curriculum_design_responsibility',
+            'exam_setting_responsibility',
+            'research_programs_managed',
+            'phd_supervision_available',
+            'industry_collaboration_supported',
+            'specialized_labs_available',
+            'department_library_section'
+        ];
+
+        foreach ($booleanFields as $field) {
+            if ($request->has($field)) {
+                $data[$field] = $request->input($field) ? 1 : 0;
+            }
+        }
+
+        // Handle numeric/integer fields to ensure they don't break if empty
+        $nonNullableNumerics = [
+            'faculty_count',
+            'research_publications_count',
+            'funded_projects_count',
+            'patents_filed_count',
+            'industry_projects_count',
+            'department_labs_count',
+            'research_centers_under_department',
+            'classrooms_count'
+        ];
+
+        foreach ($nonNullableNumerics as $field) {
+            if ($request->has($field)) {
+                $data[$field] = $request->input($field) ?: 0;
+            }
+        }
+
+        $nullableNumerics = [
+            'established_year',
+            'confidence_score'
+        ];
+
+        foreach ($nullableNumerics as $field) {
+            if ($request->has($field)) {
+                $data[$field] = $request->input($field) ?: null;
+            }
+        }
+
+        \Log::info("Autosave Data: ", $data);
+        $department->update($data);
+
+        return response()->json(['success' => true]);
     }
 }

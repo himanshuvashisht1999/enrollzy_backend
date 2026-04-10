@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CampusController extends Controller
@@ -40,43 +41,8 @@ class CampusController extends Controller
      */
     public function store(Request $request, Organisation $organisation)
     {
-        $validated = $request->validate([
-            'campus_name' => 'required|string|max:255',
-            // 'campus_type' => 'required|in:Main,Regional,Satellite',
-            'established_year' => 'nullable|integer|between:1900,2100',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string',
-            'country' => 'nullable|string',
-            'brand_type' => 'nullable|string',
-            'franchise_partner_name' => 'nullable|string',
-            'franchise_start_year' => 'nullable|integer|between:1900,2100',
-            'brand_compliance_verified' => 'nullable|boolean',
-            'exams_prepared_for' => 'nullable|array',
-            'target_classes' => 'nullable|array',
-            'about_institute' => 'nullable|string',
-            // Add other validations as needed, most are nullable
-        ]);
-
         $campus = new Campus($request->all());
         $campus->organisation_id = $organisation->id;
-
-        // Handle Booleans
-        $campus->brand_compliance_verified = $request->has('brand_compliance_verified');
-
-        if ($request->campus_contact_numbers) {
-            $campus->campus_contact_numbers = array_map(
-                'trim',
-                explode(',', $request->campus_contact_numbers[0] ?? '')
-            );
-        }
-
-        if ($request->has('bus_routes')) {
-            $campus->bus_routes = array_filter($request->bus_routes);
-        }
-
-        // Handle JSON fields if not auto-cast by Eloquent (Eloquent casts handle arrays usually, but good to ensure)
-        // Since we cast them in model, passing array is fine.
-
         $campus->save();
 
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
@@ -104,49 +70,23 @@ class CampusController extends Controller
      */
     public function update(Request $request, Organisation $organisation, Campus $campus)
     {
-        $validated = $request->validate([
-            'campus_name' => 'required|string|max:255',
-            'campus_type' => 'required',
-            'brand_type' => 'nullable|string',
-            'established_year' => 'nullable|integer|between:1900,2100',
-            'franchise_start_year' => 'nullable|integer|between:1900,2100',
-            'exams_prepared_for' => 'nullable|array',
-            'target_classes' => 'nullable|array',
-            'about_institute' => 'nullable|string',
-        ]);
-
         $input = $request->all();
 
-        // Handle Checkboxes that might not be sent if unchecked
-        // The model casts boolean, but if input is missing, update() might ignore it depending on how it's called.
-        // Explicitly setting booleans for unchecked fields is safer.
         $booleans = [
-            'smart_classrooms',
-            'library_available',
-            'digital_library_access',
-            'hostel_available',
-            'medical_facility_available',
-            'transport_available',
-            'parking_available',
-            'cctv_coverage',
-            'fire_safety_certified',
-            'disaster_management_plan',
-            'verification_status',
-            'status',
-            'brand_compliance_verified',
-            'science_labs_available',
-            'computer_labs_available',
-            'playground_available',
-            'gps_enabled_buses',
-            'visitor_management_system'
+            'smart_classrooms', 'library_available', 'digital_library_access', 'hostel_available',
+            'medical_facility_available', 'transport_available', 'parking_available', 'cctv_coverage',
+            'fire_safety_certified', 'disaster_management_plan', 'verification_status', 'status',
+            'brand_compliance_verified', 'science_labs_available', 'computer_labs_available',
+            'playground_available', 'gps_enabled_buses', 'visitor_management_system'
         ];
 
         foreach ($booleans as $field) {
             $input[$field] = $request->has($field) ? 1 : 0;
         }
 
-        if ($request->has('bus_routes')) {
-            $input['bus_routes'] = array_filter($request->bus_routes);
+        // Handle slug: if empty, let model handle it
+        if (array_key_exists('slug', $input) && empty($input['slug'])) {
+            unset($input['slug']);
         }
 
         $campus->update($input);
@@ -163,5 +103,70 @@ class CampusController extends Controller
         $campus->delete();
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
             ->with('success', 'Campus deleted successfully');
+    }
+
+    /**
+     * Store initial draft for multi-step form
+     */
+    public function storeDraft(Request $request, Organisation $organisation)
+    {
+        $request->validate([
+            'campus_name' => 'required|string|max:255',
+            'campus_type' => 'required',
+        ]);
+
+        $input = $request->all();
+        $input['organisation_id'] = $organisation->id;
+
+        // Handle slug: if empty, let model handle it
+        if (array_key_exists('slug', $input) && empty($input['slug'])) {
+            unset($input['slug']);
+        }
+
+        $campus = Campus::create($input);
+
+        return response()->json([
+            'status' => 'success',
+            'campus_id' => $campus->id,
+            'message' => 'Draft created successfully'
+        ]);
+    }
+
+    /**
+     * Batch save multiple fields for a tab
+     */
+    public function autosaveTab(Request $request, $orgId, $id)
+    {
+        $campus = Campus::findOrFail($id);
+        $data = $request->all();
+        
+        // Handle slug: if empty, don't update it to avoid null constraint violation
+        if (array_key_exists('slug', $data) && empty($data['slug'])) {
+            unset($data['slug']);
+        }
+
+        unset($data['_token']);
+        
+        $booleans = [
+            'smart_classrooms', 'library_available', 'digital_library_access', 'hostel_available',
+            'medical_facility_available', 'transport_available', 'parking_available', 'cctv_coverage',
+            'fire_safety_certified', 'disaster_management_plan', 'verification_status', 'status',
+            'brand_compliance_verified', 'science_labs_available', 'computer_labs_available',
+            'playground_available', 'gps_enabled_buses', 'visitor_management_system'
+        ];
+
+        $updateData = [];
+        foreach ($data as $key => $value) {
+            if (Schema::hasColumn('campuses', $key)) {
+                if (in_array($key, $booleans)) {
+                    $updateData[$key] = ($value === 'true' || $value === 1 || $value === '1' || $value === true) ? 1 : 0;
+                } else {
+                    $updateData[$key] = $value;
+                }
+            }
+        }
+        
+        $campus->update($updateData);
+        return response()->json(['status' => 'success', 'message' => 'Tab saved']);
     }
 }
