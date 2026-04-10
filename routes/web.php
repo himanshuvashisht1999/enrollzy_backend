@@ -221,7 +221,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     ]);
     Route::get('admin/courses/{course}/duplicate', [CourseController::class, 'duplicate'])
         ->name('admin.courses.duplicate');
-        
+
     // Community Management
     Route::resource('/admin/community-categories', CommunityCategoryController::class)->names('admin.community-categories');
     Route::resource('/admin/community-questions', CommunityQuestionController::class)->names('admin.community-questions');

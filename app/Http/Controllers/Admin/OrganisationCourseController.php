@@ -233,6 +233,14 @@ class OrganisationCourseController extends Controller
 
         $data = $request->all();
 
+        // Multi-select fields: when user removes ALL selections, browser sends nothing.
+        // Explicitly set to null so the DB value is cleared.
+        foreach (['specialization_ids', 'entrance_exam_ids', 'course_languages', 'streams_offered'] as $field) {
+            if (!$request->has($field)) {
+                $data[$field] = null;
+            }
+        }
+
         // Boolean handling
         $booleans = [
             'status',
