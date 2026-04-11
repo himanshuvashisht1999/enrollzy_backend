@@ -145,10 +145,12 @@
                     <div class="col-md-6">
                         <label class="form-label">Exam Logo</label>
                         <input type="file" name="logo" class="form-control" accept="image/*">
+                        <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Cover Image</label>
                         <input type="file" name="cover_image" class="form-control" accept="image/*">
+                        <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                     </div>
 
                     <div class="col-md-12">
@@ -254,11 +256,15 @@
                     </li>
                     <li class="nav-item">
                         <button class="nav-link" id="result-tab" data-bs-toggle="tab" data-bs-target="#result"
-                            type="button">Result, SEO & Cutoffs</button>
+                            type="button">Admit Card & Result</button>
                     </li>
                     <li class="nav-item">
                         <button class="nav-link" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees"
                             type="button">Application & Fees</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="cutoff-tab" data-bs-toggle="tab" data-bs-target="#cutoff"
+                            type="button">Cutoffs</button>
                     </li>
                 </ul>
             </div>
@@ -296,7 +302,7 @@
                             </div> --}}
                             <div class="col-md-3">
                                 <label class="form-label">Attempt Limit</label>
-                                <input type="number" name="attempt_limit" class="form-control"
+                                <input type="text" name="attempt_limit" class="form-control"
                                     value="{{ old('attempt_limit') }}">
                             </div>
                             <div class="col-md-3 pt-4">
@@ -367,10 +373,15 @@
                         <h5 class="fw-bold mb-3 text-primary">Syllabus</h5>
                         <div class="row g-3">
 
-                            <div class="col-md-6">
+                            {{-- <div class="col-md-6">
                                 <label class="form-label">Syllabus URL</label>
                                 <input type="url" name="syllabus_url" class="form-control"
                                     value="{{ old('syllabus_url') }}">
+                            </div> --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Upload Syllabus (PDF Only)</label>
+                                <input type="file" name="syllabus_pdf" class="form-control" accept=".pdf">
+                                <div class="form-text text-muted">File size should not exceed 10MB.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Difficulty Level</label>
@@ -412,20 +423,6 @@
                             <i class="fas fa-plus me-1"></i> Add Exam Session
                         </button>
 
-                        <hr>
-                        <h5 class="fw-bold mb-3 text-primary">Important Procedures</h5>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label">How to Download Admit Card</label>
-                                <textarea name="admit_card_download_procedure" class="form-control editor"
-                                    rows="3">{{ old('admit_card_download_procedure') }}</textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">How to Check Result</label>
-                                <textarea name="result_check_procedure" class="form-control editor"
-                                    rows="3">{{ old('result_check_procedure') }}</textarea>
-                            </div>
-                        </div>
 
                         <!-- Hidden Template -->
                         <template id="session-template">
@@ -540,6 +537,25 @@
                             </div>
                         </div>
 
+                        <hr>
+                        <h5 class="fw-bold mb-3 text-primary">Important Procedures</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">How to Download Admit Card</label>
+                                <textarea name="admit_card_download_procedure" class="form-control editor"
+                                    rows="3">{{ old('admit_card_download_procedure') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">How to Check Result</label>
+                                <textarea name="result_check_procedure" class="form-control editor"
+                                    rows="3">{{ old('result_check_procedure') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: Cutoff -->
+                    <div class="tab-pane fade" id="cutoff" role="tabpanel">
+                        <!-- <h5 class="fw-bold mb-3 text-primary">Cutoff</h5>
                         <hr class="my-4">
                         <h5 class="fw-bold mb-3 text-primary">SEO & Meta</h5>
                         <div class="row g-3">
@@ -562,7 +578,7 @@
                                 <input type="text" name="schema_type" class="form-control"
                                     value="{{ old('schema_type', 'EducationalAssessment') }}">
                             </div>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- TAB 5: APPLICATION & FEES -->
@@ -1131,13 +1147,53 @@
 
             function toggleExamTabs() {
                 const isChecked = hasStagesCheckbox.checked;
-                if (examTabsHeader) examTabsHeader.style.display = isChecked ? 'none' : 'block';
-                if (examTabsContent) {
-                    examTabsContent.style.display = isChecked ? 'none' : 'block';
-                    // Disable/Enable all inputs in hidden tabs to avoid browser validation errors on hidden fields
-                    const inputs = examTabsContent.querySelectorAll('input, select, textarea');
-                    inputs.forEach(input => {
-                        input.disabled = isChecked;
+                // Tabs to toggle
+                const standardTabs = ['eligibility-tab', 'sessions-tab', 'result-tab', 'fees-tab', 'cutoff-tab'];
+                const stagesTab = document.getElementById('stages-tab');
+
+                standardTabs.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.parentElement.style.display = isChecked ? 'none' : 'block';
+                        const pane = document.querySelector(btn.dataset.bsTarget);
+                        if (pane) {
+                            // If hiding standard tabs, make sure we aren't on one
+                            if (isChecked && btn.classList.contains('active')) {
+                                btn.classList.remove('active');
+                                pane.classList.remove('show', 'active');
+                            }
+
+                            // Disable inputs in hidden tabs to avoid validation issues
+                            const inputs = pane.querySelectorAll('input, select, textarea');
+                            inputs.forEach(input => {
+                                input.disabled = isChecked;
+                            });
+                        }
+                    }
+                });
+
+                if (stagesTab) {
+                    stagesTab.parentElement.style.display = isChecked ? 'block' : 'none';
+                    const stagesPane = document.getElementById('stages');
+                    if (!isChecked && stagesTab.classList.contains('active')) {
+                        stagesTab.classList.remove('active');
+                        stagesPane.classList.remove('show', 'active');
+
+                        // Default back to eligibility if nothing active
+                        const eligibilityTab = document.getElementById('eligibility-tab');
+                        if (eligibilityTab) {
+                            eligibilityTab.classList.add('active');
+                            document.getElementById('eligibility').classList.add('show', 'active');
+                        }
+                    } else if (isChecked && !document.querySelector('#examTabs .nav-link.active')) {
+                        stagesTab.classList.add('active');
+                        stagesPane.classList.add('show', 'active');
+                    }
+
+                    // Enable/Disable inputs in stages pane
+                    const stagesInputs = stagesPane.querySelectorAll('input, select, textarea:not(.editor)');
+                    stagesInputs.forEach(input => {
+                        input.disabled = !isChecked;
                     });
                 }
             }

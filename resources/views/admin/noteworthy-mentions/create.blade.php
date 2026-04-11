@@ -43,6 +43,7 @@
             <div class="mb-3">
                 <label for="image" class="form-label">Image <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image" required accept="image/*">
+                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                 @error('image')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

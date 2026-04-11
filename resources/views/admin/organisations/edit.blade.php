@@ -176,6 +176,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="logo_url">
                                                     @if($organisation->logo_url)
                                                         <img src="{{ asset($organisation->logo_url) }}" class="img-thumbnail" style="height: 100px;">
@@ -185,6 +186,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Cover Image</label>
                                                 <input type="file" name="cover_image_url" class="form-control file-preview-input" accept="image/*">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="cover_image_url">
                                                     @if($organisation->cover_image_url)
                                                         <img src="{{ asset($organisation->cover_image_url) }}" class="img-thumbnail" style="height: 100px;">
@@ -255,8 +257,10 @@
                                                     <div class="file-repeater-item mb-2">
                                                         <div class="input-group">
                                                             <input type="file" name="recognition_documents[]" class="form-control file-preview-input">
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <button type="button" class="btn btn-outline-danger remove-file-item" style="display:none;">x</button>
                                                         </div>
+                                                        <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                         <div class="file-preview mt-2"></div>
                                                     </div>
                                                     <button type="button" class="btn btn-sm btn-outline-primary add-file-item">+ Add More Document</button>
@@ -402,6 +406,8 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*" id="inst_logo_url">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
+                                                 <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="logo_url">
                                                     @if($organisation->logo_url)
                                                         <img src="{{ asset($organisation->logo_url) }}" class="img-thumbnail" style="height: 100px;">
@@ -411,6 +417,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Cover Image</label>
                                                 <input type="file" name="cover_image_url" class="form-control file-preview-input" accept="image/*" id="inst_cover_image_url">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="cover_image_url">
                                                     @if($organisation->cover_image_url)
                                                         <img src="{{ asset($organisation->cover_image_url) }}" class="img-thumbnail" style="height: 100px;">
@@ -472,6 +479,7 @@
                                                     <div class="file-repeater-item mb-2">
                                                         <div class="input-group">
                                                             <input type="file" name="legal_documents_urls[]" class="form-control file-preview-input">
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <button type="button" class="btn btn-outline-danger remove-file-item" style="display:none;">x</button>
                                                         </div>
                                                         <div class="file-preview mt-2"></div>
@@ -510,11 +518,13 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control" accept="image/*" id="sch_logo">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 @if($organisation->logo_url) <div class="mt-2"><img src="{{ asset($organisation->logo_url) }}" height="50"></div> @endif
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Cover Image</label>
                                                 <input type="file" name="cover_image_url" class="form-control" accept="image/*" id="sch_cover">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 @if($organisation->cover_image_url) <div class="mt-2"><img src="{{ asset($organisation->cover_image_url) }}" height="50"></div> @endif
                                             </div>
                                         </div>
@@ -564,6 +574,7 @@
                                                     <div class="file-repeater-item mb-2">
                                                         <div class="input-group">
                                                             <input type="file" name="legal_documents_urls[]" class="form-control file-preview-input" id="sch_legal_docs">
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <button type="button" class="btn btn-outline-danger remove-file-item" style="display:none;">x</button>
                                                         </div>
                                                         <div class="file-preview mt-2"></div>
@@ -785,6 +796,7 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6"><label class="form-label">Abbreviation</label><input type="text" name="abbreviation" class="form-control" value="{{ old('abbreviation', $organisation->abbreviation) }}"></div>
                                                 <div class="col-md-6"><label class="form-label">Logo</label><input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*" id="ecb_logo">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="logo_url">
                                                         @if($organisation->logo_url) <img src="{{ asset($organisation->logo_url) }}" class="img-thumbnail" style="height: 100px;"> @endif
                                                     </div>
@@ -1026,6 +1038,7 @@
                                             <div class="col-md-6"><label class="form-label">Short Name</label><input type="text" name="short_name" class="form-control" value="{{ old('short_name', $organisation->short_name) }}" id="cb_short_sync"></div>
                                             <div class="col-md-6"><label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*" id="cb_logo">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="logo_url">
                                                     @if($organisation->logo_url) <img src="{{ asset($organisation->logo_url) }}" class="img-thumbnail" style="height: 100px;"> @endif
                                                 </div>
@@ -1308,6 +1321,7 @@
                                             <div class="col-md-6"><label class="form-label">Short Name</label><input type="text" name="short_name" class="form-control" value="{{ old('short_name', $organisation->short_name) }}" id="rb_short_sync"></div>
                                             <div class="col-md-6"><label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*">
+                                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                 <div class="file-preview mt-2" data-preview="logo_url">
                                                     @if($organisation->logo_url) <img src="{{ asset($organisation->logo_url) }}" class="img-thumbnail" style="height: 100px;"> @endif
                                                 </div>
@@ -1753,6 +1767,7 @@
                     newItem.innerHTML = `
                         <div class="input-group">
                             <input type="file" name="${name}" class="form-control file-preview-input">
+                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                             <button type="button" class="btn btn-outline-danger remove-file-item">x</button>
                         </div>
                         <div class="file-preview mt-2"></div>

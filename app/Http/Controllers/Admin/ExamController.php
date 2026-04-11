@@ -145,6 +145,13 @@ class ExamController extends Controller
             $data['cover_image'] = 'media/exams/covers/' . $name;
         }
 
+        if ($request->hasFile('syllabus_pdf')) {
+            $file = $request->file('syllabus_pdf');
+            $name = time() . '_syllabus_' . $file->getClientOriginalName();
+            $file->move(public_path('media/exams/syllabuses'), $name);
+            $data['syllabus_url'] = 'media/exams/syllabuses/' . $name;
+        }
+
         // -----------------------------
         // Array Handling
         // -----------------------------
@@ -245,7 +252,7 @@ class ExamController extends Controller
             'sessions.*.exam_end_date' => 'nullable|date|after_or_equal:sessions.*.exam_start_date',
         ]);
 
-        $data = $request->except('_token', '_method', 'sessions', 'logo', 'cover_image');
+        $data = $request->except('_token', '_method', 'sessions', 'logo', 'cover_image', 'syllabus_pdf');
 
         // Handle boolean fields
         $booleans = [
@@ -282,6 +289,13 @@ class ExamController extends Controller
             $name = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('media/exams/covers'), $name);
             $data['cover_image'] = 'media/exams/covers/' . $name;
+        }
+
+        if ($request->hasFile('syllabus_pdf')) {
+            $file = $request->file('syllabus_pdf');
+            $name = time() . '_syllabus_' . $file->getClientOriginalName();
+            $file->move(public_path('media/exams/syllabuses'), $name);
+            $data['syllabus_url'] = 'media/exams/syllabuses/' . $name;
         }
 
         // Handle subjects covered

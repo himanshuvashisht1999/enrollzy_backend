@@ -46,7 +46,8 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Exam Category</label>
-                                <select name="exam_category[]" class="form-select select2" multiple data-placeholder="Select Category">
+                                <select name="exam_category[]" class="form-select select2" multiple
+                                    data-placeholder="Select Category">
                                     @php $selectedCategories = old('exam_category', $exam->exam_category ?? []); @endphp
                                     @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission'] as $opt)
                                         <option value="{{ $opt }}" {{ in_array($opt, is_array($selectedCategories) ? $selectedCategories : []) ? 'selected' : '' }}>{{ $opt }}</option>
@@ -83,6 +84,7 @@
                                     <div class="mb-1"><img src="{{ asset($exam->logo) }}" height="40"></div>
                                 @endif
                                 <input type="file" name="logo" class="form-control" accept="image/*">
+                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Cover Image</label>
@@ -90,6 +92,7 @@
                                     <div class="mb-1"><img src="{{ asset($exam->cover_image) }}" height="40"></div>
                                 @endif
                                 <input type="file" name="cover_image" class="form-control" accept="image/*">
+                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                             </div>
 
                             <div class="col-md-12">
@@ -193,11 +196,15 @@
                             </li>
                             <li class="nav-item">
                                 <button class="nav-link" id="result-tab" data-bs-toggle="tab" data-bs-target="#result"
-                                    type="button">Result, SEO & Cutoffs</button>
+                                    type="button">Admit Card & Result</button>
                             </li>
                             <li class="nav-item">
                                 <button class="nav-link" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees"
                                     type="button">Application & Fees</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" id="cutoff-tab" data-bs-toggle="tab" data-bs-target="#cutoff"
+                                    type="button">Cutoffs</button>
                             </li>
                         </ul>
                     </div>
@@ -235,7 +242,7 @@
                                     </div> --}}
                                     <div class="col-md-3">
                                         <label class="form-label">Attempt Limit</label>
-                                        <input type="number" name="attempt_limit" class="form-control"
+                                        <input type="text" name="attempt_limit" class="form-control"
                                             value="{{ old('attempt_limit', $exam->attempt_limit) }}">
                                     </div>
                                     <div class="col-md-3 pt-4">
@@ -304,10 +311,20 @@
                                 <h5 class="fw-bold mb-3 text-primary">Syllabus</h5>
                                 <div class="row g-3">
 
-                                    <div class="col-md-6">
-                                        <label class="form-label">Syllabus URL</label>
+                                    {{-- <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Syllabus URL</label>
                                         <input type="url" name="syllabus_url" class="form-control"
                                             value="{{ old('syllabus_url', $exam->syllabus_url) }}">
+                                    </div> --}}
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Upload Syllabus (PDF Only)</label>
+                                        <input type="file" name="syllabus_pdf" class="form-control" accept=".pdf">
+                                        <div class="form-text text-muted">File size should not exceed 2MB.</div>
+                                        @if($exam->syllabus_url)
+                                            <div class="mt-2">
+                                                <a href="{{ asset($exam->syllabus_url) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-file-pdf"></i> View Current Syllabus</a>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Difficulty Level</label>
@@ -434,20 +451,7 @@
                                 <button type="button" class="btn btn-outline-primary mt-2" id="add-session-btn">
                                     <i class="fas fa-plus me-1"></i> Add Exam Session
                                 </button>
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-primary">Important Procedures</h5>
-                                <div class="row g-3 mb-4">
-                                    <div class="col-md-6">
-                                        <label class="form-label">How to Download Admit Card</label>
-                                        <textarea name="admit_card_download_procedure" class="form-control editor"
-                                            rows="3">{{ old('admit_card_download_procedure', $exam->admit_card_download_procedure) }}</textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">How to Check Result</label>
-                                        <textarea name="result_check_procedure" class="form-control editor"
-                                            rows="3">{{ old('result_check_procedure', $exam->result_check_procedure) }}</textarea>
-                                    </div>
-                                </div>
+
 
                                 <!-- Hidden Template -->
                                 <template id="session-template">
@@ -535,7 +539,50 @@
                             <!-- TAB 5: RESULT & SEO -->
                             <div class="tab-pane fade" id="result" role="tabpanel">
                                 <h5 class="fw-bold mb-3 text-primary">Result & Scoring</h5>
-                                <!-- Result Scoring content -->
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Score Type</label>
+                                        <select name="score_type" class="form-select">
+                                            <option value="Marks" {{ old('score_type', $exam->score_type) == 'Marks' ? 'selected' : '' }}>Marks</option>
+                                            <option value="Percentile" {{ old('score_type', $exam->score_type) == 'Percentile' ? 'selected' : '' }}>
+                                                Percentile</option>
+                                            <option value="Rank" {{ old('score_type', $exam->score_type) == 'Rank' ? 'selected' : '' }}>Rank Only
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Rank Type</label>
+                                        <select name="rank_type" class="form-select">
+                                            <option value="AIR" {{ old('rank_type', $exam->rank_type) == 'AIR' ? 'selected' : '' }}>All India Rank (AIR)
+                                            </option>
+                                            <option value="State Rank" {{ old('rank_type', $exam->rank_type) == 'State Rank' ? 'selected' : '' }}>State
+                                                Rank</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 pt-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="normalization_applied"
+                                                value="1" {{ old('normalization_applied', $exam->normalization_applied) ? 'checked' : '' }}>
+                                            <label class="form-check-label">Normalization Applied</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h5 class="fw-bold mb-3 text-primary">Important Procedures</h5>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label">How to Download Admit Card</label>
+                                        <textarea name="admit_card_download_procedure" class="form-control editor"
+                                            rows="3">{{ old('admit_card_download_procedure', $exam->admit_card_download_procedure) }}</textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">How to Check Result</label>
+                                        <textarea name="result_check_procedure" class="form-control editor"
+                                            rows="3">{{ old('result_check_procedure', $exam->result_check_procedure) }}</textarea>
+                                    </div>
+                                </div>
+
                             </div>
 
                             <!-- TAB 5: APPLICATION & FEES -->
@@ -563,16 +610,16 @@
                                                 <div class="card-body p-3">
                                                     <div class="row g-2">
                                                         <div class="col-md-3">
-                                                             <label class="small">Categories</label>
-                                                             <select name="registration_fee_structure[{{$i}}][categories][]"
-                                                                 class="form-select form-select-sm select2-category" multiple
-                                                                 data-placeholder="Select Categories">
-                                                                  @foreach($casteCategories as $cat)
-                                                                     <option value="{{$cat->name}}" {{ (isset($fee['categories']) && in_array($cat->name, $fee['categories'])) ? 'selected' : '' }}>
-                                                                         {{$cat->name}}
-                                                                     </option>
-                                                                  @endforeach
-                                                             </select>
+                                                            <label class="small">Categories</label>
+                                                            <select name="registration_fee_structure[{{$i}}][categories][]"
+                                                                class="form-select form-select-sm select2-category" multiple
+                                                                data-placeholder="Select Categories">
+                                                                @foreach($casteCategories as $cat)
+                                                                    <option value="{{$cat->name}}" {{ (isset($fee['categories']) && in_array($cat->name, $fee['categories'])) ? 'selected' : '' }}>
+                                                                        {{$cat->name}}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                         <div class="col-md-3">
                                                             <label class="small">Amount</label>
@@ -705,17 +752,17 @@
                                                 <div class="card-body p-3">
                                                     <div class="row g-2">
                                                         <div class="col-md-2">
-                                                             <label class="small">Categories</label>
-                                                              <select
-                                                                 name="security_deposit_structure[{{$i}}][candidate_categories][]"
-                                                                 class="form-select form-select-sm select2-category" multiple
-                                                                 data-placeholder="Select Categories">
-                                                                  @foreach($casteCategories as $cat)
-                                                                     <option value="{{$cat->name}}" {{ (isset($rule['candidate_categories']) && in_array($cat->name, $rule['candidate_categories'])) ? 'selected' : '' }}>
-                                                                         {{$cat->name}}
-                                                                     </option>
-                                                                  @endforeach
-                                                             </select>
+                                                            <label class="small">Categories</label>
+                                                            <select
+                                                                name="security_deposit_structure[{{$i}}][candidate_categories][]"
+                                                                class="form-select form-select-sm select2-category" multiple
+                                                                data-placeholder="Select Categories">
+                                                                @foreach($casteCategories as $cat)
+                                                                    <option value="{{$cat->name}}" {{ (isset($rule['candidate_categories']) && in_array($cat->name, $rule['candidate_categories'])) ? 'selected' : '' }}>
+                                                                        {{$cat->name}}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                         <div class="col-md-2">
                                                             <label class="small">College Type</label>
@@ -817,7 +864,33 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <!-- TAB 6: Cutoff -->
+                            <div class="tab-pane fade" id="cutoff" role="tabpanel">
+                                <!-- <h5 class="fw-bold mb-3 text-primary">Cutoff</h5>
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3 text-primary">SEO & Meta</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Meta Title</label>
+                                        <input type="text" name="meta_title" class="form-control" value="{{ old('meta_title', $exam->meta_title) }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Meta Description</label>
+                                        <textarea name="meta_description" class="form-control"
+                                            rows="2">{{ old('meta_description', $exam->meta_description) }}</textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Canonical URL</label>
+                                        <input type="url" name="canonical_url" class="form-control"
+                                            value="{{ old('canonical_url', $exam->canonical_url) }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Schema Type</label>
+                                        <input type="text" name="schema_type" class="form-control"
+                                            value="{{ old('schema_type', $exam->schema_type ?? 'EducationalAssessment') }}">
+                                    </div>
+                                </div> -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -963,39 +1036,39 @@
                 requireOne: true,
                 initialIndex: {{ count(old('registration_fee_structure', $exam->registration_fee_structure ?? [[]])) }},
                 template: (i) => `
-                                                                <div class="card border mb-2 registration-fee-item">
-                                                                    <div class="card-body p-3">
-                                                                        <div class="row g-2">
-                                                                            <div class="col-md-3">
-                                                                                 <label class="small">Categories</label>
-                                                                                 <select name="registration_fee_structure[${i}][categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                                                    ${@json($casteCategories->pluck('name')).map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <label class="small">Amount</label>
-                                                                                <input type="number" name="registration_fee_structure[${i}][amount]" class="form-control form-control-sm">
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Currency</label>
-                                                                                <input type="text" name="registration_fee_structure[${i}][currency]" class="form-control form-control-sm" value="INR">
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Refundable</label>
-                                                                                <select name="registration_fee_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                                                    <option value="No">No</option>
-                                                                                    <option value="Yes">Yes</option>
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2 d-flex align-items-end">
-                                                                                <button type="button" class="btn btn-sm btn-danger remove-reg-fee w-100">Remove</button>
-                                                                            </div>
-                                                                            <div class="col-md-12 mt-2">
-                                                                                <input type="text" name="registration_fee_structure[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                    <div class="card border mb-2 registration-fee-item">
+                                                                        <div class="card-body p-3">
+                                                                            <div class="row g-2">
+                                                                                <div class="col-md-3">
+                                                                                     <label class="small">Categories</label>
+                                                                                     <select name="registration_fee_structure[${i}][categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
+                                                                                        ${@json($casteCategories->pluck('name')).map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-3">
+                                                                                    <label class="small">Amount</label>
+                                                                                    <input type="number" name="registration_fee_structure[${i}][amount]" class="form-control form-control-sm">
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Currency</label>
+                                                                                    <input type="text" name="registration_fee_structure[${i}][currency]" class="form-control form-control-sm" value="INR">
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Refundable</label>
+                                                                                    <select name="registration_fee_structure[${i}][refundable]" class="form-select form-select-sm">
+                                                                                        <option value="No">No</option>
+                                                                                        <option value="Yes">Yes</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                                    <button type="button" class="btn btn-sm btn-danger remove-reg-fee w-100">Remove</button>
+                                                                                </div>
+                                                                                <div class="col-md-12 mt-2">
+                                                                                    <input type="text" name="registration_fee_structure[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>`,
+                                                                    </div>`,
                 afterAdd: ($row) => {
                     $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
                     refreshCategoryOptions('#registration-fee-container');
@@ -1012,39 +1085,39 @@
                 requireOne: true,
                 initialIndex: {{ count(old('late_fee_rules', $exam->late_fee_rules ?? [[]])) }},
                 template: (i) => `
-                                                                <div class="card border mb-2 late-fee-item bg-light">
-                                                                    <div class="card-body p-3">
-                                                                        <div class="row g-2">
-                                                                            <div class="col-md-3">
-                                                                                <label class="small">Condition</label>
-                                                                                <select name="late_fee_rules[${i}][condition]" class="form-select form-select-sm">
-                                                                                    ${['Late registration', 'Missed reporting', 'Choice not locked'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Type</label>
-                                                                                <select name="late_fee_rules[${i}][penalty_type]" class="form-select form-select-sm">
-                                                                                    <option value="Flat">Flat</option>
-                                                                                    <option value="Percentage">Percentage</option>
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Amount</label>
-                                                                                <input type="number" name="late_fee_rules[${i}][penalty_amount]" class="form-control form-control-sm">
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Cap</label>
-                                                                                <input type="number" name="late_fee_rules[${i}][maximum_penalty_cap]" class="form-control form-control-sm" placeholder="Max Cap">
-                                                                            </div>
-                                                                            <div class="col-md-3 d-flex align-items-end">
-                                                                                <button type="button" class="btn btn-sm btn-danger remove-late-fee w-100">Remove</button>
-                                                                            </div>
-                                                                            <div class="col-md-12 mt-2">
-                                                                                <input type="text" name="late_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                    <div class="card border mb-2 late-fee-item bg-light">
+                                                                        <div class="card-body p-3">
+                                                                            <div class="row g-2">
+                                                                                <div class="col-md-3">
+                                                                                    <label class="small">Condition</label>
+                                                                                    <select name="late_fee_rules[${i}][condition]" class="form-select form-select-sm">
+                                                                                        ${['Late registration', 'Missed reporting', 'Choice not locked'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Type</label>
+                                                                                    <select name="late_fee_rules[${i}][penalty_type]" class="form-select form-select-sm">
+                                                                                        <option value="Flat">Flat</option>
+                                                                                        <option value="Percentage">Percentage</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Amount</label>
+                                                                                    <input type="number" name="late_fee_rules[${i}][penalty_amount]" class="form-control form-control-sm">
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Cap</label>
+                                                                                    <input type="number" name="late_fee_rules[${i}][maximum_penalty_cap]" class="form-control form-control-sm" placeholder="Max Cap">
+                                                                                </div>
+                                                                                <div class="col-md-3 d-flex align-items-end">
+                                                                                    <button type="button" class="btn btn-sm btn-danger remove-late-fee w-100">Remove</button>
+                                                                                </div>
+                                                                                <div class="col-md-12 mt-2">
+                                                                                    <input type="text" name="late_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>`
+                                                                    </div>`
             });
 
             // Security Deposit Repeater
@@ -1056,50 +1129,50 @@
                 requireOne: true,
                 initialIndex: {{ count(old('security_deposit_structure', $exam->security_deposit_structure ?? [[]])) }},
                 template: (i) => `
-                                                                <div class="card border mb-2 security-deposit-item">
-                                                                    <div class="card-body p-3">
-                                                                        <div class="row g-2">
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Categories</label>
-                                                                                 <select name="security_deposit_structure[${i}][candidate_categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                                                    ${@json($casteCategories->pluck('name')).map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">College Type</label>
-                                                                                <select name="security_deposit_structure[${i}][college_type]" class="form-select form-select-sm">
-                                                                                    ${['Government', 'Private', 'Deemed'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Quota</label>
-                                                                                <select name="security_deposit_structure[${i}][quota_type]" class="form-select form-select-sm">
-                                                                                    ${['All India', 'State'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Amount</label>
-                                                                                <input type="number" name="security_deposit_structure[${i}][amount]" class="form-control form-control-sm">
-                                                                            </div>
-                                                                            <div class="col-md-2">
-                                                                                <label class="small">Refundable</label>
-                                                                                <select name="security_deposit_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                                                    <option value="Yes">Yes</option>
-                                                                                    <option value="No">No</option>
-                                                                                </select>
-                                                                            </div>
-                                                                            <div class="col-md-2 d-flex align-items-end">
-                                                                                <button type="button" class="btn btn-sm btn-danger remove-sd w-100">Remove</button>
-                                                                            </div>
-                                                                            <div class="col-md-6 mt-2">
-                                                                                <input type="text" name="security_deposit_structure[${i}][refund_conditions]" class="form-control form-control-sm" placeholder="Refund Conditions">
-                                                                            </div>
-                                                                            <div class="col-md-6 mt-2">
-                                                                                <input type="text" name="security_deposit_structure[${i}][forfeiture_conditions]" class="form-control form-control-sm" placeholder="Forfeiture Conditions">
+                                                                    <div class="card border mb-2 security-deposit-item">
+                                                                        <div class="card-body p-3">
+                                                                            <div class="row g-2">
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Categories</label>
+                                                                                     <select name="security_deposit_structure[${i}][candidate_categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
+                                                                                        ${@json($casteCategories->pluck('name')).map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">College Type</label>
+                                                                                    <select name="security_deposit_structure[${i}][college_type]" class="form-select form-select-sm">
+                                                                                        ${['Government', 'Private', 'Deemed'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Quota</label>
+                                                                                    <select name="security_deposit_structure[${i}][quota_type]" class="form-select form-select-sm">
+                                                                                        ${['All India', 'State'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Amount</label>
+                                                                                    <input type="number" name="security_deposit_structure[${i}][amount]" class="form-control form-control-sm">
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <label class="small">Refundable</label>
+                                                                                    <select name="security_deposit_structure[${i}][refundable]" class="form-select form-select-sm">
+                                                                                        <option value="Yes">Yes</option>
+                                                                                        <option value="No">No</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                                    <button type="button" class="btn btn-sm btn-danger remove-sd w-100">Remove</button>
+                                                                                </div>
+                                                                                <div class="col-md-6 mt-2">
+                                                                                    <input type="text" name="security_deposit_structure[${i}][refund_conditions]" class="form-control form-control-sm" placeholder="Refund Conditions">
+                                                                                </div>
+                                                                                <div class="col-md-6 mt-2">
+                                                                                    <input type="text" name="security_deposit_structure[${i}][forfeiture_conditions]" class="form-control form-control-sm" placeholder="Forfeiture Conditions">
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>`,
+                                                                    </div>`,
                 afterAdd: ($row) => {
                     $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
                     refreshCategoryOptions('#security-deposit-container');
@@ -1157,7 +1230,7 @@
             function toggleExamTabs() {
                 const isChecked = hasStagesCheckbox.checked;
                 // Tabs to toggle
-                const standardTabs = ['eligibility-tab', 'sessions-tab', 'result-tab', 'fees-tab'];
+                const standardTabs = ['eligibility-tab', 'sessions-tab', 'result-tab', 'fees-tab','cutoff-tab'];
                 const stagesTab = document.getElementById('stages-tab');
 
                 standardTabs.forEach(id => {

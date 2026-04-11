@@ -107,6 +107,7 @@
                         <div class="card-body p-4">
                             <div class="mb-0">
                                 <input type="file" class="form-control @error('image') is-invalid @enderror" name="image" id="imageInput">
+                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                 <div id="imagePreview" class="mt-3 text-center">
                                     @if($blog->image)
                                         <img src="{{ asset($blog->image) }}" class="img-fluid rounded border p-1" style="max-height: 200px;">

@@ -46,6 +46,7 @@
                         <div class="col-md-6 mb-4">
                             <label for="image" class="form-label">User Photo</label>
                             <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image">
+                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                         </div>
                     </div>
 

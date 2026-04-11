@@ -82,6 +82,7 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Replace Thumbnail (Optional)</label>
                                 <input type="file" name="thumbnail" class="form-control">
+                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                             </div>
                             <div class="mb-0">
                                 <label class="form-label fw-bold">Sort Order</label>
@@ -133,6 +134,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Thumbnail Image</label>
                         <input type="file" name="thumbnail" class="form-control">
+                        <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                     </div>
                     <div class="mb-0">
                         <label class="form-label fw-bold">Sort Order</label>

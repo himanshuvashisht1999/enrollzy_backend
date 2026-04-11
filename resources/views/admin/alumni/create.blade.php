@@ -66,6 +66,7 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Image</label>
                                     <input type="file" class="form-control" name="image">
+                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Sort Order</label>

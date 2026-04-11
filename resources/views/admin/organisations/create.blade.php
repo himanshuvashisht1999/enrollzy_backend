@@ -187,12 +187,14 @@
                                                     <label class="form-label">Logo</label>
                                                     <input type="file" name="logo_url"
                                                         class="form-control file-preview-input" accept="image/*">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="logo_url"></div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">Cover Image</label>
                                                     <input type="file" name="cover_image_url"
                                                         class="form-control file-preview-input" accept="image/*">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="cover_image_url"></div>
                                                 </div>
                                             </div>
@@ -267,6 +269,7 @@
                                                                     class="btn btn-outline-danger remove-file-item"
                                                                     style="display:none;">x</button>
                                                             </div>
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <div class="file-preview mt-2"></div>
                                                         </div>
                                                         <button type="button"
@@ -443,6 +446,7 @@
                                                     <input type="file" name="logo_url"
                                                         class="form-control file-preview-input" accept="image/*"
                                                         id="inst_logo_url">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="logo_url"></div>
                                                 </div>
                                                 <div class="col-md-6">
@@ -450,6 +454,7 @@
                                                     <input type="file" name="cover_image_url"
                                                         class="form-control file-preview-input" accept="image/*"
                                                         id="inst_cover_image_url">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="cover_image_url"></div>
                                                 </div>
                                             </div>
@@ -510,6 +515,7 @@
                                                                     class="btn btn-outline-danger remove-file-item"
                                                                     style="display:none;">x</button>
                                                             </div>
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <div class="file-preview mt-2"></div>
                                                         </div>
                                                         <button type="button"
@@ -576,12 +582,14 @@
                                                 <div class="col-md-6"><label class="form-label">Logo</label><input
                                                         type="file" name="logo_url" class="form-control file-preview-input"
                                                         accept="image/*" id="sch_logo">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="logo_url"></div>
                                                 </div>
                                                 <div class="col-md-6"><label class="form-label">Cover Image</label><input
                                                         type="file" name="cover_image_url"
                                                         class="form-control file-preview-input" accept="image/*"
                                                         id="sch_cover">
+                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                     <div class="file-preview mt-2" data-preview="cover_image_url"></div>
                                                 </div>
                                             </div>
@@ -637,6 +645,7 @@
                                                                     class="btn btn-outline-danger remove-file-item"
                                                                     style="display:none;">x</button>
                                                             </div>
+                                                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <div class="file-preview mt-2"></div>
                                                         </div>
                                                         <button type="button"
@@ -927,6 +936,7 @@
                                             id="cb_short_sync"></div>
                                     <div class="col-md-6"><label class="form-label">Logo URL</label><input type="file"
                                             name="logo_url" class="form-control file-preview-input" accept="image/*">
+                                        <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                         <div class="file-preview mt-2"></div>
                                     </div>
                                     <div class="col-md-6"><label class="form-label">Established Year</label><input
@@ -1345,7 +1355,8 @@
                                     <div class="col-md-6"><label class="form-label">Short Name</label><input type="text"
                                             name="short_name" class="form-control" id="rb_short_sync"></div>
                                     <div class="col-md-6"><label class="form-label">Logo URL</label><input type="file"
-                                            name="logo_url" class="form-control file-preview-input" accept="image/*"></div>
+                                            name="logo_url" class="form-control file-preview-input" accept="image/*">
+                                        <div class="form-text text-muted">Image size should not exceed 2MB.</div></div>
                                     <div class="col-md-6"><label class="form-label">Established Year</label><input
                                             type="number" name="established_year" class="form-control" id="rb_est_sync">
                                     </div>
@@ -1779,6 +1790,7 @@
                             newItem.innerHTML = `
                                                                                                                                                                                 <div class="input-group">
                                                                                                                                                                                     <input type="file" name="${name}" class="form-control file-preview-input">
+                                                                                                                                                                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                                                                                                                                                     <button type="button" class="btn btn-outline-danger remove-file-item">x</button>
                                                                                                                                                                                 </div>
                                                                                                                                                                                 <div class="file-preview mt-2"></div>

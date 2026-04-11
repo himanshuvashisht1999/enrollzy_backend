@@ -77,6 +77,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label">Profile Photo <span class="text-danger">*</span></label>
                                     <input type="file" class="form-control" name="img" required>
+                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                 </div>
                                 <div class="col-md-12">
                                      <label class="form-label">Subject Specialization (Select Multiple)</label>

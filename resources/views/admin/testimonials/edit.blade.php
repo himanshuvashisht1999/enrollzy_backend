@@ -52,6 +52,7 @@
                                 </div>
                             @endif
                             <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image">
+                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                         </div>
                     </div>
 

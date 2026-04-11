@@ -64,6 +64,7 @@
                                         </div>
                                     @endif
                                     <input type="file" class="form-control" name="img">
+                                    <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label">Short Intro</label>
