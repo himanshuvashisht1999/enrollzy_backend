@@ -143,9 +143,8 @@
                         <div class="col-md-3">
                             <label class="form-label">Exam Category</label>
                             @php $cats = is_array($dynamicExam->exam_category) ? $dynamicExam->exam_category : []; @endphp
-                            <select name="exam_category[]" class="form-select select2-multi" multiple
-                                data-placeholder="Select Category">
-                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission'] as $opt)
+                            <select name="exam_category[]" class="form-select select2-multi" multiple data-placeholder="Select Category">
+                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
                                     <option value="{{ $opt }}" {{ in_array($opt, $cats) ? 'selected' : '' }}>{{ $opt }}</option>
                                 @endforeach
                             </select>
@@ -331,6 +330,14 @@
                                                         </div>
                                                     @endforeach
                                                 </div>
+                                            @elseif($el['inputType'] === 'multi-select')
+                                                @php $vals = is_array($val) ? $val : (json_decode($val, true) ?? []); @endphp
+                                                <select name="{{ $name }}[]" class="form-select select2-multi" multiple>
+                                                    @foreach(explode(',', $el['options'] ?? '') as $opt)
+                                                        @php $opt = trim($opt); @endphp
+                                                        <option value="{{ $opt }}" {{ in_array($opt, $vals) ? 'selected' : '' }}>{{ $opt }}</option>
+                                                    @endforeach
+                                                </select>
                                             @elseif($el['inputType'] === 'file')
                                                 <input type="file" name="{{ $name }}" class="form-control">
                                                 @if($val && is_string($val))

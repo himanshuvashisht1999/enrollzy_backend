@@ -13,6 +13,11 @@
     </a>
 </div>
 
+@push('css')
+<style>
+</style>
+@endpush
+
 <div class="row">
     <div class="col-md-12">
         <div class="card shadow mb-4">
@@ -40,7 +45,7 @@
                         <div class="col-md-3">
                             <label class="form-label">Exam Category</label>
                             <select name="exam_category[]" class="form-select select2" multiple data-placeholder="Select Category">
-                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission'] as $opt)
+                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
                                     <option value="{{ $opt }}" {{ in_array($opt, old('exam_category', [])) ? 'selected' : '' }}>{{ $opt }}</option>
                                 @endforeach
                             </select>
@@ -149,3 +154,21 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('.select2').select2({
+                width: '100%'
+            });
+        }
+
+        if (typeof initializeTinyMCE === 'function') {
+            initializeTinyMCE('.editor');
+        }
+    });
+</script>
+@endpush

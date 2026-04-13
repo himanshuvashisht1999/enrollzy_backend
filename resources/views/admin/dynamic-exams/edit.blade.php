@@ -20,6 +20,22 @@
             color: var(--app-text-main);
         }
 
+        .select2-container .select2-selection--multiple {
+            min-height: 42px;
+            border: 1px solid var(--app-border);
+            border-radius: 8px;
+        }
+
+        .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid var(--app-border);
+            border-radius: 8px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 42px;
+        }
+
         .main-builder-wrapper {
             display: grid;
             grid-template-columns: 280px 1fr;
@@ -368,7 +384,7 @@
                                         }
                                         $selectedCats = is_array($selectedCats) ? $selectedCats : [];
                                     @endphp
-                                    @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission'] as $opt)
+                                    @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
                                         <option value="{{ $opt }}"
                                             {{ in_array($opt, $selectedCats) ? 'selected' : '' }}>{{ $opt }}</option>
                                     @endforeach
@@ -555,6 +571,8 @@
 @endsection
 
 @push('js')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         const builder = {
             sections: {!! json_encode($dynamicExam->sections->map(function ($s) {
@@ -935,13 +953,21 @@
                 $('.select2-multi').select2({
                     placeholder: "Select Options",
                     allowClear: true,
-                    width: '100%',
-                    theme: 'bootstrap4'
+                    width: '100%'
+                }).on('change', function() {
+                    builder.save();
                 });
+
                 $('.select2-single').select2({
-                    width: '100%',
-                    theme: 'bootstrap4'
+                    width: '100%'
+                }).on('change', function() {
+                    builder.save();
                 });
+            }
+
+            // Initialize TinyMCE
+            if (typeof initializeTinyMCE === 'function') {
+                initializeTinyMCE('#about_exam_editor');
             }
         });
 
