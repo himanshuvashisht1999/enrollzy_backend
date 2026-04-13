@@ -133,6 +133,25 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Exams
     Route::resource('/admin/exams', \App\Http\Controllers\Admin\ExamController::class)->names('admin.exams');
 
+    // Dynamic Exams
+    Route::resource('/admin/dynamic-exams', \App\Http\Controllers\Admin\DynamicExamController::class)->names('admin.dynamic-exams');
+    Route::get('/admin/dynamic-exams/{dynamicExam}/data', [\App\Http\Controllers\Admin\DynamicExamController::class, 'data'])->name('admin.dynamic-exams.data');
+    Route::post('/admin/dynamic-exams/{dynamicExam}/data', [\App\Http\Controllers\Admin\DynamicExamController::class, 'saveData'])->name('admin.dynamic-exams.data.save');
+    Route::post('/admin/dynamic-exams/{dynamicExam}/autosave-tab', [\App\Http\Controllers\Admin\DynamicExamController::class, 'autosaveTab'])->name('admin.dynamic-exams.autosave-tab');
+
+    // Dynamic Exams - Counselling
+    Route::resource('/admin/dynamic-exams.counsellings', \App\Http\Controllers\Admin\DynamicCounsellingController::class)->names([
+        'index'   => 'admin.dynamic-exams.counsellings.index',
+        'create'  => 'admin.dynamic-exams.counsellings.create',
+        'store'   => 'admin.dynamic-exams.counsellings.store',
+        'edit'    => 'admin.dynamic-exams.counsellings.edit',
+        'update'  => 'admin.dynamic-exams.counsellings.update',
+        'destroy' => 'admin.dynamic-exams.counsellings.destroy',
+    ])->except(['show']);
+    Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/store-draft', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'storeDraft'])->name('admin.dynamic-exams.counsellings.store-draft');
+    Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/{counselling}/autosave-tab', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'autosaveTab'])->name('admin.dynamic-exams.counsellings.autosave-tab');
+
+
     // Exam Stage Data Management
     Route::get('/admin/exams/{exam}/stages/{stage}/edit', [ExamStageDataController::class, 'edit'])->name('admin.exams.stages.edit');
     Route::post('/admin/exams/{exam}/interview/update', [ExamStageDataController::class, 'updateInterview'])->name('admin.exams.interview.update');

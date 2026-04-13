@@ -16,6 +16,7 @@ class Counselling extends Model
 
     protected $fillable = [
         'exam_id',
+        'dynamic_exam_id',
         'counselling_name',
         'slug',
         'counselling_type',
@@ -169,5 +170,10 @@ class Counselling extends Model
     public function exam()
     {
         return $this->belongsTo(Exam::class);
+    }
+
+    public function dynamicExam()
+    {
+        return $this->belongsTo(\App\Models\DynamicExam::class);
     }
 }
