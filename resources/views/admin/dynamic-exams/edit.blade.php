@@ -794,7 +794,7 @@
                 if (type === 'subheading') {
                     sec.content.push({ type: 'subheading', title: 'Group Label' });
                 } else {
-                    sec.content.push({ type: 'input', inputType: 'text', label: 'Field Label', name: 'field_' + Date.now(), required: false, options: '' });
+                    sec.content.push({ type: 'input', inputType: 'textarea', label: 'Field Label', name: 'field_' + Date.now(), required: true, options: '' });
                 }
                 this.renderEditor();
             },

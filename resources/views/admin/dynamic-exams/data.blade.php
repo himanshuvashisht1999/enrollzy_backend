@@ -206,7 +206,7 @@
                             <select name="owning_organisation_id" class="form-select select2-single">
                                 <option value="">Select Organisation</option>
                                 @foreach($organisations as $org)
-                                    <option value="{{ $org->id }}" {{ $dynamicExam->owning_organisation_id == $org->id ? 'selected' : '' }}>{{ $org->name }}</option>
+                                    <option value="{{ $org->id }}" {{ $dynamicExam->owning_organisation_id == $org->id ? 'selected' : '' }} data-type="{{ $org->organisation_type_id }}">{{ $org->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -299,9 +299,10 @@
                                             </label>
                                             @if($el['inputType'] === 'textarea')
                                                 <textarea name="{{ $name }}"
-                                                    class="form-control editor">{!! is_array($val) ? json_encode($val) : $val !!}</textarea>
+                                                    class="form-control editor" @if(!empty($el['required'])) required @endif
+                                                     >{!! is_array($val) ? json_encode($val) : $val !!}</textarea>
                                             @elseif($el['inputType'] === 'select')
-                                                <select name="{{ $name }}" class="form-select select2-single">
+                                                <select name="{{ $name }}" class="form-select select2-single" @if(!empty($el['required'])) required @endif>
                                                     <option value="">-- Select --</option>
                                                     @foreach(explode(',', $el['options'] ?? '') as $opt)
                                                         @php $opt = trim($opt); @endphp
@@ -315,7 +316,7 @@
                                                         @php $opt = trim($opt); @endphp
                                                         <div class="form-check">
                                                             <input class="form-check-input" type="checkbox" name="{{ $name }}[]" value="{{ $opt }}"
-                                                                {{ in_array($opt, $vals) ? 'checked' : '' }}>
+                                                                {{ in_array($opt, $vals) ? 'checked' : '' }} @if(!empty($el['required'])) required @endif>
                                                             <label class="form-check-label">{{ $opt }}</label>
                                                         </div>
                                                     @endforeach
@@ -325,14 +326,14 @@
                                                     @foreach(explode(',', $el['options'] ?? '') as $opt)
                                                         @php $opt = trim($opt); @endphp
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="{{ $name }}" value="{{ $opt }}" {{ $val == $opt ? 'checked' : '' }}>
+                                                            <input class="form-check-input" type="radio" name="{{ $name }}" value="{{ $opt }}" {{ $val == $opt ? 'checked' : '' }} @if(!empty($el['required'])) required @endif>
                                                             <label class="form-check-label">{{ $opt }}</label>
                                                         </div>
                                                     @endforeach
                                                 </div>
                                             @elseif($el['inputType'] === 'multi-select')
                                                 @php $vals = is_array($val) ? $val : (json_decode($val, true) ?? []); @endphp
-                                                <select name="{{ $name }}[]" class="form-select select2-multi" multiple>
+                                                <select name="{{ $name }}[]" class="form-select select2-multi" multiple @if(!empty($el['required'])) required @endif>
                                                     @foreach(explode(',', $el['options'] ?? '') as $opt)
                                                         @php $opt = trim($opt); @endphp
                                                         <option value="{{ $opt }}" {{ in_array($opt, $vals) ? 'selected' : '' }}>{{ $opt }}</option>
@@ -346,11 +347,11 @@
                                                             <i class="fas fa-paperclip"></i> Current file
                                                         </a>
                                                     </div>
-                                                    <input type="hidden" name="data[{{ $section->id }}][old_{{ $el['name'] }}]" value="{{ $val }}">
+                                                    <input type="hidden" name="data[{{ $section->id }}][old_{{ $el['name'] }}]" value="{{ $val }}" @if(!empty($el['required'])) required @endif>
                                                 @endif
                                             @else
                                                 <input type="{{ $el['inputType'] }}" name="{{ $name }}" class="form-control"
-                                                    value="{{ is_array($val) ? json_encode($val) : $val }}">
+                                                    value="{{ is_array($val) ? json_encode($val) : $val }}" @if(!empty($el['required'])) required @endif>
                                             @endif
                                         </div>
                                     @endif
@@ -417,6 +418,12 @@
              * @param {Function} done   - optional callback on success
              */
             function saveTabData(tabPane, tabId, done) {
+                if (!validateTab(tabPane)) {
+                    setStatus('Please fill required fields!', 'exclamation-circle', 'danger');
+                    if (typeof done === 'function') done();
+                    return;
+                }
+
                 setStatus('Saving...', 'spinner fa-spin', 'secondary');
 
                 const fd = new FormData();
@@ -512,6 +519,94 @@
                 });
             });
 
+            function validateTab(tabPane) {
+                let isValid = true;
+
+                tabPane.find('[required]').each(function () {
+                    const el = $(this);
+
+                    // TinyMCE editor case
+                    if (el.hasClass('editor')) {
+                        const editor = tinymce ? tinymce.get(el.attr('id')) : null;
+                        const content = editor ? editor.getContent().trim() : el.val().trim();
+
+                        if (!content) {
+                            isValid = false;
+                            el.addClass('is-invalid');
+                        } else {
+                            el.removeClass('is-invalid');
+                        }
+                    }
+
+                    // Checkbox group
+                    else if (el.attr('type') === 'checkbox') {
+                        const name = el.attr('name');
+                        if ($(`[name="${name}"]:checked`).length === 0) {
+                            isValid = false;
+                        }
+                    }
+
+                    // Normal inputs
+                    else if (!el.val()) {
+                        isValid = false;
+                        el.addClass('is-invalid');
+                    } else {
+                        el.removeClass('is-invalid');
+                    }
+                });
+
+                return isValid;
+            }
+            
+        });
+
+        let allOptions = [];
+
+        $(document).ready(function () {
+
+            // store all original options
+            $('select[name="owning_organisation_id"] option').each(function () {
+                allOptions.push({
+                    value: $(this).val(),
+                    text: $(this).text(),
+                    type: $(this).attr('data-type')
+                });
+            });
+            // console.log(allOptions);
+            function filterOrganisations() {
+                let sourceType = $('select[name="exam_source_type"]').val();
+                let $select = $('select[name="owning_organisation_id"]');
+
+                let selectedVal = $select.val(); // ✅ preserve selected
+
+                $select.empty();
+
+                $select.append('<option value="">Select Organisation</option>');
+
+                allOptions.forEach(function (opt) {
+                    if (!opt.type) return;
+
+                    if (sourceType === 'External' && opt.type == 5) {
+                        $select.append(`<option value="${opt.value}">${opt.text}</option>`);
+                    }
+
+                    if (sourceType === 'Internal' && opt.type != 5) {
+                        $select.append(`<option value="${opt.value}">${opt.text}</option>`);
+                    }
+                });
+
+                // ✅ restore selected value (if exists in filtered list)
+                if (selectedVal) {
+                    $select.val(selectedVal);
+                }
+
+                $select.trigger('change');
+            }
+
+            $('select[name="exam_source_type"]').on('change', filterOrganisations);
+
+            // initial load
+            filterOrganisations();
         });
     </script>
 @endpush

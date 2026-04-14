@@ -33,7 +33,7 @@ class DynamicExamController extends Controller
         ]);
 
         $slug = Str::slug($request->name);
-        
+
         // Ensure unique slug
         $count = DynamicExam::where('slug', 'like', $slug . '%')->count();
         if ($count > 0) {
@@ -64,7 +64,7 @@ class DynamicExamController extends Controller
             'official_website' => $request->official_website,
             'featured_exam' => $request->has('featured_exam') ? 1 : 0,
             'has_stages' => $request->has('has_stages') ? 1 : 0,
-            
+
             'short_name' => $request->short_name,
             'exam_type' => $request->exam_type,
             'exam_category' => $request->exam_category, // casts to JSON internally
@@ -86,7 +86,7 @@ class DynamicExamController extends Controller
         $dynamicExam->load('sections');
         $organisations = Organisation::where('status', true)->select('id', 'name')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
-        
+
         return view('admin.dynamic-exams.edit', compact('dynamicExam', 'organisations', 'allStages'));
     }
 
@@ -99,14 +99,25 @@ class DynamicExamController extends Controller
         ]);
 
         $data = $request->only([
-            'name', 'status', 'visibility', 'official_website', 'short_name', 
-            'exam_type', 'exam_category', 'conducting_body_type', 'exam_frequency', 
-            'conducting_authority_name', 'exam_source_type', 'owning_organisation_id', 
+            'name',
+            'status',
+            'visibility',
+            'official_website',
+            'short_name',
+            'exam_type',
+            'exam_category',
+            'conducting_body_type',
+            'exam_frequency',
+            'conducting_authority_name',
+            'exam_source_type',
+            'owning_organisation_id',
             'about_exam'
         ]);
 
-        if ($request->has('featured_exam')) $data['featured_exam'] = 1;
-        if ($request->has('has_stages')) $data['has_stages'] = 1;
+        if ($request->has('featured_exam'))
+            $data['featured_exam'] = 1;
+        if ($request->has('has_stages'))
+            $data['has_stages'] = 1;
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
@@ -127,7 +138,7 @@ class DynamicExamController extends Controller
         // Update sections
         if ($request->has('sections')) {
             $sectionsData = json_decode($request->sections, true);
-            
+
             // Delete old sections not in the new request
             $keepSectionIds = collect($sectionsData)->pluck('id')->filter()->toArray();
             $dynamicExam->sections()->whereNotIn('id', $keepSectionIds)->delete();
@@ -145,7 +156,7 @@ class DynamicExamController extends Controller
                 );
             }
         } else {
-             $dynamicExam->sections()->delete();
+            $dynamicExam->sections()->delete();
         }
 
         if ($request->ajax()) {
@@ -177,7 +188,7 @@ class DynamicExamController extends Controller
             } else {
                 unset($data['logo']);
             }
-            
+
             if ($request->hasFile('cover_image')) {
                 $file = $request->file('cover_image');
                 $name = time() . '_' . $file->getClientOriginalName();
@@ -197,10 +208,24 @@ class DynamicExamController extends Controller
 
             // Only update allowed fields
             $dynamicExam->update(array_intersect_key($data, array_flip([
-                'name','short_name','exam_type','exam_category','conducting_body_type',
-                'exam_frequency','conducting_authority_name','logo','cover_image',
-                'exam_source_type','owning_organisation_id','about_exam','status',
-                'official_website','visibility','featured_exam','has_stages','selected_stages'
+                'name',
+                'short_name',
+                'exam_type',
+                'exam_category',
+                'conducting_body_type',
+                'exam_frequency',
+                'conducting_authority_name',
+                'logo',
+                'cover_image',
+                'exam_source_type',
+                'owning_organisation_id',
+                'about_exam',
+                'status',
+                'official_website',
+                'visibility',
+                'featured_exam',
+                'has_stages',
+                'selected_stages'
             ])));
 
             return response()->json(['success' => true, 'message' => 'Core Identity saved!']);
@@ -243,10 +268,10 @@ class DynamicExamController extends Controller
     public function data(DynamicExam $dynamicExam)
     {
         $dynamicExam->load('sections');
-        $organisations = Organisation::where('status', true)->select('id', 'name')->get();
+        $organisations = Organisation::where('status', true)->select('id', 'name', 'organisation_type_id')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
         $casteCategories = CasteCategory::where('status', true)->orderBy('name')->get();
-        
+
         return view('admin.dynamic-exams.data', compact('dynamicExam', 'organisations', 'allStages', 'casteCategories'));
     }
 
@@ -257,7 +282,7 @@ class DynamicExamController extends Controller
 
         // The inputs are categorized by section id and then field name.
         // E.g. name="data[{section_id}][{field_name}]"
-        
+
         if (isset($inputs['data']) && is_array($inputs['data'])) {
             foreach ($inputs['data'] as $sectionId => $fields) {
                 $section = $dynamicExam->sections->where('id', $sectionId)->first();
@@ -266,7 +291,7 @@ class DynamicExamController extends Controller
                     foreach ($content as &$el) {
                         if ($el['type'] === 'input' && isset($fields[$el['name']])) {
                             $value = $fields[$el['name']];
-                            
+
                             // Handle file uploads
                             if ($value instanceof \Illuminate\Http\UploadedFile) {
                                 $value = $value->store('dynamic_exams_data', 'public');
@@ -275,7 +300,7 @@ class DynamicExamController extends Controller
                             elseif (is_array($value)) {
                                 $value = json_encode($value);
                             }
-                            
+
                             $el['value'] = $value;
                         } elseif ($el['type'] === 'input' && $el['inputType'] === 'file' && isset($fields['old_' . $el['name']])) {
                             // Preserve old file if new one isn't uploaded
