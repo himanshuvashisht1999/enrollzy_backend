@@ -2,28 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payout extends Model
 {
-    protected $fillable = [
-        'expert_id',
-        'amount',
-        'status',
-        'reference_id',
-        'payout_method',
-        'period_start',
-        'period_end',
-    ];
+    use HasFactory, SoftDeletes;
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'period_start' => 'date',
-        'period_end' => 'date',
-    ];
+    protected $table = 'employee_payout';
+    protected $primaryKey = 'id';
+    public $timestamps = true;
+    protected $guarded = ['id'];
+    protected $dates = ['deleted_at'];
 
-    public function expert()
+    public function employee()
     {
-        return $this->belongsTo(Expert::class);
+        return $this->belongsTo(Admin::class, 'employee_id');
     }
 }

@@ -573,6 +573,7 @@
 @push('js')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         const builder = {
             sections: {!! json_encode($dynamicExam->sections->map(function ($s) {
@@ -587,6 +588,7 @@
 
             init() {
                 this.renderSidebar();
+                this.initSorting();
                 
                 // Try to restore last active section
                 const lastActive = sessionStorage.getItem('activeSection_' + {{ $dynamicExam->id }});
@@ -598,6 +600,51 @@
                     this.setActive(this.sections[0].temp_id);
                 } else {
                     this.showCore();
+                }
+            },
+
+            initSorting() {
+                const sectionsList = document.getElementById('sectionsList');
+                if (sectionsList) {
+                    new Sortable(sectionsList, {
+                        animation: 150,
+                        handle: '.fa-bars',
+                        onEnd: (evt) => {
+                            const reordered = [];
+                            const items = sectionsList.querySelectorAll('.nav-btn');
+                            items.forEach(item => {
+                                const id = item.getAttribute('data-id');
+                                const sec = this.sections.find(s => s.temp_id === id);
+                                if (sec) reordered.push(sec);
+                            });
+                            this.sections = reordered;
+                            this.save();
+                        }
+                    });
+                }
+            },
+
+            initFieldsSorting() {
+                const elementsContainer = document.getElementById('elementsContainer');
+                if (elementsContainer) {
+                    new Sortable(elementsContainer, {
+                        animation: 150,
+                        handle: '.field-drag-handle',
+                        onEnd: (evt) => {
+                            const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                            if (sec) {
+                                const newContent = [];
+                                const rows = elementsContainer.querySelectorAll('.field-row');
+                                rows.forEach(row => {
+                                    const index = row.getAttribute('data-index');
+                                    newContent.push(sec.content[index]);
+                                });
+                                sec.content = newContent;
+                                this.renderEditor(); // re-render to update data-index
+                                this.save();
+                            }
+                        }
+                    });
                 }
             },
 
@@ -673,6 +720,7 @@
 
                 this.renderSidebar();
                 this.renderEditor();
+                this.initFieldsSorting();
 
                 // Ensure it's readonly when switching
                 const heading = document.getElementById('activeSectionHeading');
@@ -779,11 +827,11 @@
                 container.innerHTML = '';
 
                 sec.content.forEach((el, index) => {
-                    if (el.type === 'subheading') {
-                        container.appendChild(this.createSubheadingNode(sec, el, index));
-                    } else if (el.type === 'input') {
-                        container.appendChild(this.createInputNode(sec, el, index));
-                    }
+                    const node = (el.type === 'subheading') 
+                        ? this.createSubheadingNode(sec, el, index) 
+                        : this.createInputNode(sec, el, index);
+                    node.setAttribute('data-index', index);
+                    container.appendChild(node);
                 });
             },
 

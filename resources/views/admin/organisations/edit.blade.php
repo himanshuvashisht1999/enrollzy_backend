@@ -166,13 +166,13 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-12">
-                                                <label class="form-label">About University</label>
-                                                <textarea name="about_university" class="form-control" rows="3">{{ old('about_university', $organisation->about_university) }}</textarea>
-                                            </div>
+                                                 <label class="form-label">About University</label>
+                                                 <textarea name="about_university" class="form-control editor" rows="3">{{ old('about_university', $organisation->about_university) }}</textarea>
+                                             </div>
                                             <div class="col-md-12">
-                                                <label class="form-label">Vision & Mission</label>
-                                                <textarea name="vision_mission" class="form-control" rows="3">{{ old('vision_mission', $organisation->vision_mission) }}</textarea>
-                                            </div>
+                                                 <label class="form-label">Vision & Mission</label>
+                                                 <textarea name="vision_mission" class="form-control editor" rows="3">{{ old('vision_mission', $organisation->vision_mission) }}</textarea>
+                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
                                                 <input type="file" name="logo_url" class="form-control file-preview-input" accept="image/*">
@@ -395,13 +395,13 @@
                                             </div>
                                             
                                             <div class="col-md-12">
-                                                <label class="form-label">About Organization</label>
-                                                <textarea name="about_organisation" class="form-control" rows="3">{{ old('about_organisation', $organisation->about_organisation) }}</textarea>
-                                            </div>
+                                                 <label class="form-label">About Organization</label>
+                                                 <textarea name="about_organisation" class="form-control editor" rows="3">{{ old('about_organisation', $organisation->about_organisation) }}</textarea>
+                                             </div>
                                             <div class="col-md-12">
-                                                <label class="form-label">Vision & Mission</label>
-                                                <textarea name="vision_mission" class="form-control" rows="3" id="inst_vision_mission">{{ old('vision_mission', $organisation->vision_mission) }}</textarea>
-                                            </div>
+                                                 <label class="form-label">Vision & Mission</label>
+                                                 <textarea name="vision_mission" class="form-control editor" rows="3" id="inst_vision_mission">{{ old('vision_mission', $organisation->vision_mission) }}</textarea>
+                                             </div>
 
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
@@ -512,8 +512,8 @@
                                             <div class="col-md-6"><label class="form-label">Brand Name</label><input type="text" name="brand_name" class="form-control" id="sch_brand_name" value="{{ old('brand_name', $organisation->brand_name) }}"></div>
                                             <div class="col-md-6"><label class="form-label">Short Name</label><input type="text" name="short_name" class="form-control" id="sch_short_name" value="{{ old('short_name', $organisation->short_name) }}"></div>
                                             <div class="col-md-6"><label class="form-label">Established Year</label><input type="number" name="established_year" class="form-control" id="sch_established_year" value="{{ old('established_year', $organisation->established_year) }}"></div>
-                                            <div class="col-md-12"><label class="form-label">About Organization</label><textarea name="about_organisation" class="form-control" rows="3" id="sch_about">{{ old('about_organisation', $organisation->about_organisation) }}</textarea></div>
-                                            <div class="col-md-12"><label class="form-label">Vision & Mission</label><textarea name="vision_mission" class="form-control" rows="3" id="sch_vision">{{ old('vision_mission', $organisation->vision_mission) }}</textarea></div>
+                                            <div class="col-md-12"><label class="form-label">About Organization</label><textarea name="about_organisation" class="form-control editor" rows="3" id="sch_about">{{ old('about_organisation', $organisation->about_organisation) }}</textarea></div>
+                                            <div class="col-md-12"><label class="form-label">Vision & Mission</label><textarea name="vision_mission" class="form-control editor" rows="3" id="sch_vision">{{ old('vision_mission', $organisation->vision_mission) }}</textarea></div>
                                             
                                             <div class="col-md-6">
                                                 <label class="form-label">Logo</label>
@@ -1546,6 +1546,7 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        initializeTinyMCE('.editor');
         console.log("Edit Page: JS Loaded");
         
         // ------------------------------------------------------------------

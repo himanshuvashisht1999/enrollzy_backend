@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/all.min.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
         :root {
             --sidebar-width: 270px;
@@ -316,6 +317,95 @@
                     </div>
                 </li>
 
+                {{-- Human Resource Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/hr*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#hrMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/hr*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-users-cog me-2"></i>Human Resource</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/hr*') ? 'show' : '' }}" id="hrMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Leaves Module</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leaves.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leaves.index') }}">Applied Leaves</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-settings.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leave-settings.index') }}">Leave Settings</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-policies.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leave-policies.index') }}">Leave Policies</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.holidays.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.holidays.index') }}">Holidays</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Staff Module</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.departments.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.departments.index') }}">Departments</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.designations.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.designations.index') }}">Designations</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.staff.index') }}">Staff Members</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.roles.index') }}">Roles & Permissions</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.banks.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.banks.index') }}">Bank Accounts</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Salary Module</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.attendance.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.attendance.index') }}">Attendance</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.advance.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.advance.index') }}">Advance Pay</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payroll.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.payroll.index') }}">Generate PayRoll</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payout.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.payout.index') }}">View Payout</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Communication</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.whatsapp_template.index') }}">Whatsapp Templates</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.report') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.whatsapp_template.report') }}">Whatsapp Report</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Project & Tasks</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.lead-sources.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.lead-sources.index') }}">Lead Source</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.clients.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.clients.index') }}">Project Users</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.project-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.project-categories.index') }}">Project Category</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.index.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.index.index') }}">Project List</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.milestones.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.milestones.index') }}">All Milestones</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.customers.index.index') }}">Customers list</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.customer-categories.index') }}">Customers Category</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-fields.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.customer-fields.index') }}">Customer Fields</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.institutes.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.institutes.index') }}">Institutes</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Students</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') && request()->get('type') == 'class' ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.customers.index.index', ['type' => 'class']) }}">Classes</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.customer-categories.index') }}">Students</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-statuses.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.students.calling-statuses.index') }}">Calling Status</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-actions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.students.calling-actions.index') }}">Calling Action</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-module.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.students.calling-module.index') }}">Calling Module</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-history.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.students.calling-history.index') }}">Calling History</a></li>
+                        </ul>
+                    </div>
+                </li>
+
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
 
                 {{-- Content Group --}}
@@ -345,19 +435,23 @@
 
                 {{-- Homepage Setup Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-home"></i> Homepage Setup</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'show' : '' }}"
                         id="homepageMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('homepage-sections.index') ? 'active' : '' }}"
                                     href="{{ route('homepage-sections.index') }}">Manage Sections</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.company-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.company-marquees.index') }}">Company Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"
                                     href="{{ route('admin.home-services.index') }}">Specialized Courses</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-benefits.*') ? 'active' : '' }}"
@@ -466,10 +560,18 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         @yield('content')
     </div>
 
     <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
     <script>
@@ -492,6 +594,7 @@
                 setup: function (editor) {
                     editor.on('change', function () {
                         editor.save();
+                        $(editor.getElement()).trigger('change');
                     });
                 }
             });
@@ -504,6 +607,21 @@
             $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {
                 $(this).find('.menu-arrow').toggleClass('rotate-180');
             });
+
+            // Toastr Notifications
+            @if(session('success'))
+                toastr.success("{{ session('success') }}");
+            @endif
+
+            @if(session('error'))
+                toastr.error("{{ session('error') }}");
+            @endif
+
+            @if($errors->any())
+                @foreach($errors->all() as $error)
+                    toastr.warning("{{ $error }}");
+                @endforeach
+            @endif
         });
     </script>
 </body>

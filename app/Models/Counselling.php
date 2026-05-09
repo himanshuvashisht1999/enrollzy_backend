@@ -176,4 +176,9 @@ class Counselling extends Model
     {
         return $this->belongsTo(\App\Models\DynamicExam::class);
     }
+
+    public function sections()
+    {
+        return $this->hasMany(DynamicCounsellingSection::class, 'counselling_id')->orderBy('order', 'asc');
+    }
 }

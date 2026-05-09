@@ -1,1479 +1,799 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Edit Counselling - ' . $counselling->counselling_name)
+@section('title', 'Counselling Structure Builder')
 
 @push('css')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .ck-editor__editable {
-            min-height: 200px;
+        :root {
+            --app-primary: #6366f1;
+            --app-primary-hover: #4f46e5;
+            --app-bg: #f9fafb;
+            --app-border: #e5e7eb;
+            --app-text-main: #111827;
+            --app-text-muted: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--app-bg);
+            color: var(--app-text-main);
+        }
+
+        .select2-container .select2-selection--multiple {
+            min-height: 42px;
+            border: 1px solid var(--app-border);
+            border-radius: 8px;
         }
 
         .select2-container .select2-selection--single {
-            height: 38px;
-            border: 1px solid #dee2e6;
+            height: 42px;
+            border: 1px solid var(--app-border);
+            border-radius: 8px;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 38px;
+            line-height: 42px;
         }
 
-        /* Traditional Tab Styles - Match Screenshot */
-        .nav-tabs-custom {
-            border-bottom: 1px solid #dee2e6;
-            margin-bottom: 25px;
+        .main-builder-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 120px);
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--app-border);
+        }
+
+        /* Sidebar Area */
+        .builder-nav {
+            background: #fff;
+            border-right: 1px solid var(--app-border);
+            padding: 24px 16px;
             display: flex;
-            flex-wrap: wrap;
-            list-style: none;
-            padding: 0;
+            flex-direction: column;
         }
 
-        .nav-tabs-custom .nav-item {
-            margin-bottom: -1px;
+        .nav-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--app-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            padding-left: 12px;
         }
 
-        .nav-tabs-custom .nav-link {
-            border: 1px solid transparent;
-            border-top-left-radius: .25rem;
-            border-top-right-radius: .25rem;
-            padding: 0.75rem 1.25rem;
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--app-text-main);
             font-size: 14px;
-            color: #0d6efd;
-            /* Blue color from screenshot */
-            background: none;
+            font-weight: 500;
             text-decoration: none;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .nav-btn.active {
+            background: #e0e7ff;
+            color: var(--app-primary);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        /* Content Area */
+        .builder-content {
+            padding: 32px 48px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section-header {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--app-border);
+        }
+
+        .section-title-input {
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--app-dark);
+            width: 100%;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .section-title-input:not([readonly]) {
+            background: #fff;
+            border-color: var(--app-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .section-title-input[readonly] {
+            cursor: default;
+            outline: none;
+        }
+
+        /* Group Label (Subheading) Style */
+        .group-label-input {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fbbf24;
+            width: 100%;
+            outline: none;
+        }
+
+        /* Field Cards */
+        .field-row {
+            background: #fff;
+            border: 1px solid var(--app-border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .field-row:hover {
+            border-color: var(--app-primary);
+        }
+
+        .field-drag-handle {
+            color: #d1d5db;
+            cursor: grab;
+            margin-right: 12px;
+        }
+
+        .subheading-row {
+            background: #fdfdfd;
+            border-left: 4px solid #fbbf24;
+        }
+
+        .remove-action {
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .remove-action:hover {
+            color: #ef4444;
+        }
+
+        /* Form Controls */
+        .label-base {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
             display: block;
         }
 
-        .nav-tabs-custom .nav-link.active {
-            color: #212529 !important;
-            background-color: #fff !important;
-            border-color: #dee2e6 #dee2e6 #fff !important;
-            font-weight: 500;
+        .input-base {
+            border: 1px solid var(--app-border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            width: 100%;
+            transition: border-color 0.2s;
         }
 
-        .nav-tabs-custom .nav-link.completed {
-            color: #34c38f;
+        .input-base:focus {
+            border-color: var(--app-primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        #autosave-status {
-            font-size: 11px;
-            color: #6c757d;
+        /* Action Buttons */
+        .btn-add-wrapper {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding: 24px;
+            background: #f9fafb;
+            border: 1px dashed var(--app-border);
+            border-radius: 10px;
+            justify-content: center;
         }
 
-        .step-footer {
+        .btn-action {
+            background: #fff;
+            border: 1px solid var(--app-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-            margin-top: 30px;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .btn-primary-app {
+            background: var(--app-primary);
+            color: #fff;
+            border: none;
+        }
+
+        .btn-primary-app:hover {
+            background: var(--app-primary-hover);
+            color: #fff;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        /* Core Form Style */
+        .core-info-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        /* Clean Switch */
+        .switch-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch-ui {
+            width: 40px;
+            height: 20px;
+            background: #d1d5db;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        input:checked+.switch-ui {
+            background: var(--app-primary);
+        }
+
+        .switch-ui:after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.2s;
+        }
+
+        input:checked+.switch-ui:after {
+            left: 22px;
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Edit Counselling: {{ $counselling->counselling_name }}</h4>
-                <div class="page-title-right">
-                    <a href="{{ route('admin.dynamic-exams.counsellings.index', $dynamicExam->id) }}"
-                        class="btn btn-secondary">Cancel</a>
+    <div class="page-header">
+        <div>
+            <h1 class="h4 fw-bold mb-0">Build Counselling Structure</h1>
+            <p class="text-muted small mb-0">{{ $counselling->counselling_name }} ({{ $dynamicExam->name }})</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.dynamic-exams.counsellings.index', $dynamicExam->id) }}" class="btn btn-sm btn-outline-secondary px-3">Discard</a>
+            <button type="button" class="btn btn-sm btn-primary-app px-4" id="mainSaveBtn"
+                onclick="saveActiveTab()">Save</button>
+        </div>
+    </div>
+
+    <form action="{{ route('admin.dynamic-exams.counsellings.update', [$dynamicExam->id, $counselling->id]) }}" method="POST" id="mainCounsellingForm">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="sections" id="sectionsDataPayload">
+
+        <div class="main-builder-wrapper">
+            <!-- Sidebar -->
+            <div class="builder-nav">
+                <div class="nav-label">Core Config</div>
+                <div class="nav-btn active" id="coreTabBtn" onclick="builder.showCore()">
+                    <i class="fas fa-cog"></i> Main Identity
                 </div>
+
+                <div class="nav-label mt-4">Form Structure</div>
+                <div id="sectionsList">
+                    <!-- Nav items added here -->
+                </div>
+
+                <button type="button" class="nav-btn w-100 text-primary bg-light border-0 py-2 mt-2"
+                    onclick="builder.addSection()">
+                    <i class="fas fa-plus"></i> New Section
+                </button>
+            </div>
+
+            <!-- Main Workspace -->
+            <div style="flex: 1; overflow-y: auto; max-height: 80vh;">
+                <div class="builder-content">
+
+                    <div id="placeholder" class="text-center py-5" style="display:none;">
+                        <i class="fas fa-mouse-pointer text-muted fa-3x mb-3"></i>
+                        <h5 class="text-muted">Select a section to start building</h5>
+                    </div>
+
+                    <!-- Core Form -->
+                    <div id="coreCounsellingForm" style="display:block;">
+                        <div class="section-header">
+                            <h2 class="fw-bold mb-1">Main Identity</h2>
+                            <p class="text-muted small">Configure global identifiers for this counselling</p>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="label-base">Counselling Name <span class="text-danger">*</span></label>
+                                <input type="text" name="counselling_name" class="input-base"
+                                    value="{{ $counselling->counselling_name }}" required onkeyup="builder.save()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-base">Slug</label>
+                                <input type="text" name="slug" class="input-base"
+                                    value="{{ $counselling->slug }}" onchange="builder.save()">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="label-base">Counselling Type *</label>
+                                <select name="counselling_type" class="input-base select2-single" onchange="builder.save()">
+                                    @foreach(['Centralised', 'State-Level', 'Institute-Level'] as $opt)
+                                        <option value="{{ $opt }}" {{ $counselling->counselling_type == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="label-base">Counselling Mode</label>
+                                <select name="counselling_mode" class="input-base select2-single" onchange="builder.save()">
+                                    @foreach(['Online', 'Offline', 'Hybrid'] as $opt)
+                                        <option value="{{ $opt }}" {{ $counselling->counselling_mode == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="label-base">Conducting Authority Name *</label>
+                                <input type="text" name="conducting_authority_name" class="input-base"
+                                    value="{{ $counselling->conducting_authority_name }}" onchange="builder.save()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-base">Conducting Authority Type</label>
+                                <select name="conducting_authority_type" class="input-base select2-single" onchange="builder.save()">
+                                    @foreach(['Central Government', 'State Government', 'University Body'] as $opt)
+                                        <option value="{{ $opt }}" {{ $counselling->conducting_authority_type == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-base">Official Website</label>
+                                <input type="url" name="official_counselling_website" class="input-base"
+                                    value="{{ $counselling->official_counselling_website }}" onchange="builder.save()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-base">Visibility</label>
+                                <select name="visibility" class="input-base select2-single" onchange="builder.save()">
+                                    @foreach(['Public', 'Draft', 'Private'] as $v)
+                                        <option value="{{ $v }}" {{ $counselling->visibility == $v ? 'selected' : '' }}>{{ $v }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-base">Status</label>
+                                <select name="status" class="input-base select2-single" onchange="builder.save()">
+                                    @foreach(['Active', 'Upcoming', 'Closed', 'Archived'] as $s)
+                                        <option value="{{ $s }}" {{ $counselling->status == $s ? 'selected' : '' }}>{{ $s }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Editor -->
+                <div id="activeSectionEditor" style="display:none;">
+                    <div class="section-header d-flex justify-content-between align-items-end">
+                        <div style="flex: 1" class="m-2">
+                            <label class="label-base d-flex align-items-center gap-2">
+                                Section Name <i class="fas fa-edit small text-muted cursor-pointer"
+                                    onclick="builder.enableHeadingEdit()"></i>
+                            </label>
+                            <input type="text" id="activeSectionHeading" class="section-title-input" readonly
+                                placeholder="Untitled Section" onblur="this.readOnly = true"
+                                onkeyup="builder.updateActiveHeading(this.value)">
+                        </div>
+                        <button type="button" class="btn btn-link text-danger btn-sm p-0 mb-1"
+                            onclick="builder.deleteActiveSection()">Delete Section</button>
+                    </div>
+
+                    <div id="elementsContainer">
+                        <!-- Elements rendered here -->
+                    </div>
+
+                    <div class="btn-add-wrapper">
+                        <button type="button" class="btn-action" onclick="builder.addElement('subheading')">
+                            <i class="fas fa-heading text-warning"></i> Add Group Label
+                        </button>
+                        <button type="button" class="btn-action" onclick="builder.addElement('input')">
+                            <i class="fas fa-plus-circle text-primary"></i> Add Input Field
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            @if ($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Validation Errors</h5>
-                    <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
-            <form id="counselling-form"
-                action="{{ route('admin.dynamic-exams.counsellings.update', [$dynamicExam->id, $counselling->id]) }}"
-                method="POST">
-                @csrf
-                @method('PUT')
-                <div class="card">
-                    <div class="card-body">
-                        <!-- Auto-save Status -->
-                        <div class="d-flex justify-content-end align-items-center mb-3">
-                            <div id="autosave-status" class="flex-shrink-0">
-                                <i class="fas fa-check-circle text-success me-1"></i> <span
-                                    class="status-text text-muted small">Auto-saved</span>
-                            </div>
-                        </div>
-
-                        <!-- Traditional Tabs -->
-                        <ul class="nav nav-tabs-custom" id="counsellingTabs" role="tablist">
-                            <li class="nav-item"><a class="nav-link active" href="#identity" role="tab">Identity</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#scope" role="tab">Scope</a>
-                            </li>
-                            <li class="nav-item"><a class="nav-link" href="#eligibility" role="tab">Eligibility</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#rounds" role="tab">Rounds</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#process" role="tab">Process</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#dates" role="tab">Dates</a>
-                            </li>
-                            <li class="nav-item"><a class="nav-link" href="#allocation" role="tab">Allocation</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#documents" role="tab">Documents</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#fees" role="tab">Application & Fees</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#support" role="tab">Support</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#seo" role="tab">SEO</a>
-                            </li>
-                        </ul>
-
-                        <div class="tab-content p-3 text-muted">
-
-                            <!-- 1. Identity -->
-                            <div class="tab-pane active" id="identity" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Counselling Name *</label>
-                                        <input type="text" name="counselling_name" class="form-control"
-                                            value="{{ old('counselling_name', $counselling->counselling_name) }}" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Slug</label>
-                                        <input type="text" name="slug" class="form-control"
-                                            value="{{ old('slug', $counselling->slug) }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Counselling Type *</label>
-                                        <select name="counselling_type" class="form-select" required>
-                                            @foreach(['Centralised', 'State-Level', 'Institute-Level'] as $opt)
-                                                <option value="{{ $opt }}" {{ old('counselling_type', $counselling->counselling_type) == $opt ? 'selected' : '' }}>{{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Counselling Mode</label>
-                                        <select name="counselling_mode" class="form-select">
-                                            @foreach(['Online', 'Offline', 'Hybrid'] as $opt)
-                                                <option value="{{ $opt }}" {{ old('counselling_mode', $counselling->counselling_mode) == $opt ? 'selected' : '' }}>{{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Conducting Authority Name *</label>
-                                        <input type="text" name="conducting_authority_name" class="form-control"
-                                            value="{{ old('conducting_authority_name', $counselling->conducting_authority_name) }}"
-                                            required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Conducting Authority Type</label>
-                                        <select name="conducting_authority_type" class="form-select">
-                                            @foreach(['Central Government', 'State Government', 'University Body'] as $opt)
-                                                <option value="{{ $opt }}" {{ old('conducting_authority_type', $counselling->conducting_authority_type) == $opt ? 'selected' : '' }}>
-                                                    {{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Official Website</label>
-                                        <input type="url" name="official_counselling_website" class="form-control"
-                                            value="{{ old('official_counselling_website', $counselling->official_counselling_website) }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 2. Scope -->
-                            <div class="tab-pane" id="scope" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Applicable Course Levels</label>
-                                        <select name="applicable_course_levels[]" class="form-select select2" multiple>
-                                            @foreach(['UG', 'PG', 'Diploma', 'Ph.D'] as $opt)
-                                                <option value="{{ $opt }}" {{ in_array($opt, old('applicable_course_levels', $counselling->applicable_course_levels ?? [])) ? 'selected' : '' }}>
-                                                    {{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Applicable Quotas</label>
-                                        <select name="applicable_quotas[]" class="form-select select2" multiple>
-                                            @foreach(['All India Quota', 'State Quota', 'Institutional Quota', 'Management Quota', 'NRI Quota'] as $opt)
-                                                <option value="{{ $opt }}" {{ in_array($opt, old('applicable_quotas', $counselling->applicable_quotas ?? [])) ? 'selected' : '' }}>{{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Applicable Categories</label>
-                                        <select name="applicable_categories[]" class="form-select select2" multiple>
-                                            @foreach(['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'] as $opt)
-                                                <option value="{{ $opt }}" {{ in_array($opt, old('applicable_categories', $counselling->applicable_categories ?? [])) ? 'selected' : '' }}>{{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox" name="domicile_required"
-                                                id="domicile_required" value="1" {{ old('domicile_required', $counselling->domicile_required) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="domicile_required">Domicile
-                                                Required</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">State Applicability (if State-Level)</label>
-                                        <input type="text" name="state_applicability" class="form-control"
-                                            value="{{ old('state_applicability', $counselling->state_applicability) }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 3. Eligibility -->
-                            <div class="tab-pane" id="eligibility" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox"
-                                                name="minimum_exam_qualification_required"
-                                                id="minimum_exam_qualification_required" value="1" {{ old('minimum_exam_qualification_required', $counselling->minimum_exam_qualification_required) ? 'checked' : '' }}>
-                                            <label class="form-check-label"
-                                                for="minimum_exam_qualification_required">Minimum Exam Qualification
-                                                Required</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Min Score/Rank Required</label>
-                                        <input type="text" name="minimum_score_or_rank_required" class="form-control"
-                                            value="{{ old('minimum_score_or_rank_required', $counselling->minimum_score_or_rank_required) }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Attempts Allowed</label>
-                                        <input type="text" name="attempts_allowed" class="form-control"
-                                            value="{{ old('attempts_allowed', $counselling->attempts_allowed) }}">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Age Criteria</label>
-                                        <textarea name="age_criteria_for_counselling" class="form-control"
-                                            rows="2">{{ old('age_criteria_for_counselling', $counselling->age_criteria_for_counselling) }}</textarea>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Eligibility Notes</label>
-                                        <textarea name="eligibility_notes"
-                                            class="editor">{{ old('eligibility_notes', $counselling->eligibility_notes) }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 4. Rounds -->
-                            <div class="tab-pane" id="rounds" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Number of Rounds</label>
-                                        <input type="number" name="number_of_rounds" class="form-control"
-                                            value="{{ old('number_of_rounds', $counselling->number_of_rounds) }}">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Rounds Details (JSON Structure)</label>
-                                        <div id="rounds-container">
-                                            @php $rounds = $counselling->rounds ?? []; @endphp
-                                            @forelse($rounds as $key => $round)
-                                                <div class="rounds-repeater-item border p-3 mb-2 rounded">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-3">
-                                                            <input type="text" name="rounds[{{ $loop->index }}][round_name]"
-                                                                class="form-control" value="{{ $round['round_name'] ?? '' }}"
-                                                                placeholder="Round Name">
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <select name="rounds[{{ $loop->index }}][round_type]"
-                                                                class="form-select">
-                                                                <option value="Regular" {{ old("rounds.$key.round_type", $round['round_type'] ?? '') == 'Regular' ? 'selected' : '' }}>
-                                                                    Regular</option>
-                                                                <option value="Special" {{ old("rounds.$key.round_type", $round['round_type'] ?? '') == 'Special' ? 'selected' : '' }}>
-                                                                    Special</option>
-                                                                <option value="Mop-Up" {{ old("rounds.$key.round_type", $round['round_type'] ?? '') == 'Mop-Up' ? 'selected' : '' }}>
-                                                                    Mop-Up</option>
-                                                                <option value="Stray" {{ old("rounds.$key.round_type", $round['round_type'] ?? '') == 'Stray' ? 'selected' : '' }}>
-                                                                    Stray Vacancy</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-check mt-2">
-                                                                <input type="checkbox"
-                                                                    name="rounds[{{ $key }}][upgrade_allowed]" value="1"
-                                                                    class="form-check-input" {{ old("rounds.$key.upgrade_allowed", $round['upgrade_allowed'] ?? false) ? 'checked' : '' }}>
-                                                                <label>Upgrade</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-check mt-2">
-                                                                <input type="checkbox" name="rounds[{{ $key }}][fresh_reg]"
-                                                                    value="1" class="form-check-input" {{ old("rounds.$key.fresh_reg", $round['fresh_reg'] ?? false) ? 'checked' : '' }}> <label>Fresh
-                                                                    Reg</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <button type="button"
-                                                                class="btn btn-sm btn-danger remove-round w-100">Remove</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            @empty
-                                                <div class="rounds-repeater-item border p-3 mb-2 rounded">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-3"><input type="text" name="rounds[0][round_name]"
-                                                                class="form-control" placeholder="Round Name"></div>
-                                                        <div class="col-md-3"><select name="rounds[0][round_type]"
-                                                                class="form-select">
-                                                                <option value="Regular">Regular</option>
-                                                                <option value="Special">Special</option>
-                                                                <option value="Mop-Up">Mop-Up</option>
-                                                                <option value="Stray">Stray Vacancy</option>
-                                                            </select></div>
-                                                        <div class="col-md-2"><input type="checkbox"
-                                                                name="rounds[0][upgrade_allowed]" value="1"> Upgrade</div>
-                                                        <div class="col-md-2"><input type="checkbox" name="rounds[0][fresh_reg]"
-                                                                value="1"> Fresh Reg</div>
-                                                        <div class="col-md-2">
-                                                            <button type="button"
-                                                                class="btn btn-sm btn-danger remove-round w-100">Remove</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            @endforelse
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-round">+ Add
-                                            Round</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 5. Process -->
-                            <div class="tab-pane" id="process" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label">Registration Process Steps</label>
-                                        <textarea name="registration_process_steps[]" class="form-control"
-                                            rows="3">{{ old('registration_process_steps.0', implode("\n", $counselling->registration_process_steps ?? [])) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Choice Filling Process</label><textarea
-                                            name="choice_filling_process"
-                                            class="editor">{{ old('choice_filling_process', $counselling->choice_filling_process) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Seat Allotment Process</label><textarea
-                                            name="seat_allotment_process"
-                                            class="editor">{{ old('seat_allotment_process', $counselling->seat_allotment_process) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Reporting Process</label><textarea
-                                            name="reporting_process"
-                                            class="editor">{{ old('reporting_process', $counselling->reporting_process) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Document Verification</label><textarea
-                                            name="document_verification_process"
-                                            class="editor">{{ old('document_verification_process', $counselling->document_verification_process) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Upgradation Rules</label><textarea
-                                            name="upgradation_rules"
-                                            class="editor">{{ old('upgradation_rules', $counselling->upgradation_rules) }}</textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label">Exit & Refund Rules</label><textarea
-                                            name="exit_and_refund_rules"
-                                            class="editor">{{ old('exit_and_refund_rules', $counselling->exit_and_refund_rules) }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 6. Dates -->
-                            <div class="tab-pane" id="dates" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-4"><label class="form-label">Counselling Year (e.g.
-                                            2026)</label><input type="month" name="counselling_year" class="form-control"
-                                            value="{{ old('counselling_year', $counselling->counselling_year) }}"></div>
-                                    <div class="col-md-4"><label class="form-label">Reg Start Date</label><input type="date"
-                                            name="registration_start_date" class="form-control"
-                                            value="{{ old('registration_start_date', $counselling->registration_start_date ? $counselling->registration_start_date->format('Y-m-d') : '') }}">
-                                    </div>
-                                    <div class="col-md-4"><label class="form-label">Reg End Date</label><input type="date"
-                                            name="registration_end_date" class="form-control"
-                                            value="{{ old('registration_end_date', $counselling->registration_end_date ? $counselling->registration_end_date->format('Y-m-d') : '') }}">
-                                    </div>
-
-                                    <div class="col-md-4"><label class="form-label">Choice Filling Start</label><input
-                                            type="date" name="choice_filling_start_date" class="form-control"
-                                            value="{{ old('choice_filling_start_date', $counselling->choice_filling_start_date ? $counselling->choice_filling_start_date->format('Y-m-d') : '') }}">
-                                    </div>
-                                    <div class="col-md-4"><label class="form-label">Choice Filling End</label><input
-                                            type="date" name="choice_filling_end_date" class="form-control"
-                                            value="{{ old('choice_filling_end_date', $counselling->choice_filling_end_date ? $counselling->choice_filling_end_date->format('Y-m-d') : '') }}">
-                                    </div>
-                                    <div class="col-md-4"><label class="form-label">Seat Allotment Result</label><input
-                                            type="date" name="seat_allotment_result_date" class="form-control"
-                                            value="{{ old('seat_allotment_result_date', $counselling->seat_allotment_result_date ? $counselling->seat_allotment_result_date->format('Y-m-d') : '') }}">
-                                    </div>
-                                    <div class="col-md-4"><label class="form-label">Reporting Start</label><input
-                                            type="date" name="reporting_start_date" class="form-control"
-                                            value="{{ old('reporting_start_date', $counselling->reporting_start_date ? $counselling->reporting_start_date->format('Y-m-d') : '') }}">
-                                    </div>
-                                    <div class="col-md-4"><label class="form-label">Reporting End</label><input type="date"
-                                            name="reporting_end_date" class="form-control"
-                                            value="{{ old('reporting_end_date', $counselling->reporting_end_date ? $counselling->reporting_end_date->format('Y-m-d') : '') }}">
-                                    </div>
-
-                                    <div class="col-md-12">
-                                        <label class="form-label">Round-wise Schedule (JSON/Description)</label>
-                                        <textarea name="round_wise_schedule" class="form-control"
-                                            rows="3">{{ old('round_wise_schedule', is_array($counselling->round_wise_schedule) ? json_encode($counselling->round_wise_schedule) : $counselling->round_wise_schedule) }}</textarea>
-                                    </div>
-
-                                    <div class="col-md-12">
-                                        <label class="form-label">Additional Date Notes</label>
-                                        @php $dates = $counselling->important_dates ?? []; @endphp
-                                        <textarea name="important_dates[note]"
-                                            class="editor">{{ old('important_dates.note', $dates['note'] ?? '') }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 7. Allocation -->
-                            <div class="tab-pane" id="allocation" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label">Seat Allocation Basis</label>
-                                        <select name="seat_allocation_basis" class="form-select">
-                                            <option value="Exam Rank" {{ old('seat_allocation_basis', $counselling->seat_allocation_basis) == 'Exam Rank' ? 'selected' : '' }}>Exam
-                                                Rank</option>
-                                            <option value="Score" {{ old('seat_allocation_basis', $counselling->seat_allocation_basis) == 'Score' ? 'selected' : '' }}>Score
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6"><label class="form-label">Tie Breaking Rules</label><textarea
-                                            name="tie_breaking_rules" class="form-control"
-                                            rows="3">{{ old('tie_breaking_rules', $counselling->tie_breaking_rules) }}</textarea>
-                                    </div>
-                                    <div class="col-md-12"><label class="form-label">Seat Conversion Rules</label><textarea
-                                            name="seat_conversion_rules"
-                                            class="editor">{{ old('seat_conversion_rules', $counselling->seat_conversion_rules) }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 8. Documents -->
-                            <div class="tab-pane" id="documents" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-12"><label class="form-label">Documents Required
-                                            (Multi-select)</label>
-                                        <select name="documents_required[]" class="form-select select2" multiple>
-                                            @foreach(['Admit Card', 'Score Card', '10th Marksheet', '12th Marksheet', 'Category Certificate', 'Domicile Certificate', 'Photo ID'] as $opt)
-                                                <option value="{{ $opt }}" {{ in_array($opt, old('documents_required', $counselling->documents_required ?? [])) ? 'selected' : '' }}>{{ $opt }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12"><label class="form-label">Document Format
-                                            Requirements</label><textarea name="document_format_requirements"
-                                            class="editor">{{ old('document_format_requirements', $counselling->document_format_requirements) }}</textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch mt-4"><input class="form-check-input"
-                                                type="checkbox" name="original_documents_required_at_reporting" value="1" {{ old('original_documents_required_at_reporting', $counselling->original_documents_required_at_reporting) ? 'checked' : '' }}>
-                                            <label>Originals Required at Reporting</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 9. Application & Fees -->
-                            <div class="tab-pane" id="fees" role="tabpanel">
-                                <h5 class="fw-bold mb-3 text-primary">Registration Fee Configuration</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <div class="form-check form-switch mb-3">
-                                            <input class="form-check-input" type="checkbox" name="registration_fee_required"
-                                                id="registration_fee_required" value="1" {{ old('registration_fee_required', $counselling->registration_fee_required) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="registration_fee_required">Registration Fee
-                                                Required</label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div id="registration_fee_section"
-                                    style="{{ old('registration_fee_required', $counselling->registration_fee_required) ? '' : 'display:none;' }}">
-                                    <div id="registration-fee-container">
-                                        @php
-                                            $regFees = old('registration_fee_structure', $counselling->registration_fee_structure ?: []);
-                                            $regFeeCount = count($regFees) ?: 1;
-                                        @endphp
-                                        @for($i = 0; $i < $regFeeCount; $i++)
-                                            <div class="card border mb-2 registration-fee-item">
-                                                <div class="card-body p-3">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-3">
-                                                            <label class="small">Categories</label>
-                                                            <select name="registration_fee_structure[{{$i}}][categories][]"
-                                                                class="form-select form-select-sm select2-category" multiple
-                                                                data-placeholder="Select Categories">
-                                                                @foreach(['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'] as $cat)
-                                                                    <option value="{{$cat}}" {{ (isset($regFees[$i]['categories']) && in_array($cat, $regFees[$i]['categories'])) ? 'selected' : '' }}>{{$cat}}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="small">Amount</label>
-                                                            <input type="number"
-                                                                name="registration_fee_structure[{{$i}}][amount]"
-                                                                class="form-control form-control-sm"
-                                                                value="{{ $regFees[$i]['amount'] ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Currency</label>
-                                                            <input type="text"
-                                                                name="registration_fee_structure[{{$i}}][currency]"
-                                                                class="form-control form-control-sm"
-                                                                value="{{ $regFees[$i]['currency'] ?? 'INR' }}">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Refundable</label>
-                                                            <select name="registration_fee_structure[{{$i}}][refundable]"
-                                                                class="form-select form-select-sm">
-                                                                <option value="No" {{ (isset($regFees[$i]['refundable']) && $regFees[$i]['refundable'] == 'No') ? 'selected' : '' }}>No
-                                                                </option>
-                                                                <option value="Yes" {{ (isset($regFees[$i]['refundable']) && $regFees[$i]['refundable'] == 'Yes') ? 'selected' : '' }}>Yes
-                                                                </option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2 d-flex align-items-end">
-                                                            <button type="button"
-                                                                class="btn btn-sm btn-danger remove-reg-fee w-100 {{ $i == 0 ? 'disabled' : '' }}">Remove</button>
-                                                        </div>
-                                                        <div class="col-md-12 mt-2">
-                                                            <input type="text"
-                                                                name="registration_fee_structure[{{$i}}][remarks]"
-                                                                class="form-control form-control-sm" placeholder="Remarks"
-                                                                value="{{ $regFees[$i]['remarks'] ?? '' }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endfor
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mb-4" id="add-reg-fee">+ Add
-                                        Fee Row</button>
-                                </div>
-
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-danger">Late Application / Penalty Fees</h5>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" name="late_registration_allowed"
-                                        id="late_registration_allowed" value="1" {{ old('late_registration_allowed', $counselling->late_registration_allowed) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="late_registration_allowed">Late Registration
-                                        Allowed with Penalty</label>
-                                </div>
-
-                                <div id="late_fee_section"
-                                    style="{{ old('late_registration_allowed', $counselling->late_registration_allowed) ? '' : 'display:none;' }}">
-                                    <div id="late-fee-container">
-                                        @php
-                                            $lateFees = old('late_fee_rules', $counselling->late_fee_rules ?: []);
-                                            $lateFeeCount = count($lateFees) ?: 1;
-                                        @endphp
-                                        @for($i = 0; $i < $lateFeeCount; $i++)
-                                            <div class="card border mb-2 late-fee-item bg-light">
-                                                <div class="card-body p-3">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-3">
-                                                            <label class="small">Condition</label>
-                                                            <select name="late_fee_rules[{{$i}}][condition]"
-                                                                class="form-select form-select-sm">
-                                                                @foreach(['Late registration', 'Missed reporting', 'Choice not locked'] as $cond)
-                                                                    <option value="{{$cond}}" {{ (isset($lateFees[$i]['condition']) && $lateFees[$i]['condition'] == $cond) ? 'selected' : '' }}>
-                                                                        {{$cond}}
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Type</label>
-                                                            <select name="late_fee_rules[{{$i}}][penalty_type]"
-                                                                class="form-select form-select-sm">
-                                                                <option value="Flat" {{ (isset($lateFees[$i]['penalty_type']) && $lateFees[$i]['penalty_type'] == 'Flat') ? 'selected' : '' }}>
-                                                                    Flat</option>
-                                                                <option value="Percentage" {{ (isset($lateFees[$i]['penalty_type']) && $lateFees[$i]['penalty_type'] == 'Percentage') ? 'selected' : '' }}>Percentage</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Amount</label>
-                                                            <input type="number" name="late_fee_rules[{{$i}}][penalty_amount]"
-                                                                class="form-control form-control-sm"
-                                                                value="{{ $lateFees[$i]['penalty_amount'] ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Cap</label>
-                                                            <input type="number"
-                                                                name="late_fee_rules[{{$i}}][maximum_penalty_cap]"
-                                                                class="form-control form-control-sm" placeholder="Max Cap"
-                                                                value="{{ $lateFees[$i]['maximum_penalty_cap'] ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-3 d-flex align-items-end">
-                                                            <button type="button"
-                                                                class="btn btn-sm btn-danger remove-late-fee w-100 {{ $i == 0 ? 'disabled' : '' }}">Remove</button>
-                                                        </div>
-                                                        <div class="col-md-12 mt-2">
-                                                            <input type="text" name="late_fee_rules[{{$i}}][remarks]"
-                                                                class="form-control form-control-sm" placeholder="Remarks"
-                                                                value="{{ $lateFees[$i]['remarks'] ?? '' }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endfor
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger mb-4" id="add-late-fee">+ Add
-                                        Late Fee Rule</button>
-                                </div>
-
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-warning">Security Deposit Rules</h5>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" name="security_deposit_required"
-                                        id="security_deposit_required" value="1" {{ old('security_deposit_required', $counselling->security_deposit_required) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="security_deposit_required">Security Deposit
-                                        Required</label>
-                                </div>
-
-                                <div id="security_deposit_section"
-                                    style="{{ old('security_deposit_required', $counselling->security_deposit_required) ? '' : 'display:none;' }}">
-                                    <div id="security-deposit-container">
-                                        @php
-                                            $sdRules = old('security_deposit_structure', $counselling->security_deposit_structure ?: []);
-                                            $sdCount = count($sdRules) ?: 1;
-                                        @endphp
-                                        @for($i = 0; $i < $sdCount; $i++)
-                                            <div class="card border mb-2 security-deposit-item">
-                                                <div class="card-body p-3">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-2">
-                                                            <label class="small">Categories</label>
-                                                            <select
-                                                                name="security_deposit_structure[{{$i}}][candidate_categories][]"
-                                                                class="form-select form-select-sm select2-category" multiple
-                                                                data-placeholder="Select Categories">
-                                                                @foreach(['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'] as $cat)
-                                                                    <option value="{{$cat}}" {{ (isset($sdRules[$i]['candidate_categories']) && in_array($cat, $sdRules[$i]['candidate_categories'])) ? 'selected' : '' }}>{{$cat}}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">College Type</label>
-                                                            <select name="security_deposit_structure[{{$i}}][college_type]"
-                                                                class="form-select form-select-sm">
-                                                                @foreach(['Government', 'Private', 'Deemed'] as $ct)
-                                                                    <option value="{{$ct}}" {{ (isset($sdRules[$i]['college_type']) && $sdRules[$i]['college_type'] == $ct) ? 'selected' : '' }}>
-                                                                        {{$ct}}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Quota</label>
-                                                            <select name="security_deposit_structure[{{$i}}][quota_type]"
-                                                                class="form-select form-select-sm">
-                                                                @foreach(['All India', 'State'] as $qt)
-                                                                    <option value="{{$qt}}" {{ (isset($sdRules[$i]['quota_type']) && $sdRules[$i]['quota_type'] == $qt) ? 'selected' : '' }}>
-                                                                        {{$qt}}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Amount</label>
-                                                            <input type="number"
-                                                                name="security_deposit_structure[{{$i}}][amount]"
-                                                                class="form-control form-control-sm"
-                                                                value="{{ $sdRules[$i]['amount'] ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="small">Refundable</label>
-                                                            <select name="security_deposit_structure[{{$i}}][refundable]"
-                                                                class="form-select form-select-sm">
-                                                                <option value="Yes" {{ (isset($sdRules[$i]['refundable']) && $sdRules[$i]['refundable'] == 'Yes') ? 'selected' : '' }}>Yes
-                                                                </option>
-                                                                <option value="No" {{ (isset($sdRules[$i]['refundable']) && $sdRules[$i]['refundable'] == 'No') ? 'selected' : '' }}>No
-                                                                </option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2 d-flex align-items-end">
-                                                            <button type="button"
-                                                                class="btn btn-sm btn-danger remove-sd w-100 {{ $i == 0 ? 'disabled' : '' }}">Remove</button>
-                                                        </div>
-                                                        <div class="col-md-6 mt-2">
-                                                            <input type="text"
-                                                                name="security_deposit_structure[{{$i}}][refund_conditions]"
-                                                                class="form-control form-control-sm"
-                                                                placeholder="Refund Conditions"
-                                                                value="{{ $sdRules[$i]['refund_conditions'] ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-6 mt-2">
-                                                            <input type="text"
-                                                                name="security_deposit_structure[{{$i}}][forfeiture_conditions]"
-                                                                class="form-control form-control-sm"
-                                                                placeholder="Forfeiture Conditions"
-                                                                value="{{ $sdRules[$i]['forfeiture_conditions'] ?? '' }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endfor
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-warning mb-4" id="add-sd">+ Add
-                                        Security Deposit Rule</button>
-                                </div>
-
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-info">Round-Wise Fee Rules</h5>
-                                <div id="round-fee-container">
-                                    @php
-                                        $roundFees = old('round_specific_fee_rules', $counselling->round_specific_fee_rules ?: []);
-                                        $rfCount = count($roundFees) ?: 1;
-                                    @endphp
-                                    @for($i = 0; $i < $rfCount; $i++)
-                                        <div class="card border mb-2 round-fee-item bg-light">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-3">
-                                                        <label class="small">Round Name</label>
-                                                        <input type="text" name="round_specific_fee_rules[{{$i}}][round_name]"
-                                                            class="form-control form-control-sm" placeholder="e.g. Mop-up Round"
-                                                            value="{{ $roundFees[$i]['round_name'] ?? '' }}">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Fresh Reg Fee</label>
-                                                        <input type="text"
-                                                            name="round_specific_fee_rules[{{$i}}][fresh_registration_fee]"
-                                                            class="form-control form-control-sm"
-                                                            value="{{ $roundFees[$i]['fresh_registration_fee'] ?? '' }}">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="small">Addl. Security Deposit</label>
-                                                        <input type="text"
-                                                            name="round_specific_fee_rules[{{$i}}][additional_security_deposit]"
-                                                            class="form-control form-control-sm"
-                                                            value="{{ $roundFees[$i]['additional_security_deposit'] ?? '' }}">
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="small">Refundable</label>
-                                                        <select name="round_specific_fee_rules[{{$i}}][refund_applicable]"
-                                                            class="form-select form-select-sm">
-                                                            <option value="Yes" {{ (isset($roundFees[$i]['refund_applicable']) && $roundFees[$i]['refund_applicable'] == 'Yes') ? 'selected' : '' }}>Yes</option>
-                                                            <option value="No" {{ (isset($roundFees[$i]['refund_applicable']) && $roundFees[$i]['refund_applicable'] == 'No') ? 'selected' : '' }}>
-                                                                No</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2 d-flex align-items-end">
-                                                        <button type="button"
-                                                            class="btn btn-sm btn-danger remove-round-fee w-100 {{ $i == 0 ? 'disabled' : '' }}">Remove</button>
-                                                    </div>
-                                                    <div class="col-md-12 mt-2">
-                                                        <input type="text" name="round_specific_fee_rules[{{$i}}][remarks]"
-                                                            class="form-control form-control-sm" placeholder="Remarks"
-                                                            value="{{ $roundFees[$i]['remarks'] ?? '' }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endfor
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-info mb-4" id="add-round-fee">+ Add
-                                    Round Rule</button>
-
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-success">Refund & Forfeiture Policy</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label">Policy Summary</label>
-                                        <textarea name="refund_policy_summary" class="form-control"
-                                            rows="3">{{ old('refund_policy_summary', $counselling->refund_policy_summary) }}</textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Refund Timeline</label>
-                                        <input type="text" name="refund_timeline" class="form-control"
-                                            placeholder="e.g. 15-30 working days"
-                                            value="{{ old('refund_timeline', $counselling->refund_timeline) }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Refund Mode</label>
-                                        <select name="refund_mode" class="form-select">
-                                            @foreach(['Original Payment Method', 'Bank Transfer'] as $mode)
-                                                <option value="{{ $mode }}" {{ old('refund_mode', $counselling->refund_mode) == $mode ? 'selected' : '' }}>{{ $mode }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox" name="partial_refund_allowed"
-                                                id="partial_refund_allowed_coun_edit" value="1" {{ old('partial_refund_allowed', $counselling->partial_refund_allowed) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="partial_refund_allowed_coun_edit">Partial
-                                                Refund Allowed</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-12">
-                                        <label class="form-label">Forfeiture Scenarios</label>
-                                        <div id="forfeiture-container">
-                                            @php
-                                                $fScenarios = old('forfeiture_scenarios', $counselling->forfeiture_scenarios ?: []);
-                                                $forfeitCount = count($fScenarios) ?: 1;
-                                            @endphp
-                                            @for($i = 0; $i < $forfeitCount; $i++)
-                                                <div class="input-group mb-2 forfeiture-item">
-                                                    <select name="forfeiture_scenarios[{{ $i }}][scenario]" class="form-select">
-                                                        @foreach(['Seat allotted but not joined', 'Upgradation declined', 'False information'] as $scen)
-                                                            <option value="{{ $scen }}" {{ (isset($fScenarios[$i]['scenario']) && $fScenarios[$i]['scenario'] == $scen) ? 'selected' : '' }}>{{ $scen }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <input type="text" name="forfeiture_scenarios[{{ $i }}][remarks]"
-                                                        class="form-control w-50" placeholder="Optional remarks"
-                                                        value="{{ $fScenarios[$i]['remarks'] ?? '' }}">
-                                                    <button
-                                                        class="btn btn-outline-danger remove-forfeit {{ $i == 0 ? 'disabled' : '' }}"
-                                                        type="button">Remove</button>
-                                                </div>
-                                            @endfor
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-dark" id="add-forfeit">+ Add
-                                            Scenario</button>
-                                    </div>
-                                </div>
-
-                                <hr>
-                                <h5 class="fw-bold mb-3 text-primary">Payment & Transaction Rules</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label">Allowed Payment Modes</label>
-                                        <select name="payment_modes_allowed[]" class="form-select select2" multiple>
-                                            @foreach(['Debit Card', 'Credit Card', 'Net Banking', 'UPI', 'Wallet'] as $pm)
-                                                <option value="{{ $pm }}" {{ in_array($pm, old('payment_modes_allowed', $counselling->payment_modes_allowed ?: [])) ? 'selected' : '' }}>{{ $pm }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox"
-                                                name="transaction_charges_applicable" id="tx_charges" value="1" {{ old('transaction_charges_applicable', $counselling->transaction_charges_applicable) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="tx_charges">Transaction Charges
-                                                Applicable</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-8">
-                                        <div class="row" id="transaction_charges_section"
-                                            style="{{ old('transaction_charges_applicable', $counselling->transaction_charges_applicable) ? '' : 'display:none;' }}">
-                                            <div class="col-md-6">
-                                                <label class="form-label">Charges Borne By</label>
-                                                <select name="transaction_charge_borne_by" class="form-select">
-                                                    <option value="Candidate" {{ old('transaction_charge_borne_by', $counselling->transaction_charge_borne_by) == 'Candidate' ? 'selected' : '' }}>Candidate</option>
-                                                    <option value="Authority" {{ old('transaction_charge_borne_by', $counselling->transaction_charge_borne_by) == 'Authority' ? 'selected' : '' }}>Authority</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Payment Gateway Name</label>
-                                                <input type="text" name="payment_gateway_name" class="form-control"
-                                                    placeholder="e.g. Razorpay, BillDesk"
-                                                    value="{{ old('payment_gateway_name', $counselling->payment_gateway_name) }}">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 10. Support -->
-                            <div class="tab-pane" id="support" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label">Helpdesk Number</label><input
-                                            type="text" name="helpdesk_contact_number" class="form-control"
-                                            value="{{ old('helpdesk_contact_number', $counselling->helpdesk_contact_number) }}">
-                                    </div>
-                                    <div class="col-md-6"><label class="form-label">Helpdesk Email</label><input
-                                            type="email" name="helpdesk_email" class="form-control"
-                                            value="{{ old('helpdesk_email', $counselling->helpdesk_email) }}"></div>
-                                    <div class="col-md-12"><label class="form-label">Grievance Process</label><textarea
-                                            name="grievance_redressal_process"
-                                            class="editor">{{ old('grievance_redressal_process', $counselling->grievance_redressal_process) }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 11. SEO -->
-                            <div class="tab-pane" id="seo" role="tabpanel">
-                                <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label">Meta Title</label><input type="text"
-                                            name="meta_title" class="form-control"
-                                            value="{{ old('meta_title', $counselling->meta_title) }}">
-                                    </div>
-                                    <div class="col-md-6"><label class="form-label">Meta Description</label><textarea
-                                            name="meta_description" class="form-control"
-                                            rows="2">{{ old('meta_description', $counselling->meta_description) }}</textarea>
-                                    </div>
-                                    <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="url"
-                                            name="canonical_url" class="form-control"
-                                            value="{{ old('canonical_url', $counselling->canonical_url) }}"></div>
-                                    <div class="col-md-6"><label class="form-label">Status</label><select name="status"
-                                            class="form-select">
-                                            <option value="Active" {{ old('status', $counselling->status) == 'Active' ? 'selected' : '' }}>
-                                                Active</option>
-                                            <option value="Upcoming" {{ old('status', $counselling->status) == 'Upcoming' ? 'selected' : '' }}>Upcoming</option>
-                                            <option value="Closed" {{ old('status', $counselling->status) == 'Closed' ? 'selected' : '' }}>
-                                                Closed</option>
-                                        </select></div>
-                                </div>
-                            </div>
-
-                        </div> <!-- Tab Content -->
-                    </div>
-                    <div class="step-footer px-4 pb-4">
-                        <button type="button" class="btn btn-primary mb-1" id="prevBtn"
-                            onclick="nextPrev(-1)">Previous</button>
-                        <div class="d-flex align-items-center ms-auto">
-                            <span id="save-message" class="me-3 text-muted small" style="opacity: 0;">Saving...</span>
-                            <button type="button" class="btn btn-primary mb-1" id="nextBtn" onclick="nextPrev(1)">Next
-                                Step</button>
-                            <button type="submit" class="btn btn-success mb-1" id="submitBtn" style="display:none;">Finish &
-                                Update</button>
-                        </div>
-                    </div>
-                </div>
-        </div>
-        </form>
-    </div>
-    </div>
+    </form>
 @endsection
 
-
 @push('js')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
-        $(document).ready(function () {
-            $('.select2').select2({ width: '100%' });
+        const builder = {
+            sections: {!! json_encode($counselling->sections->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'temp_id' => $s->id ? 'sec_' . $s->id : 'new_' . uniqid(),
+                    'heading' => $s->heading,
+                    'content' => is_string($s->content) ? json_decode($s->content, true) : ($s->content ?? [])
+                ];
+            })->values()) !!},
+            activeSectionId: null,
 
-            initializeTinyMCE();
-
-            // Generic Repeater Logic
-            function setupRepeater(config) {
-                let index = config.initialIndex;
-                $(config.addButton).on('click', function () {
-                    let html = config.template(index);
-                    let $newRow = $(html);
-                    $(config.container).append($newRow);
-                    index++;
-                    updateRemoveButtons(config);
-                    if (config.afterAdd) config.afterAdd($newRow);
-                });
-
-                $(config.container).on('click', config.removeButton, function () {
-                    $(this).closest(config.itemClass).remove();
-                    updateRemoveButtons(config);
-                    if (config.afterRemove) config.afterRemove();
-                });
-
-                function updateRemoveButtons(config) {
-                    let items = $(config.container).find(config.itemClass);
-                    items.each(function (i) {
-                        $(this).find(config.removeButton).toggleClass('disabled', items.length === 1 && config.requireOne);
-                    });
+            init() {
+                this.renderSidebar();
+                this.initSorting();
+                
+                const lastActive = sessionStorage.getItem('activeCounsellingSection_' + '{{ $counselling->id }}');
+                if (lastActive === 'core') {
+                    this.showCore();
+                } else if (lastActive && this.sections.find(s => s.temp_id === lastActive)) {
+                    this.setActive(lastActive);
+                } else if (this.sections.length > 0) {
+                    this.setActive(this.sections[0].temp_id);
+                } else {
+                    this.showCore();
                 }
-            }
+            },
 
-            $('.select2').select2({ width: '100%' });
-            $('.select2-category').select2({
-                width: '100%',
-                closeOnSelect: false
-            });
-
-            function refreshCategoryOptions(sectionSelector) {
-                const allSelects = $(sectionSelector + ' .select2-category');
-                const allSelectedValues = [];
-
-                // Gather all selected values
-                allSelects.each(function () {
-                    const vals = $(this).val() || [];
-                    vals.forEach(v => {
-                        if (v) allSelectedValues.push(v);
-                    });
-                });
-
-                // Update visibility/availability
-                allSelects.each(function () {
-                    const currentSelect = $(this);
-                    const currentVals = currentSelect.val() || [];
-
-                    currentSelect.find('option').each(function () {
-                        const opt = $(this);
-                        const val = opt.val();
-                        if (allSelectedValues.includes(val) && !currentVals.includes(val)) {
-                            opt.prop('disabled', true);
-                        } else {
-                            opt.prop('disabled', false);
+            initSorting() {
+                const sectionsList = document.getElementById('sectionsList');
+                if (sectionsList) {
+                    new Sortable(sectionsList, {
+                        animation: 150,
+                        handle: '.fa-bars',
+                        onEnd: (evt) => {
+                            const reordered = [];
+                            const items = sectionsList.querySelectorAll('.nav-btn');
+                            items.forEach(item => {
+                                const id = item.getAttribute('data-id');
+                                const sec = this.sections.find(s => s.temp_id === id);
+                                if (sec) reordered.push(sec);
+                            });
+                            this.sections = reordered;
+                            this.save();
                         }
                     });
-
-                    if (currentSelect.data('select2')) {
-                        currentSelect.select2('destroy').select2({
-                            width: '100%',
-                            closeOnSelect: false
-                        });
-                    }
-                });
-            }
-
-            $(document).on('change', '#registration-fee-container .select2-category', function () {
-                refreshCategoryOptions('#registration-fee-container');
-            });
-
-            $(document).on('change', '#security-deposit-container .select2-category', function () {
-                refreshCategoryOptions('#security-deposit-container');
-            });
-
-            // Initial refresh
-            refreshCategoryOptions('#registration-fee-container');
-            refreshCategoryOptions('#security-deposit-container');
-
-            // Toggles
-            $('#registration_fee_required').on('change', function () {
-                $('#registration_fee_section').toggle(this.checked);
-            });
-            $('#late_registration_allowed').on('change', function () {
-                $('#late_fee_section').toggle(this.checked);
-            });
-            $('#security_deposit_required').on('change', function () {
-                $('#security_deposit_section').toggle(this.checked);
-            });
-            $('#tx_charges').on('change', function () {
-                $('#transaction_charges_section').toggle(this.checked);
-            });
-
-            // STEP FORM & AUTO SAVE LOGIC
-            let currentTab = 0;
-            const tabs = $('#counsellingTabs .nav-link');
-            let counsellingId = '{{ $counselling->id }}';
-
-            // Allow direct tab clicking
-            tabs.each(function (index) {
-                $(this).on('click', function (e) {
-                    e.preventDefault();
-                    if (index > currentTab && !validateCurrentStep()) {
-                        return false;
-                    }
-
-                    // Bulk save current tab before switching
-                    saveStepData();
-
-                    currentTab = index;
-                    showTab(currentTab);
-                });
-            });
-
-            window.nextPrev = function (n) {
-                if (n == 1 && !validateCurrentStep()) return false;
-
-                // Bulk save current tab when moving forward
-                saveStepData();
-
-                currentTab = currentTab + n;
-                showTab(currentTab);
-            }
-
-            function showTab(n) {
-                const tabId = $(tabs[n]).attr('href');
-                const bootstrapTab = new bootstrap.Tab(tabs[n]);
-                bootstrapTab.show();
-
-                // Buttons
-                if (n == 0) {
-                    $('#prevBtn').css('display', 'none');
-                } else {
-                    $('#prevBtn').css('display', 'inline');
                 }
+            },
 
-                if (n == (tabs.length - 1)) {
-                    $('#nextBtn').css('display', 'none');
-                    $('#submitBtn').css('display', 'inline');
-                } else {
-                    $('#nextBtn').css('display', 'inline');
-                    $('#nextBtn').text('Next Step');
-                    $('#submitBtn').css('display', 'none');
-                }
-
-
-                // Keep scroll at top
-                window.scrollTo(0, 0);
-            }
-
-            function validateCurrentStep() {
-                const currentTabId = $(tabs[currentTab]).attr('href');
-                let valid = true;
-                $(currentTabId + ' [required]').each(function () {
-                    if (!this.checkValidity()) {
-                        this.reportValidity();
-                        valid = false;
-                        return false;
-                    }
-                });
-                return valid;
-            }
-
-            function saveStepData() {
-                if (!counsellingId) return;
-
-                const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
-                const $section = $(`#${currentTabId}`);
-
-                // Collect all data from the current tab
-                const formData = {};
-                const fieldsInStep = getFieldsInStep(currentTabId);
-
-                fieldsInStep.forEach(fieldName => {
-                    formData[fieldName] = getInputValue(fieldName);
-                });
-
-                showAutoSaveStatus('saving');
-
-                $.ajax({
-                    url: `/admin/dynamic-exams/{{ $dynamicExam->id }}/counsellings/${counsellingId}/autosave-tab`,
-                    method: 'POST',
-                    data: {
-                        ...formData,
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function () {
-                        showAutoSaveStatus('saved');
-                        $(tabs[currentTab]).addClass('completed');
-                    }
-                });
-            }
-
-            function getFieldsInStep(stepId) {
-                const fields = [];
-                $(`#${stepId} [name]`).each(function () {
-                    const name = $(this).attr('name').split('[')[0]; // Get base name
-                    if (!fields.includes(name)) fields.push(name);
-                });
-                return fields;
-            }
-
-            function getInputValue(fieldName) {
-                // For array/repeater fields
-                if ($(`[name^="${fieldName}["]`).length) {
-                    const values = {};
-                    $(`[name^="${fieldName}["]`).each(function () {
-                        const fullPath = $(this).attr('name');
-                        const value = getSingleInputValue($(this));
-
-                        const matches = fullPath.match(/(\w+)\[(\d+)\]\[?(\w+)?\]?/);
-                        if (matches) {
-                            const [_, base, index, key] = matches;
-                            if (!values[index]) values[index] = {};
-                            if (key) {
-                                values[index][key] = value;
-                            } else {
-                                values[index] = value;
+            initFieldsSorting() {
+                const elementsContainer = document.getElementById('elementsContainer');
+                if (elementsContainer) {
+                    new Sortable(elementsContainer, {
+                        animation: 150,
+                        handle: '.field-drag-handle',
+                        onEnd: (evt) => {
+                            const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                            if (sec) {
+                                const newContent = [];
+                                const rows = elementsContainer.querySelectorAll('.field-row');
+                                rows.forEach(row => {
+                                    const index = row.getAttribute('data-index');
+                                    newContent.push(sec.content[index]);
+                                });
+                                sec.content = newContent;
+                                this.renderEditor(); // re-render to update data-index
+                                this.save();
                             }
                         }
                     });
+                }
+            },
 
-                    // Simple select multiple handle
-                    const multSelect = $(`select[name="${fieldName}[]"]`);
-                    if (multSelect.length) return multSelect.val();
+            generateId() {
+                return 'id_' + Math.random().toString(36).substr(2, 9);
+            },
 
-                    return Object.values(values);
+            addSection() {
+                const newSec = {
+                    id: null,
+                    temp_id: this.generateId(),
+                    heading: 'New Section ' + (this.sections.length + 1),
+                    content: []
+                };
+                this.sections.push(newSec);
+                this.renderSidebar();
+                this.setActive(newSec.temp_id);
+                this.save();
+            },
+
+            deleteSection(temp_id) {
+                if (!confirm('Are you sure you want to delete this section?')) return;
+                this.sections = this.sections.filter(s => s.temp_id !== temp_id);
+                if (this.activeSectionId === temp_id) {
+                    this.activeSectionId = null;
+                    this.showCore();
+                }
+                this.renderSidebar();
+                this.save();
+            },
+
+            deleteActiveSection() {
+                this.deleteSection(this.activeSectionId);
+            },
+
+            showCore() {
+                this.activeSectionId = null;
+                sessionStorage.setItem('activeCounsellingSection_' + '{{ $counselling->id }}', 'core');
+                const coreBtn = document.getElementById('coreTabBtn');
+                if (coreBtn) {
+                    coreBtn.classList.add('active');
+                    document.querySelectorAll('.nav-btn').forEach(btn => {
+                        if (btn.id !== 'coreTabBtn') btn.classList.remove('active');
+                    });
                 }
 
-                return getSingleInputValue($(`[name="${fieldName}"]`));
-            }
+                const coreForm = document.getElementById('coreCounsellingForm');
+                if (coreForm) coreForm.style.display = 'block';
 
-            function getSingleInputValue(el) {
-                if (el.is(':checkbox')) {
-                    return el.is(':checked') ? 1 : 0;
+                document.getElementById('activeSectionEditor').style.display = 'none';
+                if (document.getElementById('placeholder')) {
+                    document.getElementById('placeholder').style.display = 'none';
                 }
-                if (el.is('select[multiple]')) {
-                    return el.val();
-                }
-                if (el.hasClass('editor')) {
-                    const editor = tinymce.get(el.attr('id'));
-                    return editor ? editor.getContent() : el.val();
-                }
-                return el.val();
-            }
+            },
 
-            function showAutoSaveStatus(status) {
-                const statusEl = $('#autosave-status');
-                const msgEl = $('#save-message');
-                if (status === 'saving') {
-                    statusEl.html('<i class="fas fa-spinner fa-spin me-1"></i> Saving Tab...');
-                    msgEl.css('opacity', 1).text('Saving...');
+            setActive(id) {
+                this.activeSectionId = id;
+                sessionStorage.setItem('activeCounsellingSection_' + '{{ $counselling->id }}', id);
+                const coreBtn = document.getElementById('coreTabBtn');
+                if (coreBtn) coreBtn.classList.remove('active');
+
+                const coreForm = document.getElementById('coreCounsellingForm');
+                if (coreForm) coreForm.style.display = 'none';
+
+                this.renderSidebar();
+                this.renderEditor();
+                this.initFieldsSorting();
+
+                const heading = document.getElementById('activeSectionHeading');
+                if (heading) heading.readOnly = true;
+            },
+
+            enableHeadingEdit() {
+                const heading = document.getElementById('activeSectionHeading');
+                if (heading) {
+                    heading.readOnly = false;
+                    heading.focus();
+                }
+            },
+
+            updateActiveHeading(val) {
+                const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                if (sec) {
+                    sec.heading = val;
+                    this.renderSidebar();
+                    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => this.save(), 500);
+                }
+            },
+
+            save(isManual = false) {
+                const btn = document.getElementById('mainSaveBtn');
+                const origText = btn ? btn.innerHTML : 'Save';
+                if (isManual && btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                }
+
+                const form = document.getElementById('mainCounsellingForm');
+                const formData = new FormData(form);
+                formData.set('sections', JSON.stringify(this.sections));
+                formData.set('_method', 'PUT');
+
+                fetch(`{{ route('admin.dynamic-exams.counsellings.update', [$dynamicExam->id, $counselling->id]) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        if (isManual) toastr.success('Success', res.message || 'Saved successfully');
+                    } else {
+                        if (isManual) toastr.error('Error', res.message || 'Save failed');
+                    }
+                })
+                .catch(err => {
+                    console.error('Save error:', err);
+                })
+                .finally(() => {
+                    if (isManual && btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = origText;
+                    }
+                });
+            },
+
+            renderSidebar() {
+                const list = document.getElementById('sectionsList');
+                list.innerHTML = '';
+                this.sections.forEach(sec => {
+                    const div = document.createElement('div');
+                    div.className = 'nav-btn' + (this.activeSectionId === sec.temp_id ? ' active' : '');
+                    div.setAttribute('data-id', sec.temp_id);
+                    div.innerHTML = `
+                            <div class="d-flex align-items-center justify-content-between w-100">
+                                <div class="text-truncate" style="max-width: 140px;">
+                                    <i class="fas fa-bars me-2 small opacity-50"></i> ${sec.heading || 'Untitled'}
+                                </div>
+                                <div class="nav-actions">
+                                    <i class="fas fa-edit small p-1 cursor-pointer" onclick="event.stopPropagation(); builder.setActive('${sec.temp_id}'); builder.enableHeadingEdit()"></i>
+                                    <i class="fas fa-trash-alt small p-1 text-danger cursor-pointer" onclick="event.stopPropagation(); builder.deleteSection('${sec.temp_id}')"></i>
+                                </div>
+                            </div>
+                        `;
+                    div.onclick = () => this.setActive(sec.temp_id);
+                    list.appendChild(div);
+                });
+            },
+
+            renderEditor() {
+                const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                if (!sec) return;
+
+                document.getElementById('placeholder').style.display = 'none';
+                document.getElementById('activeSectionEditor').style.display = 'block';
+
+                document.getElementById('activeSectionHeading').value = sec.heading;
+
+                const container = document.getElementById('elementsContainer');
+                container.innerHTML = '';
+
+                sec.content.forEach((el, index) => {
+                    const node = (el.type === 'subheading') 
+                        ? this.createSubheadingNode(sec, el, index) 
+                        : this.createInputNode(sec, el, index);
+                    node.setAttribute('data-index', index);
+                    container.appendChild(node);
+                });
+            },
+
+            addElement(type) {
+                const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                if (!sec) return;
+
+                if (type === 'subheading') {
+                    sec.content.push({ type: 'subheading', title: 'Group Label' });
                 } else {
-                    statusEl.html('<i class="fas fa-check-circle text-success me-1"></i> Changes saved');
-                    msgEl.text('Saved').animate({ opacity: 0 }, 2000);
+                    sec.content.push({ type: 'input', inputType: 'textarea', label: 'Field Label', name: 'field_' + Date.now(), required: true, options: '' });
+                }
+                this.renderEditor();
+            },
+
+            createSubheadingNode(sec, el, index) {
+                const div = document.createElement('div');
+                div.className = 'field-row subheading-row d-flex align-items-center';
+                div.innerHTML = `
+                        <i class="fas fa-grip-vertical field-drag-handle"></i>
+                        <input type="text" class="group-label-input" value="${el.title}" onkeyup="builder.updateElement(${index}, 'title', this.value)">
+                        <i class="fas fa-times remove-action ms-auto" onclick="builder.removeElement(${index})"></i>
+                    `;
+                return div;
+            },
+
+            createInputNode(sec, el, index) {
+                const div = document.createElement('div');
+                div.className = 'field-row';
+                div.innerHTML = `
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-grip-vertical field-drag-handle"></i>
+                            <span class="fw-bold text-primary">Input Field</span>
+                            <i class="fas fa-trash-alt remove-action ms-auto" onclick="builder.removeElement(${index})"></i>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="label-base">Field Label</label>
+                                <input type="text" class="input-base" value="${el.label}" onkeyup="builder.updateElement(${index}, 'label', this.value)">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="label-base">Data Name (Unique)</label>
+                                <input type="text" class="input-base" value="${el.name}" onkeyup="builder.updateElement(${index}, 'name', this.value)">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="label-base">Input Type</label>
+                                <select class="input-base" onchange="builder.updateElement(${index}, 'inputType', this.value)">
+                                    <option value="text" ${el.inputType === 'text' ? 'selected' : ''}>Text</option>
+                                    <option value="number" ${el.inputType === 'number' ? 'selected' : ''}>Number</option>
+                                    <option value="date" ${el.inputType === 'date' ? 'selected' : ''}>Date</option>
+                                    <option value="textarea" ${el.inputType === 'textarea' ? 'selected' : ''}>Rich Text (TinyMCE)</option>
+                                    <option value="select" ${el.inputType === 'select' ? 'selected' : ''}>Dropdown</option>
+                                    <option value="multi-select" ${el.inputType === 'multi-select' ? 'selected' : ''}>Multi Select</option>
+                                    <option value="radio" ${el.inputType === 'radio' ? 'selected' : ''}>Radio Buttons</option>
+                                    <option value="checkbox" ${el.inputType === 'checkbox' ? 'selected' : ''}>Checkboxes</option>
+                                    <option value="file" ${el.inputType === 'file' ? 'selected' : ''}>File Upload</option>
+                                </select>
+                            </div>
+                            <div class="col-md-9" style="${['select', 'multi-select', 'radio', 'checkbox'].includes(el.inputType) ? '' : 'display:none;'}">
+                                <label class="label-base">Options (Comma separated)</label>
+                                <input type="text" class="input-base" value="${el.options || ''}" placeholder="Option 1, Option 2, Option 3" onkeyup="builder.updateElement(${index}, 'options', this.value)">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end pb-1">
+                                <div class="form-check form-switch ps-5">
+                                    <input class="form-check-input" type="checkbox" ${el.required ? 'checked' : ''} onchange="builder.updateElement(${index}, 'required', this.checked)">
+                                    <label class="form-check-label small fw-semibold">Required</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                return div;
+            },
+
+            updateElement(index, key, val) {
+                const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                if (sec && sec.content[index]) {
+                    sec.content[index][key] = val;
+                    if (key === 'inputType') this.renderEditor();
+                    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => this.save(), 500);
+                }
+            },
+
+            removeElement(index) {
+                if (!confirm('Remove this field?')) return;
+                const sec = this.sections.find(s => s.temp_id === this.activeSectionId);
+                if (sec) {
+                    sec.content.splice(index, 1);
+                    this.renderEditor();
+                    this.save();
                 }
             }
+        };
 
-            // Initial view
-            showTab(currentTab);
+        function saveActiveTab() {
+            builder.save(true);
+        }
 
-
-            // Registration Fee Repeater
-            setupRepeater({
-                addButton: '#add-reg-fee',
-                removeButton: '.remove-reg-fee',
-                container: '#registration-fee-container',
-                itemClass: '.registration-fee-item',
-                requireOne: true,
-                initialIndex: {{ count(old('registration_fee_structure', $counselling->registration_fee_structure ?: [])) ?: 1 }},
-                template: (i) => `
-                                                <div class="card border mb-2 registration-fee-item">
-                                                    <div class="card-body p-3">
-                                                        <div class="row g-2">
-                                                            <div class="col-md-3">
-                                                                <label class="small">Categories</label>
-                                                                <select name="registration_fee_structure[${i}][categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                                    ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-3">
-                                                                <label class="small">Amount</label>
-                                                                <input type="number" name="registration_fee_structure[${i}][amount]" class="form-control form-control-sm">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Currency</label>
-                                                                <input type="text" name="registration_fee_structure[${i}][currency]" class="form-control form-control-sm" value="INR">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Refundable</label>
-                                                                <select name="registration_fee_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                                    <option value="No">No</option>
-                                                                    <option value="Yes">Yes</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2 d-flex align-items-end">
-                                                                <button type="button" class="btn btn-sm btn-danger remove-reg-fee w-100">Remove</button>
-                                                            </div>
-                                                            <div class="col-md-12 mt-2">
-                                                                <input type="text" name="registration_fee_structure[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>`,
-                afterAdd: ($row) => {
-                    $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
-                    refreshCategoryOptions('#registration-fee-container');
-                },
-                afterRemove: () => refreshCategoryOptions('#registration-fee-container')
-            });
-
-            // Late Fee Repeater
-            setupRepeater({
-                addButton: '#add-late-fee',
-                removeButton: '.remove-late-fee',
-                container: '#late-fee-container',
-                itemClass: '.late-fee-item',
-                requireOne: true,
-                initialIndex: {{ count(old('late_fee_rules', $counselling->late_fee_rules ?: [])) ?: 1 }},
-                template: (i) => `
-                                                <div class="card border mb-2 late-fee-item bg-light">
-                                                    <div class="card-body p-3">
-                                                        <div class="row g-2">
-                                                            <div class="col-md-3">
-                                                                <label class="small">Condition</label>
-                                                                <select name="late_fee_rules[${i}][condition]" class="form-select form-select-sm">
-                                                                    ${['Late registration', 'Missed reporting', 'Choice not locked'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Type</label>
-                                                                <select name="late_fee_rules[${i}][penalty_type]" class="form-select form-select-sm">
-                                                                    <option value="Flat">Flat</option>
-                                                                    <option value="Percentage">Percentage</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Amount</label>
-                                                                <input type="number" name="late_fee_rules[${i}][penalty_amount]" class="form-control form-control-sm">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Cap</label>
-                                                                <input type="number" name="late_fee_rules[${i}][maximum_penalty_cap]" class="form-control form-control-sm" placeholder="Max Cap">
-                                                            </div>
-                                                            <div class="col-md-3 d-flex align-items-end">
-                                                                <button type="button" class="btn btn-sm btn-danger remove-late-fee w-100">Remove</button>
-                                                            </div>
-                                                            <div class="col-md-12 mt-2">
-                                                                <input type="text" name="late_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>`
-            });
-
-            // Security Deposit Repeater
-            setupRepeater({
-                addButton: '#add-sd',
-                removeButton: '.remove-sd',
-                container: '#security-deposit-container',
-                itemClass: '.security-deposit-item',
-                requireOne: true,
-                initialIndex: {{ count(old('security_deposit_structure', $counselling->security_deposit_structure ?: [])) ?: 1 }},
-                template: (i) => `
-                                                <div class="card border mb-2 security-deposit-item">
-                                                    <div class="card-body p-3">
-                                                        <div class="row g-2">
-                                                            <div class="col-md-2">
-                                                                <label class="small">Categories</label>
-                                                                <select name="security_deposit_structure[${i}][candidate_categories][]" class="form-select form-select-sm select2-category" multiple data-placeholder="Select Categories">
-                                                                    ${['General', 'OBC', 'SC', 'ST', 'EWS', 'PwD'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">College Type</label>
-                                                                <select name="security_deposit_structure[${i}][college_type]" class="form-select form-select-sm">
-                                                                    ${['Government', 'Private', 'Deemed'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Quota</label>
-                                                                <select name="security_deposit_structure[${i}][quota_type]" class="form-select form-select-sm">
-                                                                    ${['All India', 'State'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Amount</label>
-                                                                <input type="number" name="security_deposit_structure[${i}][amount]" class="form-control form-control-sm">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Refundable</label>
-                                                                <select name="security_deposit_structure[${i}][refundable]" class="form-select form-select-sm">
-                                                                    <option value="Yes">Yes</option>
-                                                                    <option value="No">No</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2 d-flex align-items-end">
-                                                                <button type="button" class="btn btn-sm btn-danger remove-sd w-100">Remove</button>
-                                                            </div>
-                                                            <div class="col-md-6 mt-2">
-                                                                <input type="text" name="security_deposit_structure[${i}][refund_conditions]" class="form-control form-control-sm" placeholder="Refund Conditions">
-                                                            </div>
-                                                            <div class="col-md-6 mt-2">
-                                                                <input type="text" name="security_deposit_structure[${i}][forfeiture_conditions]" class="form-control form-control-sm" placeholder="Forfeiture Conditions">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>`,
-                afterAdd: ($row) => {
-                    $row.find('.select2-category').select2({ width: '100%', closeOnSelect: false });
-                    refreshCategoryOptions('#security-deposit-container');
-                },
-                afterRemove: () => refreshCategoryOptions('#security-deposit-container')
-            });
-
-            // Round-wise Fee Repeater
-            setupRepeater({
-                addButton: '#add-round-fee',
-                removeButton: '.remove-round-fee',
-                container: '#round-fee-container',
-                itemClass: '.round-fee-item',
-                requireOne: true,
-                initialIndex: {{ count(old('round_specific_fee_rules', $counselling->round_specific_fee_rules ?: [])) ?: 1 }},
-                template: (i) => `
-                                                <div class="card border mb-2 round-fee-item bg-light">
-                                                    <div class="card-body p-3">
-                                                        <div class="row g-2">
-                                                            <div class="col-md-3">
-                                                                <label class="small">Round Name</label>
-                                                                <input type="text" name="round_specific_fee_rules[${i}][round_name]" class="form-control form-control-sm" placeholder="e.g. Mop-up Round">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Fresh Reg Fee</label>
-                                                                <input type="text" name="round_specific_fee_rules[${i}][fresh_registration_fee]" class="form-control form-control-sm">
-                                                            </div>
-                                                            <div class="col-md-3">
-                                                                <label class="small">Addl. Security Deposit</label>
-                                                                <input type="text" name="round_specific_fee_rules[${i}][additional_security_deposit]" class="form-control form-control-sm">
-                                                            </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small">Refundable</label>
-                                                                <select name="round_specific_fee_rules[${i}][refund_applicable]" class="form-select form-select-sm">
-                                                                    <option value="Yes">Yes</option>
-                                                                    <option value="No">No</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-2 d-flex align-items-end">
-                                                                <button type="button" class="btn btn-sm btn-danger remove-round-fee w-100">Remove</button>
-                                                            </div>
-                                                            <div class="col-md-12 mt-2">
-                                                                <input type="text" name="round_specific_fee_rules[${i}][remarks]" class="form-control form-control-sm" placeholder="Remarks">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>`
-            });
-
-            // Forfeiture Repeater
-            setupRepeater({
-                addButton: '#add-forfeit',
-                removeButton: '.remove-forfeit',
-                container: '#forfeiture-container',
-                itemClass: '.forfeiture-item',
-                requireOne: true,
-                initialIndex: {{ count(old('forfeiture_scenarios', $counselling->forfeiture_scenarios ?: [])) ?: 1 }},
-                template: (i) => `
-                                                <div class="input-group mb-2 forfeiture-item">
-                                                    <select name="forfeiture_scenarios[${i}][scenario]" class="form-select">
-                                                        ${['Seat allotted but not joined', 'Upgradation declined', 'False information'].map(s => `<option value="${s}">${s}</option>`).join('')}
-                                                    </select>
-                                                    <input type="text" name="forfeiture_scenarios[${i}][remarks]" class="form-control w-50" placeholder="Optional remarks">
-                                                    <button class="btn btn-outline-danger remove-forfeit" type="button">Remove</button>
-                                                </div>`
-            });
-
-            setupRepeater({
-                addButton: '#add-round',
-                removeButton: '.remove-round',
-                container: '#rounds-container',
-                itemClass: '.rounds-repeater-item',
-                requireOne: true,
-                initialIndex: {{ count(old('rounds', $counselling->rounds ?: [[]])) }},
-                template: (i) => `
-                                                <div class="rounds-repeater-item border p-3 mb-2 rounded mt-2">
-                                                    <div class="row g-2">
-                                                        <div class="col-md-3">
-                                                            <input type="text" name="rounds[${i}][round_name]" class="form-control" placeholder="Round Name">
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <select name="rounds[${i}][round_type]" class="form-select">
-                                                                <option value="Regular">Regular</option>
-                                                                <option value="Special">Special</option>
-                                                                <option value="Mop-Up">Mop-Up</option>
-                                                                <option value="Stray">Stray Vacancy</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-check mt-2">
-                                                                <input type="checkbox" name="rounds[${i}][upgrade_allowed]" value="1" class="form-check-input"> <label>Upgrade</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-check mt-2">
-                                                                <input type="checkbox" name="rounds[${i}][fresh_reg]" value="1" class="form-check-input"> <label>Fresh Reg</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <button type="button" class="btn btn-sm btn-danger remove-round w-100">Remove</button>
-                                                        </div>
-                                                    </div>
-                                                </div>`
-            });
-        });
+        builder.init();
     </script>
 @endpush

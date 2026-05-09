@@ -22,6 +22,22 @@ use App\Http\Controllers\Admin\CommunityCategoryController;
 use App\Http\Controllers\Admin\CommunityQuestionController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\ExamStageDataController;
+use App\Http\Controllers\Admin\Hr\WhatsappTemplateController;
+use App\Http\Controllers\Admin\Hr\LeadSourceController;
+use App\Http\Controllers\Admin\Hr\ClientController;
+use App\Http\Controllers\Admin\Hr\ProjectCategoryController;
+use App\Http\Controllers\Admin\Hr\ProjectsController;
+use App\Http\Controllers\Admin\Hr\MilestoneController;
+use App\Http\Controllers\Admin\Hr\TaskController;
+use App\Http\Controllers\Admin\Hr\TaskCommentController;
+use App\Http\Controllers\Admin\Hr\CustomerController;
+use App\Http\Controllers\Admin\Hr\CustomerCategoryController;
+use App\Http\Controllers\Admin\Hr\CustomerFieldController;
+use App\Http\Controllers\Admin\Hr\InstituteController;
+use App\Http\Controllers\Admin\Hr\CallingStatusController;
+use App\Http\Controllers\Admin\Hr\CallingActionController;
+use App\Http\Controllers\Admin\Hr\CallingController;
+use App\Http\Controllers\Admin\Hr\ClockController;
 
 // ✅ Root Redirect
 Route::get('/', function () {
@@ -148,6 +164,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         'update'  => 'admin.dynamic-exams.counsellings.update',
         'destroy' => 'admin.dynamic-exams.counsellings.destroy',
     ])->except(['show']);
+    Route::get('/admin/dynamic-exams/{dynamicExam}/counsellings/{counselling}/data', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'data'])->name('admin.dynamic-exams.counsellings.data');
+    Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/{counselling}/data', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'saveData'])->name('admin.dynamic-exams.counsellings.data.save');
     Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/store-draft', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'storeDraft'])->name('admin.dynamic-exams.counsellings.store-draft');
     Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/{counselling}/autosave-tab', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'autosaveTab'])->name('admin.dynamic-exams.counsellings.autosave-tab');
 
@@ -195,12 +213,21 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Hero Sliders
     Route::resource('/admin/hero-sliders', HeroSliderController::class)->names('admin.hero-sliders');
+    Route::post('/admin/hero-sliders/{hero_slider}/toggle-status', [HeroSliderController::class, 'updateStatus'])->name('admin.hero-sliders.toggle-status');
+    Route::post('/admin/hero-sliders/global-banner-toggle', [HeroSliderController::class, 'toggleGlobalBanner'])->name('admin.hero-sliders.global-banner-toggle');
 
     // Specialized Courses (Home Services)
     Route::resource('/admin/home-services', \App\Http\Controllers\Admin\HomeServiceController::class)->names('admin.home-services');
 
     // Benefits (Why Choose Us)
     Route::resource('/admin/home-benefits', \App\Http\Controllers\Admin\HomeBenefitController::class)->names('admin.home-benefits');
+
+    // Trending Skills
+    Route::resource('/admin/trending-skills', \App\Http\Controllers\Admin\TrendingSkillController::class)->names('admin.trending-skills');
+
+    // Company Marquee
+    Route::resource('/admin/company-marquees', \App\Http\Controllers\Admin\CompanyMarqueeController::class)->names('admin.company-marquees');
+    Route::post('/admin/company-marquees/{company_marquee}/toggle-status', [\App\Http\Controllers\Admin\CompanyMarqueeController::class, 'toggleStatus'])->name('admin.company-marquees.toggle-status');
 
     // Video Testimonials
     Route::resource('/admin/video-testimonials', VideoTestimonialController::class)->names('admin.video-testimonials');
@@ -281,8 +308,87 @@ Route::middleware(['auth', 'admin'])->group(function () {
         // Organisation Specific Sub-routes
         Route::delete('organisation-awards/{id}', [\App\Http\Controllers\Admin\OrganisationController::class, 'deleteAward'])->name('organisation-awards.destroy');
         Route::delete('organisation-sports/{id}', [\App\Http\Controllers\Admin\OrganisationController::class, 'deleteSport'])->name('organisation-sports.destroy');
+
+        // HR Leaves Module
+        Route::prefix('hr')->name('hr.')->group(function () {
+            Route::resource('leave-settings', \App\Http\Controllers\Admin\Hr\LeaveSettingController::class);
+            Route::resource('leave-policies', \App\Http\Controllers\Admin\Hr\LeavePolicyController::class);
+            Route::resource('holidays', \App\Http\Controllers\Admin\Hr\HolidayController::class);
+            Route::resource('leaves', \App\Http\Controllers\Admin\Hr\LeavesController::class);
+
+            // Staff Module Routes
+            Route::resource('departments', \App\Http\Controllers\Admin\Hr\DepartmentController::class);
+            Route::resource('designations', \App\Http\Controllers\Admin\Hr\DesignationController::class);
+            Route::resource('staff', \App\Http\Controllers\Admin\Hr\StaffController::class);
+            Route::resource('roles', \App\Http\Controllers\Admin\Hr\RoleController::class);
+            Route::resource('banks', \App\Http\Controllers\Admin\Hr\BanksController::class);
+            Route::post('change-staff-role', [\App\Http\Controllers\Admin\Hr\StaffController::class, 'changeStaffRole'])->name('change-staff-role');
+
+            // Salary Module Routes
+            Route::get('attendance', [\App\Http\Controllers\Admin\Hr\AttendanceController::class, 'showAttendance'])->name('attendance.index');
+            Route::post('get-at-details', [\App\Http\Controllers\Admin\Hr\AttendanceController::class, 'getAtDetailsForDay'])->name('attendance.details');
+            
+            Route::resource('advance', \App\Http\Controllers\Admin\Hr\AdvancePayController::class);
+            Route::post('advance/bonus', [\App\Http\Controllers\Admin\Hr\AdvancePayController::class, 'storeBonus'])->name('advance.bonus.store');
+            Route::post('get-advance-amount', [\App\Http\Controllers\Admin\Hr\AdvancePayController::class, 'getAdvancePayAmount'])->name('advance.get-amount');
+
+            Route::get('payroll', [\App\Http\Controllers\Admin\Hr\PayRollController::class, 'showPayroll'])->name('payroll.index');
+            Route::post('payroll/calculate', [\App\Http\Controllers\Admin\Hr\PayRollController::class, 'calculateMonthWiseSalary'])->name('payroll.calculate');
+            Route::post('payroll/make-payment', [\App\Http\Controllers\Admin\Hr\PayRollController::class, 'makeEmployeePayment'])->name('payroll.make-payment');
+
+            Route::resource('payout', \App\Http\Controllers\Admin\Hr\PayoutController::class);
+
+            // Whatsapp Template Module Routes
+            Route::resource('whatsapp_template', \App\Http\Controllers\Admin\Hr\WhatsappTemplateController::class);
+            Route::controller(\App\Http\Controllers\Admin\Hr\WhatsappTemplateController::class)->group(function () {
+                Route::get('whatsapp_template/send-message/{id}', 'sendMessage')->name('whatsapp_template.sendMessage');
+                Route::post('whatsapp_template/post-send-message', 'postSendMessage')->name('whatsapp_template.postSendMessage');
+                Route::get('whatsapp_report', 'report')->name('whatsapp_template.report');
+                Route::get('whatsapp_stop', 'whatsappStop')->name('whatsapp_template.whatsappStop');
+                Route::post('getCategoryNumbers', 'getCategoryNumbers')->name('whatsapp_template.getCategoryNumbers');
+            });
+            
+            // AJAX Routes
+            Route::post('get-designations', [\App\Http\Controllers\Admin\Hr\HrAjaxController::class, 'getDesignations'])->name('get-designations');
+            Route::post('get-users', [\App\Http\Controllers\Admin\Hr\HrAjaxController::class, 'getUsers'])->name('get-users');
+            // Project & Tasks Module Routes
+            Route::prefix('projects')->name('projects.')->group(function () {
+                Route::resource('lead-sources', LeadSourceController::class);
+                Route::resource('clients', ClientController::class);
+                Route::resource('project-categories', ProjectCategoryController::class);
+                Route::resource('index', ProjectsController::class); // Main project list
+                Route::resource('milestones', MilestoneController::class);
+                Route::resource('tasks', TaskController::class);
+                Route::resource('comments', TaskCommentController::class);
+                Route::post('get-project-data', [TaskController::class, 'getProjectData'])->name('get-data');
+            });
+
+            // Clock / Attendance Routes
+            Route::prefix('clock')->name('clock.')->group(function() {
+                Route::post('check-in', [ClockController::class, 'checkInAttendance'])->name('check_in');
+                Route::post('check-out', [ClockController::class, 'checkOutAttendance'])->name('check_out');
+                Route::post('start-break', [ClockController::class, 'startBreakTime'])->name('start_break');
+                Route::post('end-break', [ClockController::class, 'endLunchBreak'])->name('end_break');
+                Route::post('end-lunch-break', [ClockController::class, 'endLunchBreak'])->name('end_lunchBreak');
+            });
+
+            // Customer Management Module Routes
+            Route::prefix('customers')->name('customers.')->group(function () {
+                Route::resource('index', CustomerController::class);
+                Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
+            });
+            Route::resource('customer-categories', CustomerCategoryController::class);
+            Route::resource('customer-fields', CustomerFieldController::class);
+            Route::resource('institutes', InstituteController::class);
+
+            // Student Management & Calling Module Routes
+            Route::prefix('students')->name('students.')->group(function () {
+                Route::resource('calling-statuses', CallingStatusController::class);
+                Route::resource('calling-actions', CallingActionController::class);
+                Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
+                Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
+                Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
+            });
+        });
     });
 });
-
-
-

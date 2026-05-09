@@ -10,6 +10,11 @@ use App\Models\Category;
 use App\Models\Faq;
 use App\Models\Testimonial;
 use App\Models\Lead;
+use App\Models\Attendance;
+use App\Models\Breaks;
+use App\Models\Admin;
+use App\Models\Tasks;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -18,6 +23,9 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $user = Auth::user();
+        $orgId = $user->organization_id;
+
         $stats = [
             'experts' => Expert::count(),
             'blogs' => Blog::count(),
@@ -26,8 +34,30 @@ class DashboardController extends Controller
             'testimonials' => Testimonial::count(),
             'leads' => Lead::count(),
             'new_leads' => Lead::where('status', 'New')->count(),
+            // HR Stats
+            'total_staff' => Admin::where('organization_id', $orgId)->where('id', '!=', $user->id)->count(),
+            'pending_tasks' => Tasks::where('organization_id', $orgId)->where('assigned_to', $user->id)->where('status', '!=', 'completed')->count(),
         ];
 
-        return view('admin.dashboard', compact('stats'));
+        $attendance = Attendance::where('staff_id', $user->id)
+            ->where('date', date('Y-m-d'))
+            ->whereNull('check_out')
+            ->first();
+            
+        $breaks = null;
+        if ($attendance) {
+            $breaks = Breaks::where('attendance_id', $attendance->id)
+                ->whereNull('end')
+                ->first();
+        }
+
+        $pendingTasks = Tasks::where('organization_id', $orgId)
+            ->where('assigned_to', $user->id)
+            ->where('status', '!=', 'completed')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'attendance', 'breaks', 'pendingTasks'));
     }
 }

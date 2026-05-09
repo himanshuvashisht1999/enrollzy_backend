@@ -175,12 +175,12 @@
                                                 </div>
                                                 <div class="col-md-12">
                                                     <label class="form-label">About University</label>
-                                                    <textarea name="about_university" class="form-control"
+                                                    <textarea name="about_university" class="form-control editor"
                                                         rows="3">{{ old('about_university') }}</textarea>
                                                 </div>
                                                 <div class="col-md-12">
                                                     <label class="form-label">Vision & Mission</label>
-                                                    <textarea name="vision_mission" class="form-control"
+                                                    <textarea name="vision_mission" class="form-control editor"
                                                         rows="3">{{ old('vision_mission') }}</textarea>
                                                 </div>
                                                 <div class="col-md-6">
@@ -432,12 +432,12 @@
 
                                                 <div class="col-md-12">
                                                     <label class="form-label">About Organization</label>
-                                                    <textarea name="about_organisation" class="form-control"
+                                                    <textarea name="about_organisation" class="form-control editor"
                                                         rows="3">{{ old('about_organisation') }}</textarea>
                                                 </div>
                                                 <div class="col-md-12">
                                                     <label class="form-label">Vision & Mission</label>
-                                                    <textarea name="vision_mission" class="form-control" rows="3"
+                                                    <textarea name="vision_mission" class="form-control editor" rows="3"
                                                         id="inst_vision_mission">{{ old('vision_mission') }}</textarea>
                                                 </div>
 
@@ -571,10 +571,10 @@
                                                         value="{{ old('established_year') }}"></div>
                                                 <div class="col-md-12"><label class="form-label">About
                                                         Organization</label><textarea name="about_organisation"
-                                                        class="form-control" rows="3"
+                                                        class="form-control editor" rows="3"
                                                         id="sch_about">{{ old('about_organisation') }}</textarea></div>
                                                 <div class="col-md-12"><label class="form-label">Vision &
-                                                        Mission</label><textarea name="vision_mission" class="form-control"
+                                                        Mission</label><textarea name="vision_mission" class="form-control editor"
                                                         rows="3" id="sch_vision">{{ old('vision_mission') }}</textarea>
                                                 </div>
 
@@ -1659,6 +1659,7 @@
     @push('js')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                initializeTinyMCE('.editor');
                 const typeSelect = document.getElementById('organisation_type_id');
                 const uniFields = document.getElementById('university-fields');
                 const instFields = document.getElementById('institute-fields');
