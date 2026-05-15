@@ -154,10 +154,10 @@
 
 <body>
     @php
-        $user = Auth::guard('web')->user() ?? Auth::guard('expert')->user() ?? Auth::guard('alumni')->user();
+        $user = Auth::guard('admin')->user() ?? Auth::guard('web')->user() ?? Auth::guard('expert')->user() ?? Auth::guard('alumni')->user();
         $isExpert = Auth::guard('expert')->check();
         $isAlumni = Auth::guard('alumni')->check();
-        $isAdmin = Auth::guard('web')->check() && $user && ($user->is_admin ?? false);
+        $isAdmin = Auth::guard('admin')->check() || (Auth::guard('web')->check() && $user && ($user->is_admin ?? false));
     @endphp
 
     <!-- Sidebar -->

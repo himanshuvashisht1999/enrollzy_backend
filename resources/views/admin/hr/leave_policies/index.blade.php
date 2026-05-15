@@ -22,7 +22,6 @@
                         <tr>
                             <th>Sr. No.</th>
                             <th>Policy Name</th>
-                            <th>Description Snippet</th>
                             <th>Departments</th>
                             <th>Designations</th>
                             <th class="text-end">Action</th>
@@ -49,7 +48,6 @@
             columns: [
                 {data: 'DT_RowIndex', name: 'DT_RowIndex'},
                 {data: 'name', name: 'name'},
-                {data: 'policy', name: 'policy'},
                 {data: 'department', name: 'department'},
                 {data: 'designation', name: 'designation'},
                 {data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end'},

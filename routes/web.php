@@ -50,7 +50,7 @@ Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ✅ Admin Routes
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     // Categories

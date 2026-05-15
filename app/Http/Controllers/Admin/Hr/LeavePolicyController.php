@@ -30,9 +30,6 @@ class LeavePolicyController extends Controller
                 ->addColumn('name', function ($row) {
                     return '<p class="text-sm font-weight-bold mb-0">' . $row->name . '</p>';
                 })
-                ->addColumn('policy', function ($row) {
-                    return '<p class="text-sm font-weight-bold mb-0">' . $row->policy . '</p>';
-                })
                 ->addColumn('department', function ($row) {
                     $departmentIds = explode(',', $row->department_ids);
                     $departmentNames = Department::whereIn('id', $departmentIds)->pluck('name')->toArray();
@@ -55,7 +52,7 @@ class LeavePolicyController extends Controller
                     $btn .= '</div>';
                     return $btn;
                 })
-                ->rawColumns(['name', 'policy','department', 'designation', 'action'])
+                ->rawColumns(['name', 'department', 'designation', 'action'])
                 ->make(true);
         }
         return view('admin.hr.leave_policies.index');

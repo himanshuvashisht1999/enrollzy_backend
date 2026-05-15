@@ -183,11 +183,13 @@ class StaffController extends Controller
         if($user->is_admin && !isset($user->organization_id)){
             $department = HrDepartment::get();
             $designation = Designation::get();
+            $roles = Role::where('guard_name', 'admin')->get();
         }else{
             $department = HrDepartment::where('organization_id', $user->organization_id)->get();
             $designation = Designation::where('organization_id', $user->organization_id)->get();
+            $roles = Role::where('guard_name', 'admin')->where('name', '!=', 'superadmin')->get();
         }
-        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation'));
+        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation', 'roles'));
     }
 
     public function update(Request $request, $id)
@@ -249,6 +251,13 @@ class StaffController extends Controller
             }
 
             $staff->update($updateData);
+
+            if ($request->filled('rolename')) {
+                $staff->syncRoles([$request->rolename]);
+                $staff->role = $request->rolename;
+                $staff->save();
+            }
+
             return redirect(route('admin.hr.staff.index'))->with('success', 'Staff updated successfully');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Something went wrong, ' . $e->getMessage())->withInput();
