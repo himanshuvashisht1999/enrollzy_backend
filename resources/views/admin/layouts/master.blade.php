@@ -379,31 +379,98 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
 
-                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customers.index.index') }}">Customers list</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-categories.index') }}">Customers Category</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-fields.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-fields.index') }}">Customer Fields</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.institutes.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.institutes.index') }}">Institutes</a></li>
-
-                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Students</div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') && request()->get('type') == 'class' ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customers.index.index', ['type' => 'class']) }}">Classes</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-categories.index') }}">Students</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-statuses.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-statuses.index') }}">Calling Status</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-actions.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-actions.index') }}">Calling Action</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-module.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-module.index') }}">Calling Module</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-history.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-history.index') }}">Calling History</a></li>
                         </ul>
                     </div>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}" 
+                        href="{{ route('admin.customers.main.index.index') }}">
+                        <i class="fas fa-users me-2"></i> Customers list
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-categories.index') }}">
+                        <i class="fas fa-tags me-2"></i> Customers Category
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-fields.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Customer Fields
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.institutes.index') }}">
+                        <i class="fas fa-university me-2"></i> Institutes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.interested-ins.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.interested-ins.index') }}">
+                        <i class="fas fa-thumbs-up me-2"></i> Interested In
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-sessions.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-sessions.index') }}">
+                        <i class="fas fa-calendar-alt me-2"></i> Sessions
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Consultants</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultants.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultants.index') }}">
+                        <i class="fas fa-user-tie me-2"></i> Consultants list
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-categories.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultant-categories.index') }}">
+                        <i class="fas fa-folder me-2"></i> Consultant Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-settings.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultant-settings.index') }}">
+                        <i class="fas fa-cog me-2"></i> Consultant Settings
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && request()->get('type') == 'class' ? 'active' : '' }}" 
+                        href="{{ route('admin.customers.main.index.index', ['type' => 'class']) }}">
+                        <i class="fas fa-school me-2"></i> Classes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-statuses.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-statuses.index') }}">
+                        <i class="fas fa-check-circle me-2"></i> Calling Status
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-actions.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-actions.index') }}">
+                        <i class="fas fa-phone-square me-2"></i> Calling Action
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-module.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-module.index') }}">
+                        <i class="fas fa-phone-alt me-2"></i> Calling Module
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-history.index') }}">
+                        <i class="fas fa-history me-2"></i> Calling History
+                    </a>
                 </li>
 
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>

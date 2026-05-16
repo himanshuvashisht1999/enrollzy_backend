@@ -38,6 +38,8 @@ use App\Http\Controllers\Admin\Hr\CallingStatusController;
 use App\Http\Controllers\Admin\Hr\CallingActionController;
 use App\Http\Controllers\Admin\Hr\CallingController;
 use App\Http\Controllers\Admin\Hr\ClockController;
+use App\Http\Controllers\Admin\Hr\InterestedInController;
+use App\Http\Controllers\Admin\Hr\CustomerSessionController;
 
 // ✅ Root Redirect
 Route::get('/', function () {
@@ -372,23 +374,64 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
                 Route::post('end-lunch-break', [ClockController::class, 'endLunchBreak'])->name('end_lunchBreak');
             });
 
-            // Customer Management Module Routes
-            Route::prefix('customers')->name('customers.')->group(function () {
-                Route::resource('index', CustomerController::class);
-                Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
-            });
-            Route::resource('customer-categories', CustomerCategoryController::class);
-            Route::resource('customer-fields', CustomerFieldController::class);
-            Route::resource('institutes', InstituteController::class);
+        });
 
-            // Student Management & Calling Module Routes
-            Route::prefix('students')->name('students.')->group(function () {
-                Route::resource('calling-statuses', CallingStatusController::class);
-                Route::resource('calling-actions', CallingActionController::class);
-                Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
-                Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
-                Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
-            });
+        // Customer Management Module Routes
+        Route::prefix('customers')->name('customers.main.')->group(function () {
+            Route::resource('index', CustomerController::class);
+            Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
+        });
+
+        Route::resource('customer-categories', CustomerCategoryController::class)->names('customer-categories');
+        Route::post('quick-add-category', [CustomerCategoryController::class, 'quickStore'])->name('quick-add-category');
+        Route::post('quick-add-interest', [InterestedInController::class, 'quickStore'])->name('quick-add-interest');
+        Route::post('quick-add-session', [CustomerSessionController::class, 'quickStore'])->name('quick-add-session');
+        Route::resource('customer-fields', CustomerFieldController::class)->names('customer-fields');
+        Route::resource('institutes', InstituteController::class)->names('institutes');
+        Route::resource('interested-ins', InterestedInController::class)->names('interested-ins');
+        Route::resource('customer-sessions', CustomerSessionController::class)->names('customer-sessions');
+
+        // Student CRM & Calling Module Routes
+        Route::prefix('students-crm')->name('students-crm.')->group(function () {
+            Route::resource('calling-statuses', CallingStatusController::class);
+            Route::resource('calling-actions', CallingActionController::class);
+            Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
+            Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
+            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
+        });
+
+        // Consultant Management Module Routes
+        Route::prefix('consultants')->name('consultants.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'index'])->name('index');
+            Route::get('create', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'create'])->name('create');
+            Route::post('store', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'store'])->name('store');
+            Route::get('edit/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'edit'])->name('edit');
+            Route::put('update/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'update'])->name('update');
+            Route::get('sub-categories', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'getSubCategories'])->name('sub-categories');
+        });
+
+        Route::prefix('consultant-categories')->name('consultant-categories.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'index'])->name('index');
+            Route::post('store', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'store'])->name('store');
+            Route::delete('destroy/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('consultant-settings')->name('consultant-settings.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'index'])->name('index');
+            Route::post('store-type', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeType'])->name('store-type');
+            Route::post('store-status', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeStatus'])->name('store-status');
+            Route::post('store-access-level', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeAccessLevel'])->name('store-access-level');
+            Route::post('store-visibility', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeLeadVisibility'])->name('store-visibility');
+            
+            Route::put('update-type/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateType'])->name('update-type');
+            Route::put('update-status/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateStatus'])->name('update-status');
+            Route::put('update-access-level/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateAccessLevel'])->name('update-access-level');
+            Route::put('update-visibility/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateLeadVisibility'])->name('update-visibility');
+
+            Route::delete('destroy-type/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyType'])->name('destroy-type');
+            Route::delete('destroy-status/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyStatus'])->name('destroy-status');
+            Route::delete('destroy-access-level/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyAccessLevel'])->name('destroy-access-level');
+            Route::delete('destroy-visibility/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyLeadVisibility'])->name('destroy-visibility');
         });
     });
 });

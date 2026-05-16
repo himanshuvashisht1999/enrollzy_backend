@@ -33,7 +33,7 @@ class CustomerController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
-                    $btn .= '<a href="' . route('admin.hr.customers.index.edit', encrypt($row->id)) . '" class="btn btn-sm btn-soft-primary"><i class="fas fa-edit"></i></a>';
+                    $btn .= '<a href="' . route('admin.customers.main.index.edit', encrypt($row->id)) . '" class="btn btn-sm btn-soft-primary"><i class="fas fa-edit"></i></a>';
                     $btn .= '</div>';
                     return $btn;
                 })
@@ -41,7 +41,7 @@ class CustomerController extends Controller
                 ->make(true);
         }
 
-        return view('admin.hr.customers.index');
+        return view('admin.customers.index');
     }
 
     public function create()
@@ -51,12 +51,15 @@ class CustomerController extends Controller
         $categories = CustomerCategory::where('parent_id', 0)
             ->where('organization_id', $organization_id)
             ->get();
+        $interested_ins = \App\Models\InterestedIn::where('organization_id', $organization_id)->where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 'active')->get();
+        
         $fields = CustomerField::where('status', 'active')
             ->where('organization_id', $organization_id)
             ->orderBy('sequence', 'asc')
             ->get();
 
-        return view('admin.hr.customers.create', compact('institutes', 'categories', 'fields'));
+        return view('admin.customers.create', compact('institutes', 'categories', 'fields', 'interested_ins', 'sessions'));
     }
 
     public function store(Request $request)
@@ -65,7 +68,6 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required',
             'category_id' => 'required',
-            'status' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -75,10 +77,56 @@ class CustomerController extends Controller
         try {
             $data = $request->all();
             $data['organization_id'] = auth()->user()->organization_id;
-            $data['role'] = 'user'; // Ensure role is 'user' for customers
+            $data['role'] = 'user';
+            $data['status'] = $request->status ?? 'active';
+
+            if (($data['sibling_enrolled'] ?? '0') != '1') {
+                $data['sibling_name'] = null;
+                $data['sibling_age'] = null;
+            }
+
+            // Handle Image
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $fileName = time() . '-' . strtolower(preg_replace('/\s+/', '', $file->getClientOriginalName()));
+                $file->move(public_path('customer_images'), $fileName);
+                $data['image'] = 'customer_images/' . $fileName;
+            }
 
             $customer = Customer::create($data);
 
+            // Academic Details
+            if ($request->has('academics')) {
+                foreach ($request->academics as $exam => $details) {
+                    if (!empty($details['board'])) {
+                        \App\Models\CustomerAcademicDetail::create([
+                            'user_id' => $customer->id,
+                            'examination' => $exam,
+                            'board_university' => $details['board'],
+                            'school_college' => $details['college'],
+                            'year' => $details['year'],
+                            'percentage' => $details['percentage'],
+                        ]);
+                    }
+                }
+            }
+
+            // Documents
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $type => $file) {
+                    $fileName = time() . '-' . strtolower(preg_replace('/\s+/', '', $file->getClientOriginalName()));
+                    $file->move(public_path('customer_docs'), $fileName);
+                    $path = 'customer_docs/' . $fileName;
+                    
+                    \App\Models\CustomerDocument::create([
+                        'user_id' => $customer->id,
+                        'document_type' => $type,
+                        'file_path' => $path,
+                    ]);
+                }
+            }
+
+            // Custom Fields
             if ($request->has('customer_fields')) {
                 foreach ($request->customer_fields as $fieldId => $value) {
                     if (!is_null($value)) {
@@ -91,7 +139,7 @@ class CustomerController extends Controller
                 }
             }
 
-            return redirect()->route('admin.hr.customers.index.index')->with('success', 'Customer created successfully');
+            return redirect()->route('admin.customers.main.index.index')->with('success', 'Customer created successfully');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
@@ -111,8 +159,10 @@ class CustomerController extends Controller
             ->get();
         
         $fieldValues = UserCustomerField::where('user_id', $id)->pluck('value', 'customer_field_id')->toArray();
+        $interested_ins = \App\Models\InterestedIn::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
 
-        return view('admin.hr.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues'));
+        return view('admin.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues', 'interested_ins', 'sessions'));
     }
 
     public function update(Request $request, $id)
@@ -123,7 +173,6 @@ class CustomerController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'phone' => 'required',
-            'status' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -131,8 +180,63 @@ class CustomerController extends Controller
         }
 
         try {
-            $customer->update($request->all());
+            $data = $request->all();
 
+            if (($data['sibling_enrolled'] ?? '0') != '1') {
+                $data['sibling_name'] = null;
+                $data['sibling_age'] = null;
+            }
+
+            // Handle Profile Image
+            if ($request->hasFile('image')) {
+                if ($customer->image && file_exists(public_path($customer->image))) {
+                    @unlink(public_path($customer->image));
+                }
+                $file = $request->file('image');
+                $fileName = time() . '-' . strtolower(preg_replace('/\s+/', '', $file->getClientOriginalName()));
+                $file->move(public_path('customer_images'), $fileName);
+                $data['image'] = 'customer_images/' . $fileName;
+            }
+
+            $customer->update($data);
+
+            // Academic Details
+            if ($request->has('academics')) {
+                foreach ($request->academics as $exam => $details) {
+                    if (!empty($details['board'])) {
+                        \App\Models\CustomerAcademicDetail::updateOrCreate(
+                            ['user_id' => $customer->id, 'examination' => $exam],
+                            [
+                                'board_university' => $details['board'],
+                                'school_college' => $details['college'],
+                                'year' => $details['year'],
+                                'percentage' => $details['percentage'],
+                            ]
+                        );
+                    }
+                }
+            }
+
+            // Documents
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $type => $file) {
+                    $oldDoc = \App\Models\CustomerDocument::where('user_id', $customer->id)->where('document_type', $type)->first();
+                    if ($oldDoc && file_exists(public_path($oldDoc->file_path))) {
+                        @unlink(public_path($oldDoc->file_path));
+                    }
+
+                    $fileName = time() . '-' . strtolower(preg_replace('/\s+/', '', $file->getClientOriginalName()));
+                    $file->move(public_path('customer_docs'), $fileName);
+                    $path = 'customer_docs/' . $fileName;
+
+                    \App\Models\CustomerDocument::updateOrCreate(
+                        ['user_id' => $customer->id, 'document_type' => $type],
+                        ['file_path' => $path]
+                    );
+                }
+            }
+
+            // Custom Fields
             if ($request->has('customer_fields')) {
                 foreach ($request->customer_fields as $fieldId => $value) {
                     UserCustomerField::updateOrCreate(
@@ -142,7 +246,7 @@ class CustomerController extends Controller
                 }
             }
 
-            return redirect()->route('admin.hr.customers.index.index')->with('success', 'Customer updated successfully');
+            return redirect()->route('admin.customers.main.index.index')->with('success', 'Customer updated successfully');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }

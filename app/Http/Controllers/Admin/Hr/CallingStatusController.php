@@ -24,7 +24,7 @@ class CallingStatusController extends Controller
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
                     $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-status" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>';
-                    $btn .= '<form action="'.route('admin.hr.students.calling-statuses.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
+                    $btn .= '<form action="'.route('admin.students-crm.calling-statuses.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
                                 '.csrf_field().'
                                 '.method_field('DELETE').'
                                 <button type="button" class="btn btn-sm btn-soft-danger delete-btn"><i class="fas fa-trash"></i></button>
@@ -36,7 +36,7 @@ class CallingStatusController extends Controller
                 ->make(true);
         }
 
-        return view('admin.hr.students.calling.status.index');
+        return view('admin.students_crm.calling.status.index');
     }
 
     public function store(Request $request)
@@ -101,3 +101,5 @@ class CallingStatusController extends Controller
         return redirect()->back()->with('success', 'Status deleted successfully');
     }
 }
+
+

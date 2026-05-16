@@ -120,22 +120,14 @@
                         </div>
 
                         <ul class="nav nav-tabs-custom" id="campusTabs" role="tablist">
-                            <li class="nav-item"><a class="nav-link active" href="#identity"
-                                    role="tab">Identity</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#location"
-                                    role="tab">Location</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#infra"
-                                    role="tab">Infrastructure</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#academic"
-                                    role="tab">Academic Focus</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#facilities"
-                                    role="tab">Facilities</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#transport"
-                                    role="tab">Transport</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#safety"
-                                    role="tab">Safety</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#contact"
-                                    role="tab">Contact</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="#identity" role="tab">Identity</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#location" role="tab">Location</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#infra" role="tab">Infrastructure</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#academic" role="tab">Academic Focus</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#facilities" role="tab">Facilities</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#transport" role="tab">Transport</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#safety" role="tab">Safety</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#contact" role="tab">Contact</a></li>
                         </ul>
                     </div>
 
@@ -540,11 +532,11 @@
 
             window.addRoute = function () {
                 $('#bus-routes-container').append(`
-                            <div class="input-group mb-2">
-                                <input type="text" name="bus_routes[]" class="form-control" placeholder="Enter route">
-                                <button type="button" class="btn btn-outline-danger remove-route" onclick="$(this).parent().remove()">Remove</button>
-                            </div>
-                        `);
+                                <div class="input-group mb-2">
+                                    <input type="text" name="bus_routes[]" class="form-control" placeholder="Enter route">
+                                    <button type="button" class="btn btn-outline-danger remove-route" onclick="$(this).parent().remove()">Remove</button>
+                                </div>
+                            `);
             }
 
             showTab(0);
