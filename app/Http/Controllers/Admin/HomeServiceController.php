@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\HomeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class HomeServiceController extends Controller
 {
@@ -33,7 +34,9 @@ class HomeServiceController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('home-services', 'public');
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/home-services'), $imageName);
+            $data['image'] = 'uploads/home-services/' . $imageName;
         }
 
         HomeService::create($data);
@@ -60,10 +63,12 @@ class HomeServiceController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('image')) {
-            if ($homeService->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($homeService->image)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($homeService->image);
+            if ($homeService->image && File::exists(public_path($homeService->image))) {
+                File::delete(public_path($homeService->image));
             }
-            $data['image'] = $request->file('image')->store('home-services', 'public');
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/home-services'), $imageName);
+            $data['image'] = 'uploads/home-services/' . $imageName;
         }
 
         $homeService->update($data);
@@ -73,6 +78,9 @@ class HomeServiceController extends Controller
 
     public function destroy(HomeService $homeService)
     {
+        if ($homeService->image && File::exists(public_path($homeService->image))) {
+            File::delete(public_path($homeService->image));
+        }
         $homeService->delete();
         return redirect()->route('admin.home-services.index')->with('success', 'Service deleted successfully.');
     }

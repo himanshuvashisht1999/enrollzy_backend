@@ -313,6 +313,8 @@
                                     href="{{ route('admin.community-categories.index') }}">Categories</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-questions.*') ? 'active' : '' }}"
                                     href="{{ route('admin.community-questions.index') }}">Questions</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-replies.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.community-replies.index') }}">Answers</a></li>
                         </ul>
                     </div>
                 </li>

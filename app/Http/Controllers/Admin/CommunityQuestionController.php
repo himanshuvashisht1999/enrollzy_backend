@@ -23,7 +23,7 @@ class CommunityQuestionController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('is_verified', $request->status == 'verified' ? 1 : 0);
+            $query->where('status', $request->status);
         }
 
         $questions = $query->paginate(15);
@@ -46,7 +46,8 @@ class CommunityQuestionController extends Controller
         $request->validate([
             'question_text' => 'required|string',
             'category_id' => 'required|exists:community_categories,id',
-            'is_verified' => 'required|boolean',
+            'status' => 'required|in:pending,approved,rejected',
+            'is_active' => 'required|boolean',
         ]);
 
         $community_question->update($request->all());
@@ -56,11 +57,11 @@ class CommunityQuestionController extends Controller
 
     public function toggleVerify(CommunityQuestion $question)
     {
-        $question->is_verified = !$question->is_verified;
+        $question->is_active = !$question->is_active;
         $question->save();
 
-        $status = $question->is_verified ? 'verified' : 'unverified';
-        return back()->with('success', "Question marked as {$status}.");
+        $status = $question->is_active ? 'enabled' : 'disabled';
+        return back()->with('success', "Question {$status}.");
     }
 
     public function destroy(CommunityQuestion $community_question)
