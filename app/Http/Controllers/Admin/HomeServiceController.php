@@ -24,12 +24,19 @@ class HomeServiceController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'footer_text' => 'nullable|string|max:255',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
         ]);
 
-        HomeService::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('home-services', 'public');
+        }
+
+        HomeService::create($data);
 
         return redirect()->route('admin.home-services.index')->with('success', 'Service created successfully.');
     }
@@ -44,12 +51,22 @@ class HomeServiceController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'footer_text' => 'nullable|string|max:255',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
         ]);
 
-        $homeService->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            if ($homeService->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($homeService->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($homeService->image);
+            }
+            $data['image'] = $request->file('image')->store('home-services', 'public');
+        }
+
+        $homeService->update($data);
 
         return redirect()->route('admin.home-services.index')->with('success', 'Service updated successfully.');
     }

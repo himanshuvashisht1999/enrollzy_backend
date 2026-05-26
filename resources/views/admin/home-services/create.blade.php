@@ -11,12 +11,16 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-        <form action="{{ route('admin.home-services.store') }}" method="POST">
+        <form action="{{ route('admin.home-services.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Title</label>
                     <input type="text" name="title" class="form-control" required placeholder="e.g. 1-Year Medical Course">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Sort Order</label>

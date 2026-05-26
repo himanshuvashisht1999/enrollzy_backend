@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class HomepageSection extends Model
 {
-    protected $fillable = ['section_key', 'name', 'sort_order', 'is_visible'];
+    protected $fillable = ['section_key', 'name', 'sort_order', 'is_visible', 'title', 'subtitle', 'cta_title', 'cta_url'];
 
     protected $casts = [
         'is_visible' => 'boolean',

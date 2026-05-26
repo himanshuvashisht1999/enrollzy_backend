@@ -123,7 +123,19 @@ class ConsultantController extends Controller
                 $data['office_photos'] = $photos;
             }
 
-            Consultant::create($data);
+            $consultant = Consultant::create($data);
+
+            if ($request->has('categories')) {
+                foreach ($request->categories as $cat) {
+                    $leafCategoryId = $cat['sub_sub_category_id'] ?? $cat['sub_category_id'] ?? $cat['category_id'] ?? null;
+                    if ($leafCategoryId) {
+                        \App\Models\ConsultantCategoryPivot::create([
+                            'consultant_id' => $consultant->id,
+                            'category_id' => $leafCategoryId,
+                        ]);
+                    }
+                }
+            }
 
             return redirect()->route('admin.consultants.index')->with('success', 'Consultant registered successfully');
         } catch (Exception $e) {
@@ -245,6 +257,19 @@ class ConsultantController extends Controller
             }
 
             $consultant->update($data);
+
+            if ($request->has('categories')) {
+                $consultant->categories()->delete();
+                foreach ($request->categories as $cat) {
+                    $leafCategoryId = $cat['sub_sub_category_id'] ?? $cat['sub_category_id'] ?? $cat['category_id'] ?? null;
+                    if ($leafCategoryId) {
+                        \App\Models\ConsultantCategoryPivot::create([
+                            'consultant_id' => $consultant->id,
+                            'category_id' => $leafCategoryId,
+                        ]);
+                    }
+                }
+            }
 
             return redirect()->route('admin.consultants.index')->with('success', 'Consultant updated successfully');
         } catch (Exception $e) {

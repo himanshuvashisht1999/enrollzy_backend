@@ -118,6 +118,14 @@
                                     <input type="text" class="form-control" name="highest_qualification" value="{{ $expert->highest_qualification }}">
                                 </div>
                                 <div class="col-md-3">
+                                    <label class="form-label">Degree</label>
+                                    <input type="text" class="form-control" name="degree" value="{{ $expert->degree }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Experience (General)</label>
+                                    <input type="text" class="form-control" name="exp" value="{{ $expert->exp }}">
+                                </div>
+                                <div class="col-md-3">
                                     <label class="form-label">Total Exp</label>
                                     <input type="number" step="0.1" class="form-control" name="years_of_experience_total" value="{{ $expert->years_of_experience_total }}">
                                 </div>

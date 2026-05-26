@@ -787,8 +787,25 @@ class OrganisationController extends Controller
         $field = $request->input('field');
         $value = $request->input('value');
 
+        // Handle File Uploads for Autosave
+        if ($request->hasFile($field)) {
+            $file = $request->file($field);
+            if ($organisation->$field && file_exists(public_path($organisation->$field))) {
+                @unlink(public_path($organisation->$field));
+            }
+            $name = time() . '_' . $field . '.' . $file->extension();
+            $path = match ((string) $organisation->organisation_type_id) {
+                '3' => 'media/institutes',
+                '4' => 'media/schools',
+                '6' => 'media/counselling_bodies',
+                '7' => 'media/regulatory_bodies',
+                default => 'media/universities'
+            };
+            $file->move(public_path($path), $name);
+            $value = $path . '/' . $name;
+        }
+
         // Handle Array Fields for Autosave
-        // Since we are now sending arrays from JS for repeater fields, we should check if it's an array field
         $casts = [
             'core_values', 'international_accreditations', 'statutory_approvals', 'recognition_documents',
             'levels_offered', 'legal_documents_urls', 'education_boards_supported',

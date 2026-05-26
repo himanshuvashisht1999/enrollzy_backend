@@ -288,6 +288,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Homepage Sections
     Route::get('homepage-sections', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'index'])->name('homepage-sections.index');
+    Route::get('homepage-sections/{homepageSection}/edit', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'edit'])->name('homepage-sections.edit');
+    Route::put('homepage-sections/{homepageSection}/details', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'updateDetails'])->name('homepage-sections.update-details');
     Route::patch('homepage-sections/{homepageSection}', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'update'])->name('homepage-sections.update');
     Route::post('homepage-sections/order', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'updateOrder'])->name('homepage-sections.update-order');
 

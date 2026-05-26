@@ -154,26 +154,37 @@
                 <!-- 3. Specialization -->
                 <div class="section-head">3. Specialization & Expertise</div>
                 <div class="row g-3 mb-5">
-                    <div class="col-md-4">
-                        <label class="form-label">Main Category</label>
-                        <select name="category_id" id="main_category" class="form-select select2">
-                            <option value="">Select Category</option>
-                            @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                            @endforeach
-                        </select>
+                    <div id="category_repeater">
+                        <div class="category-row border p-3 rounded mb-3 bg-light">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Main Category</label>
+                                    <select name="categories[0][category_id]" class="form-select select2 main-category">
+                                        <option value="">Select Category</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4 sub-category-container" style="display:none;">
+                                    <label class="form-label">Sub Category</label>
+                                    <select name="categories[0][sub_category_id]" class="form-select select2 sub-category">
+                                        <option value="">Select Sub Category</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 sub-sub-category-container" style="display:none;">
+                                    <label class="form-label">Sub Sub Category</label>
+                                    <select name="categories[0][sub_sub_category_id]" class="form-select select2 sub-sub-category">
+                                        <option value="">Select Sub-Sub Category</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-4" id="sub_category_container" style="display:none;">
-                        <label class="form-label">Sub Category</label>
-                        <select name="sub_category_id" id="sub_category" class="form-select select2">
-                            <option value="">Select Sub Category</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4" id="sub_sub_category_container" style="display:none;">
-                        <label class="form-label">Sub Sub Category</label>
-                        <select name="sub_sub_category_id" id="sub_sub_category" class="form-select select2">
-                            <option value="">Select Sub-Sub Category</option>
-                        </select>
+                    <div class="col-md-12 mb-4">
+                        <button type="button" id="add_more_category" class="btn btn-soft-primary btn-sm rounded-pill">
+                            <i class="fas fa-plus me-1"></i> Add More Category
+                        </button>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Expertise Level</label>
@@ -417,40 +428,89 @@
             }
         });
 
-        // Dynamic Sub-Categories
-        $('#main_category').on('change', function() {
+        // Dynamic Sub-Categories with Repeater Support
+        let categoryIndex = 1;
+
+        $(document).on('change', '.main-category', function() {
+            let $row = $(this).closest('.category-row');
             let parentId = $(this).val();
-            $('#sub_category').html('<option value="">Select Sub Category</option>');
-            $('#sub_category_container').hide();
-            $('#sub_sub_category_container').hide();
+            let $subCat = $row.find('.sub-category');
+            let $subCatContainer = $row.find('.sub-category-container');
+            let $subSubCat = $row.find('.sub-sub-category');
+            let $subSubCatContainer = $row.find('.sub-sub-category-container');
+
+            $subCat.html('<option value="">Select Sub Category</option>');
+            $subCatContainer.hide();
+            $subSubCat.html('<option value="">Select Sub-Sub Category</option>');
+            $subSubCatContainer.hide();
             
             if (parentId) {
                 $.get(`{{ route('admin.consultants.sub-categories') }}?parent_id=${parentId}`, function(res) {
                     if (res.data.length > 0) {
                         let html = '<option value="">Select Sub Category</option>';
                         res.data.forEach(cat => { html += `<option value="${cat.id}">${cat.name}</option>`; });
-                        $('#sub_category').html(html);
-                        $('#sub_category_container').show();
+                        $subCat.html(html);
+                        $subCatContainer.show();
                     }
                 });
             }
         });
 
-        $('#sub_category').on('change', function() {
+        $(document).on('change', '.sub-category', function() {
+            let $row = $(this).closest('.category-row');
             let parentId = $(this).val();
-            $('#sub_sub_category').html('<option value="">Select Sub-Sub Category</option>');
-            $('#sub_sub_category_container').hide();
+            let $subSubCat = $row.find('.sub-sub-category');
+            let $subSubCatContainer = $row.find('.sub-sub-category-container');
+
+            $subSubCat.html('<option value="">Select Sub-Sub Category</option>');
+            $subSubCatContainer.hide();
             
             if (parentId) {
                 $.get(`{{ route('admin.consultants.sub-categories') }}?parent_id=${parentId}`, function(res) {
                     if (res.data.length > 0) {
                         let html = '<option value="">Select Sub-Sub Category</option>';
                         res.data.forEach(cat => { html += `<option value="${cat.id}">${cat.name}</option>`; });
-                        $('#sub_sub_category').html(html);
-                        $('#sub_sub_category_container').show();
+                        $subSubCat.html(html);
+                        $subSubCatContainer.show();
                     }
                 });
             }
+        });
+
+        $('#add_more_category').on('click', function() {
+            let newRow = `
+                <div class="category-row border p-3 rounded mb-3 bg-light position-relative">
+                    <button type="button" class="btn btn-danger btn-sm remove-category position-absolute" style="top: -10px; right: -10px; border-radius: 50%; width: 25px; height: 25px; padding: 0;">&times;</button>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Main Category</label>
+                            <select name="categories[${categoryIndex}][category_id]" class="form-select main-category">
+                                <option value="">Select Category</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4 sub-category-container" style="display:none;">
+                            <label class="form-label">Sub Category</label>
+                            <select name="categories[${categoryIndex}][sub_category_id]" class="form-select sub-category">
+                                <option value="">Select Sub Category</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 sub-sub-category-container" style="display:none;">
+                            <label class="form-label">Sub Sub Category</label>
+                            <select name="categories[${categoryIndex}][sub_sub_category_id]" class="form-select sub-sub-category">
+                                <option value="">Select Sub-Sub Category</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+            $('#category_repeater').append(newRow);
+            categoryIndex++;
+        });
+
+        $(document).on('click', '.remove-category', function() {
+            $(this).closest('.category-row').remove();
         });
 
         // GST Number Toggle

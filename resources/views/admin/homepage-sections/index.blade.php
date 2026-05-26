@@ -19,6 +19,7 @@
                                 <th>Section Name</th>
                                 <th class="text-center" width="150">Visibility</th>
                                 <th class="text-center" width="100">Order</th>
+                                <th class="text-center" width="100">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="sections-list">
@@ -38,6 +39,11 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark border order-badge">{{ $section->sort_order }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ route('homepage-sections.edit', $section->id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach

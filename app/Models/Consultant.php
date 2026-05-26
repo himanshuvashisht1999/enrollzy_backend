@@ -67,4 +67,9 @@ class Consultant extends Model
     {
         return $this->belongsTo(ConsultantCategory::class, 'sub_sub_category_id');
     }
+
+    public function categories()
+    {
+        return $this->hasMany(ConsultantCategoryPivot::class, 'consultant_id');
+    }
 }

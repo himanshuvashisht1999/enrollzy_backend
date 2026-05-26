@@ -11,13 +11,22 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-        <form action="{{ route('admin.home-services.update', $homeService->id) }}" method="POST">
+        <form action="{{ route('admin.home-services.update', $homeService->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Title</label>
                     <input type="text" name="title" class="form-control" value="{{ $homeService->title }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    @if($homeService->image)
+                        <div class="mt-2">
+                            <img src="{{ Storage::url($homeService->image) }}" alt="Current Image" width="100">
+                        </div>
+                    @endif
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Sort Order</label>
