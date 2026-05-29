@@ -6,7 +6,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold">Hero Images Slider</h3>
-        <p class="text-muted">Upload and manage rotating images for the homepage hero section.</p>
+        <p class="text-muted mb-2">Upload and manage rotating images for the homepage hero section.</p>
+        <div class="alert alert-info py-2 mb-0 d-inline-block shadow-sm">
+            <i class="fas fa-info-circle me-1"></i> <strong>Recommended Banner Size:</strong> 1920 x 800 pixels for best fit on the homepage. Max 5MB.
+        </div>
     </div>
     <div class="d-flex align-items-center gap-3">
         <div class="form-check form-switch bg-white rounded-pill px-4 py-2 shadow-sm border">
@@ -182,6 +185,7 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Change Image (Optional)</label>
                                 <input type="file" name="image_path" class="form-control">
+                                <div class="form-text">Recommended size: 1920x800px. Max 5MB.</div>
                                 <div id="currentImageThumb" class="mt-2"></div>
                             </div>
                         </div>
