@@ -289,6 +289,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/community-replies', \App\Http\Controllers\Admin\CommunityReplyController::class)->names('admin.community-replies');
     Route::patch('/admin/community-replies/{reply}/toggle-active', [\App\Http\Controllers\Admin\CommunityReplyController::class, 'toggleActive'])->name('admin.community-replies.toggle-active');
 
+    // Header Links
+    Route::resource('header-links', \App\Http\Controllers\Admin\HeaderLinkController::class)->names('admin.header-links');
+
     // Homepage Sections
     Route::get('homepage-sections', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'index'])->name('homepage-sections.index');
     Route::get('homepage-sections/{homepageSection}/edit', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'edit'])->name('homepage-sections.edit');

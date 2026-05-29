@@ -1,8 +1,0 @@
-[02-Apr-2025 17:58:26 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home/hrzenix/hrzenix.com_public_html/routes/api.php:18
-Stack trace:
-#0 {main}
-  thrown in /home/hrzenix/hrzenix.com_public_html/routes/api.php on line 18
-[15-Apr-2025 04:28:54 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home/hrzenix/hrzenix.com_public_html/routes/api.php:18
-Stack trace:
-#0 {main}
-  thrown in /home/hrzenix/hrzenix.com_public_html/routes/api.php on line 18

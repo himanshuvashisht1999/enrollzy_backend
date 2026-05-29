@@ -52,8 +52,21 @@
 .video-testimonial-section .video-slider {
   margin: 0 -12px;
 }
+/* Equal height fix */
+.video-testimonial-section .video-slider .slick-track {
+  display: flex !important;
+  align-items: stretch;
+}
 .video-testimonial-section .video-slider .slick-slide {
   padding: 12px;
+  height: auto !important;
+  display: flex !important;
+}
+.video-testimonial-section .video-slider .slick-slide > div {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 .video-testimonial-section .video-card {
   background: var(--plainclr);
@@ -61,6 +74,9 @@
   box-shadow: var(--shadow-sm);
   transition: all 0.35s ease;
   border: 1px solid var(--borderclr);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .video-testimonial-section .video-card:hover {
   transform: translateY(-8px);

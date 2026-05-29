@@ -1,3 +1,8 @@
+.comparison-section {
+    border-top: 2px solid var(--themeprimaryclr);
+    border-bottom: 2px solid var(--themeprimaryclr);
+}
+
 .comparison-section .comparison-table {
     background: var(--plainclr);
     border-radius: 16px;

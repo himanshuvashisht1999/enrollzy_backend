@@ -8,7 +8,7 @@
 }
 
 nav.navbar {
-  z-index: 999;
+  z-index: 99;
 }
 
 header {
@@ -206,3 +206,40 @@ header .auth-dropdown:hover .auth-popup {
 }
 
 /*# sourceMappingURL=header.css.map */
+
+@media (min-width:1211px){
+
+    header .navbar-toggler{
+
+        display:none !important;
+
+    }
+
+    header #mainNav{
+
+        display:flex !important;
+
+    }
+
+}
+@media (max-width:1210px){
+
+    header .navbar-toggler{
+
+        display:block !important;
+
+    }
+
+    header #mainNav{
+
+        display:none !important;
+
+    }
+
+   
+
+}
+
+header li a{
+  color: var(--darkclr);
+}

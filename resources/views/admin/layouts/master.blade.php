@@ -504,17 +504,19 @@
 
                 {{-- Homepage Setup Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/header-links*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/header-links*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-home"></i> Homepage Setup</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/header-links*') ? 'show' : '' }}"
                         id="homepageMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('homepage-sections.index') ? 'active' : '' }}"
                                     href="{{ route('homepage-sections.index') }}">Manage Sections</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-links.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-links.index') }}">Header Links</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"

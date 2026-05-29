@@ -4,6 +4,21 @@
     .slick-list{
         padding: 1.4rem 0 !important;
     }
+    /* Equal height fix */
+    .slick-track {
+        display: flex !important;
+        align-items: stretch;
+    }
+    .slick-slide {
+        height: auto !important;
+        display: flex !important;
+        > div {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+    }
     .blog-card {
         background:var(--lightprimary);
         border-radius: 18px;
@@ -13,6 +28,8 @@
         box-shadow: var(--shadow-lg);
         transition: 0.4s;
         position: relative;
+        display: flex;
+        flex-direction: column;
 
         &:hover {
             transform: translateY(-8px);
