@@ -22,10 +22,14 @@ class VideoTestimonialController extends Controller
             'course' => 'nullable|string|max:255',
             'video_url' => 'required|url',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'autoplay' => 'nullable|boolean',
+            'muted' => 'nullable|boolean',
             'sort_order' => 'nullable|integer',
         ]);
 
         $data = $request->all();
+        $data['autoplay'] = $request->has('autoplay');
+        $data['muted'] = $request->has('muted');
 
         if ($request->hasFile('thumbnail')) {
             $imageName = 'video_thumb_' . time() . '.' . $request->thumbnail->extension();
@@ -45,10 +49,14 @@ class VideoTestimonialController extends Controller
             'course' => 'nullable|string|max:255',
             'video_url' => 'required|url',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'autoplay' => 'nullable|boolean',
+            'muted' => 'nullable|boolean',
             'sort_order' => 'nullable|integer',
         ]);
 
         $data = $request->all();
+        $data['autoplay'] = $request->has('autoplay');
+        $data['muted'] = $request->has('muted');
 
         if ($request->hasFile('thumbnail')) {
             if ($videoTestimonial->thumbnail && File::exists(public_path($videoTestimonial->thumbnail))) {

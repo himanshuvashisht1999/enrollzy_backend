@@ -27,14 +27,14 @@ class CommunityQuestionController extends Controller
         }
 
         $questions = $query->paginate(15);
-        $categories = CommunityCategory::all();
+        $categories = CommunityCategory::with('children')->whereNull('parent_id')->get();
 
         return view('admin.community.questions.index', compact('questions', 'categories'));
     }
 
     public function edit(CommunityQuestion $community_question)
     {
-        $categories = CommunityCategory::all();
+        $categories = CommunityCategory::with('children')->whereNull('parent_id')->get();
         return view('admin.community.questions.edit', [
             'question' => $community_question,
             'categories' => $categories

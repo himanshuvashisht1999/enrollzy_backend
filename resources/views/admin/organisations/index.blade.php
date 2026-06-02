@@ -11,10 +11,34 @@
                     </div>
                     <div class="card-body">
                         <form action="" method="GET" class="mb-3">
-                            <div class="input-group">
-                                <input type="text" name="search" class="form-control" placeholder="Search by name..."
-                                    value="{{ request('search') }}">
-                                <button class="btn btn-outline-secondary" type="submit">Search</button>
+                            <div class="row gx-2">
+                                <div class="col-md-4 mb-2 mb-md-0">
+                                    <input type="text" name="search" class="form-control" placeholder="Search by name..."
+                                        value="{{ request('search') }}">
+                                </div>
+                                <div class="col-md-3 mb-2 mb-md-0">
+                                    <select name="organisation_type_id" class="form-select select2">
+                                        <option value="">All Types</option>
+                                        @if(isset($organisationTypes))
+                                            @foreach($organisationTypes as $type)
+                                                <option value="{{ $type->id }}" {{ request('organisation_type_id') == $type->id ? 'selected' : '' }}>
+                                                    {{ $type->title }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-2 mb-md-0">
+                                    <select name="per_page" class="form-select select2">
+                                        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 per page</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 per page</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 per page</option>
+                                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 per page</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100" type="submit">Filter</button>
+                                </div>
                             </div>
                         </form>
 
@@ -46,6 +70,13 @@
                                         <td>{{ $uni->central_authority ?? '-' }}</td>
                                         <td>{{ $uni->head_office_location ?? '-' }}</td>
                                         <td class="text-end text-nowrap">
+                                            <form action="{{ route('admin.organisations.toggle-status', $uni->id) }}" method="POST" class="d-inline" title="{{ $uni->status ? 'Unpublish' : 'Publish' }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm {{ $uni->status ? 'btn-success' : 'btn-secondary' }} me-2">
+                                                    <i class="fas {{ $uni->status ? 'fa-eye' : 'fa-eye-slash' }}"></i>
+                                                </button>
+                                            </form>
                                             <a href="{{ route('admin.organisations.campuses.index', $uni->id) }}"
                                                 class="btn btn-sm btn-warning text-dark me-2" title="Campuses">
                                                 <i class="fas fa-city"></i>
@@ -80,3 +111,19 @@
         </div>
     </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: "Select an option"
+        });
+        
+        // Auto-submit form when a select changes
+        $('.select2').on('change', function() {
+            $(this).closest('form').submit();
+        });
+    });
+</script>
+@endpush

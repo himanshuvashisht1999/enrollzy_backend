@@ -84,6 +84,16 @@
                                 <input type="file" name="thumbnail" class="form-control">
                                 <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                             </div>
+                            <div class="mb-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="autoplay" id="editAutoplay{{ $item->id }}" value="1" {{ $item->autoplay ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="editAutoplay{{ $item->id }}">Autoplay</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="muted" id="editMuted{{ $item->id }}" value="1" {{ $item->muted ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="editMuted{{ $item->id }}">Muted</label>
+                                </div>
+                            </div>
                             <div class="mb-0">
                                 <label class="form-label fw-bold">Sort Order</label>
                                 <input type="number" name="sort_order" class="form-control" value="{{ $item->sort_order }}">
@@ -135,6 +145,16 @@
                         <label class="form-label fw-bold">Thumbnail Image</label>
                         <input type="file" name="thumbnail" class="form-control">
                         <div class="form-text text-muted">Image size should not exceed 2MB.</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="autoplay" id="addAutoplay" value="1">
+                            <label class="form-check-label fw-bold" for="addAutoplay">Autoplay</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="muted" id="addMuted" value="1">
+                            <label class="form-check-label fw-bold" for="addMuted">Muted</label>
+                        </div>
                     </div>
                     <div class="mb-0">
                         <label class="form-label fw-bold">Sort Order</label>

@@ -18,6 +18,9 @@
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        @foreach($cat->children as $child)
+                            <option value="{{ $child->id }}" {{ request('category_id') == $child->id ? 'selected' : '' }}>-- {{ $child->name }}</option>
+                        @endforeach
                     @endforeach
                 </select>
             </div>

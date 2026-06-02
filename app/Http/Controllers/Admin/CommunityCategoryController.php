@@ -18,7 +18,8 @@ class CommunityCategoryController extends Controller
 
     public function create()
     {
-        return view('admin.community.categories.create');
+        $categories = CommunityCategory::whereNull('parent_id')->get();
+        return view('admin.community.categories.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -26,12 +27,14 @@ class CommunityCategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'parent_id' => 'nullable|exists:community_categories,id'
         ]);
 
         CommunityCategory::create([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
             'description' => $request->description,
+            'parent_id' => $request->parent_id
         ]);
 
         return redirect()->route('admin.community-categories.index')->with('success', 'Category created successfully.');
@@ -39,7 +42,8 @@ class CommunityCategoryController extends Controller
 
     public function edit(CommunityCategory $community_category)
     {
-        return view('admin.community.categories.edit', ['category' => $community_category]);
+        $categories = CommunityCategory::where('id', '!=', $community_category->id)->whereNull('parent_id')->get();
+        return view('admin.community.categories.edit', ['category' => $community_category, 'categories' => $categories]);
     }
 
     public function update(Request $request, CommunityCategory $community_category)
@@ -47,12 +51,14 @@ class CommunityCategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'parent_id' => 'nullable|exists:community_categories,id'
         ]);
 
         $community_category->update([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
             'description' => $request->description,
+            'parent_id' => $request->parent_id
         ]);
 
         return redirect()->route('admin.community-categories.index')->with('success', 'Category updated successfully.');

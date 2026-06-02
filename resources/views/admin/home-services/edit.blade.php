@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Edit Specialized Course')
+@section('title', 'Edit Why Choose Us Item')
 
 @section('content')
 <div class="mb-4">

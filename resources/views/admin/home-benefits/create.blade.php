@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add New Benefit Card')
+@section('title', 'Add New Scholarship')
 
 @section('content')
 <div class="mb-4">
@@ -11,7 +11,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-        <form action="{{ route('admin.home-benefits.store') }}" method="POST">
+        <form action="{{ route('admin.home-benefits.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row g-3">
                 <div class="col-md-6">
@@ -33,6 +33,10 @@
                     <label class="form-label">Content (Optional - shown on solid orange cards)</label>
                     <textarea name="content" class="form-control" rows="4" placeholder="With limited students per batch, we ensure..."></textarea>
                     <small class="text-muted">If you provide content, this card will appear as a solid orange card (featured card).</small>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Icon Image</label>
+                    <input type="file" name="icon" class="form-control" accept="image/*">
                 </div>
             </div>
             <div class="mt-4">

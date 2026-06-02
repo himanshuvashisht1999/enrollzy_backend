@@ -26,9 +26,18 @@ class HomeBenefitController extends Controller
             'content' => 'nullable|string',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
+            'icon' => 'nullable|image|max:2048',
         ]);
 
-        HomeBenefit::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('icon')) {
+            $iconName = time() . '_' . $request->file('icon')->getClientOriginalName();
+            $request->file('icon')->move(public_path('images/benefits'), $iconName);
+            $data['icon'] = 'images/benefits/' . $iconName;
+        }
+
+        HomeBenefit::create($data);
 
         return redirect()->route('admin.home-benefits.index')->with('success', 'Benefit created successfully.');
     }
@@ -45,9 +54,21 @@ class HomeBenefitController extends Controller
             'content' => 'nullable|string',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
+            'icon' => 'nullable|image|max:2048',
         ]);
 
-        $homeBenefit->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('icon')) {
+            if ($homeBenefit->icon && file_exists(public_path($homeBenefit->icon))) {
+                @unlink(public_path($homeBenefit->icon));
+            }
+            $iconName = time() . '_' . $request->file('icon')->getClientOriginalName();
+            $request->file('icon')->move(public_path('images/benefits'), $iconName);
+            $data['icon'] = 'images/benefits/' . $iconName;
+        }
+
+        $homeBenefit->update($data);
 
         return redirect()->route('admin.home-benefits.index')->with('success', 'Benefit updated successfully.');
     }

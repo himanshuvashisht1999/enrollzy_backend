@@ -149,6 +149,7 @@
             border-radius: 10px;
         }
     </style>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('css')
 </head>
 
@@ -524,9 +525,9 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.company-marquees.index') ? 'active' : '' }}"
                                     href="{{ route('admin.company-marquees.index') }}">Company Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.home-services.index') }}">Specialized Courses</a></li>
+                                    href="{{ route('admin.home-services.index') }}">Why Choose Us</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-benefits.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.home-benefits.index') }}">Why Choose Us</a></li>
+                                    href="{{ route('admin.home-benefits.index') }}">Scholarships</a></li>
                         </ul>
                     </div>
                 </li>
@@ -645,6 +646,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function initializeTinyMCE(selector = '.editor', height = 300) {
             tinymce.init({
@@ -675,6 +677,11 @@
     <script>
         // Smoothly handle collapse arrows and active states
         $(document).ready(function () {
+            // Initialize Select2 globally for all select dropdowns
+            $('select.form-select').select2({
+                width: '100%'
+            });
+
             $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {
                 $(this).find('.menu-arrow').toggleClass('rotate-180');
             });

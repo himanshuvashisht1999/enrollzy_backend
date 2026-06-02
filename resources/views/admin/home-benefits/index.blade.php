@@ -1,12 +1,12 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Manage Why Choose Us')
+@section('title', 'Manage Scholarships')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Why Choose Us (Homepage Benefits)</h4>
+    <h4 class="mb-0">Scholarships</h4>
     <a href="{{ route('admin.home-benefits.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add New Benefit
+        <i class="fas fa-plus"></i> Add New Scholarship
     </a>
 </div>
 

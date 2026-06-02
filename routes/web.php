@@ -126,6 +126,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'update' => 'admin.organisations.update',
         'destroy' => 'admin.organisations.destroy',
     ]);
+    Route::patch('/admin/organisations/{organisation}/toggle-status', [OrganisationController::class, 'toggleStatus'])->name('admin.organisations.toggle-status');
     Route::post('/admin/organisations/store-draft', [OrganisationController::class, 'storeDraft'])->name('admin.organisations.store-draft');
     Route::post('/admin/organisations/{organisation}/autosave', [OrganisationController::class, 'autosave'])->name('admin.organisations.autosave');
     Route::post('/admin/organisations/{organisation}/autosave-repeater', [OrganisationController::class, 'autosaveRepeater'])->name('admin.organisations.autosave-repeater');

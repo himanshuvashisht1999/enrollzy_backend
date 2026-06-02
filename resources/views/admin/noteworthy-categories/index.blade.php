@@ -5,9 +5,18 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Noteworthy Categories</h4>
-    <a href="{{ route('admin.noteworthy-categories.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add New Category
-    </a>
+    <div class="d-flex align-items-center">
+        <form action="{{ route('admin.noteworthy-categories.index') }}" method="GET" class="d-flex me-3">
+            <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Search categories..." value="{{ request('search') }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+            @if(request('search'))
+                <a href="{{ route('admin.noteworthy-categories.index') }}" class="btn btn-sm btn-link text-danger text-decoration-none ms-1">Clear</a>
+            @endif
+        </form>
+        <a href="{{ route('admin.noteworthy-categories.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add New Category
+        </a>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm">

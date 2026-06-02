@@ -30,6 +30,9 @@
                             <select name="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}" {{ $question->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                    @foreach($cat->children as $child)
+                                        <option value="{{ $child->id }}" {{ $question->category_id == $child->id ? 'selected' : '' }}>-- {{ $child->name }}</option>
+                                    @endforeach
                                 @endforeach
                             </select>
                             @error('category_id') <div class="invalid-feedback">{{ $message }}</div> @enderror

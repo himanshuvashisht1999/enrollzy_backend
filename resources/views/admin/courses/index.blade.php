@@ -10,7 +10,16 @@
                 <i class="fas fa-plus me-1"></i> Create New Course
             </a>
         </div>
-        <p class="text-muted">Manage the global list of courses that universities can offer.</p>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <p class="text-muted mb-0">Manage the global list of courses that universities can offer.</p>
+            <form action="{{ route('admin.courses.index') }}" method="GET" class="d-flex">
+                <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Search courses..." value="{{ request('search') }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+                @if(request('search'))
+                    <a href="{{ route('admin.courses.index') }}" class="btn btn-sm btn-link text-danger text-decoration-none ms-1">Clear</a>
+                @endif
+            </form>
+        </div>
     </div>
 
     <div class="card border-0 shadow-sm">

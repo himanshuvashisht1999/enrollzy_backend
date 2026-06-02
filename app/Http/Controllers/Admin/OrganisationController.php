@@ -17,8 +17,16 @@ class OrganisationController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        $organisations = $query->latest()->paginate(10);
-        return view('admin.organisations.index', compact('organisations'));
+        if ($request->filled('organisation_type_id')) {
+            $query->where('organisation_type_id', $request->organisation_type_id);
+        }
+
+        $perPage = $request->input('per_page', 10);
+        $organisations = $query->latest()->paginate($perPage)->withQueryString();
+        
+        $organisationTypes = \App\Models\OrganisationType::where('status', true)->get();
+
+        return view('admin.organisations.index', compact('organisations', 'organisationTypes'));
     }
 
     public function create()
@@ -837,5 +845,14 @@ class OrganisationController extends Controller
             ->select('id', 'campus_name')
             ->get();
         return response()->json($campuses);
+    }
+
+    public function toggleStatus(Organisation $organisation)
+    {
+        $organisation->status = !$organisation->status;
+        $organisation->save();
+
+        $statusMessage = $organisation->status ? 'published' : 'unpublished';
+        return back()->with('success', "Organisation {$statusMessage} successfully.");
     }
 }
