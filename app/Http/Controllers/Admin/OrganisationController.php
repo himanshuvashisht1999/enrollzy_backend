@@ -262,6 +262,10 @@ class OrganisationController extends Controller
 
         $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token']);
 
+        if (isset($data['status'])) {
+            $data['status'] = $data['status'] === 'Active' ? 1 : ($data['status'] === 'Archived' ? 2 : 0);
+        }
+
         // Handle Array fields (comma separated strings -> arrays)
         if (in_array($request->organisation_type_id, [5, 6, 7])) {
             $arrayFields = [
@@ -390,9 +394,9 @@ class OrganisationController extends Controller
             $data[$boolField] = $request->has($boolField);
         }
 
-        Organisation::create($data);
+        $organisation = Organisation::create($data);
 
-        return redirect()->route('admin.organisations.index')->with('success', 'Organisation added successfully.');
+        return redirect()->route('admin.organisations.edit', $organisation->id)->with('success', 'Organisation added successfully.');
     }
 
     public function edit(Organisation $organisation)
@@ -625,6 +629,10 @@ class OrganisationController extends Controller
 
         $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token', '_method']);
 
+        if (isset($data['status'])) {
+            $data['status'] = $data['status'] === 'Active' ? 1 : ($data['status'] === 'Archived' ? 2 : 0);
+        }
+
         // Handle Single File Uploads
         if ($request->hasFile('logo_url')) {
             if ($organisation->logo_url && file_exists(public_path($organisation->logo_url))) {
@@ -831,6 +839,10 @@ class OrganisationController extends Controller
             // Fallback for cases where it's still sent as a comma-separated string
             $value = array_map('trim', explode(',', $value));
             $value = array_filter($value); // Remove empty values
+        }
+
+        if ($field === 'status') {
+            $value = $value === 'Active' ? 1 : ($value === 'Archived' ? 2 : 0);
         }
 
         $organisation->update([$field => $value]);
