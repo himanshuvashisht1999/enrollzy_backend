@@ -518,6 +518,10 @@
                                     href="{{ route('homepage-sections.index') }}">Manage Sections</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-links.index') ? 'active' : '' }}"
                                     href="{{ route('admin.header-links.index') }}">Header Links</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-menus.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-menus.index') }}">Main Header Menus</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.footer-setup.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.footer-setup.index') }}">Footer Setup</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"

@@ -293,6 +293,18 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Header Links
     Route::resource('header-links', \App\Http\Controllers\Admin\HeaderLinkController::class)->names('admin.header-links');
 
+    // Main Header Menus
+    Route::resource('header-menus', \App\Http\Controllers\Admin\HeaderMenuController::class)->names('admin.header-menus');
+
+    // Footer Setup
+    Route::get('footer-setup', [\App\Http\Controllers\Admin\FooterSetupController::class, 'index'])->name('admin.footer-setup.index');
+    Route::post('footer-setup/settings', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateSettings'])->name('admin.footer-setup.update-settings');
+    Route::get('footer-setup/create', [\App\Http\Controllers\Admin\FooterSetupController::class, 'createMenu'])->name('admin.footer-setup.create');
+    Route::post('footer-setup', [\App\Http\Controllers\Admin\FooterSetupController::class, 'storeMenu'])->name('admin.footer-setup.store');
+    Route::get('footer-setup/{footerMenu}/edit', [\App\Http\Controllers\Admin\FooterSetupController::class, 'editMenu'])->name('admin.footer-setup.edit');
+    Route::put('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateMenu'])->name('admin.footer-setup.update');
+    Route::delete('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'destroyMenu'])->name('admin.footer-setup.destroy');
+
     // Homepage Sections
     Route::get('homepage-sections', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'index'])->name('homepage-sections.index');
     Route::get('homepage-sections/{homepageSection}/edit', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'edit'])->name('homepage-sections.edit');
