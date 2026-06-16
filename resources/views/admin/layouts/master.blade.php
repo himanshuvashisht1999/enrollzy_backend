@@ -189,13 +189,13 @@
 
                 {{-- Academics Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#academicsMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-graduation-cap"></i> Academics</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
                         id="academicsMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisations.*') || request()->routeIs('admin.organisation-courses.*') ? 'active' : '' }}"
@@ -229,6 +229,8 @@
                                     href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.campus-types.index') }}">Campus Type</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.facilities.index') }}">Facilities</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.sports.*') ? 'active' : '' }}"
                                     href="{{ route('admin.sports.index') }}">Sports</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"

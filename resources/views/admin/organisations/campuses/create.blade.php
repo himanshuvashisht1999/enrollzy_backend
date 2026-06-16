@@ -149,6 +149,8 @@
                                     role="tab">Safety & Security</a></li>
                             <li class="nav-item"><a class="nav-link" href="#contact"
                                     role="tab">Contact</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#class-profile"
+                                    role="tab">Class Profile</a></li>
                         </ul>
                     </div>
 
@@ -296,28 +298,26 @@
 
                             <!-- 5. Facilities -->
                             <div class="tab-pane" id="facilities" role="tabpanel">
+                                <p class="text-muted mb-3">Select the facilities available at this campus.</p>
                                 <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="hostel_available"
-                                                value="1" id="hostel">
-                                            <label class="form-check-label" for="hostel">Hostel Available</label>
+                                    @foreach($facilitiesMaster as $facility)
+                                        <div class="col-md-3 col-sm-4 col-6">
+                                            <div class="facility-card text-center border rounded p-3 h-100 position-relative" style="cursor: pointer;" onclick="toggleFacility('{{ $facility->id }}')">
+                                                <input type="checkbox" name="facilities[]" value="{{ $facility->id }}" id="facility_{{ $facility->id }}" class="d-none" {{ in_array($facility->id, old('facilities', [])) ? 'checked' : '' }}>
+                                                <div class="facility-icon mb-2">
+                                                    @if($facility->icon)
+                                                        <i class="{{ $facility->icon }} fa-2x text-muted"></i>
+                                                    @else
+                                                        <i class="fas fa-building fa-2x text-muted"></i>
+                                                    @endif
+                                                </div>
+                                                <h6 class="mb-0 facility-name" style="font-size: 0.9rem;">{{ $facility->name }}</h6>
+                                                <div class="facility-check position-absolute top-0 end-0 m-2" style="display: none;">
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="library_available"
-                                                value="1" id="library">
-                                            <label class="form-check-label" for="library">Library Available</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox"
-                                                name="medical_facility_available" value="1" id="medical">
-                                            <label class="form-check-label" for="medical">Medical Facility</label>
-                                        </div>
-                                    </div>
+                                    @endforeach
                                 </div>
                             </div>
 
@@ -382,6 +382,51 @@
                                         <label class="form-label">Contact Numbers (Comma separated)</label>
                                         <input type="text" name="campus_contact_numbers" class="form-control">
                                     </div>
+                                </div>
+                            </div>
+                            <!-- 9. Class Profile -->
+                            <div class="tab-pane fade" id="class-profile" role="tabpanel">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h5 class="text-primary mb-0">Class Profile</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-class-profile-btn">
+                                        <i class="fas fa-plus"></i> Add Year Stats
+                                    </button>
+                                </div>
+                                <div id="class-profile-container">
+                                    @php $classProfiles = old('class_profile', [[]]); @endphp
+                                    @foreach($classProfiles as $index => $stat)
+                                    <div class="class-profile-item border p-4 mb-4 rounded position-relative bg-light">
+                                        @if($index > 0)
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-class-profile-btn"><i class="fas fa-times"></i></button>
+                                        @endif
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold">Year</label>
+                                                <input type="number" name="class_profile[{{$index}}][year]" class="form-control" value="{{ $stat['year'] ?? '' }}" placeholder="e.g. 2024">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Total Students</label>
+                                                <input type="number" min="0" name="class_profile[{{$index}}][total_students]" class="form-control" value="{{ $stat['total_students'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Total Faculty</label>
+                                                <input type="number" min="0" name="class_profile[{{$index}}][total_faculty]" class="form-control" value="{{ $stat['total_faculty'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Total Male Students</label>
+                                                <input type="number" min="0" name="class_profile[{{$index}}][total_male_students]" class="form-control" value="{{ $stat['total_male_students'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Total Female Students</label>
+                                                <input type="number" min="0" name="class_profile[{{$index}}][total_female_students]" class="form-control" value="{{ $stat['total_female_students'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Total Students Outside State</label>
+                                                <input type="number" min="0" name="class_profile[{{$index}}][total_outside_state]" class="form-control" value="{{ $stat['total_outside_state'] ?? '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
                                 </div>
                             </div>
                         </div> <!-- End Tab Content -->
@@ -597,6 +642,9 @@
 
             function getSingleInputValue(el) {
                 if (el.is(':checkbox')) {
+                    if (el.attr('name').endsWith('[]')) {
+                        return el.is(':checked') ? el.val() : null;
+                    }
                     return el.is(':checked') ? 1 : 0;
                 }
                 if (el.is('select[multiple]')) {
@@ -630,6 +678,75 @@
                         `);
             }
             $(document).on('click', '.remove-route', function () { $(this).parent().remove(); });
+
+            // Class Profile Repeater
+            window.toggleFacility = function(id) {
+                const checkbox = $(`#facility_${id}`);
+                const card = checkbox.closest('.facility-card');
+                const checkIcon = card.find('.facility-check');
+
+                checkbox.prop('checked', !checkbox.prop('checked'));
+
+                if (checkbox.prop('checked')) {
+                    card.addClass('border-primary bg-soft-primary');
+                    card.find('.facility-icon i').removeClass('text-muted').addClass('text-primary');
+                    card.find('.facility-name').addClass('text-primary fw-bold');
+                    checkIcon.show();
+                } else {
+                    card.removeClass('border-primary bg-soft-primary');
+                    card.find('.facility-icon i').addClass('text-muted').removeClass('text-primary');
+                    card.find('.facility-name').removeClass('text-primary fw-bold');
+                    checkIcon.hide();
+                }
+            };
+
+            // Initialize checked facilities
+            $('input[name="facilities[]"]:checked').each(function() {
+                const id = $(this).val();
+                $(`#facility_${id}`).prop('checked', false); // temporarily uncheck to let toggle do the UI work
+                toggleFacility(id);
+            });
+
+            let classProfileIndex = {{ count(old('class_profile', [[]])) }};
+            $(document).on('click', '#add-class-profile-btn', function() {
+                const template = `
+                    <div class="class-profile-item border p-4 mb-4 rounded position-relative bg-light">
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-class-profile-btn"><i class="fas fa-times"></i></button>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Year</label>
+                                <input type="number" name="class_profile[${classProfileIndex}][year]" class="form-control" placeholder="e.g. 2024">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Students</label>
+                                <input type="number" min="0" name="class_profile[${classProfileIndex}][total_students]" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Faculty</label>
+                                <input type="number" min="0" name="class_profile[${classProfileIndex}][total_faculty]" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Male Students</label>
+                                <input type="number" min="0" name="class_profile[${classProfileIndex}][total_male_students]" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Female Students</label>
+                                <input type="number" min="0" name="class_profile[${classProfileIndex}][total_female_students]" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Students Outside State</label>
+                                <input type="number" min="0" name="class_profile[${classProfileIndex}][total_outside_state]" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#class-profile-container').append(template);
+                classProfileIndex++;
+            });
+
+            $(document).on('click', '.remove-class-profile-btn', function() {
+                $(this).closest('.class-profile-item').remove();
+            });
 
             showTab(0);
         });

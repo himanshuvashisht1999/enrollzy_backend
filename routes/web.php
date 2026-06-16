@@ -313,6 +313,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('homepage-sections/order', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'updateOrder'])->name('homepage-sections.update-order');
 
     // Master Management
+    Route::prefix('masters')->group(function () {
+        Route::resource('facilities', \App\Http\Controllers\Admin\FacilityController::class)->names('admin.facilities')->except(['create', 'show', 'edit']);
+        Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
+    });
+    
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('program-levels', \App\Http\Controllers\Admin\ProgramLevelController::class);
         Route::resource('program-types', \App\Http\Controllers\Admin\ProgramTypeController::class);
