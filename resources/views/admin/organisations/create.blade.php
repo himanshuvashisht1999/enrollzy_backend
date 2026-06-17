@@ -1715,7 +1715,11 @@
                         if (el) {
                             const shouldShow = (id === activeSectionId);
                             el.style.display = shouldShow ? 'block' : 'none';
-                            if (shouldShow) console.log(`✓ Showing section: ${id}`);
+                            // Disable inputs if hidden to prevent submitting duplicate empty names
+                            el.querySelectorAll('input, select, textarea').forEach(input => {
+                                input.disabled = !shouldShow;
+                            });
+                            if (shouldShow) console.log(`👉 Showing section: ${id}`);
                         }
                     });
                     console.log("--------------------");

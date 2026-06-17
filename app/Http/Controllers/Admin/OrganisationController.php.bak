@@ -39,7 +39,6 @@ class OrganisationController extends Controller
 
     public function store(Request $request)
     {
-        $this->preprocessBooleans($request);
         $rules = [
             'name' => 'required|string|max:255',
             'organisation_type_id' => 'required|exists:organisation_types,id',
@@ -47,13 +46,6 @@ class OrganisationController extends Controller
             'brand_type' => 'nullable|string|in:' . implode(',', Organisation::BRAND_TYPES),
             'central_authority' => 'nullable|string|max:255',
             'head_office_location' => 'nullable|string|max:255',
-            'ownership_type' => 'nullable|string',
-            'university_type' => 'nullable|string',
-            'short_name' => 'nullable|string',
-            'brand_name' => 'nullable|string',
-            'about_university' => 'nullable|string',
-            'vision_mission' => 'nullable|string',
-            'about_organisation' => 'nullable|string',
         ];
 
         // Type 1 & 2: University
@@ -349,7 +341,58 @@ class OrganisationController extends Controller
             $data['recognition_documents'] = $recDocs;
         }
 
-        
+        // Handle Booleans
+        $booleans = [
+            'degree_awarding_authority',
+            'ugc_recognized',
+            'aicte_approved',
+            'naac_accredited',
+            'autonomous_status',
+            'gst_registered',
+            'minority_status',
+            'international_curriculum_supported',
+            'centralized_curriculum_framework',
+            'centralized_teacher_training',
+            'centralized_assessment_policy',
+            'centralized_lms_available',
+            'centralized_parent_communication_system',
+            'child_safety_policy_available',
+            'posco_compliance_policy',
+            'anti_bullying_policy',
+            'mental_health_policy',
+            'teacher_background_verification_policy',
+            'national_presence',
+            'international_presence',
+            'mobile_app_available',
+            'claimed_by_organization',
+            // Exam Conducting Body Booleans
+            'question_bank_managed',
+            'normalization_process_available',
+            'multi_language_support',
+            'remote_proctoring_supported',
+            're_evaluation_allowed',
+            'rti_applicable',
+            'audit_conducted',
+            'whistleblower_policy_available',
+            'claimed_by_authority',
+            // Counselling Body Booleans
+            'rank_source_validation_required',
+            'multiple_exam_support',
+            'seat_matrix_management',
+            'seat_conversion_rules_supported',
+            'choice_locking_mandatory',
+            'seat_upgradation_allowed',
+            'counselling_fee_collection_supported',
+            'security_deposit_handling',
+            'candidate_login_system_available',
+            'choice_filling_system_available',
+            'auto_seat_allocation_engine',
+            'api_integration_supported',
+            'institution_reporting_interface_available'
+        ];
+        foreach ($booleans as $boolField) {
+            $data[$boolField] = $request->has($boolField);
+        }
 
         $organisation = Organisation::create($data);
 
@@ -366,7 +409,6 @@ class OrganisationController extends Controller
 
     public function update(Request $request, Organisation $organisation)
     {
-        $this->preprocessBooleans($request);
         $rules = [
             'name' => 'required|string|max:255',
             'organisation_type_id' => 'required|exists:organisation_types,id',
@@ -374,13 +416,6 @@ class OrganisationController extends Controller
             'brand_type' => 'nullable|string|in:' . implode(',', Organisation::BRAND_TYPES),
             'central_authority' => 'nullable|string|max:255',
             'head_office_location' => 'nullable|string|max:255',
-            'ownership_type' => 'nullable|string',
-            'university_type' => 'nullable|string',
-            'short_name' => 'nullable|string',
-            'brand_name' => 'nullable|string',
-            'about_university' => 'nullable|string',
-            'vision_mission' => 'nullable|string',
-            'about_organisation' => 'nullable|string',
         ];
 
         if (in_array($request->organisation_type_id, [1, 2])) {
@@ -655,7 +690,61 @@ class OrganisationController extends Controller
             $data['recognition_documents'] = $recDocs;
         }
 
-        
+        // Handle Booleans
+        $booleans = [
+            'degree_awarding_authority',
+            'ugc_recognized',
+            'aicte_approved',
+            'naac_accredited',
+            'autonomous_status',
+            'gst_registered',
+            'minority_status',
+            'international_curriculum_supported',
+            'centralized_curriculum_framework',
+            'centralized_teacher_training',
+            'centralized_assessment_policy',
+            'centralized_lms_available',
+            'centralized_parent_communication_system',
+            'child_safety_policy_available',
+            'posco_compliance_policy',
+            'anti_bullying_policy',
+            'mental_health_policy',
+            'teacher_background_verification_policy',
+            'national_presence',
+            'international_presence',
+            'mobile_app_available',
+            'claimed_by_organization',
+            // Exam Conducting Body Booleans
+            'question_bank_managed',
+            'normalization_process_available',
+            'multi_language_support',
+            'remote_proctoring_supported',
+            're_evaluation_allowed',
+            'rti_applicable',
+            'audit_conducted',
+            'whistleblower_policy_available',
+            'claimed_by_authority',
+            // Counselling Body Booleans
+            'rank_source_validation_required',
+            'multiple_exam_support',
+            'seat_matrix_management',
+            'seat_conversion_rules_supported',
+            'choice_locking_mandatory',
+            'seat_upgradation_allowed',
+            'counselling_fee_collection_supported',
+            'security_deposit_handling',
+            'candidate_login_system_available',
+            'choice_filling_system_available',
+            'auto_seat_allocation_engine',
+            'api_integration_supported',
+            'institution_reporting_interface_available',
+            'rti_applicable',
+            'audit_conducted',
+            'claimed_by_authority'
+        ];
+        foreach ($booleans as $boolField) {
+            $data[$boolField] = $request->has($boolField);
+        }
 
         // Handle Array fields
         $arrayFields = [
@@ -777,34 +866,5 @@ class OrganisationController extends Controller
 
         $statusMessage = $organisation->status ? 'published' : 'unpublished';
         return back()->with('success', "Organisation {$statusMessage} successfully.");
-    }
-
-    protected function preprocessBooleans(Request $request)
-    {
-        $booleans = [
-            'degree_awarding_authority', 'ugc_recognized', 'aicte_approved', 'naac_accredited',
-            'autonomous_status', 'gst_registered', 'minority_status', 'international_curriculum_supported',
-            'centralized_curriculum_framework', 'centralized_teacher_training', 'centralized_assessment_policy',
-            'centralized_lms_available', 'centralized_parent_communication_system', 'child_safety_policy_available',
-            'posco_compliance_policy', 'anti_bullying_policy', 'mental_health_policy',
-            'teacher_background_verification_policy', 'national_presence', 'international_presence',
-            'mobile_app_available', 'claimed_by_organization', 'question_bank_managed',
-            'normalization_process_available', 'multi_language_support', 'remote_proctoring_supported',
-            're_evaluation_allowed', 'rti_applicable', 'audit_conducted', 'whistleblower_policy_available',
-            'claimed_by_authority', 'rank_source_validation_required', 'multiple_exam_support',
-            'seat_matrix_management', 'seat_conversion_rules_supported', 'choice_locking_mandatory',
-            'seat_upgradation_allowed', 'counselling_fee_collection_supported', 'security_deposit_handling',
-            'candidate_login_system_available', 'choice_filling_system_available', 'auto_seat_allocation_engine',
-            'api_integration_supported', 'institution_reporting_interface_available'
-        ];
-
-        foreach ($booleans as $field) {
-            if ($request->has($field)) {
-                $val = $request->$field;
-                $request->merge([$field => (in_array($val, ['on', 1, '1', true, 'true', 'yes'], true))]);
-            } else {
-                $request->merge([$field => false]);
-            }
-        }
     }
 }
