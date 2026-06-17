@@ -1,18 +1,18 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Company Marquee Setup')
+@section('title', 'School Marquee Setup')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Company Marquee (Logos)</h4>
+    <h4 class="mb-0">School Marquee (Logos)</h4>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLogoModal">
-        <i class="fas fa-plus"></i> Add Company Logo
+        <i class="fas fa-plus"></i> Add School Logo
     </button>
 </div>
 
 <div class="row mb-4 align-items-center bg-white p-3 rounded shadow-sm mx-0">
     <div class="col-md-6">
-        <form action="{{ route('admin.company-marquees.update-direction') }}" method="POST" class="d-flex align-items-center gap-3">
+        <form action="{{ route('admin.school-marquees.update-direction') }}" method="POST" class="d-flex align-items-center gap-3">
             @csrf
             <label class="fw-bold mb-0 text-nowrap">Global Scroll Direction:</label>
             @php $currentDir = $marquees->first()->direction ?? 'rtl'; @endphp
@@ -45,7 +45,7 @@
                         data-logo="{{ asset($item->logo) }}">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <form action="{{ route('admin.company-marquees.destroy', $item->id) }}" method="POST" class="d-inline">
+                    <form action="{{ route('admin.school-marquees.destroy', $item->id) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this logo?')">
@@ -63,7 +63,7 @@
     </div>
     @empty
     <div class="col-12 text-center py-5">
-        <div class="text-muted">No company logos found. Start by adding one!</div>
+        <div class="text-muted">No School logos found. Start by adding one!</div>
     </div>
     @endforelse
 </div>
@@ -73,19 +73,19 @@
     <div class="modal-dialog">
         <div class="modal-content border-0">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Add Company Logo</h5>
+                <h5 class="modal-title">Add School Logo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.company-marquees.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('admin.school-marquees.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Company Logo <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold">School Logo <span class="text-danger">*</span></label>
                         <input type="file" name="logo" class="form-control" accept="image/*" required>
                         <div class="form-text">Recommended size: 200x80px (Transparent PNG)</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Company Name</label>
+                        <label class="form-label fw-bold">School Name</label>
                         <input type="text" name="name" class="form-control" placeholder="e.g. Google">
                     </div>
                     <div class="mb-3">
@@ -115,7 +115,7 @@
     <div class="modal-dialog">
         <div class="modal-content border-0">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">Edit Company Logo</h5>
+                <h5 class="modal-title">Edit School Logo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="editForm" method="POST" enctype="multipart/form-data">
@@ -130,7 +130,7 @@
                         <input type="file" name="logo" class="form-control" accept="image/*">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Company Name</label>
+                        <label class="form-label fw-bold">School Name</label>
                         <input type="text" name="name" id="edit_name" class="form-control">
                     </div>
                     <div class="mb-3">
@@ -166,7 +166,7 @@ $(function() {
         let sort = $(this).data('sort');
         let logo = $(this).data('logo');
 
-        $('#editForm').attr('action', `/admin/company-marquees/${id}`);
+        $('#editForm').attr('action', `/admin/school-marquees/${id}`);
         $('#edit_name').val(name);
         $('#edit_heading').val(heading);
         $('#edit_subheading').val(subheading);
@@ -178,7 +178,7 @@ $(function() {
 
     $('.status-toggle').change(function() {
         let id = $(this).data('id');
-        $.post(`/admin/company-marquees/${id}/toggle-status`, { _token: '{{ csrf_token() }}' }, function(res) {
+        $.post(`/admin/school-marquees/${id}/toggle-status`, { _token: '{{ csrf_token() }}' }, function(res) {
             if(res.success) toastr.success('Status updated');
         });
     });

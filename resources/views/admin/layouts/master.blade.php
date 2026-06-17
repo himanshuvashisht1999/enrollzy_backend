@@ -507,13 +507,13 @@
 
                 {{-- Homepage Setup Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-home"></i> Homepage Setup</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'show' : '' }}"
                         id="homepageMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('homepage-sections.index') ? 'active' : '' }}"
@@ -528,8 +528,8 @@
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
                                     href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.company-marquees.index') ? 'active' : '' }}"
-                                    href="{{ route('admin.company-marquees.index') }}">Company Marquee</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.school-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.school-marquees.index') }}">School Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.institute-marquees.index') ? 'active' : '' }}"
                                     href="{{ route('admin.institute-marquees.index') }}">Institute Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"

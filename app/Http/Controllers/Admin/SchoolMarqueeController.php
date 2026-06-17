@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CompanyMarquee;
+use App\Models\SchoolMarquee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
-class CompanyMarqueeController extends Controller
+class SchoolMarqueeController extends Controller
 {
     public function index()
     {
-        $marquees = CompanyMarquee::orderBy('sort_order')->get();
-        return view('admin.company-marquees.index', compact('marquees'));
+        $marquees = SchoolMarquee::orderBy('sort_order')->get();
+        return view('admin.school-marquees.index', compact('marquees'));
     }
 
     public function store(Request $request)
@@ -29,7 +29,7 @@ class CompanyMarqueeController extends Controller
         $data['sort_order'] = $request->sort_order ?? 0;
         
         // Inherit direction from existing records
-        $existing = CompanyMarquee::first();
+        $existing = SchoolMarquee::first();
         $data['direction'] = $existing ? $existing->direction : 'rtl';
         $data['status'] = true;
 
@@ -39,12 +39,12 @@ class CompanyMarqueeController extends Controller
             $data['logo'] = 'uploads/marquee/' . $imageName;
         }
 
-        CompanyMarquee::create($data);
+        SchoolMarquee::create($data);
 
         return redirect()->back()->with('success', 'Company logo added precisely.');
     }
 
-    public function update(Request $request, CompanyMarquee $company_marquee)
+    public function update(Request $request, SchoolMarquee $school_marquee)
     {
         $request->validate([
             'logo'       => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
@@ -57,8 +57,8 @@ class CompanyMarqueeController extends Controller
         $data = $request->only(['name', 'heading', 'subheading', 'sort_order']);
 
         if ($request->hasFile('logo')) {
-            if (File::exists(public_path($company_marquee->logo))) {
-                File::delete(public_path($company_marquee->logo));
+            if (File::exists(public_path($school_marquee->logo))) {
+                File::delete(public_path($school_marquee->logo));
             }
 
             $imageName = 'marquee_' . time() . '_' . uniqid() . '.' . $request->logo->extension();
@@ -66,7 +66,7 @@ class CompanyMarqueeController extends Controller
             $data['logo'] = 'uploads/marquee/' . $imageName;
         }
 
-        $company_marquee->update($data);
+        $school_marquee->update($data);
 
         return redirect()->back()->with('success', 'Company logo updated successfully.');
     }
@@ -74,22 +74,22 @@ class CompanyMarqueeController extends Controller
     public function updateDirection(Request $request)
     {
         $request->validate(['direction' => 'required|in:ltr,rtl']);
-        CompanyMarquee::query()->update(['direction' => $request->direction]);
+        SchoolMarquee::query()->update(['direction' => $request->direction]);
         return redirect()->back()->with('success', 'Scroll direction updated successfully.');
     }
 
-    public function toggleStatus(CompanyMarquee $company_marquee)
+    public function toggleStatus(SchoolMarquee $school_marquee)
     {
-        $company_marquee->update(['status' => !$company_marquee->status]);
+        $school_marquee->update(['status' => !$school_marquee->status]);
         return response()->json(['success' => true]);
     }
 
-    public function destroy(CompanyMarquee $company_marquee)
+    public function destroy(SchoolMarquee $school_marquee)
     {
-        if (File::exists(public_path($company_marquee->logo))) {
-            File::delete(public_path($company_marquee->logo));
+        if (File::exists(public_path($school_marquee->logo))) {
+            File::delete(public_path($school_marquee->logo));
         }
-        $company_marquee->delete();
+        $school_marquee->delete();
         return redirect()->back()->with('success', 'Company logo removed successfully.');
     }
 }
