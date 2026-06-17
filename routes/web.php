@@ -232,8 +232,14 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/pages', \App\Http\Controllers\Admin\PageController::class)->names('admin.pages');
 
     // Company Marquee
+    Route::post('/admin/company-marquees/update-direction', [\App\Http\Controllers\Admin\CompanyMarqueeController::class, 'updateDirection'])->name('admin.company-marquees.update-direction');
     Route::resource('/admin/company-marquees', \App\Http\Controllers\Admin\CompanyMarqueeController::class)->names('admin.company-marquees');
     Route::post('/admin/company-marquees/{company_marquee}/toggle-status', [\App\Http\Controllers\Admin\CompanyMarqueeController::class, 'toggleStatus'])->name('admin.company-marquees.toggle-status');
+
+    // Institute Marquee
+    Route::post('/admin/institute-marquees/update-direction', [\App\Http\Controllers\Admin\InstituteMarqueeController::class, 'updateDirection'])->name('admin.institute-marquees.update-direction');
+    Route::resource('/admin/institute-marquees', \App\Http\Controllers\Admin\InstituteMarqueeController::class)->names('admin.institute-marquees');
+    Route::post('/admin/institute-marquees/{institute_marquee}/toggle-status', [\App\Http\Controllers\Admin\InstituteMarqueeController::class, 'toggleStatus'])->name('admin.institute-marquees.toggle-status');
 
     // Video Testimonials
     Route::resource('/admin/video-testimonials', VideoTestimonialController::class)->names('admin.video-testimonials');
