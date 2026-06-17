@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\FooterMenu;
 use App\Models\Setting;
+use App\Models\GeneralLink;
 use Illuminate\Http\Request;
 
 class FooterSetupController extends Controller
@@ -13,7 +14,8 @@ class FooterSetupController extends Controller
     {
         $setting = Setting::first() ?? new Setting();
         $menus = FooterMenu::with('children')->whereNull('parent_id')->orderBy('sort_order')->get();
-        return view('admin.footer_setup.index', compact('menus', 'setting'));
+        $generalLinks = GeneralLink::orderBy('sort_order')->get();
+        return view('admin.footer_setup.index', compact('menus', 'setting', 'generalLinks'));
     }
 
     public function updateSettings(Request $request)
@@ -100,5 +102,47 @@ class FooterSetupController extends Controller
     {
         $footerMenu->delete();
         return redirect()->route('admin.footer-setup.index')->with('success', 'Footer menu deleted successfully.');
+    }
+
+    public function storeGeneralLink(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'nullable|string|max:255',
+            'sort_order' => 'integer',
+        ]);
+
+        GeneralLink::create([
+            'title' => $request->title,
+            'url' => $request->url,
+            'sort_order' => $request->sort_order ?? 0,
+            'status' => $request->has('status') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'General Link created successfully.');
+    }
+
+    public function updateGeneralLink(Request $request, GeneralLink $generalLink)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'nullable|string|max:255',
+            'sort_order' => 'integer',
+        ]);
+
+        $generalLink->update([
+            'title' => $request->title,
+            'url' => $request->url,
+            'sort_order' => $request->sort_order ?? 0,
+            'status' => $request->has('status') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'General Link updated successfully.');
+    }
+
+    public function destroyGeneralLink(GeneralLink $generalLink)
+    {
+        $generalLink->delete();
+        return back()->with('success', 'General Link deleted successfully.');
     }
 }

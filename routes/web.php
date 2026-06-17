@@ -227,6 +227,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Trending Skills
     Route::resource('/admin/trending-skills', \App\Http\Controllers\Admin\TrendingSkillController::class)->names('admin.trending-skills');
+    
+    // Dynamic Pages
+    Route::resource('/admin/pages', \App\Http\Controllers\Admin\PageController::class)->names('admin.pages');
 
     // Company Marquee
     Route::resource('/admin/company-marquees', \App\Http\Controllers\Admin\CompanyMarqueeController::class)->names('admin.company-marquees');
@@ -304,6 +307,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('footer-setup/{footerMenu}/edit', [\App\Http\Controllers\Admin\FooterSetupController::class, 'editMenu'])->name('admin.footer-setup.edit');
     Route::put('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateMenu'])->name('admin.footer-setup.update');
     Route::delete('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'destroyMenu'])->name('admin.footer-setup.destroy');
+
+    // General Links in Footer
+    Route::post('footer-setup/general-links', [\App\Http\Controllers\Admin\FooterSetupController::class, 'storeGeneralLink'])->name('admin.footer-setup.general-links.store');
+    Route::put('footer-setup/general-links/{generalLink}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateGeneralLink'])->name('admin.footer-setup.general-links.update');
+    Route::delete('footer-setup/general-links/{generalLink}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'destroyGeneralLink'])->name('admin.footer-setup.general-links.destroy');
 
     // Homepage Sections
     Route::get('homepage-sections', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'index'])->name('homepage-sections.index');

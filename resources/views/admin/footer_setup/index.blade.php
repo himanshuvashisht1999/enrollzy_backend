@@ -17,6 +17,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link fw-bold" id="menus-tab" data-bs-toggle="tab" data-bs-target="#menus" type="button" role="tab">Footer Link Columns</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="general-links-tab" data-bs-toggle="tab" data-bs-target="#general-links" type="button" role="tab">General Static Links</button>
+        </li>
     </ul>
 
     <div class="tab-content" id="footerSetupTabContent">
@@ -161,6 +164,132 @@
                 </div>
             </div>
         </div>
+
+        <!-- General Links Tab -->
+        <div class="tab-pane fade" id="general-links" role="tabpanel">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-bold">Add General Link</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ route('admin.footer-setup.general-links.store') }}" method="POST">
+                                @csrf
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Title</label>
+                                    <input type="text" name="title" class="form-control" placeholder="e.g. About Us" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">URL</label>
+                                    <input type="text" name="url" class="form-control" placeholder="https://...">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Sort Order</label>
+                                    <input type="number" name="sort_order" class="form-control" value="0">
+                                </div>
+                                <div class="mb-3 form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="status" id="generalLinkStatus" checked value="1">
+                                    <label class="form-check-label" for="generalLinkStatus">Active</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus me-2"></i>Add Link</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-bold">Manage General Links</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-4">Title</th>
+                                            <th>URL</th>
+                                            <th>Sort Order</th>
+                                            <th>Status</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($generalLinks as $gLink)
+                                            <tr>
+                                                <td class="ps-4 fw-bold">{{ $gLink->title }}</td>
+                                                <td><a href="{{ $gLink->url }}" target="_blank" class="text-decoration-none">{{ $gLink->url }}</a></td>
+                                                <td>{{ $gLink->sort_order }}</td>
+                                                <td>
+                                                    @if($gLink->status)
+                                                        <span class="badge bg-success">Active</span>
+                                                    @else
+                                                        <span class="badge bg-danger">Inactive</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end pe-4">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editGeneralLinkModal{{ $gLink->id }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form action="{{ route('admin.footer-setup.general-links.destroy', $gLink->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')"><i class="fas fa-trash"></i></button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Edit Modal -->
+                                            <div class="modal fade" id="editGeneralLinkModal{{ $gLink->id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Edit General Link</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form action="{{ route('admin.footer-setup.general-links.update', $gLink->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <div class="modal-body text-start">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold">Title</label>
+                                                                    <input type="text" name="title" class="form-control" value="{{ $gLink->title }}" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold">URL</label>
+                                                                    <input type="text" name="url" class="form-control" value="{{ $gLink->url }}">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold">Sort Order</label>
+                                                                    <input type="number" name="sort_order" class="form-control" value="{{ $gLink->sort_order }}">
+                                                                </div>
+                                                                <div class="mb-3 form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" name="status" id="editGLinkStatus{{ $gLink->id }}" value="1" {{ $gLink->status ? 'checked' : '' }}>
+                                                                    <label class="form-check-label" for="editGLinkStatus{{ $gLink->id }}">Active</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4 text-muted">No general links found.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 @endsection

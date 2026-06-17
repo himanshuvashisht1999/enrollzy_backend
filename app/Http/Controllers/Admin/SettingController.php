@@ -38,9 +38,20 @@ class SettingController extends Controller
             'contact_phone' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'footer_text' => 'nullable|string|max:255',
+            'play_store_link' => 'nullable|string|max:255',
+            'app_store_link' => 'nullable|string|max:255',
+            'toll_free_number' => 'nullable|string|max:255',
+            'whatsapp_number' => 'nullable|string|max:255',
+            'footer_qr_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'facebook_url' => 'nullable|string|max:255',
+            'twitter_url' => 'nullable|string|max:255',
+            'instagram_url' => 'nullable|string|max:255',
+            'linkedin_url' => 'nullable|string|max:255',
+            'youtube_url' => 'nullable|string|max:255',
+            'footer_description' => 'nullable|string',
         ]);
 
-        $data = $request->except(['logo', 'favicon']);
+        $data = $request->except(['logo', 'favicon', 'footer_qr_image']);
 
         // Handle Logo Upload
         if ($request->hasFile('logo')) {
@@ -60,6 +71,16 @@ class SettingController extends Controller
             $faviconName = 'favicon_' . time() . '.' . $request->favicon->extension();
             $request->favicon->move(public_path('uploads/settings'), $faviconName);
             $data['favicon'] = 'uploads/settings/' . $faviconName;
+        }
+        
+        // Handle Footer QR Image Upload
+        if ($request->hasFile('footer_qr_image')) {
+            if ($setting->footer_qr_image && File::exists(public_path($setting->footer_qr_image))) {
+                File::delete(public_path($setting->footer_qr_image));
+            }
+            $qrName = 'footer_qr_' . time() . '.' . $request->footer_qr_image->extension();
+            $request->footer_qr_image->move(public_path('uploads/settings'), $qrName);
+            $data['footer_qr_image'] = 'uploads/settings/' . $qrName;
         }
 
         $setting->update($data);
