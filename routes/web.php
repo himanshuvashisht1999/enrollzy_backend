@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HeroSliderController;
 use App\Http\Controllers\Admin\VideoTestimonialController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\AboutUsController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\NoteworthyCategoryController;
@@ -208,6 +209,19 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Settings
     Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
     Route::post('/admin/settings/update', [SettingController::class, 'update'])->name('admin.settings.update');
+
+    // About Us Page
+    Route::get('/admin/about-us', [AboutUsController::class, 'edit'])->name('admin.about_us.edit');
+    Route::post('/admin/about-us/update', [AboutUsController::class, 'update'])->name('admin.about_us.update');
+    Route::post('/admin/about-us/offers', [AboutUsController::class, 'storeOffer'])->name('admin.about_us.offers.store');
+    Route::post('/admin/about-us/offers/{id}', [AboutUsController::class, 'updateOffer'])->name('admin.about_us.offers.update');
+    Route::delete('/admin/about-us/offers/{id}', [AboutUsController::class, 'destroyOffer'])->name('admin.about_us.offers.destroy');
+    Route::post('/admin/about-us/features', [AboutUsController::class, 'storeFeature'])->name('admin.about_us.features.store');
+    Route::post('/admin/about-us/features/{id}', [AboutUsController::class, 'updateFeature'])->name('admin.about_us.features.update');
+    Route::delete('/admin/about-us/features/{id}', [AboutUsController::class, 'destroyFeature'])->name('admin.about_us.features.destroy');
+    Route::post('/admin/about-us/impacts', [AboutUsController::class, 'storeImpact'])->name('admin.about_us.impacts.store');
+    Route::post('/admin/about-us/impacts/{id}', [AboutUsController::class, 'updateImpact'])->name('admin.about_us.impacts.update');
+    Route::delete('/admin/about-us/impacts/{id}', [AboutUsController::class, 'destroyImpact'])->name('admin.about_us.impacts.destroy');
 
     // Commission Settings
     Route::get('/admin/commission', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('admin.commission.index');

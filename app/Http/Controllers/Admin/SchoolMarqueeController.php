@@ -25,7 +25,7 @@ class SchoolMarqueeController extends Controller
             'sort_order' => 'nullable|integer',
         ]);
 
-        $data = $request->only(['name', 'heading', 'subheading', 'sort_order']);
+        $data = $request->only(['name', 'heading', 'subheading', 'sort_order', 'logo_url']);
         $data['sort_order'] = $request->sort_order ?? 0;
         
         // Inherit direction from existing records
@@ -54,7 +54,7 @@ class SchoolMarqueeController extends Controller
             'sort_order' => 'nullable|integer',
         ]);
 
-        $data = $request->only(['name', 'heading', 'subheading', 'sort_order']);
+        $data = $request->only(['name', 'heading', 'subheading', 'sort_order', 'logo_url']);
 
         if ($request->hasFile('logo')) {
             if (File::exists(public_path($school_marquee->logo))) {

@@ -42,6 +42,7 @@
                         data-heading="{{ $item->heading }}"
                         data-subheading="{{ $item->subheading }}"
                         data-sort="{{ $item->sort_order }}"
+                        data-url="{{ $item->logo_url }}"
                         data-logo="{{ asset($item->logo) }}">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -100,6 +101,10 @@
                         <label class="form-label fw-bold">Sort Order</label>
                         <input type="number" name="sort_order" class="form-control" value="0">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Logo Target URL (Optional)</label>
+                        <input type="url" name="logo_url" class="form-control" placeholder="https://example.com">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
@@ -145,6 +150,10 @@
                         <label class="form-label fw-bold">Sort Order</label>
                         <input type="number" name="sort_order" id="edit_sort" class="form-control">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Logo Target URL (Optional)</label>
+                        <input type="url" name="logo_url" id="edit_url" class="form-control" placeholder="https://example.com">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
@@ -164,6 +173,7 @@ $(function() {
         let heading = $(this).data('heading');
         let subheading = $(this).data('subheading');
         let sort = $(this).data('sort');
+        let url = $(this).data('url');
         let logo = $(this).data('logo');
 
         $('#editForm').attr('action', `/admin/school-marquees/${id}`);
@@ -171,6 +181,7 @@ $(function() {
         $('#edit_heading').val(heading);
         $('#edit_subheading').val(subheading);
         $('#edit_sort').val(sort);
+        $('#edit_url').val(url);
         $('#editPreview').attr('src', logo);
 
         $('#editLogoModal').modal('show');

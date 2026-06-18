@@ -23,9 +23,10 @@ class InstituteMarqueeController extends Controller
             'heading'    => 'nullable|string|max:255',
             'subheading' => 'nullable|string',
             'sort_order' => 'nullable|integer',
+            'logo_url'   => 'nullable|string|max:255',
         ]);
 
-        $data = $request->only(['name', 'heading', 'subheading', 'sort_order']);
+        $data = $request->only(['name', 'heading', 'subheading', 'sort_order', 'logo_url']);
         $data['sort_order'] = $request->sort_order ?? 0;
         
         $existing = InstituteMarquee::first();
@@ -51,9 +52,10 @@ class InstituteMarqueeController extends Controller
             'heading'    => 'nullable|string|max:255',
             'subheading' => 'nullable|string',
             'sort_order' => 'nullable|integer',
+            'logo_url'   => 'nullable|string|max:255',
         ]);
 
-        $data = $request->only(['name', 'heading', 'subheading', 'sort_order']);
+        $data = $request->only(['name', 'heading', 'subheading', 'sort_order', 'logo_url']);
 
         if ($request->hasFile('logo')) {
             if (File::exists(public_path($institute_marquee->logo))) {
