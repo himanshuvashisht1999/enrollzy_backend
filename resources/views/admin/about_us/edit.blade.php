@@ -201,43 +201,46 @@
                                         </td>
                                     </tr>
                                     
-                                    <!-- Edit Offer Modal -->
-                                    <div class="modal fade" id="editOfferModal{{ $offer->id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <form action="{{ route('admin.about_us.offers.update', $offer->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Edit Offer</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>Title</label>
-                                                        <input type="text" name="title" class="form-control" value="{{ $offer->title }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Description</label>
-                                                        <textarea name="description" class="form-control" rows="2">{{ $offer->description }}</textarea>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Icon Image</label>
-                                                        <input type="file" name="icon_image" class="form-control">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Sort Order</label>
-                                                        <input type="number" name="sort_order" class="form-control" value="{{ $offer->sort_order }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="submit" class="btn btn-primary">Update</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
+                        
+                        @foreach($offers as $offer)
+                        <!-- Edit Offer Modal -->
+                        <div class="modal fade" id="editOfferModal{{ $offer->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <form action="{{ route('admin.about_us.offers.update', $offer->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                    @csrf
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Offer</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>Title</label>
+                                            <input type="text" name="title" class="form-control" value="{{ $offer->title }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Description</label>
+                                            <textarea name="description" class="form-control" rows="2">{{ $offer->description }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Icon Image</label>
+                                            <input type="file" name="icon_image" class="form-control">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Sort Order</label>
+                                            <input type="number" name="sort_order" class="form-control" value="{{ $offer->sort_order }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-primary">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
 
                     <!-- Features Tab -->
@@ -273,43 +276,46 @@
                                         </td>
                                     </tr>
                                     
-                                    <!-- Edit Feature Modal -->
-                                    <div class="modal fade" id="editFeatureModal{{ $feature->id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <form action="{{ route('admin.about_us.features.update', $feature->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Edit Feature</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>Title</label>
-                                                        <input type="text" name="title" class="form-control" value="{{ $feature->title }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Description</label>
-                                                        <textarea name="description" class="form-control" rows="2">{{ $feature->description }}</textarea>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Icon Image</label>
-                                                        <input type="file" name="icon_image" class="form-control">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Sort Order</label>
-                                                        <input type="number" name="sort_order" class="form-control" value="{{ $feature->sort_order }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="submit" class="btn btn-primary">Update</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
+
+                        @foreach($features as $feature)
+                        <!-- Edit Feature Modal -->
+                        <div class="modal fade" id="editFeatureModal{{ $feature->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <form action="{{ route('admin.about_us.features.update', $feature->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                    @csrf
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Feature</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>Title</label>
+                                            <input type="text" name="title" class="form-control" value="{{ $feature->title }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Description</label>
+                                            <textarea name="description" class="form-control" rows="2">{{ $feature->description }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Icon Image</label>
+                                            <input type="file" name="icon_image" class="form-control">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Sort Order</label>
+                                            <input type="number" name="sort_order" class="form-control" value="{{ $feature->sort_order }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-primary">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
 
                     <!-- Impacts Tab -->
@@ -345,43 +351,46 @@
                                         </td>
                                     </tr>
                                     
-                                    <!-- Edit Impact Modal -->
-                                    <div class="modal fade" id="editImpactModal{{ $impact->id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <form action="{{ route('admin.about_us.impacts.update', $impact->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Edit Impact</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>Count Text (e.g. 2M+)</label>
-                                                        <input type="text" name="count_text" class="form-control" value="{{ $impact->count_text }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Label</label>
-                                                        <input type="text" name="label" class="form-control" value="{{ $impact->label }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Icon Image</label>
-                                                        <input type="file" name="icon_image" class="form-control">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>Sort Order</label>
-                                                        <input type="number" name="sort_order" class="form-control" value="{{ $impact->sort_order }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="submit" class="btn btn-primary">Update</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
+
+                        @foreach($impacts as $impact)
+                        <!-- Edit Impact Modal -->
+                        <div class="modal fade" id="editImpactModal{{ $impact->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <form action="{{ route('admin.about_us.impacts.update', $impact->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                    @csrf
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Impact</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>Count Text (e.g. 2M+)</label>
+                                            <input type="text" name="count_text" class="form-control" value="{{ $impact->count_text }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Label</label>
+                                            <input type="text" name="label" class="form-control" value="{{ $impact->label }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Icon Image</label>
+                                            <input type="file" name="icon_image" class="form-control">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Sort Order</label>
+                                            <input type="number" name="sort_order" class="form-control" value="{{ $impact->sort_order }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-primary">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
 
                     <!-- Core Values Tab -->
