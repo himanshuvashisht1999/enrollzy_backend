@@ -556,6 +556,23 @@
                         href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-tools"></i> General Settings
                     </a>
+
+                    <!-- SEO Settings Dropdown -->
+                    <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
+                        data-bs-toggle="collapse" href="#seoSettingsMenu" role="button" aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}" aria-controls="seoSettingsMenu">
+                        <i class="fas fa-search"></i> SEO
+                        <i class="fas fa-chevron-down ms-auto menu-arrow {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'rotate-180' : '' }}"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'show' : '' }}" id="seoSettingsMenu">
+                        <ul class="nav flex-column sub-menu">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_defaults.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
+                        </ul>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"

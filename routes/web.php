@@ -210,6 +210,18 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
     Route::post('/admin/settings/update', [SettingController::class, 'update'])->name('admin.settings.update');
 
+    // SEO Organization Settings
+    Route::get('/admin/seo-organization', [\App\Http\Controllers\Admin\SeoOrganizationSettingController::class, 'edit'])->name('admin.seo_organization.edit');
+    Route::post('/admin/seo-organization', [\App\Http\Controllers\Admin\SeoOrganizationSettingController::class, 'update'])->name('admin.seo_organization.update');
+
+    // Homepage SEO
+    Route::get('/admin/seo-homepage', [\App\Http\Controllers\Admin\SeoHomepageController::class, 'edit'])->name('admin.seo_homepage.edit');
+    Route::post('/admin/seo-homepage', [\App\Http\Controllers\Admin\SeoHomepageController::class, 'update'])->name('admin.seo_homepage.update');
+
+    // Global SEO Defaults
+    Route::get('/admin/seo-defaults', [\App\Http\Controllers\Admin\SeoDefaultController::class, 'edit'])->name('admin.seo_defaults.edit');
+    Route::post('/admin/seo-defaults', [\App\Http\Controllers\Admin\SeoDefaultController::class, 'update'])->name('admin.seo_defaults.update');
+
     // About Us Page
     Route::get('/admin/about-us', [AboutUsController::class, 'edit'])->name('admin.about_us.edit');
     Route::post('/admin/about-us/update', [AboutUsController::class, 'update'])->name('admin.about_us.update');
