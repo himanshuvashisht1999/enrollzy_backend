@@ -64,6 +64,10 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/career-roadmap-stages', \App\Http\Controllers\Admin\CareerRoadmapStageController::class)->names('admin.career-roadmap-stages');
     Route::resource('/admin/career-roadmap-sub-modules', \App\Http\Controllers\Admin\CareerRoadmapSubModuleController::class)->names('admin.career-roadmap-sub-modules');
 
+    // FAQs
+    Route::resource('/admin/faq-categories', \App\Http\Controllers\Admin\FaqCategoryController::class)->names('admin.faq-categories');
+    Route::resource('/admin/faq-items', \App\Http\Controllers\Admin\FaqItemController::class)->names('admin.faq-items');
+
     // Students
     Route::resource('/admin/students', StudentController::class);
 

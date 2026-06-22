@@ -269,6 +269,25 @@
                     </div>
                 </li>
 
+                {{-- FAQ Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faq-*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#faqMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/faq-*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-question-circle me-2"></i>FAQ Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/faq-*') ? 'show' : '' }}"
+                        id="faqMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-categories.index') }}">Categories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-items.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-items.index') }}">FAQs</a></li>
+                        </ul>
+                    </div>
+                </li>
+
                 {{-- Expert Management --}}
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'active' : 'collapsed' }}"
