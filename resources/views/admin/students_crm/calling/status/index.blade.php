@@ -88,7 +88,7 @@
         $('#statusForm').on('submit', function(e) {
             e.preventDefault();
             let id = $('#status_id').val();
-            let url = id ? "{{ url('admin.students-crm/calling-statuses') }}/" + id : "{{ route('admin.students-crm.calling-statuses.store') }}";
+            let url = id ? "{{ url('admin/students-crm/calling-statuses') }}/" + id : "{{ route('admin.students-crm.calling-statuses.store') }}";
             let type = id ? "PUT" : "POST";
 
             $.ajax({
@@ -109,7 +109,7 @@
 
         $(document).on('click', '.edit-status', function() {
             let id = $(this).data('id');
-            $.get("{{ url('admin.students-crm/calling-statuses') }}/" + id, function(res) {
+            $.get("{{ url('admin/students-crm/calling-statuses') }}/" + id, function(res) {
                 if(res.status == 1) {
                     $('#status_id').val(res.data.id);
                     $('#name').val(res.data.name);

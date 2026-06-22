@@ -53,8 +53,8 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Active Status <span class="text-danger">*</span></label>
                         <select name="status" id="is_active" class="form-select rounded-3" required>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
                         </select>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
         $('#actionForm').on('submit', function(e) {
             e.preventDefault();
             let id = $('#action_id').val();
-            let url = id ? "{{ url('admin.students-crm/calling-actions') }}/" + id : "{{ route('admin.students-crm.calling-actions.store') }}";
+            let url = id ? "{{ url('admin/students-crm/calling-actions') }}/" + id : "{{ route('admin.students-crm.calling-actions.store') }}";
             let type = id ? "PUT" : "POST";
 
             $.ajax({
@@ -109,7 +109,7 @@
 
         $(document).on('click', '.edit-action', function() {
             let id = $(this).data('id');
-            $.get("{{ url('admin.students-crm/calling-actions') }}/" + id, function(res) {
+            $.get("{{ url('admin/students-crm/calling-actions') }}/" + id, function(res) {
                 if(res.status == 1) {
                     $('#action_id').val(res.data.id);
                     $('#name').val(res.data.name);

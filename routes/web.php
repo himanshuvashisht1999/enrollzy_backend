@@ -58,6 +58,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Categories
     Route::resource('/admin/categories', CategoryController::class);
+    
+    // Career Roadmap
+    Route::resource('/admin/career-roadmap-categories', \App\Http\Controllers\Admin\CareerRoadmapCategoryController::class)->names('admin.career-roadmap-categories');
+    Route::resource('/admin/career-roadmap-stages', \App\Http\Controllers\Admin\CareerRoadmapStageController::class)->names('admin.career-roadmap-stages');
+    Route::resource('/admin/career-roadmap-sub-modules', \App\Http\Controllers\Admin\CareerRoadmapSubModuleController::class)->names('admin.career-roadmap-sub-modules');
 
     // Students
     Route::resource('/admin/students', StudentController::class);

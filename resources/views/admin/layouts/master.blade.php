@@ -148,6 +148,11 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
             border-radius: 10px;
         }
+
+        /* Fix Select2 dropdown z-index behind Bootstrap modals */
+        .select2-container--open {
+            z-index: 9999999 !important;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('css')
@@ -239,6 +244,27 @@
                                     href="{{ route('admin.exam-stages.index') }}">Exam Stages</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.caste-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.caste-categories.index') }}">Caste Categories</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Career Roadmap Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/career-roadmap*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#careerRoadmapMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/career-roadmap*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-map-signs me-2"></i>Career Roadmap</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/career-roadmap*') ? 'show' : '' }}"
+                        id="careerRoadmapMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-categories.index') }}">Categories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-stages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-stages.index') }}">Stages</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-sub-modules.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-sub-modules.index') }}">Sub Modules</a></li>
                         </ul>
                     </div>
                 </li>
@@ -677,6 +703,7 @@
 
     <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
