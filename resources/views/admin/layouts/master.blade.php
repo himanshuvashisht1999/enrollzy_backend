@@ -527,13 +527,13 @@
 
                 {{-- Content Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#contentMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-copy"></i> Content</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'show' : '' }}"
                         id="contentMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('blogs.index') ? 'active' : '' }}"
@@ -546,6 +546,8 @@
                                     href="{{ route('testimonials.index') }}">Testimonials</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.video-testimonials.*') ? 'active' : '' }}"
                                     href="{{ route('admin.video-testimonials.index') }}">Video Stories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.contact-us.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.contact-us.edit') }}">Contact Us</a></li>
                         </ul>
                     </div>
                 </li>

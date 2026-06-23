@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\CommunityCategoryController;
 use App\Http\Controllers\Admin\CommunityQuestionController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\ContactUsDetailController;
 use App\Http\Controllers\Admin\ExamStageDataController;
 use App\Http\Controllers\Admin\Hr\WhatsappTemplateController;
 use App\Http\Controllers\Admin\Hr\LeadSourceController;
@@ -243,6 +244,10 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/about-us/impacts', [AboutUsController::class, 'storeImpact'])->name('admin.about_us.impacts.store');
     Route::post('/admin/about-us/impacts/{id}', [AboutUsController::class, 'updateImpact'])->name('admin.about_us.impacts.update');
     Route::delete('/admin/about-us/impacts/{id}', [AboutUsController::class, 'destroyImpact'])->name('admin.about_us.impacts.destroy');
+
+    // Contact Us Setting
+    Route::get('/admin/contact-us', [ContactUsDetailController::class, 'edit'])->name('admin.contact-us.edit');
+    Route::put('/admin/contact-us', [ContactUsDetailController::class, 'update'])->name('admin.contact-us.update');
 
     // Commission Settings
     Route::get('/admin/commission', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('admin.commission.index');
