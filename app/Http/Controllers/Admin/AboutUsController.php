@@ -7,6 +7,7 @@ use App\Models\AboutUsPage;
 use App\Models\AboutUsOffer;
 use App\Models\AboutUsFeature;
 use App\Models\AboutUsImpact;
+use App\Models\AboutUsTeam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -27,8 +28,9 @@ class AboutUsController extends Controller
         $offers = AboutUsOffer::orderBy('sort_order')->get();
         $features = AboutUsFeature::orderBy('sort_order')->get();
         $impacts = AboutUsImpact::orderBy('sort_order')->get();
+        $teams = AboutUsTeam::orderBy('sort_order')->get();
 
-        return view('admin.about_us.edit', compact('page', 'offers', 'features', 'impacts'));
+        return view('admin.about_us.edit', compact('page', 'offers', 'features', 'impacts', 'teams'));
     }
 
     public function update(Request $request)
@@ -173,5 +175,45 @@ class AboutUsController extends Controller
         }
         $impact->delete();
         return redirect()->back()->with('success', 'Impact deleted successfully!');
+    }
+
+    // --- Teams ---
+    public function storeTeam(Request $request)
+    {
+        $request->validate(['name' => 'required', 'job_profile' => 'nullable', 'image' => 'nullable|image']);
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+            $imageName = 'team_' . time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/about_us/teams'), $imageName);
+            $data['image'] = 'uploads/about_us/teams/' . $imageName;
+        }
+        AboutUsTeam::create($data);
+        return redirect()->back()->with('success', 'Team member added successfully!');
+    }
+
+    public function updateTeam(Request $request, $id)
+    {
+        $team = AboutUsTeam::findOrFail($id);
+        $data = $request->except(['image']);
+        if ($request->hasFile('image')) {
+            if ($team->image && File::exists(public_path($team->image))) {
+                File::delete(public_path($team->image));
+            }
+            $imageName = 'team_' . time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/about_us/teams'), $imageName);
+            $data['image'] = 'uploads/about_us/teams/' . $imageName;
+        }
+        $team->update($data);
+        return redirect()->back()->with('success', 'Team member updated successfully!');
+    }
+
+    public function destroyTeam($id)
+    {
+        $team = AboutUsTeam::findOrFail($id);
+        if ($team->image && File::exists(public_path($team->image))) {
+            File::delete(public_path($team->image));
+        }
+        $team->delete();
+        return redirect()->back()->with('success', 'Team member deleted successfully!');
     }
 }

@@ -45,6 +45,11 @@
                             <i class="fas fa-users me-2"></i> Founders
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link py-3 px-4 border-0 rounded-0" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams" type="button" role="tab">
+                            <i class="fas fa-user-tie me-2"></i> Team
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body p-4 p-lg-5">
@@ -437,6 +442,11 @@
                                     </div>
                                     
                                     <div class="mb-3">
+                                        <label class="form-label">Title (e.g. Co-Founder)</label>
+                                        <input type="text" name="founder_1_title" class="form-control" value="{{ $page->founder_1_title }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
                                         <label class="form-label">Image</label>
                                         <input type="file" name="founder_1_image" class="form-control">
                                         @if($page->founder_1_image)
@@ -467,6 +477,11 @@
                                     <div class="mb-3">
                                         <label class="form-label">Name</label>
                                         <input type="text" name="founder_2_name" class="form-control" value="{{ $page->founder_2_name }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Title (e.g. Co-Founder)</label>
+                                        <input type="text" name="founder_2_title" class="form-control" value="{{ $page->founder_2_title }}">
                                     </div>
                                     
                                     <div class="mb-3">
@@ -505,6 +520,87 @@
                                 <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">Save Founders Content</button>
                             </div>
                         </form>
+                    </div>
+
+                    <!-- Teams Content Tab -->
+                    <div class="tab-pane fade" id="teams" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold m-0">Team Members</h5>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTeamModal"><i class="fas fa-plus me-2"></i> Add Team Member</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Name</th>
+                                        <th>Job Profile</th>
+                                        <th>Sort Order</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($teams as $team)
+                                    <tr>
+                                        <td>
+                                            @if($team->image)
+                                                <img src="{{ asset($team->image) }}" width="50" height="50" class="rounded object-fit-cover">
+                                            @endif
+                                        </td>
+                                        <td class="fw-bold">{{ $team->name }}</td>
+                                        <td>{{ $team->job_profile }}</td>
+                                        <td>{{ $team->sort_order }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editTeamModal{{ $team->id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form action="{{ route('admin.about_us.teams.destroy', $team->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this team member?');">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Edit Team Modal -->
+                                    <div class="modal fade" id="editTeamModal{{ $team->id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <form action="{{ route('admin.about_us.teams.update', $team->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                                @csrf
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Edit Team Member</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label>Name</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ $team->name }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Job Profile</label>
+                                                        <input type="text" name="job_profile" class="form-control" value="{{ $team->job_profile }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Image</label>
+                                                        <input type="file" name="image" class="form-control">
+                                                        @if($team->image)
+                                                            <img src="{{ asset($team->image) }}" width="60" class="mt-2 rounded">
+                                                        @endif
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Sort Order</label>
+                                                        <input type="number" name="sort_order" class="form-control" value="{{ $team->sort_order }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-primary">Update</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                 </div>
@@ -602,6 +698,40 @@
                 <div class="mb-3">
                     <label>Icon Image</label>
                     <input type="file" name="icon_image" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Team Modal -->
+<div class="modal fade" id="addTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ route('admin.about_us.teams.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title">Add Team Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label>Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label>Job Profile</label>
+                    <input type="text" name="job_profile" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Image</label>
+                    <input type="file" name="image" class="form-control">
                 </div>
                 <div class="mb-3">
                     <label>Sort Order</label>

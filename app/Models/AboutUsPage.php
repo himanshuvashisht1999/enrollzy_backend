@@ -14,8 +14,8 @@ class AboutUsPage extends Model
         'cta_title', 'cta_description', 'cta_button_1_text', 'cta_button_1_link',
         'cta_button_2_text', 'cta_button_2_link', 'cta_image',
         'mission_text', 'vision_text', 'philosophy_text',
-        'founder_1_name', 'founder_1_image', 'founder_1_facebook', 'founder_1_linkedin', 'founder_1_twitter',
-        'founder_2_name', 'founder_2_image', 'founder_2_facebook', 'founder_2_linkedin', 'founder_2_twitter',
+        'founder_1_name', 'founder_1_title', 'founder_1_image', 'founder_1_facebook', 'founder_1_linkedin', 'founder_1_twitter',
+        'founder_2_name', 'founder_2_title', 'founder_2_image', 'founder_2_facebook', 'founder_2_linkedin', 'founder_2_twitter',
         'founders_common_message'
     ];
 }
