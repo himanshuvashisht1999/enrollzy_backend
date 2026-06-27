@@ -39,6 +39,10 @@ class AboutUsController extends Controller
 
         $data = $request->except(['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image']);
 
+        if ($request->has('section_orders') && is_string($request->section_orders)) {
+            $data['section_orders'] = json_decode($request->section_orders, true) ?: ['hero', 'story', 'core_values', 'offers', 'features', 'impacts', 'founders', 'teams', 'cta'];
+        }
+
         // Handle Images
         $imageFields = ['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image'];
         foreach ($imageFields as $field) {

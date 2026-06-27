@@ -16,6 +16,10 @@ class AboutUsPage extends Model
         'mission_text', 'vision_text', 'philosophy_text',
         'founder_1_name', 'founder_1_title', 'founder_1_image', 'founder_1_facebook', 'founder_1_linkedin', 'founder_1_twitter',
         'founder_2_name', 'founder_2_title', 'founder_2_image', 'founder_2_facebook', 'founder_2_linkedin', 'founder_2_twitter',
-        'founders_common_message'
+        'founders_common_message', 'section_orders'
+    ];
+
+    protected $casts = [
+        'section_orders' => 'array',
     ];
 }

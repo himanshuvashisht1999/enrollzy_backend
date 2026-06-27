@@ -170,6 +170,36 @@
                                 </div>
                             </div>
                             
+                            <hr>
+                            <h5 class="fw-bold mb-4">Section Ordering</h5>
+                            <p class="text-muted">Reorder the sections below to change their display order on the About Us page.</p>
+                            
+                            @php
+                                $defaultSections = ['hero' => 'Hero Section', 'story' => 'Our Story', 'core_values' => 'Core Values', 'offers' => 'What We Offer', 'features' => 'Why Choose Enrollzy', 'impacts' => 'Our Impact So Far', 'founders' => 'Meet Our Founders', 'teams' => 'Our Team', 'cta' => 'Call To Action'];
+                                $currentOrders = $page->section_orders ?? array_keys($defaultSections);
+                                foreach(array_keys($defaultSections) as $key) {
+                                    if(!in_array($key, $currentOrders)) {
+                                        $currentOrders[] = $key;
+                                    }
+                                }
+                            @endphp
+                            
+                            <input type="hidden" name="section_orders" id="section_orders_input" value="{{ json_encode($currentOrders) }}">
+                            
+                            <ul class="list-group mb-4" id="section-order-list">
+                                @foreach($currentOrders as $key)
+                                    @if(isset($defaultSections[$key]))
+                                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light border" data-key="{{ $key }}">
+                                        <div><i class="fas fa-arrows-alt-v text-muted me-3"></i> <strong class="text-dark">{{ $defaultSections[$key] }}</strong></div>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                                        </div>
+                                    </li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                            
                             <div class="text-end">
                                 <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">Save General Content</button>
                             </div>
@@ -376,8 +406,8 @@
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label>Count Text (e.g. 2M+)</label>
-                                            <input type="text" name="count_text" class="form-control" value="{{ $impact->count_text }}" required>
+                                            <label>Count (Number only, "+" will be automatically appended)</label>
+                                            <input type="number" name="count_text" class="form-control" value="{{ preg_replace('/[^0-9]/', '', $impact->count_text) }}" required>
                                         </div>
                                         <div class="mb-3">
                                             <label>Label</label>
@@ -693,8 +723,8 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label>Count Text</label>
-                    <input type="text" name="count_text" class="form-control" required>
+                    <label>Count (Number only, "+" will be automatically appended)</label>
+                    <input type="number" name="count_text" class="form-control" required>
                 </div>
                 <div class="mb-3">
                     <label>Label</label>
@@ -757,6 +787,32 @@
 <script>
     $(document).ready(function() {
         initializeTinyMCE('.editor');
+
+        function updateSectionOrders() {
+            let orders = [];
+            $('#section-order-list li').each(function() {
+                orders.push($(this).data('key'));
+            });
+            $('#section_orders_input').val(JSON.stringify(orders));
+        }
+
+        $('#section-order-list').on('click', '.move-up', function(e) {
+            e.preventDefault();
+            let li = $(this).closest('li');
+            if(li.prev().length > 0) {
+                li.insertBefore(li.prev());
+                updateSectionOrders();
+            }
+        });
+
+        $('#section-order-list').on('click', '.move-down', function(e) {
+            e.preventDefault();
+            let li = $(this).closest('li');
+            if(li.next().length > 0) {
+                li.insertAfter(li.next());
+                updateSectionOrders();
+            }
+        });
     });
 </script>
 @endpush
