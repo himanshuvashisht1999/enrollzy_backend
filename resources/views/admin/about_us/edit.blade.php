@@ -71,11 +71,12 @@
                                 </div>
                                 <div class="col-md-12 mb-3">
                                     <label class="form-label fw-bold">Hero Description</label>
-                                    <textarea name="hero_description" class="form-control" rows="3">{{ $page->hero_description }}</textarea>
+                                    <textarea name="hero_description" class="form-control editor" rows="3">{{ $page->hero_description }}</textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Hero Image</label>
                                     <input type="file" name="hero_image" class="form-control">
+                                    <small class="text-muted d-block mt-1">Recommended size: 800x600 px (4:3 aspect ratio)</small>
                                     @if($page->hero_image)
                                         <img src="{{ asset($page->hero_image) }}" width="150" class="mt-2 rounded shadow-sm">
                                     @endif
@@ -99,11 +100,12 @@
                                 </div>
                                 <div class="col-md-12 mb-3">
                                     <label class="form-label fw-bold">Story Description (HTML allowed)</label>
-                                    <textarea name="story_description" class="form-control" rows="5">{{ $page->story_description }}</textarea>
+                                    <textarea name="story_description" class="form-control editor" rows="5">{{ $page->story_description }}</textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Story Image</label>
                                     <input type="file" name="story_image" class="form-control">
+                                    <small class="text-muted d-block mt-1">Recommended size: 800x600 px (4:3 aspect ratio)</small>
                                     @if($page->story_image)
                                         <img src="{{ asset($page->story_image) }}" width="150" class="mt-2 rounded shadow-sm">
                                     @endif
@@ -161,6 +163,7 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">CTA Image</label>
                                     <input type="file" name="cta_image" class="form-control">
+                                    <small class="text-muted d-block mt-1">Recommended size: 500x300 px</small>
                                     @if($page->cta_image)
                                         <img src="{{ asset($page->cta_image) }}" width="150" class="mt-2 rounded shadow-sm">
                                     @endif
@@ -406,17 +409,17 @@
                             
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Mission</label>
-                                <textarea name="mission_text" class="form-control" rows="4">{{ $page->mission_text }}</textarea>
+                                <textarea name="mission_text" class="form-control editor" rows="4">{{ $page->mission_text }}</textarea>
                             </div>
                             
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Vision</label>
-                                <textarea name="vision_text" class="form-control" rows="4">{{ $page->vision_text }}</textarea>
+                                <textarea name="vision_text" class="form-control editor" rows="4">{{ $page->vision_text }}</textarea>
                             </div>
                             
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Philosophy</label>
-                                <textarea name="philosophy_text" class="form-control" rows="4">{{ $page->philosophy_text }}</textarea>
+                                <textarea name="philosophy_text" class="form-control editor" rows="4">{{ $page->philosophy_text }}</textarea>
                             </div>
                             
                             <div class="text-end">
@@ -449,6 +452,7 @@
                                     <div class="mb-3">
                                         <label class="form-label">Image</label>
                                         <input type="file" name="founder_1_image" class="form-control">
+                                        <small class="text-muted d-block mt-1">Recommended size: 300x300 px (1:1 square aspect ratio)</small>
                                         @if($page->founder_1_image)
                                             <img src="{{ asset($page->founder_1_image) }}" width="100" class="mt-2 rounded">
                                         @endif
@@ -487,6 +491,7 @@
                                     <div class="mb-3">
                                         <label class="form-label">Image</label>
                                         <input type="file" name="founder_2_image" class="form-control">
+                                        <small class="text-muted d-block mt-1">Recommended size: 300x300 px (1:1 square aspect ratio)</small>
                                         @if($page->founder_2_image)
                                             <img src="{{ asset($page->founder_2_image) }}" width="100" class="mt-2 rounded">
                                         @endif
@@ -513,7 +518,7 @@
                             
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Common Message (below founders)</label>
-                                <textarea name="founders_common_message" class="form-control" rows="3">{{ $page->founders_common_message }}</textarea>
+                                <textarea name="founders_common_message" class="form-control editor" rows="3">{{ $page->founders_common_message }}</textarea>
                             </div>
                             
                             <div class="text-end">
@@ -732,6 +737,7 @@
                 <div class="mb-3">
                     <label>Image</label>
                     <input type="file" name="image" class="form-control">
+                    <small class="text-muted d-block mt-1">Recommended size: 300x300 px (1:1 square aspect ratio)</small>
                 </div>
                 <div class="mb-3">
                     <label>Sort Order</label>
@@ -746,3 +752,11 @@
 </div>
 
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        initializeTinyMCE('.editor');
+    });
+</script>
+@endpush
