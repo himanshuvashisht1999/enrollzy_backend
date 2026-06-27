@@ -70,6 +70,14 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="long_description" class="form-label fw-bold">Long Description</label>
+                        <textarea class="form-control @error('long_description') is-invalid @enderror" id="long_description" name="long_description" rows="8">{{ old('long_description') }}</textarea>
+                        @error('long_description')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <hr class="my-4">
                     
                     <h5 class="mb-3">Custom Fields (Optional)</h5>
@@ -99,6 +107,10 @@
 
 @push('js')
 <script>
+    if (typeof initializeTinyMCE === 'function') {
+        initializeTinyMCE('#long_description');
+    }
+    
     $(document).ready(function() {
         const $container = $('#custom-fields-container');
         const $addButton = $('#add-custom-field');

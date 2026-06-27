@@ -42,6 +42,7 @@ class CareerRoadmapSubModuleController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'description' => 'nullable|string',
+            'long_description' => 'nullable|string',
             'status' => 'nullable|boolean',
             'custom_field_names' => 'nullable|array',
             'custom_field_values' => 'nullable|array',
@@ -68,6 +69,7 @@ class CareerRoadmapSubModuleController extends Controller
             'parent_id' => $request->parent_id,
             'title' => $request->title,
             'description' => $request->description,
+            'long_description' => $request->long_description,
             'custom_fields' => $customFields,
             'status' => $request->has('status') ? 1 : 0,
         ];
@@ -99,6 +101,7 @@ class CareerRoadmapSubModuleController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'description' => 'nullable|string',
+            'long_description' => 'nullable|string',
             'status' => 'nullable|boolean',
             'custom_field_names' => 'nullable|array',
             'custom_field_values' => 'nullable|array',
@@ -125,6 +128,7 @@ class CareerRoadmapSubModuleController extends Controller
             'parent_id' => $request->parent_id,
             'title' => $request->title,
             'description' => $request->description,
+            'long_description' => $request->long_description,
             'custom_fields' => $customFields,
             'status' => $request->has('status') ? 1 : 0,
         ];

@@ -552,12 +552,12 @@
                     </div>
                 </li>
 
-                {{-- Homepage Setup Group --}}
+                {{-- Frontend Setup Group --}}
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
                         aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
-                        <span><i class="fas fa-home"></i> Homepage Setup</span>
+                        <span><i class="fas fa-home"></i> Frontend Setup</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
                     <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'show' : '' }}"

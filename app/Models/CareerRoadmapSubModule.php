@@ -16,6 +16,7 @@ class CareerRoadmapSubModule extends Model
         'slug',
         'image',
         'description',
+        'long_description',
         'custom_fields',
         'status'
     ];
