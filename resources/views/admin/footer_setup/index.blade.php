@@ -30,9 +30,14 @@
                     <form action="{{ route('admin.footer-setup.update-settings') }}" method="POST">
                         @csrf
                         <div class="row mb-3">
-                            <div class="col-md-12">
+                            <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Footer Description</label>
                                 <textarea name="footer_description" class="form-control" rows="3">{{ old('footer_description', $setting->footer_description) }}</textarea>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">General Column Title</label>
+                                <input type="text" name="footer_general_title" class="form-control" value="{{ old('footer_general_title', $setting->footer_general_title ?? 'General') }}">
+                                <div class="form-text">This is the title for the "General" column on the right side of the footer.</div>
                             </div>
                         </div>
 

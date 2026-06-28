@@ -41,7 +41,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control" rows="4" required>{{ $homeService->description }}</textarea>
+                    <textarea name="description" class="form-control editor" rows="4">{{ $homeService->description }}</textarea>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Footer Text (Highlight Line)</label>
@@ -55,3 +55,13 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        if(typeof initializeTinyMCE === 'function') {
+            initializeTinyMCE('.editor');
+        }
+    });
+</script>
+@endpush

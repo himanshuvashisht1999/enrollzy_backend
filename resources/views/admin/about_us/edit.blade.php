@@ -50,6 +50,11 @@
                             <i class="fas fa-user-tie me-2"></i> Team
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link py-3 px-4 border-0 rounded-0" id="advisory-boards-tab" data-bs-toggle="tab" data-bs-target="#advisory-boards" type="button" role="tab">
+                            <i class="fas fa-users-cog me-2"></i> Advisory Board
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body p-4 p-lg-5">
@@ -175,7 +180,7 @@
                             <p class="text-muted">Reorder the sections below to change their display order on the About Us page.</p>
                             
                             @php
-                                $defaultSections = ['hero' => 'Hero Section', 'story' => 'Our Story', 'core_values' => 'Core Values', 'offers' => 'What We Offer', 'features' => 'Why Choose Enrollzy', 'impacts' => 'Our Impact So Far', 'founders' => 'Meet Our Founders', 'teams' => 'Our Team', 'cta' => 'Call To Action'];
+                                $defaultSections = ['hero' => 'Hero Section', 'story' => 'Our Story', 'core_values' => 'Core Values', 'offers' => 'What We Offer', 'features' => 'Why Choose Enrollzy', 'impacts' => 'Our Impact So Far', 'founders' => 'Meet Our Founders', 'teams' => 'Our Team', 'advisory_board' => 'Advisory Board', 'cta' => 'Call To Action'];
                                 $currentOrders = $page->section_orders ?? array_keys($defaultSections);
                                 foreach(array_keys($defaultSections) as $key) {
                                     if(!in_array($key, $currentOrders)) {
@@ -638,6 +643,97 @@
                         </div>
                     </div>
 
+                    <!-- Advisory Board Tab -->
+                    <div class="tab-pane fade" id="advisory-boards" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold m-0">Advisory Board</h5>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdvisoryBoardModal"><i class="fas fa-plus me-2"></i> Add Board Member</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Name</th>
+                                        <th>Designation</th>
+                                        <th>LinkedIn</th>
+                                        <th>Sort Order</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($advisory_boards as $board)
+                                    <tr>
+                                        <td>
+                                            @if($board->image)
+                                                <img src="{{ asset($board->image) }}" width="50" height="50" class="rounded object-fit-cover">
+                                            @endif
+                                        </td>
+                                        <td class="fw-bold">{{ $board->name }}</td>
+                                        <td>{{ $board->designation }}</td>
+                                        <td>
+                                            @if($board->linkedin_url)
+                                            <a href="{{ $board->linkedin_url }}" target="_blank"><i class="fab fa-linkedin fa-lg text-primary"></i></a>
+                                            @endif
+                                        </td>
+                                        <td>{{ $board->sort_order }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editAdvisoryBoardModal{{ $board->id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form action="{{ route('admin.about_us.advisory_boards.destroy', $board->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this board member?');">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Edit Advisory Board Modal -->
+                                    <div class="modal fade" id="editAdvisoryBoardModal{{ $board->id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <form action="{{ route('admin.about_us.advisory_boards.update', $board->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                                @csrf
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Edit Board Member</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label>Name</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ $board->name }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Designation</label>
+                                                        <input type="text" name="designation" class="form-control" value="{{ $board->designation }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>LinkedIn URL</label>
+                                                        <input type="url" name="linkedin_url" class="form-control" value="{{ $board->linkedin_url }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Image</label>
+                                                        <input type="file" name="image" class="form-control">
+                                                        @if($board->image)
+                                                            <img src="{{ asset($board->image) }}" width="60" class="mt-2 rounded">
+                                                        @endif
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Sort Order</label>
+                                                        <input type="number" name="sort_order" class="form-control" value="{{ $board->sort_order }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-primary">Update</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -768,6 +864,44 @@
                     <label>Image</label>
                     <input type="file" name="image" class="form-control">
                     <small class="text-muted d-block mt-1">Recommended size: 300x300 px (1:1 square aspect ratio)</small>
+                </div>
+                <div class="mb-3">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Advisory Board Modal -->
+<div class="modal fade" id="addAdvisoryBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ route('admin.about_us.advisory_boards.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title">Add Board Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label>Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label>Designation</label>
+                    <input type="text" name="designation" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>LinkedIn URL</label>
+                    <input type="url" name="linkedin_url" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Image</label>
+                    <input type="file" name="image" class="form-control">
                 </div>
                 <div class="mb-3">
                     <label>Sort Order</label>

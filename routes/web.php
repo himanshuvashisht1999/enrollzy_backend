@@ -249,6 +249,10 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/about-us/teams/{id}', [AboutUsController::class, 'updateTeam'])->name('admin.about_us.teams.update');
     Route::delete('/admin/about-us/teams/{id}', [AboutUsController::class, 'destroyTeam'])->name('admin.about_us.teams.destroy');
 
+    Route::post('/admin/about-us/advisory-boards', [AboutUsController::class, 'storeAdvisoryBoard'])->name('admin.about_us.advisory_boards.store');
+    Route::post('/admin/about-us/advisory-boards/{id}', [AboutUsController::class, 'updateAdvisoryBoard'])->name('admin.about_us.advisory_boards.update');
+    Route::delete('/admin/about-us/advisory-boards/{id}', [AboutUsController::class, 'destroyAdvisoryBoard'])->name('admin.about_us.advisory_boards.destroy');
+
     // Contact Us Setting
     Route::get('/admin/contact-us', [ContactUsDetailController::class, 'edit'])->name('admin.contact-us.edit');
     Route::put('/admin/contact-us', [ContactUsDetailController::class, 'update'])->name('admin.contact-us.update');

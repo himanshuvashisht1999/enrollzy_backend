@@ -30,12 +30,13 @@ class FooterSetupController extends Controller
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string',
             'address' => 'nullable|string',
+            'footer_general_title' => 'nullable|string|max:255',
         ]);
 
         $setting = Setting::first() ?? new Setting();
         $setting->fill($request->only([
             'footer_description', 'facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url',
-            'footer_text', 'contact_email', 'contact_phone', 'address'
+            'footer_text', 'contact_email', 'contact_phone', 'address', 'footer_general_title'
         ]));
         $setting->save();
 

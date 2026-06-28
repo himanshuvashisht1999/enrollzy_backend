@@ -551,6 +551,12 @@
                         </ul>
                     </div>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"
+                        href="{{ route('admin.about_us.edit') }}">
+                        <i class="fas fa-info-circle"></i> About Us Page
+                    </a>
+                </li>
 
                 {{-- Frontend Setup Group --}}
                 <li class="nav-item">
@@ -621,12 +627,7 @@
                         </ul>
                     </div>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"
-                        href="{{ route('admin.about_us.edit') }}">
-                        <i class="fas fa-info-circle"></i> About Us Page
-                    </a>
-                </li>
+                
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
                         href="{{ route('admin.commission.index') }}">

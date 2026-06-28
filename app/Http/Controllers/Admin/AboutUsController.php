@@ -8,6 +8,7 @@ use App\Models\AboutUsOffer;
 use App\Models\AboutUsFeature;
 use App\Models\AboutUsImpact;
 use App\Models\AboutUsTeam;
+use App\Models\AboutUsAdvisoryBoard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -29,8 +30,9 @@ class AboutUsController extends Controller
         $features = AboutUsFeature::orderBy('sort_order')->get();
         $impacts = AboutUsImpact::orderBy('sort_order')->get();
         $teams = AboutUsTeam::orderBy('sort_order')->get();
+        $advisory_boards = AboutUsAdvisoryBoard::orderBy('sort_order')->get();
 
-        return view('admin.about_us.edit', compact('page', 'offers', 'features', 'impacts', 'teams'));
+        return view('admin.about_us.edit', compact('page', 'offers', 'features', 'impacts', 'teams', 'advisory_boards'));
     }
 
     public function update(Request $request)
@@ -40,7 +42,7 @@ class AboutUsController extends Controller
         $data = $request->except(['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image']);
 
         if ($request->has('section_orders') && is_string($request->section_orders)) {
-            $data['section_orders'] = json_decode($request->section_orders, true) ?: ['hero', 'story', 'core_values', 'offers', 'features', 'impacts', 'founders', 'teams', 'cta'];
+            $data['section_orders'] = json_decode($request->section_orders, true) ?: ['hero', 'story', 'core_values', 'offers', 'features', 'impacts', 'founders', 'teams', 'advisory_board', 'cta'];
         }
 
         // Handle Images
@@ -219,5 +221,45 @@ class AboutUsController extends Controller
         }
         $team->delete();
         return redirect()->back()->with('success', 'Team member deleted successfully!');
+    }
+
+    // --- Advisory Boards ---
+    public function storeAdvisoryBoard(Request $request)
+    {
+        $request->validate(['name' => 'required', 'designation' => 'nullable', 'image' => 'nullable|image', 'linkedin_url' => 'nullable|url']);
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+            $imageName = 'advisory_' . time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/about_us/teams'), $imageName);
+            $data['image'] = 'uploads/about_us/teams/' . $imageName;
+        }
+        AboutUsAdvisoryBoard::create($data);
+        return redirect()->back()->with('success', 'Advisory Board member added successfully!');
+    }
+
+    public function updateAdvisoryBoard(Request $request, $id)
+    {
+        $board = AboutUsAdvisoryBoard::findOrFail($id);
+        $data = $request->except(['image']);
+        if ($request->hasFile('image')) {
+            if ($board->image && File::exists(public_path($board->image))) {
+                File::delete(public_path($board->image));
+            }
+            $imageName = 'advisory_' . time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/about_us/teams'), $imageName);
+            $data['image'] = 'uploads/about_us/teams/' . $imageName;
+        }
+        $board->update($data);
+        return redirect()->back()->with('success', 'Advisory Board member updated successfully!');
+    }
+
+    public function destroyAdvisoryBoard($id)
+    {
+        $board = AboutUsAdvisoryBoard::findOrFail($id);
+        if ($board->image && File::exists(public_path($board->image))) {
+            File::delete(public_path($board->image));
+        }
+        $board->delete();
+        return redirect()->back()->with('success', 'Advisory Board member deleted successfully!');
     }
 }
