@@ -41,6 +41,14 @@
             </div>
 
             <div class="mb-3">
+                <label for="slug" class="form-label">Slug (Optional, auto-generated if left blank)</label>
+                <input type="text" class="form-control @error('slug') is-invalid @enderror" id="slug" name="slug" value="{{ old('slug') }}">
+                @error('slug')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="mb-3">
                 <label for="image" class="form-label">Image <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image" required accept="image/*">
                 <div class="form-text text-muted">Image size should not exceed 2MB.</div>
@@ -59,12 +67,20 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label for="badge_text" class="form-label">Badge Text (e.g., Degree, Certificate)</label>
+                    <label for="badge_text" class="form-label">Badge Text</label>
                     <input type="text" class="form-control @error('badge_text') is-invalid @enderror" id="badge_text" name="badge_text" value="{{ old('badge_text') }}">
                     @error('badge_text')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control editor @error('description') is-invalid @enderror" id="description" name="description" rows="5">{{ old('description') }}</textarea>
+                @error('description')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-3">
@@ -102,4 +118,12 @@
         </form>
     </div>
 </div>
+
+@push('js')
+<script>
+    if (typeof initializeTinyMCE === 'function') {
+        initializeTinyMCE('.editor');
+    }
+</script>
+@endpush
 @endsection
