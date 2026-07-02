@@ -6,5 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class MentorIndustry extends Model
 {
-    protected $fillable = ['name', 'status'];
+    protected $fillable = ['name', 'status', 'commission_percentage'];
 }
+

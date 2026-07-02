@@ -1,13 +1,13 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Mentor Industries')
+@section('title', 'Mentor Mentee Levels')
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Mentor Industries</h4>
-        <a href="{{ route('admin.mentor.industries.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i> Add Industry
+        <h4 class="mb-0">Mentor Mentee Levels</h4>
+        <a href="{{ route('admin.mentor.mentee_levels.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add Mentee Level
         </a>
     </div>
 
@@ -24,12 +24,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($industries as $industry)
+                        @forelse($menteeLevels as $menteeLevel)
                             <tr>
-                                <td>{{ $industry->id }}</td>
-                                <td>{{ $industry->name }}</td>
+                                <td>{{ $menteeLevel->id }}</td>
+                                <td>{{ $menteeLevel->name }}</td>
                                 <td>
-                                    @if($industry->status)
+                                    @if($menteeLevel->status)
                                         <span class="badge bg-success">Active</span>
                                     @else
                                         <span class="badge bg-danger">Inactive</span>
@@ -37,10 +37,10 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <a href="{{ route('admin.mentor.industries.edit', $industry->id) }}" class="btn btn-sm btn-info text-white">
+                                        <a href="{{ route('admin.mentor.mentee_levels.edit', $menteeLevel->id) }}" class="btn btn-sm btn-info text-white">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('admin.mentor.industries.destroy', $industry->id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                                        <form action="{{ route('admin.mentor.mentee_levels.destroy', $menteeLevel->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this Mentee Level?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger">
@@ -52,7 +52,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center py-4">No mentor industries found.</td>
+                                <td colspan="4" class="text-center py-4">No Mentor Mentee Levels found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -62,4 +62,6 @@
     </div>
 </div>
 @endsection
+
+
 

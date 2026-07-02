@@ -400,6 +400,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::resource('languages', \App\Http\Controllers\Admin\MentorLanguageController::class);
             Route::resource('degrees', \App\Http\Controllers\Admin\MentorDegreeController::class);
             Route::resource('industries', \App\Http\Controllers\Admin\MentorIndustryController::class);
+            Route::resource('mentee_levels', \App\Http\Controllers\Admin\MentorMenteeLevelController::class);
+            Route::get('commissions', [\App\Http\Controllers\Admin\MentorCommissionController::class, 'index'])->name('commissions.index');
+            Route::post('commissions', [\App\Http\Controllers\Admin\MentorCommissionController::class, 'store'])->name('commissions.store');
             
             // All Mentors
             Route::get('profiles', [\App\Http\Controllers\Admin\MentorController::class, 'index'])->name('profiles.index');

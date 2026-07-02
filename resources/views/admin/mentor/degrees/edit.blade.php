@@ -34,6 +34,16 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label">Commission Percentage (Optional)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" class="form-control @error('commission_percentage') is-invalid @enderror" name="commission_percentage" value="{{ old('commission_percentage', $degree->commission_percentage ?? '') }}" placeholder="e.g. 10">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            @error('commission_percentage')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">Update Degree</button>
                             <a href="{{ route('admin.mentor.degrees.index') }}" class="btn btn-secondary">Cancel</a>
@@ -45,3 +55,6 @@
     </div>
 </div>
 @endsection
+
+
+

@@ -23,7 +23,8 @@ class MentorDegreeController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:mentor_degrees,name',
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
+            'commission_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
 
         MentorDegree::create($request->all());
@@ -39,7 +40,8 @@ class MentorDegreeController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:mentor_degrees,name,' . $degree->id,
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
+            'commission_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
 
         $degree->update($request->all());
@@ -52,3 +54,4 @@ class MentorDegreeController extends Controller
         return redirect()->route('admin.mentor.degrees.index')->with('success', 'Degree deleted successfully');
     }
 }
+

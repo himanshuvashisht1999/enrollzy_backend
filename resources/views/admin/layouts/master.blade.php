@@ -364,6 +364,10 @@
                                     href="{{ route('admin.mentor.degrees.index') }}">Mentor Degrees</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.industries.*') ? 'active' : '' }}"
                                     href="{{ route('admin.mentor.industries.index') }}">Mentor Industries</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.mentee_levels.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.mentee_levels.index') }}">Mentor Mentee Levels</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.commissions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.commissions.index') }}">General Commission</a></li>
                         </ul>
                     </div>
                 </li>
@@ -815,3 +819,4 @@
 </body>
 
 </html>
+

@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add Mentor Degree')
+@section('title', 'Add Mentor Mentee Level')
 
 @section('content')
 <div class="container-fluid">
@@ -8,14 +8,14 @@
         <div class="col-md-8 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Add Mentor Degree</h5>
+                    <h5 class="mb-0">Add Mentor Mentee Level</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.mentor.degrees.store') }}" method="POST">
+                    <form action="{{ route('admin.mentor.mentee_levels.store') }}" method="POST">
                         @csrf
                         
                         <div class="mb-3">
-                            <label class="form-label">Degree Name <span class="text-danger">*</span></label>
+                            <label class="form-label">Mentee Level Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -36,7 +36,7 @@
                         <div class="mb-3">
                             <label class="form-label">Commission Percentage (Optional)</label>
                             <div class="input-group">
-                                <input type="number" step="0.01" class="form-control @error('commission_percentage') is-invalid @enderror" name="commission_percentage" value="{{ old('commission_percentage', $degree->commission_percentage ?? '') }}" placeholder="e.g. 10">
+                                <input type="number" step="0.01" class="form-control @error('commission_percentage') is-invalid @enderror" name="commission_percentage" value="{{ old('commission_percentage', $menteeLevel->commission_percentage ?? '') }}" placeholder="e.g. 10">
                                 <span class="input-group-text">%</span>
                             </div>
                             @error('commission_percentage')
@@ -44,8 +44,8 @@
                             @enderror
                         </div>
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Save Degree</button>
-                            <a href="{{ route('admin.mentor.degrees.index') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Mentee Level</button>
+                            <a href="{{ route('admin.mentor.mentee_levels.index') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>
@@ -54,6 +54,8 @@
     </div>
 </div>
 @endsection
+
+
 
 
 

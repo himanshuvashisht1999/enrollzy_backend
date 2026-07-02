@@ -23,7 +23,8 @@ class MentorIndustryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:mentor_industries,name',
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
+            'commission_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
 
         MentorIndustry::create($request->all());
@@ -39,7 +40,8 @@ class MentorIndustryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:mentor_industries,name,' . $industry->id,
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
+            'commission_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
 
         $industry->update($request->all());
@@ -52,3 +54,4 @@ class MentorIndustryController extends Controller
         return redirect()->route('admin.mentor.industries.index')->with('success', 'Industry deleted successfully');
     }
 }
+
