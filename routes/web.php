@@ -395,6 +395,21 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('exam-stages', \App\Http\Controllers\Admin\ExamStageController::class);
         Route::resource('caste-categories', \App\Http\Controllers\Admin\CasteCategoryController::class);
 
+        // Mentor Management Routes
+        Route::prefix('mentor')->name('mentor.')->group(function () {
+            Route::resource('languages', \App\Http\Controllers\Admin\MentorLanguageController::class);
+            Route::resource('degrees', \App\Http\Controllers\Admin\MentorDegreeController::class);
+            Route::resource('industries', \App\Http\Controllers\Admin\MentorIndustryController::class);
+            
+            // All Mentors
+            Route::get('profiles', [\App\Http\Controllers\Admin\MentorController::class, 'index'])->name('profiles.index');
+            Route::get('profiles/{id}', [\App\Http\Controllers\Admin\MentorController::class, 'show'])->name('profiles.show');
+            
+            // Verifications
+            Route::get('verifications', [\App\Http\Controllers\Admin\MentorVerificationController::class, 'index'])->name('verifications.index');
+            Route::post('verifications/{id}/update/{type}', [\App\Http\Controllers\Admin\MentorVerificationController::class, 'updateStatus'])->name('verifications.update');
+        });
+
         // Organisation Specific Sub-routes
         Route::delete('organisation-awards/{id}', [\App\Http\Controllers\Admin\OrganisationController::class, 'deleteAward'])->name('organisation-awards.destroy');
         Route::delete('organisation-sports/{id}', [\App\Http\Controllers\Admin\OrganisationController::class, 'deleteSport'])->name('organisation-sports.destroy');

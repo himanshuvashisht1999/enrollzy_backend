@@ -329,6 +329,45 @@
                     </div>
                 </li>
 
+                {{-- Mentor Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/mentor*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#mentorMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/mentor*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-chalkboard-teacher me-2"></i>Mentor Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/mentor*') ? 'show' : '' }}"
+                        id="mentorMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Mentors</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.profiles.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.profiles.index') }}">All Mentors</a></li>
+                            <li><a class="nav-link sub-link d-flex justify-content-between align-items-center {{ request()->routeIs('admin.mentor.verifications.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.verifications.index') }}">
+                                    Pending Verifications
+                                    @php
+                                        $pendingCount = \App\Models\MentorVerification::where('gov_id_status', 'pending')
+                                            ->orWhere('linkedin_status', 'pending')
+                                            ->orWhere('background_check_status', 'pending')
+                                            ->orWhere('degree_status', 'pending')->count();
+                                    @endphp
+                                    @if($pendingCount > 0)
+                                        <span class="badge bg-danger rounded-pill">{{ $pendingCount }}</span>
+                                    @endif
+                                </a></li>
+                            
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.languages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.languages.index') }}">Mentor Languages</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.degrees.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.degrees.index') }}">Mentor Degrees</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.industries.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.industries.index') }}">Mentor Industries</a></li>
+                        </ul>
+                    </div>
+                </li>
+
                 {{-- Student Management --}}
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/students*') ? 'active' : 'collapsed' }}"
@@ -452,6 +491,7 @@
                         <i class="fas fa-list-alt me-2"></i> Customer Fields
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}" 
                         href="{{ route('admin.institutes.index') }}">
@@ -706,19 +746,7 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
 
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
 
         @yield('content')
     </div>
