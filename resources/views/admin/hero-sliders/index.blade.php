@@ -138,6 +138,42 @@
                                 <label class="form-label fw-bold small text-uppercase">Button Link (URL)</label>
                                 <input type="text" name="button_url" class="form-control" placeholder="e.g. /apply-now">
                             </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small text-uppercase">Badge Text</label>
+                                <input type="text" name="badge_text" class="form-control" placeholder="e.g. India's no.1 Education Market place">
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-chart-bar me-2"></i>Statistics (Optional)</h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 1 Count</label>
+                                <input type="text" name="stat_1_count" class="form-control" placeholder="e.g. 2800+">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 1 Label</label>
+                                <input type="text" name="stat_1_label" class="form-control" placeholder="e.g. Institution">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 2 Count</label>
+                                <input type="text" name="stat_2_count" class="form-control" placeholder="e.g. 1.2L+">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 2 Label</label>
+                                <input type="text" name="stat_2_label" class="form-control" placeholder="e.g. Student Enrolled">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 3 Count</label>
+                                <input type="text" name="stat_3_count" class="form-control" placeholder="e.g. 4500+">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 3 Label</label>
+                                <input type="text" name="stat_3_label" class="form-control" placeholder="e.g. Scholarship's">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,6 +251,42 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-uppercase">Button Link (URL)</label>
                                 <input type="text" name="button_url" id="edit_button_url" class="form-control">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small text-uppercase">Badge Text</label>
+                                <input type="text" name="badge_text" id="edit_badge_text" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-chart-bar me-2"></i>Statistics (Optional)</h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 1 Count</label>
+                                <input type="text" name="stat_1_count" id="edit_stat_1_count" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 1 Label</label>
+                                <input type="text" name="stat_1_label" id="edit_stat_1_label" class="form-control">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 2 Count</label>
+                                <input type="text" name="stat_2_count" id="edit_stat_2_count" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 2 Label</label>
+                                <input type="text" name="stat_2_label" id="edit_stat_2_label" class="form-control">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 3 Count</label>
+                                <input type="text" name="stat_3_count" id="edit_stat_3_count" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Stat 3 Label</label>
+                                <input type="text" name="stat_3_label" id="edit_stat_3_label" class="form-control">
                             </div>
                         </div>
                     </div>
@@ -299,6 +371,13 @@ $(document).ready(function() {
         modal.find('#edit_subheading').val(slider.subheading);
         modal.find('#edit_button_text').val(slider.button_text);
         modal.find('#edit_button_url').val(slider.button_url);
+        modal.find('#edit_badge_text').val(slider.badge_text);
+        modal.find('#edit_stat_1_count').val(slider.stat_1_count);
+        modal.find('#edit_stat_1_label').val(slider.stat_1_label);
+        modal.find('#edit_stat_2_count').val(slider.stat_2_count);
+        modal.find('#edit_stat_2_label').val(slider.stat_2_label);
+        modal.find('#edit_stat_3_count').val(slider.stat_3_count);
+        modal.find('#edit_stat_3_label').val(slider.stat_3_label);
 
         // Set TinyMCE content for Edit Modal
         if (tinymce.get('edit_subheading')) {
