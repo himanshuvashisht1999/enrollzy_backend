@@ -28,6 +28,7 @@ class BillingInvoiceController extends Controller
     {
         $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
+            'campus_id' => 'required|exists:campuses,id',
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'items' => 'required|array|min:1',
@@ -62,6 +63,7 @@ class BillingInvoiceController extends Controller
 
         $invoice = BillingInvoice::create([
             'organisation_id' => $request->organisation_id,
+            'campus_id' => $request->campus_id,
             'invoice_number' => $invoiceNumber,
             'issue_date' => $request->issue_date,
             'due_date' => $request->due_date,
@@ -94,7 +96,7 @@ class BillingInvoiceController extends Controller
 
     public function show(string $id)
     {
-        $invoice = BillingInvoice::with(['organisation', 'items.service', 'payments'])->findOrFail($id);
+        $invoice = BillingInvoice::with(['organisation', 'campus', 'items.service', 'payments'])->findOrFail($id);
         $setting = \App\Models\Setting::first();
         return view('admin.billing.invoices.show', compact('invoice', 'setting'));
     }
@@ -118,7 +120,7 @@ class BillingInvoiceController extends Controller
 
     public function downloadPdf($id)
     {
-        $invoice = BillingInvoice::with(['organisation', 'items.service', 'payments'])->findOrFail($id);
+        $invoice = BillingInvoice::with(['organisation', 'campus', 'items.service', 'payments'])->findOrFail($id);
         $setting = \App\Models\Setting::first();
         
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.billing.invoices.pdf', compact('invoice', 'setting'));

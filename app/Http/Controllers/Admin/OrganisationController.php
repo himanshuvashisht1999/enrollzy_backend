@@ -765,7 +765,7 @@ class OrganisationController extends Controller
     {
         $campuses = \App\Models\Campus::where('organisation_id', $id)
             ->where('status', true)
-            ->select('id', 'campus_name')
+            ->select('id', 'campus_name', 'full_address', 'city', 'state', 'pincode')
             ->get();
         return response()->json($campuses);
     }

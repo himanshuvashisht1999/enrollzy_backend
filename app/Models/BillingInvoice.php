@@ -13,6 +13,7 @@ class BillingInvoice extends Model
     protected $fillable = [
         'invoice_number',
         'organisation_id',
+        'campus_id',
         'issue_date',
         'due_date',
         'subtotal',
@@ -52,5 +53,10 @@ class BillingInvoice extends Model
     public function payments()
     {
         return $this->hasMany(BillingPayment::class, 'invoice_id');
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
     }
 }

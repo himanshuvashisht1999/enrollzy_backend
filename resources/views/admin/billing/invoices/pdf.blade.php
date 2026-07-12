@@ -210,15 +210,31 @@
                     <div class="billing-box">
                         <div class="billing-title">Billed To</div>
                         <div class="meta-data">
-                            <strong style="font-size: 14px; color: #000;">{{ $invoice->organisation->name ?? 'N/A' }}</strong><br>
-                            @if($invoice->organisation && $invoice->organisation->address)
-                                {!! nl2br(e($invoice->organisation->address)) !!}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->email)
-                                Email: {{ $invoice->organisation->email }}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->phone)
-                                Phone: {{ $invoice->organisation->phone }}
+                            @if($invoice->campus)
+                                <strong style="font-size: 14px; color: #000;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</strong><br>
+                                @if($invoice->campus->full_address)
+                                    {!! nl2br(e($invoice->campus->full_address)) !!}<br>
+                                @endif
+                                @if($invoice->campus->city || $invoice->campus->state || $invoice->campus->pincode)
+                                    {{ implode(', ', array_filter([$invoice->campus->city, $invoice->campus->state, $invoice->campus->pincode])) }}<br>
+                                @endif
+                                @if($invoice->organisation && $invoice->organisation->email)
+                                    Email: {{ $invoice->organisation->email }}<br>
+                                @endif
+                                @if($invoice->organisation && $invoice->organisation->phone)
+                                    Phone: {{ $invoice->organisation->phone }}
+                                @endif
+                            @else
+                                <strong style="font-size: 14px; color: #000;">{{ $invoice->organisation->name ?? 'N/A' }}</strong><br>
+                                @if($invoice->organisation && $invoice->organisation->address)
+                                    {!! nl2br(e($invoice->organisation->address)) !!}<br>
+                                @endif
+                                @if($invoice->organisation && $invoice->organisation->email)
+                                    Email: {{ $invoice->organisation->email }}<br>
+                                @endif
+                                @if($invoice->organisation && $invoice->organisation->phone)
+                                    Phone: {{ $invoice->organisation->phone }}
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -270,6 +286,7 @@
                     <td class="amount text-danger">-{{ number_format($invoice->discount_amount, 2) }}</td>
                 </tr>
                 @endif
+                {{-- GST hidden as requested
                 @if($invoice->cgst_amount > 0)
                 <tr>
                     <td class="label">CGST</td>
@@ -288,6 +305,7 @@
                     <td class="amount">{{ number_format($invoice->igst_amount, 2) }}</td>
                 </tr>
                 @endif
+                --}}
                 <tr class="grand-total">
                     <td class="label">Grand Total</td>
                     <td class="amount">₹{{ number_format($invoice->total_amount, 2) }}</td>

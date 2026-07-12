@@ -64,18 +64,36 @@
             <div class="col-6">
                 <div class="bg-light p-2 rounded h-100 border">
                     <h6 class="text-uppercase text-muted border-bottom pb-1 mb-1 fw-bold" style="font-size: 10px;">Billed To</h6>
-                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
-                    <div class="text-muted lh-sm">
-                        @if($invoice->organisation && $invoice->organisation->address)
-                            {!! nl2br(e($invoice->organisation->address)) !!}<br>
-                        @endif
-                        @if($invoice->organisation && $invoice->organisation->email)
-                            <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
-                        @endif
-                        @if($invoice->organisation && $invoice->organisation->phone)
-                            <strong>Phone:</strong> {{ $invoice->organisation->phone }}
-                        @endif
-                    </div>
+                    @if($invoice->campus)
+                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</h6>
+                        <div class="text-muted lh-sm">
+                            @if($invoice->campus->full_address)
+                                {!! nl2br(e($invoice->campus->full_address)) !!}<br>
+                            @endif
+                            @if($invoice->campus->city || $invoice->campus->state || $invoice->campus->pincode)
+                                {{ implode(', ', array_filter([$invoice->campus->city, $invoice->campus->state, $invoice->campus->pincode])) }}<br>
+                            @endif
+                            @if($invoice->organisation && $invoice->organisation->email)
+                                <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
+                            @endif
+                            @if($invoice->organisation && $invoice->organisation->phone)
+                                <strong>Phone:</strong> {{ $invoice->organisation->phone }}
+                            @endif
+                        </div>
+                    @else
+                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
+                        <div class="text-muted lh-sm">
+                            @if($invoice->organisation && $invoice->organisation->address)
+                                {!! nl2br(e($invoice->organisation->address)) !!}<br>
+                            @endif
+                            @if($invoice->organisation && $invoice->organisation->email)
+                                <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
+                            @endif
+                            @if($invoice->organisation && $invoice->organisation->phone)
+                                <strong>Phone:</strong> {{ $invoice->organisation->phone }}
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
             <div class="col-6">
@@ -145,6 +163,7 @@
                             <td class="fw-bold text-danger py-1">-₹{{ number_format($invoice->discount_amount, 2) }}</td>
                         </tr>
                         @endif
+                        {{-- GST hidden as requested
                         @if($invoice->cgst_amount > 0)
                         <tr>
                             <td class="fw-bold text-muted py-1">CGST</td>
@@ -163,6 +182,7 @@
                             <td class="fw-bold text-dark py-1">₹{{ number_format($invoice->igst_amount, 2) }}</td>
                         </tr>
                         @endif
+                        --}}
                         
                         <tr style="background-color: #eef5fb; border-top: 1px solid #0056b3; border-bottom: 1px solid #0056b3;">
                             <td class="fw-bold text-dark py-1" style="font-size: 13px;">Grand Total</td>
