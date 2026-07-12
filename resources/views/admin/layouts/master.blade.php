@@ -639,6 +639,199 @@
                     </div>
                 </li>
 
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">Billing</div>
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.billing.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#billingMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('admin.billing.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Billing Module</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.billing.*') ? 'show' : '' }}" id="billingMenu">
+                        <ul class="nav flex-column">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.services.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.services.index') }}">Services</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.invoices.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.invoices.index') }}">Invoices</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.payments.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.payments.index') }}">Payments</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>
+
+                {{-- System Group --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('leads.index') ? 'active' : '' }}"
+                        href="{{ route('leads.index') }}">
+                        <i class="fas fa-envelope-open-text"></i> Student Leads
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"
+                        href="{{ route('admin.settings.index') }}">
+                        <i class="fas fa-tools"></i> General Settings
+                    </a>
+
+                    <!-- SEO Settings Dropdown -->
+                    <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
+                        data-bs-toggle="collapse" href="#seoSettingsMenu" role="button" aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}" aria-controls="seoSettingsMenu">
+                        <i class="fas fa-search"></i> SEO
+                        <i class="fas fa-chevron-down ms-auto menu-arrow {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'rotate-180' : '' }}"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'show' : '' }}" id="seoSettingsMenu">
+                        <ul class="nav flex-column sub-menu">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_defaults.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
+                        </ul>
+                    </div>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
+                        href="{{ route('admin.commission.index') }}">
+                        <i class="fas fa-percent"></i> Commission Rules
+                    </a>
+                </li>
+            @endif
+
+            @if($isExpert || $isAlumni)
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">My Guidance Panel</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('expert.slots.*') ? 'active' : '' }}"
+                        href="{{ route('expert.slots.index') }}">
+                        <i class="fas fa-clock"></i> My Slots
+                    </a>
+                </li>
+                @if($isExpert)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.leads.*') ? 'active' : '' }}"
+                            href="{{ route('expert.leads.index') }}">
+                            <i class="fas fa-envelope-open-text"></i> My Leads
+                        </a>
+                    </li>
+                @endif
+
+
+                @if($isExpert)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.bookings.*') ? 'active' : '' }}"
+                            href="{{ route('expert.bookings.index') }}">
+                            <i class="fas fa-calendar-check"></i> Bookings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.payouts.*') ? 'active' : '' }}"
+                            href="{{ route('expert.payouts.index') }}">
+                            <i class="fas fa-wallet"></i> Payouts
+                        </a>
+                    </li>
+                @else
+                    {{-- Fallback for Alumni if needed, or hide until Alumni module is updated --}}
+                    {{--
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-calendar-check"></i> Appointments
+                        </a>
+                    </li>
+                    --}}
+                @endif
+            @endif
+
+            <li class="nav-item mt-3 mb-4">
+                @php
+                    $logoutRoute = $isExpert ? route('expert.logout') : ($isAlumni ? route('alumni.logout') : route('logout'));
+                @endphp
+                <form action="{{ $logoutRoute }}" method="POST" id="logout-form">
+                    @csrf
+                    <a class="nav-link text-danger" href="javascript:void(0)"
+                        onclick="document.getElementById('logout-form').submit();">
+                        <i class="fas fa-power-off"></i> Logout
+                    </a>
+                </form>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="content">
+        <div class="admin-navbar d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@yield('title')</h5>
+            <div class="user-info">
+                <span>Welcome, {{ $user->name ?? 'User' }}</span>
+                @if($isAdmin) <span class="badge bg-danger ms-2">Admin</span> @endif
+                @if($isExpert) <span class="badge bg-primary ms-2">Expert</span> @endif
+                @if($isAlumni) <span class="badge bg-success ms-2">Alumni</span> @endif
+            </div>
+        </div>
+
+
+
+        @yield('content')
+    </div>
+
+    <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        function initializeTinyMCE(selector = '.editor', height = 300) {
+            tinymce.init({
+                selector: selector,
+                height: height,
+                menubar: 'file edit view insert format tools table help',
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+                    'codesample', 'accordion', 'quickbars'
+                ],
+                toolbar: 'undo redo | accordion | blocks | ' +
+                    'bold italic backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'emoticons codesample | removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+                setup: function (editor) {
+                    editor.on('change', function () {
+                        editor.save();
+                        $(editor.getElement()).trigger('change');
+                    });
+                }
+            });
+        }
+    </script>
+    @stack('js')
+    <script>
+        // Smoothly handle collapse arrows and active states
+        $(document).ready(function () {
+            // Initialize Select2 globally for all select dropdowns
+            $('select.form-select').select2({
+                width: '100%'
+            });
+
+            $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {
+                $(this).find('.menu-arrow').toggleClass('rotate-180');
+            });
+
+            // Toastr Notifications
+            @if(session('success'))
+                toastr.success("{{ session('success') }}");
+            @endif
+
+            @if(session('error'))
+                toastr.error("{{ session('error') }}");
+            @endif
+
+            @if($errors->any())
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>
 
                 {{-- System Group --}}
@@ -816,7 +1009,8 @@
             @endif
         });
     </script>
+    
+    @yield('scripts')
 </body>
 
 </html>
-

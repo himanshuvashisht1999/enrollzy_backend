@@ -539,5 +539,13 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::delete('destroy-access-level/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyAccessLevel'])->name('destroy-access-level');
             Route::delete('destroy-visibility/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyLeadVisibility'])->name('destroy-visibility');
         });
+
+        // Billing Module
+        Route::prefix('billing')->name('billing.')->group(function () {
+            Route::resource('services', \App\Http\Controllers\Admin\Billing\BillingServiceController::class);
+            Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\BillingInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+            Route::resource('invoices', \App\Http\Controllers\Admin\Billing\BillingInvoiceController::class);
+            Route::resource('payments', \App\Http\Controllers\Admin\Billing\BillingPaymentController::class);
+        });
     });
 });
