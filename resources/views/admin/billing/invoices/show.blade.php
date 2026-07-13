@@ -23,8 +23,8 @@
         @endif
 
         <!-- Header -->
-        <div class="row mb-2 border-bottom pb-2">
-            <div class="col-6">
+        <div class="row mb-3 border-bottom pb-3">
+            <div class="col-4">
                 <h4 class="fw-bold text-primary mb-1">{{ $setting->site_name ?? 'Enrollzy' }}</h4>
                 <div class="text-muted lh-sm">
                     @if($setting && $setting->address)
@@ -38,7 +38,40 @@
                     @endif
                 </div>
             </div>
-            <div class="col-6 text-end">
+            
+            <div class="col-4">
+                <h6 class="text-uppercase text-muted border-bottom pb-1 mb-1 fw-bold" style="font-size: 10px;">Billed To</h6>
+                @if($invoice->campus)
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</h6>
+                    <div class="text-muted lh-sm">
+                        @if($invoice->campus->full_address)
+                            {!! nl2br(e($invoice->campus->full_address)) !!}<br>
+                        @endif
+
+                        @if($invoice->organisation && $invoice->organisation->email)
+                            <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
+                        @endif
+                        @if($invoice->organisation && $invoice->organisation->phone)
+                            <strong>Phone:</strong> {{ $invoice->organisation->phone }}
+                        @endif
+                    </div>
+                @else
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
+                    <div class="text-muted lh-sm">
+                        @if($invoice->organisation && $invoice->organisation->address)
+                            {!! nl2br(e($invoice->organisation->address)) !!}<br>
+                        @endif
+                        @if($invoice->organisation && $invoice->organisation->email)
+                            <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
+                        @endif
+                        @if($invoice->organisation && $invoice->organisation->phone)
+                            <strong>Phone:</strong> {{ $invoice->organisation->phone }}
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            <div class="col-4 text-end">
                 <h4 class="text-uppercase fw-bolder text-dark mb-1" style="letter-spacing: 1px;">Invoice</h4>
                 <table class="table table-sm table-borderless text-end ms-auto mb-0" style="width: auto; line-height: 1;">
                     <tbody>
@@ -56,54 +89,6 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Billing Info -->
-        <div class="row mb-2">
-            <div class="col-6">
-                <div class="bg-light p-2 rounded h-100 border">
-                    <h6 class="text-uppercase text-muted border-bottom pb-1 mb-1 fw-bold" style="font-size: 10px;">Billed To</h6>
-                    @if($invoice->campus)
-                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</h6>
-                        <div class="text-muted lh-sm">
-                            @if($invoice->campus->full_address)
-                                {!! nl2br(e($invoice->campus->full_address)) !!}<br>
-                            @endif
-                            @if($invoice->campus->city || $invoice->campus->state || $invoice->campus->pincode)
-                                {{ implode(', ', array_filter([$invoice->campus->city, $invoice->campus->state, $invoice->campus->pincode])) }}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->email)
-                                <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->phone)
-                                <strong>Phone:</strong> {{ $invoice->organisation->phone }}
-                            @endif
-                        </div>
-                    @else
-                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
-                        <div class="text-muted lh-sm">
-                            @if($invoice->organisation && $invoice->organisation->address)
-                                {!! nl2br(e($invoice->organisation->address)) !!}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->email)
-                                <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
-                            @endif
-                            @if($invoice->organisation && $invoice->organisation->phone)
-                                <strong>Phone:</strong> {{ $invoice->organisation->phone }}
-                            @endif
-                        </div>
-                    @endif
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="bg-light p-2 rounded h-100 border">
-                    <h6 class="text-uppercase text-muted border-bottom pb-1 mb-1 fw-bold" style="font-size: 10px;">Payment Information</h6>
-                    <div class="text-muted lh-sm">
-                        Please make payments payable to <strong class="text-dark">{{ $setting->site_name ?? 'Enrollzy' }}</strong>.<br>
-                        Ensure the invoice number is included in your payment reference.
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -140,14 +125,15 @@
         <!-- Totals -->
         <div class="row">
             <div class="col-7">
-                @if($invoice->notes)
-                <div class="mt-2 p-2 rounded bg-light border-start border-3 border-primary">
-                    <h6 class="fw-bold text-primary mb-1" style="font-size: 11px;">Notes & Terms:</h6>
-                    <p class="text-muted mb-0 lh-sm">{{ $invoice->notes }}</p>
-                </div>
-                @endif
-                <div class="mt-3 text-muted" style="font-size: 10px;">
-                    Generated by <strong class="text-dark">{{ $setting->site_name ?? 'Enrollzy' }}</strong> on {{ now()->format('d M Y, H:i') }}.
+                <div class="mt-2 p-2 rounded bg-light border-start border-3 border-secondary">
+                    <h6 class="fw-bold text-secondary mb-1" style="font-size: 11px;">Account Details:</h6>
+                    <div class="text-muted lh-sm" style="font-size: 11px;">
+                        <strong>Bank:</strong> Bank of Baroda<br>
+                        <strong>A/C Name:</strong> UNIBAND8 EDUCATION<br>
+                        <strong>A/C No.:</strong> 76730200001840<br>
+                        <strong>IFSC Code:</strong> BARB0VJSCHA<br>
+                        <strong>Branch:</strong> Chandigarh-Sector-34A
+                    </div>
                 </div>
             </div>
             <div class="col-5">
@@ -200,6 +186,17 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        @if($invoice->notes)
+        <div class="mt-3 p-2 rounded bg-light border-start border-3 border-primary">
+            <h6 class="fw-bold text-primary mb-1" style="font-size: 11px;">Notes & Terms:</h6>
+            <p class="text-muted mb-0 lh-sm" style="font-size: 11px;">{{ $invoice->notes }}</p>
+        </div>
+        @endif
+        
+        <div class="mt-3 text-muted" style="font-size: 10px;">
+            Generated by <strong class="text-dark">{{ $setting->site_name ?? 'Enrollzy' }}</strong> on {{ now()->format('d M Y, H:i') }}.
         </div>
 
     </div>
