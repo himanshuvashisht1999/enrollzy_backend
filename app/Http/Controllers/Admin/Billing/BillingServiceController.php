@@ -54,7 +54,6 @@ class BillingServiceController extends Controller
             'price' => 'required|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',
             'hsn_sac_code' => 'nullable|string|max:50',
-            'tax_rate' => 'required|numeric|min:0',
             'status' => 'boolean',
         ]);
 

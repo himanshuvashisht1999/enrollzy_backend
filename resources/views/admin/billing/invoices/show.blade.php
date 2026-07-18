@@ -16,11 +16,7 @@
 <div class="card border-0 shadow-sm" style="border-top: 3px solid #0056b3 !important; font-size: 0.85rem;">
     <div class="card-body p-3 position-relative">
         
-        @if($invoice->total_amount <= $invoice->payments->sum('amount') && $invoice->total_amount > 0)
-            <div class="position-absolute" style="top: 15px; right: 15px; font-size: 20px; font-weight: bold; text-transform: uppercase; border: 2px solid #198754; color: #198754; padding: 2px 10px; border-radius: 4px; transform: rotate(-15deg); opacity: 0.2; pointer-events: none;">PAID</div>
-        @else
-            <div class="position-absolute" style="top: 15px; right: 15px; font-size: 20px; font-weight: bold; text-transform: uppercase; border: 2px solid #dc3545; color: #dc3545; padding: 2px 10px; border-radius: 4px; transform: rotate(-15deg); opacity: 0.2; pointer-events: none;">UNPAID</div>
-        @endif
+
 
         <!-- Header -->
         <div class="row mb-3 border-bottom pb-3">
@@ -129,7 +125,7 @@
                     <h6 class="fw-bold text-secondary mb-1" style="font-size: 11px;">Account Details:</h6>
                     <div class="text-muted lh-sm" style="font-size: 11px;">
                         <strong>Bank:</strong> Bank of Baroda<br>
-                        <strong>A/C Name:</strong> UNIBAND8 EDUCATION<br>
+                        <strong>A/C Name:</strong> UNIBAND8 EDUCATION TECHNOLOGY PVT LTD<br>
                         <strong>A/C No.:</strong> 76730200001840<br>
                         <strong>IFSC Code:</strong> BARB0VJSCHA<br>
                         <strong>Branch:</strong> Chandigarh-Sector-34A

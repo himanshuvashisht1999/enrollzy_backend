@@ -41,7 +41,7 @@
                             @endif
                         </td>
                         <td>
-                            @if($service->is_active)
+                            @if($service->status)
                                 <span class="badge bg-success">Active</span>
                             @else
                                 <span class="badge bg-danger">Inactive</span>

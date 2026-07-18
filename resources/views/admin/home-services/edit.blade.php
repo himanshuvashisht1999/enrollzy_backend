@@ -24,7 +24,7 @@
                     <input type="file" name="image" class="form-control" accept="image/*">
                     @if($homeService->image)
                         <div class="mt-2">
-                            <img src="{{ Storage::url($homeService->image) }}" alt="Current Image" width="100">
+                            <img src="{{ asset($homeService->image) }}" alt="Current Image" width="100">
                         </div>
                     @endif
                 </div>

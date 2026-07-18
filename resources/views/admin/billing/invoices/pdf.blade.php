@@ -184,11 +184,7 @@
 <body>
     
     <div class="card">
-        @if($invoice->total_amount <= $invoice->payments->sum('amount') && $invoice->total_amount > 0)
-            <div class="status-stamp status-paid">PAID</div>
-        @else
-            <div class="status-stamp status-unpaid">UNPAID</div>
-        @endif
+
 
         <table class="header-table">
             <tr>
@@ -295,7 +291,7 @@
                         <h6>Account Details:</h6>
                         <div class="text-muted" style="line-height: 1.3;">
                             <strong class="text-dark">Bank:</strong> Bank of Baroda<br>
-                            <strong class="text-dark">A/C Name:</strong> UNIBAND8 EDUCATION<br>
+                            <strong class="text-dark">A/C Name:</strong> UNIBAND8 EDUCATION TECHNOLOGY PVT LTD<br>
                             <strong class="text-dark">A/C No.:</strong> 76730200001840<br>
                             <strong class="text-dark">IFSC Code:</strong> BARB0VJSCHA<br>
                             <strong class="text-dark">Branch:</strong> Chandigarh-Sector-34A
@@ -342,16 +338,14 @@
                             <td class="text-end">₹{{ number_format($invoice->total_amount, 2) }}</td>
                         </tr>
                         
-                        {{-- Hidden as requested
                         <tr>
-                            <td class="text-end text-muted">Amount Paid</td>
-                            <td class="text-end fw-bold text-success">₹{{ number_format($invoice->payments->sum('amount'), 2) }}</td>
+                            <td class="text-end text-muted pt-1 pb-0">Amount Paid</td>
+                            <td class="text-end fw-bold text-success pt-1 pb-0">₹{{ number_format($invoice->payments->sum('amount'), 2) }}</td>
                         </tr>
                         <tr>
-                            <td class="text-end fw-bold text-dark" style="font-size: 14px;">Balance Due</td>
-                            <td class="text-end fw-bold text-danger" style="font-size: 14px;">₹{{ number_format(max(0, $invoice->total_amount - $invoice->payments->sum('amount')), 2) }}</td>
+                            <td class="text-end fw-bold text-dark py-1" style="font-size: 14px;">Balance Due</td>
+                            <td class="text-end fw-bold text-danger py-1" style="font-size: 14px;">₹{{ number_format(max(0, $invoice->total_amount - $invoice->payments->sum('amount')), 2) }}</td>
                         </tr>
-                        --}}
                     </table>
                 </td>
             </tr>

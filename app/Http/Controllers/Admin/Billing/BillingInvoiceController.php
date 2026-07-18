@@ -57,8 +57,8 @@ class BillingInvoiceController extends Controller
         $total_amount = $subtotal - $discount + $total_tax;
 
         // Generate Invoice Number (e.g., INV-2026-0001)
-        $latest = BillingInvoice::latest()->first();
-        $nextId = $latest ? $latest->id + 1 : 1;
+        $latestId = BillingInvoice::withTrashed()->max('id');
+        $nextId = $latestId ? $latestId + 1 : 1;
         $invoiceNumber = 'INV-' . date('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
         $invoice = BillingInvoice::create([
