@@ -11,9 +11,16 @@ class NoteworthyCategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = NoteworthyCategory::orderBy('sort_order')->latest()->paginate(10);
+        $query = NoteworthyCategory::orderBy('sort_order')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $categories = $query->paginate(10)->withQueryString();
         return view('admin.noteworthy-categories.index', compact('categories'));
     }
 

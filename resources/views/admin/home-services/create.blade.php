@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add New Specialized Course')
+@section('title', 'Add New Why Choose Us Item')
 
 @section('content')
 <div class="mb-4">
@@ -11,12 +11,16 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-        <form action="{{ route('admin.home-services.store') }}" method="POST">
+        <form action="{{ route('admin.home-services.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Title</label>
                     <input type="text" name="title" class="form-control" required placeholder="e.g. 1-Year Medical Course">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Sort Order</label>
@@ -31,7 +35,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control" rows="4" required placeholder="A focused one-year fast-track program..."></textarea>
+                    <textarea name="description" class="form-control editor" rows="4" placeholder="A focused one-year fast-track program..."></textarea>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Footer Text (Highlight Line)</label>
@@ -45,3 +49,13 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        if(typeof initializeTinyMCE === 'function') {
+            initializeTinyMCE('.editor');
+        }
+    });
+</script>
+@endpush

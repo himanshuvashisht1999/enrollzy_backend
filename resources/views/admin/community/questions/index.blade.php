@@ -18,6 +18,9 @@
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        @foreach($cat->children as $child)
+                            <option value="{{ $child->id }}" {{ request('category_id') == $child->id ? 'selected' : '' }}>-- {{ $child->name }}</option>
+                        @endforeach
                     @endforeach
                 </select>
             </div>
@@ -25,7 +28,8 @@
                 <select name="status" class="form-select">
                     <option value="">All Status</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
+                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -54,24 +58,32 @@
                         <td class="ps-4">
                             <span class="d-block fw-bold">{{ Str::limit($question->question_text, 100) }}</span>
                             @if($question->image)
-                                <a href="{{ asset($question->image) }}" target="_blank" class="text-primary small mt-1 d-inline-block">View Image</a>
+                                <a href="{{ env('APP_ENV') == 'local' ? 'http://127.0.0.1:8000' : 'https://enrollzy.com' }}/{{ ltrim($question->image, '/') }}" target="_blank" class="text-primary small mt-1 d-inline-block">View Image</a>
                             @endif
                         </td>
                         <td>{{ $question->user->name ?? 'Deleted User' }}</td>
                         <td><span class="badge bg-light text-dark">{{ $question->category->name }}</span></td>
                         <td>
-                            @if($question->is_verified)
-                                <span class="badge bg-success">Verified</span>
+                            @if($question->status == 'approved')
+                                <span class="badge bg-success">Approved</span>
+                            @elseif($question->status == 'rejected')
+                                <span class="badge bg-danger">Rejected</span>
                             @else
-                                <span class="badge bg-warning text-dark">Pending Approval</span>
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            @endif
+                            
+                            @if($question->is_active)
+                                <span class="badge bg-info">Active</span>
+                            @else
+                                <span class="badge bg-secondary">Disabled</span>
                             @endif
                         </td>
                         <td class="text-end pe-4">
-                            <form action="{{ route('admin.community-questions.toggle-verify', $question->id) }}" method="POST" class="d-inline">
+                            <form action="{{ route('admin.community-questions.toggle-verify', $question->id) }}" method="POST" class="d-inline" title="Toggle Enable/Disable">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="btn btn-sm {{ $question->is_verified ? 'btn-outline-warning' : 'btn-success' }} me-1">
-                                    {{ $question->is_verified ? 'Unverify' : 'Verify' }}
+                                <button type="submit" class="btn btn-sm {{ $question->is_active ? 'btn-secondary' : 'btn-info' }} me-1">
+                                    <i class="fas {{ $question->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i>
                                 </button>
                             </form>
                             <a href="{{ route('admin.community-questions.edit', $community_question = $question->id) }}" class="btn btn-sm btn-outline-primary me-1">

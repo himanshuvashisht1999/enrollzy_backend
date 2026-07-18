@@ -27,6 +27,13 @@ class HeroSliderController extends Controller
             'subheading' => 'nullable|string',
             'button_text'=> 'nullable|string|max:255',
             'button_url' => 'nullable|string|max:255',
+            'badge_text' => 'nullable|string',
+            'stat_1_count' => 'nullable|string',
+            'stat_1_label' => 'nullable|string',
+            'stat_2_count' => 'nullable|string',
+            'stat_2_label' => 'nullable|string',
+            'stat_3_count' => 'nullable|string',
+            'stat_3_label' => 'nullable|string',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -41,6 +48,13 @@ class HeroSliderController extends Controller
                 'subheading' => $request->image_type === 'Text' ? $request->subheading : null,
                 'button_text'=> $request->image_type === 'Text' ? $request->button_text : null,
                 'button_url' => $request->image_type === 'Text' ? $request->button_url : null,
+                'badge_text' => $request->image_type === 'Text' ? $request->badge_text : null,
+                'stat_1_count' => $request->image_type === 'Text' ? $request->stat_1_count : null,
+                'stat_1_label' => $request->image_type === 'Text' ? $request->stat_1_label : null,
+                'stat_2_count' => $request->image_type === 'Text' ? $request->stat_2_count : null,
+                'stat_2_label' => $request->image_type === 'Text' ? $request->stat_2_label : null,
+                'stat_3_count' => $request->image_type === 'Text' ? $request->stat_3_count : null,
+                'stat_3_label' => $request->image_type === 'Text' ? $request->stat_3_label : null,
                 'sort_order' => $request->sort_order ?? 0,
                 'is_active' => true,
             ]);
@@ -59,6 +73,13 @@ class HeroSliderController extends Controller
             'subheading' => 'nullable|string',
             'button_text'=> 'nullable|string|max:255',
             'button_url' => 'nullable|string|max:255',
+            'badge_text' => 'nullable|string',
+            'stat_1_count' => 'nullable|string',
+            'stat_1_label' => 'nullable|string',
+            'stat_2_count' => 'nullable|string',
+            'stat_2_label' => 'nullable|string',
+            'stat_3_count' => 'nullable|string',
+            'stat_3_label' => 'nullable|string',
         ]);
 
         $data = [
@@ -67,6 +88,13 @@ class HeroSliderController extends Controller
             'subheading' => $request->image_type === 'Text' ? $request->subheading : null,
             'button_text'=> $request->image_type === 'Text' ? $request->button_text : null,
             'button_url' => $request->image_type === 'Text' ? $request->button_url : null,
+            'badge_text' => $request->image_type === 'Text' ? $request->badge_text : null,
+            'stat_1_count' => $request->image_type === 'Text' ? $request->stat_1_count : null,
+            'stat_1_label' => $request->image_type === 'Text' ? $request->stat_1_label : null,
+            'stat_2_count' => $request->image_type === 'Text' ? $request->stat_2_count : null,
+            'stat_2_label' => $request->image_type === 'Text' ? $request->stat_2_label : null,
+            'stat_3_count' => $request->image_type === 'Text' ? $request->stat_3_count : null,
+            'stat_3_label' => $request->image_type === 'Text' ? $request->stat_3_label : null,
             'sort_order' => $request->sort_order ?? 0,
         ];
 

@@ -148,7 +148,13 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
             border-radius: 10px;
         }
+
+        /* Fix Select2 dropdown z-index behind Bootstrap modals */
+        .select2-container--open {
+            z-index: 9999999 !important;
+        }
     </style>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('css')
 </head>
 
@@ -188,13 +194,13 @@
 
                 {{-- Academics Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#academicsMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-graduation-cap"></i> Academics</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/exam-stages*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
                         id="academicsMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisations.*') || request()->routeIs('admin.organisation-courses.*') ? 'active' : '' }}"
@@ -228,6 +234,8 @@
                                     href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.campus-types.index') }}">Campus Type</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.facilities.index') }}">Facilities</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.sports.*') ? 'active' : '' }}"
                                     href="{{ route('admin.sports.index') }}">Sports</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"
@@ -236,6 +244,46 @@
                                     href="{{ route('admin.exam-stages.index') }}">Exam Stages</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.caste-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.caste-categories.index') }}">Caste Categories</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Career Roadmap Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/career-roadmap*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#careerRoadmapMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/career-roadmap*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-map-signs me-2"></i>Career Roadmap</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/career-roadmap*') ? 'show' : '' }}"
+                        id="careerRoadmapMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-categories.index') }}">Categories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-stages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-stages.index') }}">Stages</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-sub-modules.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-sub-modules.index') }}">Sub Modules</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- FAQ Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faq-*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#faqMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/faq-*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-question-circle me-2"></i>FAQ Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/faq-*') ? 'show' : '' }}"
+                        id="faqMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-categories.index') }}">Categories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-items.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-items.index') }}">FAQs</a></li>
                         </ul>
                     </div>
                 </li>
@@ -281,6 +329,49 @@
                     </div>
                 </li>
 
+                {{-- Mentor Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/mentor*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#mentorMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/mentor*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-chalkboard-teacher me-2"></i>Mentor Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/mentor*') ? 'show' : '' }}"
+                        id="mentorMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Mentors</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.profiles.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.profiles.index') }}">All Mentors</a></li>
+                            <li><a class="nav-link sub-link d-flex justify-content-between align-items-center {{ request()->routeIs('admin.mentor.verifications.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.verifications.index') }}">
+                                    Pending Verifications
+                                    @php
+                                        $pendingCount = \App\Models\MentorVerification::where('gov_id_status', 'pending')
+                                            ->orWhere('linkedin_status', 'pending')
+                                            ->orWhere('background_check_status', 'pending')
+                                            ->orWhere('degree_status', 'pending')->count();
+                                    @endphp
+                                    @if($pendingCount > 0)
+                                        <span class="badge bg-danger rounded-pill">{{ $pendingCount }}</span>
+                                    @endif
+                                </a></li>
+                            
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.languages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.languages.index') }}">Mentor Languages</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.degrees.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.degrees.index') }}">Mentor Degrees</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.industries.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.industries.index') }}">Mentor Industries</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.mentee_levels.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.mentee_levels.index') }}">Mentor Mentee Levels</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.commissions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.commissions.index') }}">General Commission</a></li>
+                        </ul>
+                    </div>
+                </li>
+
                 {{-- Student Management --}}
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/students*') ? 'active' : 'collapsed' }}"
@@ -313,6 +404,8 @@
                                     href="{{ route('admin.community-categories.index') }}">Categories</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-questions.*') ? 'active' : '' }}"
                                     href="{{ route('admin.community-questions.index') }}">Questions</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-replies.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.community-replies.index') }}">Answers</a></li>
                         </ul>
                     </div>
                 </li>
@@ -379,44 +472,112 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
 
-                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customers.index.index') }}">Customers list</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-categories.index') }}">Customers Category</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-fields.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-fields.index') }}">Customer Fields</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.institutes.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.institutes.index') }}">Institutes</a></li>
-
-                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Students</div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customers.index.*') && request()->get('type') == 'class' ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customers.index.index', ['type' => 'class']) }}">Classes</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.customer-categories.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.customer-categories.index') }}">Students</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-statuses.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-statuses.index') }}">Calling Status</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-actions.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-actions.index') }}">Calling Action</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-module.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-module.index') }}">Calling Module</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.students.calling-history.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.hr.students.calling-history.index') }}">Calling History</a></li>
                         </ul>
                     </div>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}" 
+                        href="{{ route('admin.customers.main.index.index') }}">
+                        <i class="fas fa-users me-2"></i> Customers list
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-categories.index') }}">
+                        <i class="fas fa-tags me-2"></i> Customers Category
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-fields.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Customer Fields
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.institutes.index') }}">
+                        <i class="fas fa-university me-2"></i> Institutes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.interested-ins.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.interested-ins.index') }}">
+                        <i class="fas fa-thumbs-up me-2"></i> Interested In
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-sessions.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.customer-sessions.index') }}">
+                        <i class="fas fa-calendar-alt me-2"></i> Sessions
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Consultants</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultants.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultants.index') }}">
+                        <i class="fas fa-user-tie me-2"></i> Consultants list
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-categories.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultant-categories.index') }}">
+                        <i class="fas fa-folder me-2"></i> Consultant Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-settings.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.consultant-settings.index') }}">
+                        <i class="fas fa-cog me-2"></i> Consultant Settings
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && request()->get('type') == 'class' ? 'active' : '' }}" 
+                        href="{{ route('admin.customers.main.index.index', ['type' => 'class']) }}">
+                        <i class="fas fa-school me-2"></i> Classes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-statuses.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-statuses.index') }}">
+                        <i class="fas fa-check-circle me-2"></i> Calling Status
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-actions.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-actions.index') }}">
+                        <i class="fas fa-phone-square me-2"></i> Calling Action
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-module.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-module.index') }}">
+                        <i class="fas fa-phone-alt me-2"></i> Calling Module
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}" 
+                        href="{{ route('admin.students-crm.calling-history.index') }}">
+                        <i class="fas fa-history me-2"></i> Calling History
+                    </a>
                 </li>
 
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
 
                 {{-- Content Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#contentMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-copy"></i> Content</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'show' : '' }}"
                         id="contentMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('blogs.index') ? 'active' : '' }}"
@@ -429,33 +590,73 @@
                                     href="{{ route('testimonials.index') }}">Testimonials</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.video-testimonials.*') ? 'active' : '' }}"
                                     href="{{ route('admin.video-testimonials.index') }}">Video Stories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.contact-us.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.contact-us.edit') }}">Contact Us</a></li>
                         </ul>
                     </div>
                 </li>
-
-                {{-- Homepage Setup Group --}}
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"
+                        href="{{ route('admin.about_us.edit') }}">
+                        <i class="fas fa-info-circle"></i> About Us Page
+                    </a>
+                </li>
+
+                {{-- Frontend Setup Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'true' : 'false' }}">
-                        <span><i class="fas fa-home"></i> Homepage Setup</span>
+                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-home"></i> Frontend Setup</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/company-marquees*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'show' : '' }}"
                         id="homepageMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('homepage-sections.index') ? 'active' : '' }}"
                                     href="{{ route('homepage-sections.index') }}">Manage Sections</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-links.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-links.index') }}">Header Links</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-menus.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-menus.index') }}">Main Header Menus</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.footer-setup.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.footer-setup.index') }}">Footer Setup</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
                                     href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.company-marquees.index') ? 'active' : '' }}"
-                                    href="{{ route('admin.company-marquees.index') }}">Company Marquee</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.school-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.school-marquees.index') }}">School Marquee</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.institute-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.institute-marquees.index') }}">Institute Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.home-services.index') }}">Specialized Courses</a></li>
+                                    href="{{ route('admin.home-services.index') }}">Why Choose Us</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-benefits.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.home-benefits.index') }}">Why Choose Us</a></li>
+                                    href="{{ route('admin.home-benefits.index') }}">Scholarships</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.pages.index') }}">Dynamic Pages</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">Billing</div>
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.billing.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#billingMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('admin.billing.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Billing Module</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.billing.*') ? 'show' : '' }}" id="billingMenu">
+                        <ul class="nav flex-column">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.services.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.services.index') }}">Services</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.invoices.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.invoices.index') }}">Invoices</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.payments.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.payments.index') }}">Payments</a></li>
                         </ul>
                     </div>
                 </li>
@@ -474,7 +675,25 @@
                         href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-tools"></i> General Settings
                     </a>
+
+                    <!-- SEO Settings Dropdown -->
+                    <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
+                        data-bs-toggle="collapse" href="#seoSettingsMenu" role="button" aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}" aria-controls="seoSettingsMenu">
+                        <i class="fas fa-search"></i> SEO
+                        <i class="fas fa-chevron-down ms-auto menu-arrow {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'rotate-180' : '' }}"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'show' : '' }}" id="seoSettingsMenu">
+                        <ul class="nav flex-column sub-menu">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_defaults.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
+                        </ul>
+                    </div>
                 </li>
+                
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
                         href="{{ route('admin.commission.index') }}">
@@ -553,27 +772,17 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
 
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
 
         @yield('content')
     </div>
 
     <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function initializeTinyMCE(selector = '.editor', height = 300) {
             tinymce.init({
@@ -602,8 +811,14 @@
     </script>
     @stack('js')
     <script>
+
         // Smoothly handle collapse arrows and active states
         $(document).ready(function () {
+            // Initialize Select2 globally for all select dropdowns
+            $('select.form-select').select2({
+                width: '100%'
+            });
+
             $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {
                 $(this).find('.menu-arrow').toggleClass('rotate-180');
             });
@@ -624,6 +839,8 @@
             @endif
         });
     </script>
+    
+    @yield('scripts')
 </body>
 
 </html>

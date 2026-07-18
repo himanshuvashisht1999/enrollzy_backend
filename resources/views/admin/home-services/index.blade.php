@@ -1,12 +1,12 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Manage Specialized Courses')
+@section('title', 'Manage Why Choose Us Items')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Specialized Courses (Homepage)</h4>
+    <h4 class="mb-0">Why Choose Us Items</h4>
     <a href="{{ route('admin.home-services.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add New Course
+        <i class="fas fa-plus"></i> Add New Item
     </a>
 </div>
 

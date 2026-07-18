@@ -3,14 +3,23 @@
 @section('title', 'Dynamic Exams')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4 class="mb-0 fw-bold">Dynamic Exams</h4>
         <p class="text-muted mb-0">Manage exam schemas dynamically.</p>
     </div>
-    <a href="{{ route('admin.dynamic-exams.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Add New Dynamic Exam
-    </a>
+    <div class="d-flex align-items-center">
+        <form action="{{ route('admin.dynamic-exams.index') }}" method="GET" class="d-flex me-3">
+            <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Search exams..." value="{{ request('search') }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+            @if(request('search'))
+                <a href="{{ route('admin.dynamic-exams.index') }}" class="btn btn-sm btn-link text-danger text-decoration-none ms-1">Clear</a>
+            @endif
+        </form>
+        <a href="{{ route('admin.dynamic-exams.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add New Dynamic Exam
+        </a>
+    </div>
 </div>
 
 

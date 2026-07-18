@@ -42,7 +42,7 @@ class CallingController extends Controller
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 'active')->get();
         $actions = CallingAction::where('organization_id', $organization_id)->where('status', 'active')->get();
 
-        return view('admin.hr.students.calling.index', compact('statuses', 'actions'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions'));
     }
 
     public function history(Request $request)
@@ -74,7 +74,7 @@ class CallingController extends Controller
                 ->make(true);
         }
 
-        return view('admin.hr.students.calling.history');
+        return view('admin.students_crm.calling.history');
     }
 
     public function store(Request $request)
@@ -112,3 +112,5 @@ class CallingController extends Controller
         }
     }
 }
+
+

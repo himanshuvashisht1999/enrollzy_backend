@@ -9,9 +9,19 @@ use Illuminate\Support\Str;
 
 class CourseController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        $courses = Course::with('discipline')->orderBy('sort_order')->latest()->paginate(10);
+        $query = Course::with('discipline')->orderBy('sort_order')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
+
+        $courses = $query->paginate(10)->withQueryString();
         return view('admin.courses.index', compact('courses'));
     }
 

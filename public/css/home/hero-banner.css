@@ -45,4 +45,20 @@
   .hero-section .hero-content {
     text-align: center;
   }
+}
+
+/* Full Banner Mode Styles */
+.full-banner-mode {
+  border-radius: 0 !important;
+}
+
+.full-banner-mode img {
+  height: auto !important;
+  max-height: 600px;
+  border-radius: 0 !important;
+  object-fit: cover;
+}
+
+.full-banner-mode .slick-list {
+  border-radius: 0 !important;
 }/*# sourceMappingURL=hero-banner.css.map */

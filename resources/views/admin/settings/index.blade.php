@@ -32,6 +32,11 @@
                             </button>
                         </li>
                         <li class="nav-item">
+                            <button class="nav-link py-3 px-4 border-0 rounded-0" id="social-tab" data-bs-toggle="tab" data-bs-target="#social" type="button" role="tab">
+                                <i class="fas fa-share-alt me-2"></i>Social & Apps
+                            </button>
+                        </li>
+                        <li class="nav-item">
                             <button class="nav-link py-3 px-4 border-0 rounded-0" id="hero-tab" data-bs-toggle="tab" data-bs-target="#hero" type="button" role="tab">
                                 <i class="fas fa-rocket me-2"></i>Hero Section
                             </button>
@@ -102,13 +107,68 @@
                                     <label class="form-label fw-bold">Contact Phone</label>
                                     <input type="text" name="contact_phone" class="form-control" value="{{ old('contact_phone', $setting->contact_phone) }}" placeholder="+91 98765 43210">
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Toll Free Number</label>
+                                    <input type="text" name="toll_free_number" class="form-control" value="{{ old('toll_free_number', $setting->toll_free_number) }}" placeholder="1800-420-5757">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">WhatsApp Number</label>
+                                    <input type="text" name="whatsapp_number" class="form-control" value="{{ old('whatsapp_number', $setting->whatsapp_number) }}" placeholder="7303088694">
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">Office Address</label>
                                     <textarea name="address" class="form-control" rows="2" placeholder="Street name, City, State, ZIP">{{ old('address', $setting->address) }}</textarea>
                                 </div>
                                 <div class="col-md-12">
+                                    <label class="form-label fw-bold">Footer Description</label>
+                                    <textarea name="footer_description" class="form-control" rows="2" placeholder="Get the right guidance with us...">{{ old('footer_description', $setting->footer_description) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
                                     <label class="form-label fw-bold">Footer Copyright Text</label>
                                     <input type="text" name="footer_text" class="form-control" value="{{ old('footer_text', $setting->footer_text) }}" placeholder="© 2025 College Name. All rights reserved.">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Footer QR / Badge Image</label>
+                                    <input type="file" name="footer_qr_image" class="form-control @error('footer_qr_image') is-invalid @enderror">
+                                    @if($setting->footer_qr_image)
+                                        <div class="mt-3 p-2 border rounded bg-light text-center">
+                                            <img src="{{ asset($setting->footer_qr_image) }}" alt="QR" style="height: 50px;">
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social & Apps Tab -->
+                        <div class="tab-pane fade" id="social" role="tabpanel">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Play Store Link</label>
+                                    <input type="text" name="play_store_link" class="form-control" value="{{ old('play_store_link', $setting->play_store_link) }}" placeholder="https://play.google.com/store/apps/details?id=...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">App Store Link</label>
+                                    <input type="text" name="app_store_link" class="form-control" value="{{ old('app_store_link', $setting->app_store_link) }}" placeholder="https://apps.apple.com/app/...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Facebook URL</label>
+                                    <input type="text" name="facebook_url" class="form-control" value="{{ old('facebook_url', $setting->facebook_url) }}" placeholder="https://facebook.com/...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Twitter (X) URL</label>
+                                    <input type="text" name="twitter_url" class="form-control" value="{{ old('twitter_url', $setting->twitter_url) }}" placeholder="https://twitter.com/...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Instagram URL</label>
+                                    <input type="text" name="instagram_url" class="form-control" value="{{ old('instagram_url', $setting->instagram_url) }}" placeholder="https://instagram.com/...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">LinkedIn URL</label>
+                                    <input type="text" name="linkedin_url" class="form-control" value="{{ old('linkedin_url', $setting->linkedin_url) }}" placeholder="https://linkedin.com/in/...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">YouTube URL</label>
+                                    <input type="text" name="youtube_url" class="form-control" value="{{ old('youtube_url', $setting->youtube_url) }}" placeholder="https://youtube.com/...">
                                 </div>
                             </div>
                         </div>

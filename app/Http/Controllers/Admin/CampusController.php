@@ -33,7 +33,8 @@ class CampusController extends Controller
             ->filter()
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
-        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories'));
+        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
+        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster'));
     }
 
     /**
@@ -62,7 +63,8 @@ class CampusController extends Controller
             ->filter()
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
-        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories'));
+        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
+        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster'));
     }
 
     /**
@@ -70,6 +72,18 @@ class CampusController extends Controller
      */
     public function update(Request $request, Organisation $organisation, Campus $campus)
     {
+        $request->validate([
+            'facilities' => 'nullable|array',
+            'facilities.*' => 'string',
+            'class_profile' => 'nullable|array',
+            'class_profile.*.year' => 'nullable|integer',
+            'class_profile.*.total_students' => 'nullable|integer|min:0',
+            'class_profile.*.total_faculty' => 'nullable|integer|min:0',
+            'class_profile.*.total_male_students' => 'nullable|integer|min:0',
+            'class_profile.*.total_female_students' => 'nullable|integer|min:0',
+            'class_profile.*.total_outside_state' => 'nullable|integer|min:0',
+        ]);
+
         $input = $request->all();
 
         $booleans = [
@@ -138,6 +152,26 @@ class CampusController extends Controller
     public function autosaveTab(Request $request, $orgId, $id)
     {
         $campus = Campus::findOrFail($id);
+
+        if ($request->has('class_profile')) {
+            $request->validate([
+                'class_profile' => 'nullable|array',
+                'class_profile.*.year' => 'nullable|integer',
+                'class_profile.*.total_students' => 'nullable|integer|min:0',
+                'class_profile.*.total_faculty' => 'nullable|integer|min:0',
+                'class_profile.*.total_male_students' => 'nullable|integer|min:0',
+                'class_profile.*.total_female_students' => 'nullable|integer|min:0',
+                'class_profile.*.total_outside_state' => 'nullable|integer|min:0',
+            ]);
+        }
+
+        if ($request->has('facilities')) {
+            $request->validate([
+                'facilities' => 'nullable|array',
+                'facilities.*' => 'string',
+            ]);
+        }
+
         $data = $request->all();
         
         // Handle slug: if empty, don't update it to avoid null constraint violation

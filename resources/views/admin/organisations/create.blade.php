@@ -1645,9 +1645,9 @@
                     </div>
                 </div> <!-- End Row -->
 
-                <!-- <div class="col-12 mt-4 text-end">
-                                                                                                                                    <button type="submit" class="btn btn-primary">Save Organisation</button>
-                                                                                                                                </div> -->
+                <div class="col-12 mt-4 mb-4 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i> Save Organisation</button>
+                </div>
             </div>
             </form>
         </div>
@@ -1715,7 +1715,11 @@
                         if (el) {
                             const shouldShow = (id === activeSectionId);
                             el.style.display = shouldShow ? 'block' : 'none';
-                            if (shouldShow) console.log(`✓ Showing section: ${id}`);
+                            // Disable inputs if hidden to prevent submitting duplicate empty names
+                            el.querySelectorAll('input, select, textarea').forEach(input => {
+                                input.disabled = !shouldShow;
+                            });
+                            if (shouldShow) console.log(`👉 Showing section: ${id}`);
                         }
                     });
                     console.log("--------------------");

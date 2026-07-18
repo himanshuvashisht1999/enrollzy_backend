@@ -66,14 +66,16 @@ class Campus extends Model
         'science_labs_available',
         'computer_labs_available',
         'playground_available',
-        'bus_fleet_size',
-        'gps_enabled_buses',
-        'visitor_management_system',
-        'bus_routes',
-        'campus_area_unit',
-        'exams_prepared_for',
-        'target_classes',
-        'about_institute',
+        'playground_available',
+        'cctv_coverage',
+        'fire_safety_certified',
+        'campus_email',
+        'campus_website',
+        'campus_contact_numbers',
+        'social_media_links',
+        'status',
+        'class_profile',
+        'facilities'
     ];
 
     protected $casts = [
@@ -102,6 +104,8 @@ class Campus extends Model
         'bus_routes' => 'array',
         'exams_prepared_for' => 'array',
         'target_classes' => 'array',
+        'class_profile' => 'array',
+        'facilities' => 'array',
     ];
 
     protected static function boot()

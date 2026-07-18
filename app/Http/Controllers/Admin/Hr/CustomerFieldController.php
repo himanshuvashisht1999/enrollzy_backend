@@ -26,8 +26,8 @@ class CustomerFieldController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
-                    $btn .= '<a href="'.route('admin.hr.customer-fields.edit', encrypt($row->id)).'" class="btn btn-sm btn-soft-primary"><i class="fas fa-edit"></i></a>';
-                    $btn .= '<form action="'.route('admin.hr.customer-fields.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
+                    $btn .= '<a href="'.route('admin.customer-fields.edit', encrypt($row->id)).'" class="btn btn-sm btn-soft-primary"><i class="fas fa-edit"></i></a>';
+                    $btn .= '<form action="'.route('admin.customer-fields.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
                                 '.csrf_field().'
                                 '.method_field('DELETE').'
                                 <button type="button" class="btn btn-sm btn-soft-danger delete-btn"><i class="fas fa-trash"></i></button>
@@ -39,12 +39,12 @@ class CustomerFieldController extends Controller
                 ->make(true);
         }
 
-        return view('admin.hr.customers.field.index');
+        return view('admin.customer_fields.index');
     }
 
     public function create()
     {
-        return view('admin.hr.customers.field.create');
+        return view('admin.customer_fields.create');
     }
 
     public function store(Request $request)
@@ -66,7 +66,7 @@ class CustomerFieldController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            return redirect()->route('admin.hr.customer-fields.index')->with('success', 'Field added successfully');
+            return redirect()->route('admin.customer-fields.index')->with('success', 'Field added successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
@@ -76,7 +76,7 @@ class CustomerFieldController extends Controller
     {
         $id = decrypt($id);
         $field = CustomerField::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
-        return view('admin.hr.customers.field.edit', compact('field'));
+        return view('admin.customer_fields.edit', compact('field'));
     }
 
     public function update(Request $request, $id)
@@ -99,7 +99,7 @@ class CustomerFieldController extends Controller
                 'sequence' => $request->sequence ?? 1,
             ]);
 
-            return redirect()->route('admin.hr.customer-fields.index')->with('success', 'Field updated successfully');
+            return redirect()->route('admin.customer-fields.index')->with('success', 'Field updated successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
@@ -112,3 +112,5 @@ class CustomerFieldController extends Controller
         return redirect()->back()->with('success', 'Field deleted successfully');
     }
 }
+
+

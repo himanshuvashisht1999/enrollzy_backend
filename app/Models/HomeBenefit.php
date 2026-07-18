@@ -11,6 +11,7 @@ class HomeBenefit extends Model
 
     protected $fillable = [
         'title',
+        'icon',
         'content',
         'sort_order',
         'status'

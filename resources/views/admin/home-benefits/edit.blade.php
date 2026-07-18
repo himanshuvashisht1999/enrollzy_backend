@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Edit Benefit Card')
+@section('title', 'Edit Scholarship')
 
 @section('content')
 <div class="mb-4">
@@ -11,7 +11,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-        <form action="{{ route('admin.home-benefits.update', $homeBenefit->id) }}" method="POST">
+        <form action="{{ route('admin.home-benefits.update', $homeBenefit->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="row g-3">
@@ -33,6 +33,15 @@
                 <div class="col-12">
                     <label class="form-label">Content (Optional)</label>
                     <textarea name="content" class="form-control" rows="4">{{ $homeBenefit->content }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Icon Image</label>
+                    @if($homeBenefit->icon)
+                        <div class="mb-2">
+                            <img src="{{ asset($homeBenefit->icon) }}" alt="Icon" width="50" height="50">
+                        </div>
+                    @endif
+                    <input type="file" name="icon" class="form-control" accept="image/*">
                 </div>
             </div>
             <div class="mt-4">

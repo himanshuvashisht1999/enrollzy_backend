@@ -13,9 +13,20 @@ use Illuminate\Support\Str;
 
 class DynamicExamController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $exams = DynamicExam::latest()->paginate(10);
+        $query = DynamicExam::latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%")
+                  ->orWhere('short_name', 'like', "%{$search}%");
+            });
+        }
+
+        $exams = $query->paginate(10)->withQueryString();
         return view('admin.dynamic-exams.index', compact('exams'));
     }
 

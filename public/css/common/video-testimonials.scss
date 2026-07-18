@@ -59,9 +59,21 @@
     .video-slider {
         margin: 0 -12px;
     }
-
+    /* Equal height fix */
+    .video-slider .slick-track {
+        display: flex !important;
+        align-items: stretch;
+    }
     .video-slider .slick-slide {
         padding: 12px;
+        height: auto !important;
+        display: flex !important;
+        > div {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
     }
 
     .video-card {
@@ -70,6 +82,9 @@
         box-shadow: var(--shadow-sm);
         transition: all 0.35s ease;
         border: 1px solid var(--borderclr);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
 
         &:hover {
             transform: translateY(-8px);

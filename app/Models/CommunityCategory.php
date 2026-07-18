@@ -6,7 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class CommunityCategory extends Model
 {
-    protected $fillable = ['name', 'slug', 'description'];
+    protected $fillable = ['name', 'slug', 'description', 'parent_id'];
+
+    public function parent()
+    {
+        return $this->belongsTo(CommunityCategory::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(CommunityCategory::class, 'parent_id');
+    }
 
     public function questions()
     {

@@ -27,7 +27,7 @@ class CustomerCategoryController extends Controller
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
                     $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-category" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>';
-                    $btn .= '<form action="'.route('admin.hr.customer-categories.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
+                    $btn .= '<form action="'.route('admin.customer-categories.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
                                 '.csrf_field().'
                                 '.method_field('DELETE').'
                                 <button type="button" class="btn btn-sm btn-soft-danger delete-btn"><i class="fas fa-trash"></i></button>
@@ -45,7 +45,7 @@ class CustomerCategoryController extends Controller
             ->where('status', 'active')
             ->get();
 
-        return view('admin.hr.customers.category.index', compact('parentCategories'));
+        return view('admin.customer_categories.index', compact('parentCategories'));
     }
 
     public function store(Request $request)
@@ -115,4 +115,19 @@ class CustomerCategoryController extends Controller
         $category->delete();
         return redirect()->back()->with('success', 'Category deleted successfully');
     }
+
+    public function quickStore(Request $request)
+    {
+        $request->validate(['name' => 'required|string|max:255']);
+        $item = CustomerCategory::create([
+            'name' => $request->name,
+            'parent_id' => 0,
+            'customer_type' => 'student', // Default to student
+            'status' => 'active',
+            'organization_id' => auth()->user()->organization_id,
+        ]);
+        return response()->json(['status' => 1, 'data' => $item]);
+    }
 }
+
+

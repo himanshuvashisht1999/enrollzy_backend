@@ -129,6 +129,12 @@
                                 <a class="nav-link" href="#digital" role="tab">Digital & SEO</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="#reviews" role="tab">Reviews</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#placement-stats" role="tab">Placement Stats</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="#settings" role="tab">Settings</a>
                             </li>
                         </ul>
@@ -398,7 +404,154 @@
                                 </div>
                             </div>
 
-                            <!-- 6. Settings -->
+                            <!-- 6. Reviews & Perception -->
+                            <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h5 class="text-primary mb-0">College Reviews & Perception (Out of 5)</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-review-btn">
+                                        <i class="fas fa-plus"></i> Add Review
+                                    </button>
+                                </div>
+                                <div id="reviews-container">
+                                    @php $reviews = old('college_reviews', [[]]); @endphp
+                                    @foreach($reviews as $index => $review)
+                                    <div class="review-item border p-3 mb-3 rounded position-relative">
+                                        @if($index > 0)
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-review-btn"><i class="fas fa-times"></i></button>
+                                        @endif
+                                        <div class="row g-4 mt-1">
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label">College Infrastructure</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[{{$index}}][infrastructure]" class="form-control" value="{{ $review['infrastructure'] ?? '' }}" placeholder="e.g. 4.5">
+                                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label">Campus Life</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[{{$index}}][campus_life]" class="form-control" value="{{ $review['campus_life'] ?? '' }}" placeholder="e.g. 4.0">
+                                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label">Academics</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[{{$index}}][academics]" class="form-control" value="{{ $review['academics'] ?? '' }}" placeholder="e.g. 4.8">
+                                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label">Placements</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[{{$index}}][placements]" class="form-control" value="{{ $review['placements'] ?? '' }}" placeholder="e.g. 4.2">
+                                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label">Value for Money</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[{{$index}}][value_for_money]" class="form-control" value="{{ $review['value_for_money'] ?? '' }}" placeholder="e.g. 4.6">
+                                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <!-- 7. Placement Stats -->
+                            <div class="tab-pane fade" id="placement-stats" role="tabpanel" aria-labelledby="placement-stats-tab">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h5 class="text-primary mb-0">Placement Statistics</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-placement-stat-btn">
+                                        <i class="fas fa-plus"></i> Add Year Stats
+                                    </button>
+                                </div>
+                                <div id="placement-stats-container">
+                                    @php $placementStats = old('placement_statistics', [[]]); @endphp
+                                    @foreach($placementStats as $index => $stat)
+                                    <div class="placement-stat-item border p-4 mb-4 rounded position-relative bg-light">
+                                        @if($index > 0)
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-placement-stat-btn"><i class="fas fa-times"></i></button>
+                                        @endif
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold">Year</label>
+                                                <input type="number" name="placement_statistics[{{$index}}][year]" class="form-control" value="{{ $stat['year'] ?? '' }}" placeholder="e.g. 2024">
+                                            </div>
+                                        </div>
+                                        <div class="row g-4">
+                                            <!-- Department Specific -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-secondary border-bottom pb-2">Department Specific</h6>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Total Students Placed</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][dept_students_placed]" class="form-control" value="{{ $stat['dept_students_placed'] ?? '' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Graduating Students</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][dept_graduating_students]" class="form-control" value="{{ $stat['dept_graduating_students'] ?? '' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Placement Percentage (%)</label>
+                                                    <div class="input-group">
+                                                        <input type="number" step="0.1" min="0" max="100" name="placement_statistics[{{$index}}][dept_placement_percentage]" class="form-control" value="{{ $stat['dept_placement_percentage'] ?? '' }}">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Median Salary LPA</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">₹</span>
+                                                        <input type="text" name="placement_statistics[{{$index}}][dept_median_salary]" class="form-control" value="{{ $stat['dept_median_salary'] ?? '' }}" placeholder="e.g. 8.99">
+                                                        <span class="input-group-text">LPA</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Students Going Higher Studies</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][dept_higher_studies]" class="form-control" value="{{ $stat['dept_higher_studies'] ?? '' }}">
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Overall (College level) -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-secondary border-bottom pb-2">Overall (College Level)</h6>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Total Students Placed</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][overall_students_placed]" class="form-control" value="{{ $stat['overall_students_placed'] ?? '' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Graduating Students</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][overall_graduating_students]" class="form-control" value="{{ $stat['overall_graduating_students'] ?? '' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Placement Percentage (%)</label>
+                                                    <div class="input-group">
+                                                        <input type="number" step="0.1" min="0" max="100" name="placement_statistics[{{$index}}][overall_placement_percentage]" class="form-control" value="{{ $stat['overall_placement_percentage'] ?? '' }}">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Median Salary LPA</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">₹</span>
+                                                        <input type="text" name="placement_statistics[{{$index}}][overall_median_salary]" class="form-control" value="{{ $stat['overall_median_salary'] ?? '' }}" placeholder="e.g. 8.87">
+                                                        <span class="input-group-text">LPA</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Students Going Higher Studies</label>
+                                                    <input type="number" min="0" name="placement_statistics[{{$index}}][overall_higher_studies]" class="form-control" value="{{ $stat['overall_higher_studies'] ?? '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- 7. Settings -->
                             <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
                                 <div class="row g-3">
                                     <div class="col-md-3">
@@ -629,6 +782,144 @@
             }
 
             showTab(0);
+            // Reviews Repeater
+            let reviewIndex = {{ count(old('college_reviews', [[]])) }};
+            $('#add-review-btn').on('click', function() {
+                const template = `
+                    <div class="review-item border p-3 mb-3 rounded position-relative">
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-review-btn"><i class="fas fa-times"></i></button>
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label">College Infrastructure</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[${reviewIndex}][infrastructure]" class="form-control" placeholder="e.g. 4.5">
+                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label">Campus Life</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[${reviewIndex}][campus_life]" class="form-control" placeholder="e.g. 4.0">
+                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label">Academics</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[${reviewIndex}][academics]" class="form-control" placeholder="e.g. 4.8">
+                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label">Placements</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[${reviewIndex}][placements]" class="form-control" placeholder="e.g. 4.2">
+                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label">Value for Money</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="5" oninput="if(this.value > 5) this.value = 5; if(this.value < 0) this.value = 0;" name="college_reviews[${reviewIndex}][value_for_money]" class="form-control" placeholder="e.g. 4.6">
+                                    <span class="input-group-text text-warning"><i class="fas fa-star"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#reviews-container').append(template);
+                reviewIndex++;
+            });
+
+            $(document).on('click', '.remove-review-btn', function() {
+                $(this).closest('.review-item').remove();
+            });
+            // Placement Stats Repeater
+            let placementStatIndex = {{ count(old('placement_statistics', [[]])) }};
+            $(document).on('click', '#add-placement-stat-btn', function() {
+                const template = `
+                    <div class="placement-stat-item border p-4 mb-4 rounded position-relative bg-light">
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-placement-stat-btn"><i class="fas fa-times"></i></button>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Year</label>
+                                <input type="number" name="placement_statistics[${placementStatIndex}][year]" class="form-control" placeholder="e.g. 2024">
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <!-- Department Specific -->
+                            <div class="col-md-6">
+                                <h6 class="text-secondary border-bottom pb-2">Department Specific</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Total Students Placed</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][dept_students_placed]" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Graduating Students</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][dept_graduating_students]" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Placement Percentage (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" min="0" max="100" name="placement_statistics[${placementStatIndex}][dept_placement_percentage]" class="form-control">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Median Salary LPA</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="text" name="placement_statistics[${placementStatIndex}][dept_median_salary]" class="form-control" placeholder="e.g. 8.99">
+                                        <span class="input-group-text">LPA</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Students Going Higher Studies</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][dept_higher_studies]" class="form-control">
+                                </div>
+                            </div>
+                            
+                            <!-- Overall (College level) -->
+                            <div class="col-md-6">
+                                <h6 class="text-secondary border-bottom pb-2">Overall (College Level)</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Total Students Placed</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][overall_students_placed]" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Graduating Students</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][overall_graduating_students]" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Placement Percentage (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" min="0" max="100" name="placement_statistics[${placementStatIndex}][overall_placement_percentage]" class="form-control">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Median Salary LPA</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="text" name="placement_statistics[${placementStatIndex}][overall_median_salary]" class="form-control" placeholder="e.g. 8.87">
+                                        <span class="input-group-text">LPA</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Students Going Higher Studies</label>
+                                    <input type="number" min="0" name="placement_statistics[${placementStatIndex}][overall_higher_studies]" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#placement-stats-container').append(template);
+                placementStatIndex++;
+            });
+
+            $(document).on('click', '.remove-placement-stat-btn', function() {
+                $(this).closest('.placement-stat-item').remove();
+            });
         });
     </script>
 @endpush

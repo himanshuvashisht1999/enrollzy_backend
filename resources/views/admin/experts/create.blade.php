@@ -106,7 +106,15 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Highest Qualification</label>
-                                    <input type="text" class="form-control" name="highest_qualification" placeholder="e.g. PhD in Physics">
+                                    <input type="text" class="form-control" name="highest_qualification" placeholder="e.g. PhD in Physics" value="{{ old('highest_qualification') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Degree</label>
+                                    <input type="text" class="form-control" name="degree" placeholder="e.g. B.Tech" value="{{ old('degree') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Experience (General)</label>
+                                    <input type="text" class="form-control" name="exp" placeholder="e.g. 5+ Years" value="{{ old('exp') }}">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Total Experience (Years)</label>

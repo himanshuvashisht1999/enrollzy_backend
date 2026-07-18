@@ -16,8 +16,29 @@ class Customer extends Model
     protected $fillable = [
         'name', 'email', 'mobile', 'password', 'image', 'phone', 'role', 
         'category_id', 'institute_id', 'status', 'organization_id', 
-        'country', 'state', 'city', 'pincode', 'is_admin'
+        'country', 'state', 'city', 'pincode', 'is_admin',
+        'dob', 'gender', 'aadhaar_number', 'alternate_mobile',
+        'interested_in_ids', 'interested_in_course', 'program_level', 'mode', 'session_ids',
+        'father_name', 'father_mobile', 'father_email', 'father_occupation',
+        'mother_name', 'mother_mobile', 'mother_email', 'mother_occupation',
+        'sibling_enrolled', 'sibling_name', 'sibling_age', 'referred_by', 'source',
+        'registration_no', 'class_batch', 'counselor_name', 'registration_date', 'payment_status', 'remarks'
     ];
+
+    protected $casts = [
+        'interested_in_ids' => 'array',
+        'session_ids' => 'array',
+    ];
+
+    public function academic_details()
+    {
+        return $this->hasMany(CustomerAcademicDetail::class, 'user_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(CustomerDocument::class, 'user_id');
+    }
 
     protected $hidden = [
         'password', 'remember_token',

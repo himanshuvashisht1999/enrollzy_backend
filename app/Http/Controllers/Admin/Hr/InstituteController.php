@@ -21,7 +21,7 @@ class InstituteController extends Controller
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
                     $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-institute" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>';
-                    $btn .= '<form action="'.route('admin.hr.institutes.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
+                    $btn .= '<form action="'.route('admin.institutes.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
                                 '.csrf_field().'
                                 '.method_field('DELETE').'
                                 <button type="button" class="btn btn-sm btn-soft-danger delete-btn"><i class="fas fa-trash"></i></button>
@@ -32,7 +32,7 @@ class InstituteController extends Controller
                 ->make(true);
         }
 
-        return view('admin.hr.customers.institute.index');
+        return view('admin.institutes.index');
     }
 
     public function store(Request $request)
@@ -90,3 +90,5 @@ class InstituteController extends Controller
         return redirect()->back()->with('success', 'Institute deleted successfully');
     }
 }
+
+

@@ -2,8 +2,8 @@ $(document).ready(function () {
     $(".hero-slider").slick({
         autoplay: true,
         autoplaySpeed: 3000,
-        arrows: true,
-        nav:true,
+        arrows: false,
+        nav:false,
         dots: true,
         fade: true,
         speed: 800,

@@ -40,6 +40,8 @@ class NoteworthyMentionController extends Controller
             'subtitle' => 'nullable|string|max:255',
             'badge_text' => 'nullable|string|max:255',
             'url' => 'nullable|url',
+            'slug' => 'nullable|string|max:255|unique:noteworthy_mentions,slug',
+            'description' => 'nullable|string',
             'sort_order' => 'required|integer',
             'status' => 'required|boolean',
         ]);
@@ -79,6 +81,8 @@ class NoteworthyMentionController extends Controller
             'subtitle' => 'nullable|string|max:255',
             'badge_text' => 'nullable|string|max:255',
             'url' => 'nullable|url',
+            'slug' => 'nullable|string|max:255|unique:noteworthy_mentions,slug,' . $noteworthyMention->id,
+            'description' => 'nullable|string',
             'sort_order' => 'required|integer',
             'status' => 'required|boolean',
         ]);

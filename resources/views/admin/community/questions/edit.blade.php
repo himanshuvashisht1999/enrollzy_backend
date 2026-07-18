@@ -30,16 +30,28 @@
                             <select name="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}" {{ $question->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                    @foreach($cat->children as $child)
+                                        <option value="{{ $child->id }}" {{ $question->category_id == $child->id ? 'selected' : '' }}>-- {{ $child->name }}</option>
+                                    @endforeach
                                 @endforeach
                             </select>
                             @error('category_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Verification Status</label>
-                            <select name="is_verified" class="form-select">
-                                <option value="1" {{ $question->is_verified ? 'selected' : '' }}>Verified (Visible)</option>
-                                <option value="0" {{ !$question->is_verified ? 'selected' : '' }}>Pending Approval</option>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Moderation Status</label>
+                            <select name="status" class="form-select">
+                                <option value="pending" {{ $question->status == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="approved" {{ $question->status == 'approved' ? 'selected' : '' }}>Approved</option>
+                                <option value="rejected" {{ $question->status == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Enable/Disable</label>
+                            <select name="is_active" class="form-select">
+                                <option value="1" {{ $question->is_active ? 'selected' : '' }}>Active (Visible)</option>
+                                <option value="0" {{ !$question->is_active ? 'selected' : '' }}>Disabled (Hidden)</option>
                             </select>
                         </div>
                     </div>
@@ -48,7 +60,7 @@
                     <div class="mb-4">
                         <label class="form-label fw-bold">Current Image</label>
                         <div class="d-block pt-2">
-                            <img src="{{ asset($question->image) }}" class="img-fluid rounded border" style="max-height: 300px;">
+                            <img src="{{ env('APP_ENV') == 'local' ? 'http://127.0.0.1:8000' : 'https://enrollzy.com' }}/{{ ltrim($question->image, '/') }}" class="img-fluid rounded border" style="max-height: 300px;">
                         </div>
                     </div>
                     @endif

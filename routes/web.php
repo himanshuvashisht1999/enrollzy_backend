@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HeroSliderController;
 use App\Http\Controllers\Admin\VideoTestimonialController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\AboutUsController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\NoteworthyCategoryController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\CommunityCategoryController;
 use App\Http\Controllers\Admin\CommunityQuestionController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\ContactUsDetailController;
 use App\Http\Controllers\Admin\ExamStageDataController;
 use App\Http\Controllers\Admin\Hr\WhatsappTemplateController;
 use App\Http\Controllers\Admin\Hr\LeadSourceController;
@@ -38,6 +40,8 @@ use App\Http\Controllers\Admin\Hr\CallingStatusController;
 use App\Http\Controllers\Admin\Hr\CallingActionController;
 use App\Http\Controllers\Admin\Hr\CallingController;
 use App\Http\Controllers\Admin\Hr\ClockController;
+use App\Http\Controllers\Admin\Hr\InterestedInController;
+use App\Http\Controllers\Admin\Hr\CustomerSessionController;
 
 // ✅ Root Redirect
 Route::get('/', function () {
@@ -55,6 +59,15 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Categories
     Route::resource('/admin/categories', CategoryController::class);
+    
+    // Career Roadmap
+    Route::resource('/admin/career-roadmap-categories', \App\Http\Controllers\Admin\CareerRoadmapCategoryController::class)->names('admin.career-roadmap-categories');
+    Route::resource('/admin/career-roadmap-stages', \App\Http\Controllers\Admin\CareerRoadmapStageController::class)->names('admin.career-roadmap-stages');
+    Route::resource('/admin/career-roadmap-sub-modules', \App\Http\Controllers\Admin\CareerRoadmapSubModuleController::class)->names('admin.career-roadmap-sub-modules');
+
+    // FAQs
+    Route::resource('/admin/faq-categories', \App\Http\Controllers\Admin\FaqCategoryController::class)->names('admin.faq-categories');
+    Route::resource('/admin/faq-items', \App\Http\Controllers\Admin\FaqItemController::class)->names('admin.faq-items');
 
     // Students
     Route::resource('/admin/students', StudentController::class);
@@ -124,6 +137,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'update' => 'admin.organisations.update',
         'destroy' => 'admin.organisations.destroy',
     ]);
+    Route::patch('/admin/organisations/{organisation}/toggle-status', [OrganisationController::class, 'toggleStatus'])->name('admin.organisations.toggle-status');
     Route::post('/admin/organisations/store-draft', [OrganisationController::class, 'storeDraft'])->name('admin.organisations.store-draft');
     Route::post('/admin/organisations/{organisation}/autosave', [OrganisationController::class, 'autosave'])->name('admin.organisations.autosave');
     Route::post('/admin/organisations/{organisation}/autosave-repeater', [OrganisationController::class, 'autosaveRepeater'])->name('admin.organisations.autosave-repeater');
@@ -206,6 +220,43 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
     Route::post('/admin/settings/update', [SettingController::class, 'update'])->name('admin.settings.update');
 
+    // SEO Organization Settings
+    Route::get('/admin/seo-organization', [\App\Http\Controllers\Admin\SeoOrganizationSettingController::class, 'edit'])->name('admin.seo_organization.edit');
+    Route::post('/admin/seo-organization', [\App\Http\Controllers\Admin\SeoOrganizationSettingController::class, 'update'])->name('admin.seo_organization.update');
+
+    // Homepage SEO
+    Route::get('/admin/seo-homepage', [\App\Http\Controllers\Admin\SeoHomepageController::class, 'edit'])->name('admin.seo_homepage.edit');
+    Route::post('/admin/seo-homepage', [\App\Http\Controllers\Admin\SeoHomepageController::class, 'update'])->name('admin.seo_homepage.update');
+
+    // Global SEO Defaults
+    Route::get('/admin/seo-defaults', [\App\Http\Controllers\Admin\SeoDefaultController::class, 'edit'])->name('admin.seo_defaults.edit');
+    Route::post('/admin/seo-defaults', [\App\Http\Controllers\Admin\SeoDefaultController::class, 'update'])->name('admin.seo_defaults.update');
+
+    // About Us Page
+    Route::get('/admin/about-us', [AboutUsController::class, 'edit'])->name('admin.about_us.edit');
+    Route::post('/admin/about-us/update', [AboutUsController::class, 'update'])->name('admin.about_us.update');
+    Route::post('/admin/about-us/offers', [AboutUsController::class, 'storeOffer'])->name('admin.about_us.offers.store');
+    Route::post('/admin/about-us/offers/{id}', [AboutUsController::class, 'updateOffer'])->name('admin.about_us.offers.update');
+    Route::delete('/admin/about-us/offers/{id}', [AboutUsController::class, 'destroyOffer'])->name('admin.about_us.offers.destroy');
+    Route::post('/admin/about-us/features', [AboutUsController::class, 'storeFeature'])->name('admin.about_us.features.store');
+    Route::post('/admin/about-us/features/{id}', [AboutUsController::class, 'updateFeature'])->name('admin.about_us.features.update');
+    Route::delete('/admin/about-us/features/{id}', [AboutUsController::class, 'destroyFeature'])->name('admin.about_us.features.destroy');
+    Route::post('/admin/about-us/impacts', [AboutUsController::class, 'storeImpact'])->name('admin.about_us.impacts.store');
+    Route::post('/admin/about-us/impacts/{id}', [AboutUsController::class, 'updateImpact'])->name('admin.about_us.impacts.update');
+    Route::delete('/admin/about-us/impacts/{id}', [AboutUsController::class, 'destroyImpact'])->name('admin.about_us.impacts.destroy');
+
+    Route::post('/admin/about-us/teams', [AboutUsController::class, 'storeTeam'])->name('admin.about_us.teams.store');
+    Route::post('/admin/about-us/teams/{id}', [AboutUsController::class, 'updateTeam'])->name('admin.about_us.teams.update');
+    Route::delete('/admin/about-us/teams/{id}', [AboutUsController::class, 'destroyTeam'])->name('admin.about_us.teams.destroy');
+
+    Route::post('/admin/about-us/advisory-boards', [AboutUsController::class, 'storeAdvisoryBoard'])->name('admin.about_us.advisory_boards.store');
+    Route::post('/admin/about-us/advisory-boards/{id}', [AboutUsController::class, 'updateAdvisoryBoard'])->name('admin.about_us.advisory_boards.update');
+    Route::delete('/admin/about-us/advisory-boards/{id}', [AboutUsController::class, 'destroyAdvisoryBoard'])->name('admin.about_us.advisory_boards.destroy');
+
+    // Contact Us Setting
+    Route::get('/admin/contact-us', [ContactUsDetailController::class, 'edit'])->name('admin.contact-us.edit');
+    Route::put('/admin/contact-us', [ContactUsDetailController::class, 'update'])->name('admin.contact-us.update');
+
     // Commission Settings
     Route::get('/admin/commission', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('admin.commission.index');
     Route::post('/admin/commission/global', [\App\Http\Controllers\Admin\CommissionController::class, 'updateGlobal'])->name('admin.commission.global.update');
@@ -224,10 +275,19 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Trending Skills
     Route::resource('/admin/trending-skills', \App\Http\Controllers\Admin\TrendingSkillController::class)->names('admin.trending-skills');
+    
+    // Dynamic Pages
+    Route::resource('/admin/pages', \App\Http\Controllers\Admin\PageController::class)->names('admin.pages');
 
     // Company Marquee
-    Route::resource('/admin/company-marquees', \App\Http\Controllers\Admin\CompanyMarqueeController::class)->names('admin.company-marquees');
-    Route::post('/admin/company-marquees/{company_marquee}/toggle-status', [\App\Http\Controllers\Admin\CompanyMarqueeController::class, 'toggleStatus'])->name('admin.company-marquees.toggle-status');
+    Route::post('/admin/school-marquees/update-direction', [\App\Http\Controllers\Admin\SchoolMarqueeController::class, 'updateDirection'])->name('admin.school-marquees.update-direction');
+    Route::resource('/admin/school-marquees', \App\Http\Controllers\Admin\SchoolMarqueeController::class)->names('admin.school-marquees');
+    Route::post('/admin/school-marquees/{school_marquee}/toggle-status', [\App\Http\Controllers\Admin\SchoolMarqueeController::class, 'toggleStatus'])->name('admin.school-marquees.toggle-status');
+
+    // Institute Marquee
+    Route::post('/admin/institute-marquees/update-direction', [\App\Http\Controllers\Admin\InstituteMarqueeController::class, 'updateDirection'])->name('admin.institute-marquees.update-direction');
+    Route::resource('/admin/institute-marquees', \App\Http\Controllers\Admin\InstituteMarqueeController::class)->names('admin.institute-marquees');
+    Route::post('/admin/institute-marquees/{institute_marquee}/toggle-status', [\App\Http\Controllers\Admin\InstituteMarqueeController::class, 'toggleStatus'])->name('admin.institute-marquees.toggle-status');
 
     // Video Testimonials
     Route::resource('/admin/video-testimonials', VideoTestimonialController::class)->names('admin.video-testimonials');
@@ -284,12 +344,42 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/community-questions', CommunityQuestionController::class)->names('admin.community-questions');
     Route::patch('/admin/community-questions/{question}/toggle-verify', [CommunityQuestionController::class, 'toggleVerify'])->name('admin.community-questions.toggle-verify');
 
+    Route::resource('/admin/community-replies', \App\Http\Controllers\Admin\CommunityReplyController::class)->names('admin.community-replies');
+    Route::patch('/admin/community-replies/{reply}/toggle-active', [\App\Http\Controllers\Admin\CommunityReplyController::class, 'toggleActive'])->name('admin.community-replies.toggle-active');
+
+    // Header Links
+    Route::resource('header-links', \App\Http\Controllers\Admin\HeaderLinkController::class)->names('admin.header-links');
+
+    // Main Header Menus
+    Route::resource('header-menus', \App\Http\Controllers\Admin\HeaderMenuController::class)->names('admin.header-menus');
+
+    // Footer Setup
+    Route::get('footer-setup', [\App\Http\Controllers\Admin\FooterSetupController::class, 'index'])->name('admin.footer-setup.index');
+    Route::post('footer-setup/settings', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateSettings'])->name('admin.footer-setup.update-settings');
+    Route::get('footer-setup/create', [\App\Http\Controllers\Admin\FooterSetupController::class, 'createMenu'])->name('admin.footer-setup.create');
+    Route::post('footer-setup', [\App\Http\Controllers\Admin\FooterSetupController::class, 'storeMenu'])->name('admin.footer-setup.store');
+    Route::get('footer-setup/{footerMenu}/edit', [\App\Http\Controllers\Admin\FooterSetupController::class, 'editMenu'])->name('admin.footer-setup.edit');
+    Route::put('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateMenu'])->name('admin.footer-setup.update');
+    Route::delete('footer-setup/{footerMenu}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'destroyMenu'])->name('admin.footer-setup.destroy');
+
+    // General Links in Footer
+    Route::post('footer-setup/general-links', [\App\Http\Controllers\Admin\FooterSetupController::class, 'storeGeneralLink'])->name('admin.footer-setup.general-links.store');
+    Route::put('footer-setup/general-links/{generalLink}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'updateGeneralLink'])->name('admin.footer-setup.general-links.update');
+    Route::delete('footer-setup/general-links/{generalLink}', [\App\Http\Controllers\Admin\FooterSetupController::class, 'destroyGeneralLink'])->name('admin.footer-setup.general-links.destroy');
+
     // Homepage Sections
     Route::get('homepage-sections', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'index'])->name('homepage-sections.index');
+    Route::get('homepage-sections/{homepageSection}/edit', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'edit'])->name('homepage-sections.edit');
+    Route::put('homepage-sections/{homepageSection}/details', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'updateDetails'])->name('homepage-sections.update-details');
     Route::patch('homepage-sections/{homepageSection}', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'update'])->name('homepage-sections.update');
     Route::post('homepage-sections/order', [\App\Http\Controllers\Admin\HomepageSectionController::class, 'updateOrder'])->name('homepage-sections.update-order');
 
     // Master Management
+    Route::prefix('masters')->group(function () {
+        Route::resource('facilities', \App\Http\Controllers\Admin\FacilityController::class)->names('admin.facilities')->except(['create', 'show', 'edit']);
+        Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
+    });
+    
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('program-levels', \App\Http\Controllers\Admin\ProgramLevelController::class);
         Route::resource('program-types', \App\Http\Controllers\Admin\ProgramTypeController::class);
@@ -304,6 +394,24 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('languages', \App\Http\Controllers\Admin\LanguageController::class);
         Route::resource('exam-stages', \App\Http\Controllers\Admin\ExamStageController::class);
         Route::resource('caste-categories', \App\Http\Controllers\Admin\CasteCategoryController::class);
+
+        // Mentor Management Routes
+        Route::prefix('mentor')->name('mentor.')->group(function () {
+            Route::resource('languages', \App\Http\Controllers\Admin\MentorLanguageController::class);
+            Route::resource('degrees', \App\Http\Controllers\Admin\MentorDegreeController::class);
+            Route::resource('industries', \App\Http\Controllers\Admin\MentorIndustryController::class);
+            Route::resource('mentee_levels', \App\Http\Controllers\Admin\MentorMenteeLevelController::class);
+            Route::get('commissions', [\App\Http\Controllers\Admin\MentorCommissionController::class, 'index'])->name('commissions.index');
+            Route::post('commissions', [\App\Http\Controllers\Admin\MentorCommissionController::class, 'store'])->name('commissions.store');
+            
+            // All Mentors
+            Route::get('profiles', [\App\Http\Controllers\Admin\MentorController::class, 'index'])->name('profiles.index');
+            Route::get('profiles/{id}', [\App\Http\Controllers\Admin\MentorController::class, 'show'])->name('profiles.show');
+            
+            // Verifications
+            Route::get('verifications', [\App\Http\Controllers\Admin\MentorVerificationController::class, 'index'])->name('verifications.index');
+            Route::post('verifications/{id}/update/{type}', [\App\Http\Controllers\Admin\MentorVerificationController::class, 'updateStatus'])->name('verifications.update');
+        });
 
         // Organisation Specific Sub-routes
         Route::delete('organisation-awards/{id}', [\App\Http\Controllers\Admin\OrganisationController::class, 'deleteAward'])->name('organisation-awards.destroy');
@@ -372,23 +480,72 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
                 Route::post('end-lunch-break', [ClockController::class, 'endLunchBreak'])->name('end_lunchBreak');
             });
 
-            // Customer Management Module Routes
-            Route::prefix('customers')->name('customers.')->group(function () {
-                Route::resource('index', CustomerController::class);
-                Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
-            });
-            Route::resource('customer-categories', CustomerCategoryController::class);
-            Route::resource('customer-fields', CustomerFieldController::class);
-            Route::resource('institutes', InstituteController::class);
+        });
 
-            // Student Management & Calling Module Routes
-            Route::prefix('students')->name('students.')->group(function () {
-                Route::resource('calling-statuses', CallingStatusController::class);
-                Route::resource('calling-actions', CallingActionController::class);
-                Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
-                Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
-                Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
-            });
+        // Customer Management Module Routes
+        Route::prefix('customers')->name('customers.main.')->group(function () {
+            Route::resource('index', CustomerController::class);
+            Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
+        });
+
+        Route::resource('customer-categories', CustomerCategoryController::class)->names('customer-categories');
+        Route::post('quick-add-category', [CustomerCategoryController::class, 'quickStore'])->name('quick-add-category');
+        Route::post('quick-add-interest', [InterestedInController::class, 'quickStore'])->name('quick-add-interest');
+        Route::post('quick-add-session', [CustomerSessionController::class, 'quickStore'])->name('quick-add-session');
+        Route::resource('customer-fields', CustomerFieldController::class)->names('customer-fields');
+        Route::resource('institutes', InstituteController::class)->names('institutes');
+        Route::resource('interested-ins', InterestedInController::class)->names('interested-ins');
+        Route::resource('customer-sessions', CustomerSessionController::class)->names('customer-sessions');
+
+        // Student CRM & Calling Module Routes
+        Route::prefix('students-crm')->name('students-crm.')->group(function () {
+            Route::resource('calling-statuses', CallingStatusController::class);
+            Route::resource('calling-actions', CallingActionController::class);
+            Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
+            Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
+            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
+        });
+
+        // Consultant Management Module Routes
+        Route::prefix('consultants')->name('consultants.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'index'])->name('index');
+            Route::get('create', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'create'])->name('create');
+            Route::post('store', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'store'])->name('store');
+            Route::get('edit/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'edit'])->name('edit');
+            Route::put('update/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'update'])->name('update');
+            Route::get('sub-categories', [\App\Http\Controllers\Admin\Hr\ConsultantController::class, 'getSubCategories'])->name('sub-categories');
+        });
+
+        Route::prefix('consultant-categories')->name('consultant-categories.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'index'])->name('index');
+            Route::post('store', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'store'])->name('store');
+            Route::delete('destroy/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantCategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('consultant-settings')->name('consultant-settings.')->group(function () {
+            Route::get('index', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'index'])->name('index');
+            Route::post('store-type', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeType'])->name('store-type');
+            Route::post('store-status', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeStatus'])->name('store-status');
+            Route::post('store-access-level', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeAccessLevel'])->name('store-access-level');
+            Route::post('store-visibility', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'storeLeadVisibility'])->name('store-visibility');
+            
+            Route::put('update-type/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateType'])->name('update-type');
+            Route::put('update-status/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateStatus'])->name('update-status');
+            Route::put('update-access-level/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateAccessLevel'])->name('update-access-level');
+            Route::put('update-visibility/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'updateLeadVisibility'])->name('update-visibility');
+
+            Route::delete('destroy-type/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyType'])->name('destroy-type');
+            Route::delete('destroy-status/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyStatus'])->name('destroy-status');
+            Route::delete('destroy-access-level/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyAccessLevel'])->name('destroy-access-level');
+            Route::delete('destroy-visibility/{id}', [\App\Http\Controllers\Admin\Hr\ConsultantMasterController::class, 'destroyLeadVisibility'])->name('destroy-visibility');
+        });
+
+        // Billing Module
+        Route::prefix('billing')->name('billing.')->group(function () {
+            Route::resource('services', \App\Http\Controllers\Admin\Billing\BillingServiceController::class);
+            Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\BillingInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+            Route::resource('invoices', \App\Http\Controllers\Admin\Billing\BillingInvoiceController::class);
+            Route::resource('payments', \App\Http\Controllers\Admin\Billing\BillingPaymentController::class);
         });
     });
 });

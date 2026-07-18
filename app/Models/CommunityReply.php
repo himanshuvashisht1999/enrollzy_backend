@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CommunityReply extends Model
 {
-    protected $fillable = ['user_id', 'question_id', 'parent_id', 'content'];
+    protected $fillable = ['user_id', 'question_id', 'parent_id', 'content', 'image', 'status', 'is_active'];
 
     public function user()
     {

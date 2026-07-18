@@ -1598,6 +1598,10 @@
                 if (el) {
                     const isVisible = containers[id].includes(parseInt(val));
                     el.style.display = isVisible ? 'block' : 'none';
+                    // Disable inputs if hidden to prevent submitting duplicate empty names
+                    el.querySelectorAll('input, select, textarea').forEach(input => {
+                        input.disabled = !isVisible;
+                    });
                     console.log(`Setting ${id} display to: ${el.style.display}`);
                 }
             });
