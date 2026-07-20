@@ -34,6 +34,10 @@
                     <textarea name="content" class="form-control" rows="4" placeholder="With limited students per batch, we ensure..."></textarea>
                     <small class="text-muted">If you provide content, this card will appear as a solid orange card (featured card).</small>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Reward Amount <small class="text-muted">(e.g. Upto INR 30,000)</small></label>
+                    <input type="text" name="reward_amount" class="form-control" placeholder="e.g. Upto INR 30,000">
+                </div>
                 <div class="col-12">
                     <label class="form-label">Icon Image</label>
                     <input type="file" name="icon" class="form-control" accept="image/*">

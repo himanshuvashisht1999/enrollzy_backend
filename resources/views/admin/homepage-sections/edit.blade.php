@@ -12,7 +12,13 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form action="{{ route('homepage-sections.update-details', $homepageSection->id) }}" method="POST">
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+                <form action="{{ route('homepage-sections.update-details', $homepageSection->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -40,12 +46,26 @@
                         @enderror
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label for="cta_url" class="form-label fw-bold">Call-to-Action (Button) URL</label>
                         <input type="text" class="form-control @error('cta_url') is-invalid @enderror" id="cta_url" name="cta_url" value="{{ old('cta_url', $homepageSection->cta_url) }}" placeholder="e.g. /courses or https://example.com/courses">
                         @error('cta_url')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="image" class="form-label fw-bold">Section Image</label>
+                        <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image" accept="image/*">
+                        @error('image')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        @if($homepageSection->image)
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1">Current Image:</small>
+                                <img src="{{ asset($homepageSection->image) }}" alt="Current Image" class="img-thumbnail" style="max-height: 120px;">
+                            </div>
+                        @endif
                     </div>
 
                     <div class="text-end">

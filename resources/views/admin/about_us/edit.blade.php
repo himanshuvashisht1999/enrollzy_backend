@@ -64,7 +64,7 @@
                     <div class="tab-pane fade show active" id="general" role="tabpanel">
                         <form action="{{ route('admin.about_us.update') }}" method="POST" enctype="multipart/form-data">
                             @csrf
-                            <h5 class="fw-bold mb-4">Hero Section</h5>
+                             <h5 class="fw-bold mb-4">Hero Section</h5>
                             <div class="row mb-4">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Hero Subtitle</label>
@@ -73,6 +73,10 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Hero Title</label>
                                     <input type="text" name="hero_title" class="form-control" value="{{ $page->hero_title }}">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">Hero Subheading (tagline below title)</label>
+                                    <input type="text" name="hero_tagline" class="form-control" value="{{ $page->hero_tagline }}">
                                 </div>
                                 <div class="col-md-12 mb-3">
                                     <label class="form-label fw-bold">Hero Description</label>
@@ -84,6 +88,21 @@
                                     <small class="text-muted d-block mt-1">Recommended size: 800x600 px (4:3 aspect ratio)</small>
                                     @if($page->hero_image)
                                         <img src="{{ asset($page->hero_image) }}" width="150" class="mt-2 rounded shadow-sm">
+                                    @endif
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Simplify Decisions Image (Section 1 Left image)</label>
+                                    <input type="file" name="simplify_decisions_image" class="form-control mb-2">
+                                    @if($page->simplify_decisions_image)
+                                        <div class="position-relative d-inline-block">
+                                            <img src="{{ asset($page->simplify_decisions_image) }}" width="150" class="rounded shadow-sm">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" name="remove_simplify_decisions_image" value="1" id="remove_simplify_decisions_image">
+                                                <label class="form-check-label text-danger small" for="remove_simplify_decisions_image">
+                                                    Remove Image
+                                                </label>
+                                            </div>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -128,6 +147,10 @@
                                     <label class="form-label fw-bold">Offers Title</label>
                                     <input type="text" name="offers_title" class="form-control" value="{{ $page->offers_title }}">
                                 </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">Offers Tagline (subheading below title)</label>
+                                    <input type="text" name="offers_description" class="form-control" value="{{ $page->offers_description }}">
+                                </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Features Subtitle</label>
                                     <input type="text" name="features_subtitle" class="form-control" value="{{ $page->features_subtitle }}">
@@ -135,6 +158,30 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Features Title</label>
                                     <input type="text" name="features_title" class="form-control" value="{{ $page->features_title }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Impact Stats Section Title</label>
+                                    <input type="text" name="impacts_title" class="form-control" value="{{ $page->impacts_title }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Founders Section Title</label>
+                                    <input type="text" name="founders_title" class="form-control" value="{{ $page->founders_title }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Team Section Subtitle</label>
+                                    <input type="text" name="team_subtitle" class="form-control" value="{{ $page->team_subtitle }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Team Section Title</label>
+                                    <input type="text" name="team_title" class="form-control" value="{{ $page->team_title }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Advisory Board Section Subtitle</label>
+                                    <input type="text" name="advisory_subtitle" class="form-control" value="{{ $page->advisory_subtitle }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Advisory Board Section Title</label>
+                                    <input type="text" name="advisory_title" class="form-control" value="{{ $page->advisory_title }}">
                                 </div>
                             </div>
 
@@ -438,23 +485,74 @@
 
                     <!-- Core Values Tab -->
                     <div class="tab-pane fade" id="corevalues" role="tabpanel">
-                        <form action="{{ route('admin.about_us.update') }}" method="POST">
+                        <form action="{{ route('admin.about_us.update') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <h5 class="fw-bold mb-4">Core Values (Mission, Vision, Philosophy)</h5>
                             
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Mission</label>
-                                <textarea name="mission_text" class="form-control editor" rows="4">{{ $page->mission_text }}</textarea>
+                             <div class="mb-4 row">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Mission Text</label>
+                                    <textarea name="mission_text" class="form-control editor" rows="4">{{ $page->mission_text }}</textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Mission Image</label>
+                                    <input type="file" name="mission_image" class="form-control mb-2">
+                                    @if($page->mission_image)
+                                        <div class="position-relative d-inline-block">
+                                            <img src="{{ asset($page->mission_image) }}" width="120" class="rounded shadow-sm">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" name="remove_mission_image" value="1" id="remove_mission_image">
+                                                <label class="form-check-label text-danger small" for="remove_mission_image">
+                                                    Remove Image
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                             
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Vision</label>
-                                <textarea name="vision_text" class="form-control editor" rows="4">{{ $page->vision_text }}</textarea>
+                            <div class="mb-4 row">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Vision Text</label>
+                                    <textarea name="vision_text" class="form-control editor" rows="4">{{ $page->vision_text }}</textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Vision Image</label>
+                                    <input type="file" name="vision_image" class="form-control mb-2">
+                                    @if($page->vision_image)
+                                        <div class="position-relative d-inline-block">
+                                            <img src="{{ asset($page->vision_image) }}" width="120" class="rounded shadow-sm">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" name="remove_vision_image" value="1" id="remove_vision_image">
+                                                <label class="form-check-label text-danger small" for="remove_vision_image">
+                                                    Remove Image
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                             
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Philosophy</label>
-                                <textarea name="philosophy_text" class="form-control editor" rows="4">{{ $page->philosophy_text }}</textarea>
+                            <div class="mb-4 row">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Philosophy Text</label>
+                                    <textarea name="philosophy_text" class="form-control editor" rows="4">{{ $page->philosophy_text }}</textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Philosophy Image</label>
+                                    <input type="file" name="philosophy_image" class="form-control mb-2">
+                                    @if($page->philosophy_image)
+                                        <div class="position-relative d-inline-block">
+                                            <img src="{{ asset($page->philosophy_image) }}" width="120" class="rounded shadow-sm">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" name="remove_philosophy_image" value="1" id="remove_philosophy_image">
+                                                <label class="form-check-label text-danger small" for="remove_philosophy_image">
+                                                    Remove Image
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                             
                             <div class="text-end">
@@ -507,6 +605,10 @@
                                         <label class="form-label">Twitter Link</label>
                                         <input type="text" name="founder_1_twitter" class="form-control" value="{{ $page->founder_1_twitter }}">
                                     </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Founder Message / Quote</label>
+                                        <textarea name="founder_1_message" class="form-control editor" rows="3">{{ $page->founder_1_message }}</textarea>
+                                    </div>
                                 </div>
                                 
                                 <!-- Founder 2 -->
@@ -545,6 +647,10 @@
                                     <div class="mb-3">
                                         <label class="form-label">Twitter Link</label>
                                         <input type="text" name="founder_2_twitter" class="form-control" value="{{ $page->founder_2_twitter }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Founder Message / Quote</label>
+                                        <textarea name="founder_2_message" class="form-control editor" rows="3">{{ $page->founder_2_message }}</textarea>
                                     </div>
                                 </div>
                             </div>

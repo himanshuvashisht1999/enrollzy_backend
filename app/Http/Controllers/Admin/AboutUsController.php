@@ -39,14 +39,25 @@ class AboutUsController extends Controller
     {
         $page = AboutUsPage::first();
 
-        $data = $request->except(['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image']);
+        $data = $request->except(['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image', 'mission_image', 'vision_image', 'philosophy_image', 'simplify_decisions_image']);
+
+        // Handle Image Removals
+        $removeFields = ['mission_image', 'vision_image', 'philosophy_image', 'simplify_decisions_image'];
+        foreach ($removeFields as $field) {
+            if ($request->has('remove_' . $field) && $request->input('remove_' . $field) == 1) {
+                if ($page->$field && File::exists(public_path($page->$field))) {
+                    File::delete(public_path($page->$field));
+                }
+                $data[$field] = null;
+            }
+        }
 
         if ($request->has('section_orders') && is_string($request->section_orders)) {
             $data['section_orders'] = json_decode($request->section_orders, true) ?: ['hero', 'story', 'core_values', 'offers', 'features', 'impacts', 'founders', 'teams', 'advisory_board', 'cta'];
         }
 
         // Handle Images
-        $imageFields = ['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image'];
+        $imageFields = ['hero_image', 'story_image', 'cta_image', 'founder_1_image', 'founder_2_image', 'mission_image', 'vision_image', 'philosophy_image', 'simplify_decisions_image'];
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 if ($page->$field && File::exists(public_path($page->$field))) {
