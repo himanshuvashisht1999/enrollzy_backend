@@ -24,6 +24,7 @@ class HomeBenefitController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'reward_amount' => 'nullable|string|max:100',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
             'icon' => 'nullable|image|max:2048',
@@ -52,6 +53,7 @@ class HomeBenefitController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'reward_amount' => 'nullable|string|max:100',
             'status' => 'required|boolean',
             'sort_order' => 'required|integer',
             'icon' => 'nullable|image|max:2048',

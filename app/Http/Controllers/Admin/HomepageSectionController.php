@@ -26,28 +26,48 @@ class HomepageSectionController extends Controller
         return redirect()->back()->with('success', 'Section updated successfully.');
     }
 
-    public function edit(HomepageSection $homepageSection)
+    public function edit($homepageSection)
     {
+        if (!($homepageSection instanceof HomepageSection)) {
+            $homepageSection = HomepageSection::findOrFail($homepageSection);
+        }
         return view('admin.homepage-sections.edit', compact('homepageSection'));
     }
 
-    public function updateDetails(Request $request, HomepageSection $homepageSection)
+    public function updateDetails(Request $request, $homepageSection)
     {
+        if (!($homepageSection instanceof HomepageSection)) {
+            $homepageSection = HomepageSection::findOrFail($homepageSection);
+        }
+
         $request->validate([
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string',
             'cta_title' => 'nullable|string|max:255',
             'cta_url' => 'nullable|string|max:255',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,avif,bmp|max:20480',
         ]);
 
-        $homepageSection->update([
+        $data = [
             'title' => $request->title,
             'subtitle' => $request->subtitle,
             'cta_title' => $request->cta_title,
             'cta_url' => $request->cta_url,
-        ]);
+        ];
 
-        return redirect()->route('homepage-sections.index')->with('success', 'Section details updated successfully.');
+        if ($request->hasFile('image')) {
+            if ($homepageSection->image && file_exists(public_path($homepageSection->image))) {
+                @unlink(public_path($homepageSection->image));
+            }
+            $file = $request->file('image');
+            $filename = time() . '_' . preg_replace('/[^A-Za-z0-9\._-]/', '_', $file->getClientOriginalName());
+            $file->move(public_path('uploads/homepage_sections'), $filename);
+            $data['image'] = 'uploads/homepage_sections/' . $filename;
+        }
+
+        $homepageSection->update($data);
+
+        return redirect()->back()->with('success', 'Section details updated successfully.');
     }
 
     public function updateOrder(Request $request)

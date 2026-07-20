@@ -13,6 +13,7 @@ class HomeBenefit extends Model
         'title',
         'icon',
         'content',
+        'reward_amount',
         'sort_order',
         'status'
     ];

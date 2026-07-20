@@ -34,6 +34,10 @@
                     <label class="form-label">Content (Optional)</label>
                     <textarea name="content" class="form-control" rows="4">{{ $homeBenefit->content }}</textarea>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Reward Amount <small class="text-muted">(e.g. Upto INR 30,000)</small></label>
+                    <input type="text" name="reward_amount" class="form-control" value="{{ $homeBenefit->reward_amount }}" placeholder="e.g. Upto INR 30,000">
+                </div>
                 <div class="col-12">
                     <label class="form-label">Icon Image</label>
                     @if($homeBenefit->icon)
