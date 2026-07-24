@@ -3,67 +3,93 @@
 @section('title', 'Edit Testimonial')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Edit Testimonial</h5>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('testimonials.update', $testimonial->id) }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    
-                    <div class="mb-3">
-                        <label for="name" class="form-label">User Name</label>
-                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $testimonial->name) }}" required>
-                        @error('name')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+<div class="container-fluid">
+    <div class="mb-4">
+        <a href="{{ route('testimonials.index') }}" class="text-decoration-none text-muted">
+            <i class="fas fa-arrow-left me-1"></i> Back to Testimonials
+        </a>
+        <h3 class="fw-bold mt-2">Edit Testimonial</h3>
+    </div>
 
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role / Position</label>
-                        <input type="text" class="form-control @error('role') is-invalid @enderror" id="role" name="role" value="{{ old('role', $testimonial->role) }}">
-                    </div>
+    <div class="row">
+        <div class="col-lg-8 col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <form action="{{ route('testimonials.update', $testimonial->id) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        @method('PUT')
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Select Mentor (For whom this review is)</label>
+                                <select name="mentor_profile_id" class="form-select @error('mentor_profile_id') is-invalid @enderror">
+                                    <option value="">-- Select Mentor --</option>
+                                    @foreach($mentors as $mentor)
+                                        @php
+                                            $mName = trim(($mentor->first_name ?? '') . ' ' . ($mentor->last_name ?? ''));
+                                            if (empty($mName)) { $mName = $mentor->user->name ?? 'Mentor #' . $mentor->id; }
+                                        @endphp
+                                        <option value="{{ $mentor->id }}" {{ old('mentor_profile_id', $testimonial->mentor_profile_id) == $mentor->id ? 'selected' : '' }}>
+                                            {{ $mName }} ({{ $mentor->professional_headline ?? 'Mentor' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('mentor_profile_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
 
-                    <div class="mb-3">
-                        <label for="content" class="form-label">Testimonial Content</label>
-                        <textarea class="form-control @error('content') is-invalid @enderror" id="content" name="content" rows="4" required>{{ old('content', $testimonial->content) }}</textarea>
-                        @error('content')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Mentee / Student Name</label>
+                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $testimonial->name) }}" required>
+                                @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="rating" class="form-label">Rating (1-5)</label>
-                            <select class="form-select @error('rating') is-invalid @enderror" id="rating" name="rating">
-                                @for($i = 5; $i >= 1; $i--)
-                                    <option value="{{ $i }}" {{ old('rating', $testimonial->rating) == $i ? 'selected' : '' }}>{{ $i }} Stars</option>
-                                @endfor
-                            </select>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Mentee Role / Position</label>
+                                <input type="text" name="role" class="form-control @error('role') is-invalid @enderror" value="{{ old('role', $testimonial->role) }}" placeholder="e.g. Student, Alumni, Parent">
+                                @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Rating (1-5 Stars)</label>
+                                <select name="rating" class="form-select @error('rating') is-invalid @enderror">
+                                    <option value="5" {{ old('rating', $testimonial->rating) == 5 ? 'selected' : '' }}>5 Stars ⭐⭐⭐⭐⭐</option>
+                                    <option value="4" {{ old('rating', $testimonial->rating) == 4 ? 'selected' : '' }}>4 Stars ⭐⭐⭐⭐</option>
+                                    <option value="3" {{ old('rating', $testimonial->rating) == 3 ? 'selected' : '' }}>3 Stars ⭐⭐⭐</option>
+                                    <option value="2" {{ old('rating', $testimonial->rating) == 2 ? 'selected' : '' }}>2 Stars ⭐⭐</option>
+                                    <option value="1" {{ old('rating', $testimonial->rating) == 1 ? 'selected' : '' }}>1 Star ⭐</option>
+                                </select>
+                                @error('rating') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Testimonial Content</label>
+                                <textarea name="content" class="form-control @error('content') is-invalid @enderror" rows="4" style="width: 100%; max-width: 100%; box-sizing: border-box; resize: vertical;" required>{{ old('content', $testimonial->content) }}</textarea>
+                                @error('content') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Mentee Photo</label>
+                                @if($testimonial->image)
+                                    @php
+                                        $photoUrl = str_starts_with($testimonial->image, 'http') ? $testimonial->image : asset($testimonial->image);
+                                    @endphp
+                                    <div class="mb-2">
+                                        <img src="{{ $photoUrl }}" alt="{{ $testimonial->name }}" class="rounded-circle border p-1" style="width: 50px; height: 50px; object-fit: cover;" onError="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Mentee&background=4e73df&color=fff';">
+                                    </div>
+                                @endif
+                                <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
+                                <div class="form-text text-muted">Upload mentee profile image. Max size: 2MB.</div>
+                                @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                                    <i class="fas fa-save me-1"></i> Update Testimonial
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-4">
-                            <label for="image" class="form-label">Update Photo</label>
-                            @if($testimonial->image)
-                                <div class="mb-2">
-                                    <img src="{{ asset($testimonial->image) }}" alt="{{ $testimonial->name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;">
-                                </div>
-                            @endif
-                            <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image">
-                            <div class="form-text text-muted">Image size should not exceed 2MB.</div>
-                        </div>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Update Testimonial</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
-        <div class="mt-3 text-center">
-            <a href="{{ route('testimonials.index') }}" class="text-muted">← Back to List</a>
         </div>
     </div>
 </div>

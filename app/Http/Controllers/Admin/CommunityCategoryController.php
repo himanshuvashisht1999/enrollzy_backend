@@ -27,14 +27,21 @@ class CommunityCategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:community_categories,id'
+            'parent_id' => 'nullable|exists:community_categories,id',
+            'image' => 'nullable|image|max:4096'
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('community_categories', 'public');
+        }
 
         CommunityCategory::create([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
             'description' => $request->description,
-            'parent_id' => $request->parent_id
+            'parent_id' => $request->parent_id,
+            'image' => $imagePath
         ]);
 
         return redirect()->route('admin.community-categories.index')->with('success', 'Category created successfully.');
@@ -51,14 +58,21 @@ class CommunityCategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:community_categories,id'
+            'parent_id' => 'nullable|exists:community_categories,id',
+            'image' => 'nullable|image|max:4096'
         ]);
+
+        $imagePath = $community_category->image;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('community_categories', 'public');
+        }
 
         $community_category->update([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
             'description' => $request->description,
-            'parent_id' => $request->parent_id
+            'parent_id' => $request->parent_id,
+            'image' => $imagePath
         ]);
 
         return redirect()->route('admin.community-categories.index')->with('success', 'Category updated successfully.');

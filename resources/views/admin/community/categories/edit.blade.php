@@ -14,7 +14,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <form action="{{ route('admin.community-categories.update', $category->id) }}" method="POST">
+                <form action="{{ route('admin.community-categories.update', $category->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="row g-3">
@@ -35,6 +35,20 @@
                                 @endforeach
                             </select>
                             @error('parent_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Category Image / Avatar</label>
+                            @if(!empty($category->image))
+                                @php
+                                    $catImg = str_starts_with($category->image, 'http') ? $category->image : asset('storage/' . $category->image);
+                                @endphp
+                                <div class="mb-2">
+                                    <img src="{{ $catImg }}" alt="Current Image" class="rounded-circle border p-1" style="width: 60px; height: 60px; object-fit: cover;">
+                                </div>
+                            @endif
+                            <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
+                            @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-12">

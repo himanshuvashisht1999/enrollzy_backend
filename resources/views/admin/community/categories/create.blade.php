@@ -14,7 +14,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <form action="{{ route('admin.community-categories.store') }}" method="POST">
+                <form action="{{ route('admin.community-categories.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -34,6 +34,12 @@
                                 @endforeach
                             </select>
                             @error('parent_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Category Image / Avatar</label>
+                            <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
+                            @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-12">

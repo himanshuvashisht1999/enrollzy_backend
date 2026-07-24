@@ -407,8 +407,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('commissions', [\App\Http\Controllers\Admin\MentorCommissionController::class, 'store'])->name('commissions.store');
             
             // All Mentors
-            Route::get('profiles', [\App\Http\Controllers\Admin\MentorController::class, 'index'])->name('profiles.index');
-            Route::get('profiles/{id}', [\App\Http\Controllers\Admin\MentorController::class, 'show'])->name('profiles.show');
+            Route::resource('profiles', \App\Http\Controllers\Admin\MentorController::class);
             
             // Verifications
             Route::get('verifications', [\App\Http\Controllers\Admin\MentorVerificationController::class, 'index'])->name('verifications.index');

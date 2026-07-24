@@ -182,9 +182,14 @@
             {{-- Dashboard --}}
             <li class="nav-item">
                 @php
-                    $dashRoute = $isAdmin ? 'admin.dashboard' : ($isExpert ? 'expert.dashboard' : 'alumni.dashboard');
+                    $dashRoute = 'admin.dashboard';
+                    if ($isExpert && \Illuminate\Support\Facades\Route::has('expert.dashboard')) {
+                        $dashRoute = 'expert.dashboard';
+                    } elseif ($isAlumni && \Illuminate\Support\Facades\Route::has('alumni.dashboard')) {
+                        $dashRoute = 'alumni.dashboard';
+                    }
                 @endphp
-                <a class="nav-link {{ request()->routeIs($dashRoute) ? 'active' : '' }}" href="{{ route($dashRoute) }}">
+                <a class="nav-link {{ request()->routeIs($dashRoute) ? 'active' : '' }}" href="{{ \Illuminate\Support\Facades\Route::has($dashRoute) ? route($dashRoute) : url('/admin/dashboard') }}">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
             </li>
@@ -747,7 +752,12 @@
 
             <li class="nav-item mt-3 mb-4">
                 @php
-                    $logoutRoute = $isExpert ? route('expert.logout') : ($isAlumni ? route('alumni.logout') : route('logout'));
+                    $logoutRoute = \Illuminate\Support\Facades\Route::has('logout') ? route('logout') : url('/logout');
+                    if ($isExpert && \Illuminate\Support\Facades\Route::has('expert.logout')) {
+                        $logoutRoute = route('expert.logout');
+                    } elseif ($isAlumni && \Illuminate\Support\Facades\Route::has('alumni.logout')) {
+                        $logoutRoute = route('alumni.logout');
+                    }
                 @endphp
                 <form action="{{ $logoutRoute }}" method="POST" id="logout-form">
                     @csrf
@@ -832,7 +842,7 @@
                 toastr.error("{{ session('error') }}");
             @endif
 
-            @if($errors->any())
+            @if(isset($errors) && is_object($errors) && method_exists($errors, 'any') && $errors->any())
                 @foreach($errors->all() as $error)
                     toastr.warning("{{ $error }}");
                 @endforeach
