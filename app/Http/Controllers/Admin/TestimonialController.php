@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Testimonial;
+use App\Models\MentorProfile;
 use Illuminate\Http\Request;
 use File;
 
@@ -28,15 +29,19 @@ class TestimonialController extends Controller
 
     public function create()
     {
-        return view('admin.testimonials.create');
+        $mentors = MentorProfile::with('user')->get();
+        return view('admin.testimonials.create', compact('mentors'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'name' => 'required|string|max:255',
+            'role' => 'nullable|string|max:255',
+            'mentor_profile_id' => 'nullable|integer',
+            'content' => 'required|string',
+            'rating' => 'nullable|integer|min:1|max:5',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $data = $request->all();
@@ -54,21 +59,24 @@ class TestimonialController extends Controller
 
     public function edit(Testimonial $testimonial)
     {
-        return view('admin.testimonials.edit', compact('testimonial'));
+        $mentors = MentorProfile::with('user')->get();
+        return view('admin.testimonials.edit', compact('testimonial', 'mentors'));
     }
 
     public function update(Request $request, Testimonial $testimonial)
     {
         $request->validate([
-            'name' => 'required',
-            'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'name' => 'required|string|max:255',
+            'role' => 'nullable|string|max:255',
+            'mentor_profile_id' => 'nullable|integer',
+            'content' => 'required|string',
+            'rating' => 'nullable|integer|min:1|max:5',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $data = $request->all();
 
         if ($request->hasFile('image')) {
-            // Delete old image
             if ($testimonial->image && File::exists(public_path($testimonial->image))) {
                 File::delete(public_path($testimonial->image));
             }

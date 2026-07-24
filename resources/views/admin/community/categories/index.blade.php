@@ -16,7 +16,8 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4">Name</th>
+                        <th class="ps-4">Image</th>
+                        <th>Name</th>
                         <th>Slug</th>
                         <th>Description</th>
                         <th class="text-end pe-4">Actions</th>
@@ -26,6 +27,18 @@
                     @forelse($categories as $category)
                     <tr>
                         <td class="ps-4">
+                            @if(!empty($category->image))
+                                @php
+                                    $catThumb = str_starts_with($category->image, 'http') ? $category->image : asset('storage/' . $category->image);
+                                @endphp
+                                <img src="{{ $catThumb }}" class="rounded-circle border" style="width: 40px; height: 40px; object-fit: cover;" alt="Avatar">
+                            @else
+                                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center text-muted fw-bold" style="width: 40px; height: 40px; font-size: 14px;">
+                                    {{ strtoupper(substr($category->name, 0, 1)) }}
+                                </div>
+                            @endif
+                        </td>
+                        <td>
                             <span class="fw-bold">{{ $category->name }}</span>
                         </td>
                         <td><code>{{ $category->slug }}</code></td>
