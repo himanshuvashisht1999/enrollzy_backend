@@ -223,6 +223,8 @@
                                     href="{{ route('admin.noteworthy-categories.index') }}">Noteworthy Categories</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-mentions.*') ? 'active' : '' }}"
                                     href="{{ route('admin.noteworthy-mentions.index') }}">Noteworthy Mentions</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-levels.*') ? 'active' : '' }}"
                                     href="{{ route('admin.program-levels.index') }}">Program Level</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-types.*') ? 'active' : '' }}"

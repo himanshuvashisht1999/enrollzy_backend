@@ -58,7 +58,12 @@
                                 @forelse($organisations as $uni)
                                     <tr>
                                         {{-- <td>{{ $uni->organisation_id_number ?? '-' }}</td> --}}
-                                        <td>{{ $uni->name }}</td>
+                                        <td>
+                                            {{ $uni->name }}
+                                            @if($uni->is_top)
+                                                <span class="badge bg-warning text-dark ms-1"><i class="fas fa-star text-dark me-1"></i>Top</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $uni->organisationType->title ?? '-' }}</td>
                                         <td>
                                             @if($uni->brand_type)

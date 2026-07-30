@@ -14,7 +14,8 @@ class HomepageSectionSeeder extends Seeder
     {
         $sections = [
             ['section_key' => 'hero_banner', 'name' => 'Hero Banner', 'sort_order' => 1],
-            ['section_key' => 'expert_carousel', 'name' => 'Expert Carousel', 'sort_order' => 2],
+            ['section_key' => 'marketplace', 'name' => 'Education Marketplace', 'sort_order' => 2],
+            ['section_key' => 'expert_carousel', 'name' => 'Expert Carousel', 'sort_order' => 3],
             ['section_key' => 'university_comparison', 'name' => 'University Comparison', 'sort_order' => 3],
             ['section_key' => 'trending_skills', 'name' => 'Trending Skills', 'sort_order' => 4],
             ['section_key' => 'noteworthy_mentions', 'name' => 'Noteworthy Mentions', 'sort_order' => 5],

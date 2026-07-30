@@ -43,7 +43,7 @@
                 </div>
             </div>
             <div class="mt-4">
-                <button type="submit" class="btn btn-primary px-4">Create Course</button>
+                <button type="submit" class="btn btn-primary px-4">Create Item</button>
             </div>
         </form>
     </div>

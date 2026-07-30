@@ -18,6 +18,7 @@ class Organisation extends Model
         'head_office_location',
         'slug',
         'status',
+        'is_top',
         // University Specific (Core)
         'university_id',
         'brand_name',

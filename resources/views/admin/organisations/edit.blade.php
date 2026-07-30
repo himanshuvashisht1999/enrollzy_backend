@@ -90,6 +90,14 @@
                                 <input type="text" name="head_office_location" class="form-control" value="{{ old('head_office_location', $organisation->head_office_location) }}">
                             </div>
 
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Is Top Institution?</label>
+                                <select name="is_top" class="form-select">
+                                    <option value="0" {{ old('is_top', $organisation->is_top ?? 0) == 0 ? 'selected' : '' }}>No</option>
+                                    <option value="1" {{ old('is_top', $organisation->is_top ?? 0) == 1 ? 'selected' : '' }}>Yes (Top Institution)</option>
+                                </select>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="form-label fw-bold">Core Values</label>
                                 <div class="core-values-container">

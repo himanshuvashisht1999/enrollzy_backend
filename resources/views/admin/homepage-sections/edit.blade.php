@@ -22,6 +22,16 @@
                     @csrf
                     @method('PUT')
 
+                    @php
+                        $currentSettings = is_array($homepageSection->settings) ? $homepageSection->settings : json_decode($homepageSection->settings ?? '[]', true);
+                        $badgeTextVal = $currentSettings['badge_text'] ?? ($homepageSection->cta_title ?? "India's no.1 Market place");
+                    @endphp
+
+                    <div class="mb-3">
+                        <label for="badge_text" class="form-label fw-bold">Top Badge Pill Text</label>
+                        <input type="text" class="form-control" id="badge_text" name="badge_text" value="{{ old('badge_text', $badgeTextVal) }}" placeholder="e.g. India's no.1 Market place">
+                    </div>
+
                     <div class="mb-3">
                         <label for="title" class="form-label fw-bold">Title (Heading)</label>
                         <input type="text" class="form-control @error('title') is-invalid @enderror" id="title" name="title" value="{{ old('title', $homepageSection->title) }}" placeholder="e.g. Talk To Experts">
@@ -67,6 +77,51 @@
                             </div>
                         @endif
                     </div>
+
+                    @if($homepageSection->section_key === 'marketplace')
+                        <hr class="my-4">
+                        <h5 class="fw-bold text-primary mb-2">
+                            <i class="fas fa-eye me-2"></i> Marketplace Items Visibility (Show / Hide)
+                        </h5>
+                        <p class="text-muted small mb-4">Toggle individual marketplace cards ON or OFF to control their visibility on the homepage.</p>
+                        
+                        @php
+                            $currentSettings = is_array($homepageSection->settings) ? $homepageSection->settings : json_decode($homepageSection->settings ?? '[]', true);
+                            $itemsVis = $currentSettings['items_visibility'] ?? [];
+                            $allMarketplaceKeys = [
+                                'schools' => 'Schools',
+                                'coaching' => 'Coaching',
+                                'universities' => 'Universities',
+                                'colleges' => 'Colleges',
+                                'mentors' => 'Mentors',
+                                'scholarships' => 'Scholarships',
+                                'internships' => 'Internships',
+                                'top_exams' => 'Top Exams',
+                                'exam_bodies' => 'Exam Bodies',
+                                'counselling_bodies' => 'Counselling Bodies',
+                                'regulatory_bodies' => 'Regulatory Bodies',
+                                'govt_agencies' => 'Govt Agencies',
+                                'blogs' => 'Blogs & Guidance',
+                                'all_institutions' => 'All Institutions',
+                            ];
+                        @endphp
+
+                        <div class="row g-3 mb-4">
+                            @foreach($allMarketplaceKeys as $key => $label)
+                                @php $isVis = !isset($itemsVis[$key]) || $itemsVis[$key] == '1' || $itemsVis[$key] === true; @endphp
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                        <span class="fw-bold text-dark fs-6">{{ $label }}</span>
+                                        <div class="form-check form-switch mb-0">
+                                            <input type="hidden" name="items_visibility[{{ $key }}]" value="0">
+                                            <input class="form-check-input" type="checkbox" name="items_visibility[{{ $key }}]" value="1" id="vis_{{ $key }}" {{ $isVis ? 'checked' : '' }}>
+                                            <label class="form-check-label ms-1 small text-muted" for="vis_{{ $key }}">{{ $isVis ? 'Visible' : 'Hidden' }}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="text-end">
                         <a href="{{ route('homepage-sections.index') }}" class="btn btn-secondary rounded-pill px-4 me-2">Cancel</a>
