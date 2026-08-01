@@ -34,6 +34,14 @@ class HeroSliderController extends Controller
             'stat_2_label' => 'nullable|string',
             'stat_3_count' => 'nullable|string',
             'stat_3_label' => 'nullable|string',
+            'pill_1_label' => 'nullable|string',
+            'pill_1_url'   => 'nullable|string',
+            'pill_2_label' => 'nullable|string',
+            'pill_2_url'   => 'nullable|string',
+            'pill_3_label' => 'nullable|string',
+            'pill_3_url'   => 'nullable|string',
+            'pill_4_label' => 'nullable|string',
+            'pill_4_url'   => 'nullable|string',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -55,6 +63,14 @@ class HeroSliderController extends Controller
                 'stat_2_label' => $request->image_type === 'Text' ? $request->stat_2_label : null,
                 'stat_3_count' => $request->image_type === 'Text' ? $request->stat_3_count : null,
                 'stat_3_label' => $request->image_type === 'Text' ? $request->stat_3_label : null,
+                'pill_1_label' => $request->image_type === 'Text' ? $request->pill_1_label : null,
+                'pill_1_url'   => $request->image_type === 'Text' ? $request->pill_1_url : null,
+                'pill_2_label' => $request->image_type === 'Text' ? $request->pill_2_label : null,
+                'pill_2_url'   => $request->image_type === 'Text' ? $request->pill_2_url : null,
+                'pill_3_label' => $request->image_type === 'Text' ? $request->pill_3_label : null,
+                'pill_3_url'   => $request->image_type === 'Text' ? $request->pill_3_url : null,
+                'pill_4_label' => $request->image_type === 'Text' ? $request->pill_4_label : null,
+                'pill_4_url'   => $request->image_type === 'Text' ? $request->pill_4_url : null,
                 'sort_order' => $request->sort_order ?? 0,
                 'is_active' => true,
             ]);
@@ -80,6 +96,14 @@ class HeroSliderController extends Controller
             'stat_2_label' => 'nullable|string',
             'stat_3_count' => 'nullable|string',
             'stat_3_label' => 'nullable|string',
+            'pill_1_label' => 'nullable|string',
+            'pill_1_url'   => 'nullable|string',
+            'pill_2_label' => 'nullable|string',
+            'pill_2_url'   => 'nullable|string',
+            'pill_3_label' => 'nullable|string',
+            'pill_3_url'   => 'nullable|string',
+            'pill_4_label' => 'nullable|string',
+            'pill_4_url'   => 'nullable|string',
         ]);
 
         $data = [
@@ -95,6 +119,14 @@ class HeroSliderController extends Controller
             'stat_2_label' => $request->image_type === 'Text' ? $request->stat_2_label : null,
             'stat_3_count' => $request->image_type === 'Text' ? $request->stat_3_count : null,
             'stat_3_label' => $request->image_type === 'Text' ? $request->stat_3_label : null,
+            'pill_1_label' => $request->image_type === 'Text' ? $request->pill_1_label : null,
+            'pill_1_url'   => $request->image_type === 'Text' ? $request->pill_1_url : null,
+            'pill_2_label' => $request->image_type === 'Text' ? $request->pill_2_label : null,
+            'pill_2_url'   => $request->image_type === 'Text' ? $request->pill_2_url : null,
+            'pill_3_label' => $request->image_type === 'Text' ? $request->pill_3_label : null,
+            'pill_3_url'   => $request->image_type === 'Text' ? $request->pill_3_url : null,
+            'pill_4_label' => $request->image_type === 'Text' ? $request->pill_4_label : null,
+            'pill_4_url'   => $request->image_type === 'Text' ? $request->pill_4_url : null,
             'sort_order' => $request->sort_order ?? 0,
         ];
 

@@ -175,6 +175,47 @@
                                 <input type="text" name="stat_3_label" class="form-control" placeholder="e.g. Scholarship's">
                             </div>
                         </div>
+
+                        <hr class="my-4">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-link me-2"></i>Quick Pills / Tag Links (Optional)</h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 1 Label</label>
+                                <input type="text" name="pill_1_label" class="form-control" placeholder="e.g. Top University">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 1 Link (URL)</label>
+                                <input type="text" name="pill_1_url" class="form-control" placeholder="e.g. /university">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 2 Label</label>
+                                <input type="text" name="pill_2_label" class="form-control" placeholder="e.g. Top Schools">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 2 Link (URL)</label>
+                                <input type="text" name="pill_2_url" class="form-control" placeholder="e.g. /all-schools">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 3 Label</label>
+                                <input type="text" name="pill_3_label" class="form-control" placeholder="e.g. Top Exams">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 3 Link (URL)</label>
+                                <input type="text" name="pill_3_url" class="form-control" placeholder="e.g. /top-exams">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 4 Label</label>
+                                <input type="text" name="pill_4_label" class="form-control" placeholder="e.g. Top Courses">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 4 Link (URL)</label>
+                                <input type="text" name="pill_4_url" class="form-control" placeholder="e.g. /all-coaching">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">
@@ -289,6 +330,47 @@
                                 <input type="text" name="stat_3_label" id="edit_stat_3_label" class="form-control">
                             </div>
                         </div>
+
+                        <hr class="my-4">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-link me-2"></i>Quick Pills / Tag Links (Optional)</h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 1 Label</label>
+                                <input type="text" name="pill_1_label" id="edit_pill_1_label" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 1 Link (URL)</label>
+                                <input type="text" name="pill_1_url" id="edit_pill_1_url" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 2 Label</label>
+                                <input type="text" name="pill_2_label" id="edit_pill_2_label" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 2 Link (URL)</label>
+                                <input type="text" name="pill_2_url" id="edit_pill_2_url" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 3 Label</label>
+                                <input type="text" name="pill_3_label" id="edit_pill_3_label" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 3 Link (URL)</label>
+                                <input type="text" name="pill_3_url" id="edit_pill_3_url" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 4 Label</label>
+                                <input type="text" name="pill_4_label" id="edit_pill_4_label" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase">Pill 4 Link (URL)</label>
+                                <input type="text" name="pill_4_url" id="edit_pill_4_url" class="form-control">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">
@@ -378,6 +460,15 @@ $(document).ready(function() {
         modal.find('#edit_stat_2_label').val(slider.stat_2_label);
         modal.find('#edit_stat_3_count').val(slider.stat_3_count);
         modal.find('#edit_stat_3_label').val(slider.stat_3_label);
+
+        modal.find('#edit_pill_1_label').val(slider.pill_1_label);
+        modal.find('#edit_pill_1_url').val(slider.pill_1_url);
+        modal.find('#edit_pill_2_label').val(slider.pill_2_label);
+        modal.find('#edit_pill_2_url').val(slider.pill_2_url);
+        modal.find('#edit_pill_3_label').val(slider.pill_3_label);
+        modal.find('#edit_pill_3_url').val(slider.pill_3_url);
+        modal.find('#edit_pill_4_label').val(slider.pill_4_label);
+        modal.find('#edit_pill_4_url').val(slider.pill_4_url);
 
         // Set TinyMCE content for Edit Modal
         if (tinymce.get('edit_subheading')) {

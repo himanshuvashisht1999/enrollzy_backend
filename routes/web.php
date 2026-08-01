@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\OrganisationController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HeroSliderController;
+use App\Http\Controllers\Admin\MegaMenuController;
 use App\Http\Controllers\Admin\VideoTestimonialController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AboutUsController;
@@ -56,6 +57,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ✅ Admin Routes
 Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    // Mega Menu Management
+    Route::resource('/admin/mega-menu', MegaMenuController::class)->names('admin.mega-menu');
+    Route::post('/admin/mega-menu/{megaMenu}/status', [MegaMenuController::class, 'updateStatus'])->name('admin.mega-menu.status');
 
     // Categories
     Route::resource('/admin/categories', CategoryController::class);
@@ -275,6 +280,12 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // Trending Skills
     Route::resource('/admin/trending-skills', \App\Http\Controllers\Admin\TrendingSkillController::class)->names('admin.trending-skills');
+    
+    // Trending Courses
+    Route::resource('/admin/trending-courses', \App\Http\Controllers\Admin\TrendingCourseController::class)->names('admin.trending-courses');
+    
+    // Homepage Stream Tabs (Leading Universities Stream Management)
+    Route::resource('/admin/homepage-stream-tabs', \App\Http\Controllers\Admin\HomepageStreamTabController::class)->names('admin.homepage-stream-tabs');
     
     // Dynamic Pages
     Route::resource('/admin/pages', \App\Http\Controllers\Admin\PageController::class)->names('admin.pages');
