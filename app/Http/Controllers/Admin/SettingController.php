@@ -37,6 +37,7 @@ class SettingController extends Controller
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:255',
             'address' => 'nullable|string',
+            'gst_number' => 'nullable|string|max:255',
             'footer_text' => 'nullable|string|max:255',
             'play_store_link' => 'nullable|string|max:255',
             'app_store_link' => 'nullable|string|max:255',

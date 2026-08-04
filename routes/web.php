@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\Hr\CallingController;
 use App\Http\Controllers\Admin\Hr\ClockController;
 use App\Http\Controllers\Admin\Hr\InterestedInController;
 use App\Http\Controllers\Admin\Hr\CustomerSessionController;
+use App\Http\Controllers\Admin\ScholarshipController;
 
 // ✅ Root Redirect
 Route::get('/', function () {
@@ -278,6 +279,14 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Benefits (Why Choose Us)
     Route::resource('/admin/home-benefits', \App\Http\Controllers\Admin\HomeBenefitController::class)->names('admin.home-benefits');
 
+    // Advanced Scholarships
+    Route::resource('/admin/scholarships', \App\Http\Controllers\Admin\ScholarshipController::class)->names('admin.scholarships');
+    // Autosave routes for create and edit
+    Route::post('/admin/scholarships/autosave', [\App\Http\Controllers\Admin\ScholarshipController::class, 'autosave'])->name('admin.scholarships.autosave');
+    Route::post('/admin/scholarships/{scholarship}/autosave', [\App\Http\Controllers\Admin\ScholarshipController::class, 'autosaveUpdate'])->name('admin.scholarships.autosaveUpdate');
+    // Trash and restore routes for soft-deleted scholarships
+    Route::get('/admin/scholarships/trash', [\App\Http\Controllers\Admin\ScholarshipController::class, 'trash'])->name('admin.scholarships.trash');
+    Route::post('/admin/scholarships/{id}/restore', [\App\Http\Controllers\Admin\ScholarshipController::class, 'restore'])->name('admin.scholarships.restore');
     // Trending Skills
     Route::resource('/admin/trending-skills', \App\Http\Controllers\Admin\TrendingSkillController::class)->names('admin.trending-skills');
     

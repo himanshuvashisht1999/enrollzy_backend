@@ -115,6 +115,10 @@
                                     <label class="form-label fw-bold">WhatsApp Number</label>
                                     <input type="text" name="whatsapp_number" class="form-control" value="{{ old('whatsapp_number', $setting->whatsapp_number) }}" placeholder="7303088694">
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">GST Number</label>
+                                    <input type="text" name="gst_number" class="form-control" value="{{ old('gst_number', $setting->gst_number) }}" placeholder="e.g. 04AACCU4064D1Z2">
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">Office Address</label>
                                     <textarea name="address" class="form-control" rows="2" placeholder="Street name, City, State, ZIP">{{ old('address', $setting->address) }}</textarea>

@@ -648,8 +648,8 @@
                                     href="{{ route('admin.institute-marquees.index') }}">Institute Marquee</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"
                                     href="{{ route('admin.home-services.index') }}">Why Choose Us</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-benefits.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.home-benefits.index') }}">Scholarships</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.scholarships.index') }}">Scholarships</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
                                     href="{{ route('admin.pages.index') }}">Dynamic Pages</a></li>
                         </ul>
@@ -676,6 +676,12 @@
                                     href="{{ route('admin.billing.payments.index') }}">Payments</a></li>
                         </ul>
                     </div>
+                </li>
+                <!-- Scholarships Top-Level Nav -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}" href="{{ route('admin.scholarships.index') }}">
+                        <i class="fas fa-graduation-cap"></i> Scholarships
+                    </a>
                 </li>
 
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>

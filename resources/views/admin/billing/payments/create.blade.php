@@ -63,11 +63,12 @@
                         
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Payment Method <span class="text-danger">*</span></label>
-                            <select name="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
+                            <select name="payment_method" id="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
                                 <option value="bank_transfer" {{ old('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
                                 <option value="upi" {{ old('payment_method') == 'upi' ? 'selected' : '' }}>UPI</option>
                                 <option value="cash" {{ old('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
                                 <option value="cheque" {{ old('payment_method') == 'cheque' ? 'selected' : '' }}>Cheque</option>
+                                <option value="tds" {{ old('payment_method') == 'tds' ? 'selected' : '' }}>TDS</option>
                                 <option value="other" {{ old('payment_method') == 'other' ? 'selected' : '' }}>Other</option>
                             </select>
                             @error('payment_method') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -75,7 +76,7 @@
                         
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Transaction ID / Reference</label>
-                            <input type="text" name="transaction_id" class="form-control @error('transaction_id') is-invalid @enderror" value="{{ old('transaction_id') }}" placeholder="e.g. UTR or Cheque No">
+                            <input type="text" name="transaction_id" id="transaction_id" class="form-control @error('transaction_id') is-invalid @enderror" value="{{ old('transaction_id') }}" placeholder="e.g. UTR or Cheque No">
                             @error('transaction_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         
@@ -94,4 +95,22 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('#payment_method').on('change', function() {
+            const method = $(this).val();
+            const transactionInput = document.getElementById('transaction_id');
+            if (method === 'tds') {
+                if (!transactionInput.value || transactionInput.value.trim() === '') {
+                    transactionInput.value = 'TDS deduction';
+                }
+            } else if (transactionInput.value === 'TDS deduction') {
+                transactionInput.value = '';
+            }
+        });
+    });
+</script>
 @endsection

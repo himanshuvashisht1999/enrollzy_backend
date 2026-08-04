@@ -139,10 +139,6 @@
                                     role="tab">Academic Focus</a></li>
                             <li class="nav-item"><a class="nav-link" href="#facilities"
                                     role="tab">Facilities</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#legal"
-                                    role="tab">Legal & Branding</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#seo"
-                                    role="tab">SEO & Media</a></li>
                             <li class="nav-item"><a class="nav-link" href="#transport"
                                     role="tab">Transport</a></li>
                             <li class="nav-item"><a class="nav-link" href="#safety"
@@ -291,7 +287,7 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">About Campus</label>
-                                        <textarea name="about_institute" class="editor"></textarea>
+                                        <textarea name="about_institute" id="about_institute" class="editor"></textarea>
                                     </div>
                                 </div>
                             </div>

@@ -245,7 +245,7 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">About Campus</label>
-                                        <textarea name="about_institute"
+                                        <textarea name="about_institute" id="about_institute"
                                             class="editor">{{ $campus->about_institute }}</textarea>
                                     </div>
                                 </div>
@@ -348,7 +348,6 @@
                                             value="{{ is_array($campus->campus_contact_numbers) ? implode(', ', $campus->campus_contact_numbers) : $campus->campus_contact_numbers }}">
                                     </div>
                                 </div>
-                            </div>
                             </div>
                             
                             <!-- 9. Class Profile -->
@@ -486,14 +485,24 @@
             }
 
             function saveStepData() {
-                const currentTabId = $(tabs[currentTab]).attr('href');
+                const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
 
                 if (campusId) {
+                    const formData = {};
+                    const fieldsInStep = getFieldsInStep(currentTabId);
+
+                    fieldsInStep.forEach(fieldName => {
+                        formData[fieldName] = getInputValue(fieldName);
+                    });
+
                     showAutoSaveStatus('saving');
                     $.ajax({
                         url: `/admin/organisations/{{ $organisation->id }}/campuses/${campusId}/autosave-tab`,
                         method: 'POST',
-                        data: $(currentTabId + ' :input').serialize() + '&_token={{ csrf_token() }}',
+                        data: {
+                            ...formData,
+                            _token: '{{ csrf_token() }}'
+                        },
                         success: function () {
                             showAutoSaveStatus('saved');
                             $(tabs[currentTab]).addClass('completed');
