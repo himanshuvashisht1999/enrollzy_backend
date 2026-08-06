@@ -11,10 +11,33 @@ class BillingInvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $invoices = BillingInvoice::with('organisation')->latest()->paginate(15);
-        return view('admin.billing.invoices.index', compact('invoices'));
+        $clientId  = $request->input('client_id');
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        $status    = $request->input('status');
+
+        $organisations = \App\Models\Organisation::orderBy('name')->get();
+
+        $query = BillingInvoice::with('organisation')->latest();
+
+        if ($clientId) {
+            $query->where('organisation_id', $clientId);
+        }
+        if ($startDate) {
+            $query->whereDate('issue_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('issue_date', '<=', $endDate);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $invoices = $query->paginate(15)->withQueryString();
+
+        return view('admin.billing.invoices.index', compact('invoices', 'organisations', 'clientId', 'startDate', 'endDate', 'status'));
     }
 
     public function create()

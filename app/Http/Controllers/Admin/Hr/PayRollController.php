@@ -104,7 +104,7 @@ class PayRollController extends Controller
             if ($lunchDifference < 0) {
                 $extraHoursWorked = abs($lunchDifference) / 60;
             } else {
-                $totalWorkedHoursDecimal -= $lunchDifference / 60;
+                $totalWorkedHoursDecimal = max(0, $totalWorkedHoursDecimal - ($lunchDifference / 60));
                 $extraHoursWorked = 0;
             }
 

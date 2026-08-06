@@ -11,8 +11,67 @@
 </div>
 
 @if(session('success'))
-<div class="alert alert-success">{{ session('success') }}</div>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 @endif
+
+{{-- Filter Card --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ route('admin.billing.invoices.index') }}" class="row g-3 align-items-end">
+
+            {{-- Client / Organisation --}}
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Client / Organisation</label>
+                <select name="client_id" class="form-select select2-filter" data-placeholder="All Clients">
+                    <option value="">All Clients</option>
+                    @foreach($organisations as $org)
+                        <option value="{{ $org->id }}" {{ $clientId == $org->id ? 'selected' : '' }}>
+                            {{ $org->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- From Date --}}
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label fw-bold">From Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ $startDate }}">
+            </div>
+
+            {{-- To Date --}}
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label fw-bold">To Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ $endDate }}">
+            </div>
+
+            {{-- Status --}}
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="unpaid"  {{ $status == 'unpaid'  ? 'selected' : '' }}>Unpaid</option>
+                    <option value="partial" {{ $status == 'partial' ? 'selected' : '' }}>Partial</option>
+                    <option value="paid"    {{ $status == 'paid'    ? 'selected' : '' }}>Paid</option>
+                    <option value="draft"   {{ $status == 'draft'   ? 'selected' : '' }}>Draft</option>
+                </select>
+            </div>
+
+            {{-- Buttons --}}
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a href="{{ route('admin.billing.invoices.index') }}" class="btn btn-light w-100">
+                    Reset
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -41,7 +100,7 @@
                             @if($invoice->status == 'paid')
                                 <span class="badge bg-success">Paid</span>
                             @elseif($invoice->status == 'partial')
-                                <span class="badge bg-warning">Partial</span>
+                                <span class="badge bg-warning text-dark">Partial</span>
                             @elseif($invoice->status == 'unpaid')
                                 <span class="badge bg-danger">Unpaid</span>
                             @elseif($invoice->status == 'draft')
@@ -77,3 +136,16 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function () {
+        if ($.fn.select2) {
+            $('.select2-filter').select2({
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    });
+</script>
+@endpush

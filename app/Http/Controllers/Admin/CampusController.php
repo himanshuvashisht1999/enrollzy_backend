@@ -151,6 +151,7 @@ class CampusController extends Controller
      */
     public function autosaveTab(Request $request, $orgId, $id)
     {
+        \Log::info('autosaveTab request data for campus ' . $id . ':', $request->all());
         $campus = Campus::findOrFail($id);
 
         if ($request->has('class_profile')) {

@@ -48,11 +48,20 @@ class HomepageSectionController extends Controller
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,avif,bmp|max:20480',
         ]);
 
+        $settings = is_array($homepageSection->settings) ? $homepageSection->settings : json_decode($homepageSection->settings ?? '[]', true);
+        if ($request->has('items_visibility')) {
+            $settings['items_visibility'] = $request->items_visibility;
+        }
+        if ($request->has('badge_text')) {
+            $settings['badge_text'] = $request->badge_text;
+        }
+
         $data = [
             'title' => $request->title,
             'subtitle' => $request->subtitle,
             'cta_title' => $request->cta_title,
             'cta_url' => $request->cta_url,
+            'settings' => $settings,
         ];
 
         if ($request->hasFile('image')) {

@@ -53,7 +53,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">No courses found.</td>
+                        <td colspan="7" class="text-center py-5 text-muted">No items found.</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -93,31 +93,31 @@
                                     <td colspan="4" class="text-end fw-bold">Discount:</td>
                                     <td colspan="2" class="text-end"><input type="number" step="0.01" name="discount_amount" id="calcDiscount" class="form-control text-end" value="0.00"></td>
                                 </tr>
-                                {{-- GST fields hidden as requested --}}
-                                <tr class="d-none">
+                                {{-- GST fields --}}
+                                <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
                                             <span class="me-2">CGST (%):</span>
-                                            <input type="number" step="0.01" id="cgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="0">
+                                            <input type="number" step="0.01" id="cgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="9">
                                         </div>
                                     </td>
                                     <td colspan="2" class="text-end"><input type="number" step="0.01" name="cgst_amount" id="calcCgst" class="form-control text-end bg-light" readonly></td>
                                 </tr>
-                                <tr class="d-none">
+                                <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
                                             <span class="me-2">SGST (%):</span>
-                                            <input type="number" step="0.01" id="sgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="0">
+                                            <input type="number" step="0.01" id="sgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="9">
                                         </div>
                                     </td>
                                     <td colspan="2" class="text-end"><input type="number" step="0.01" name="sgst_amount" id="calcSgst" class="form-control text-end bg-light" readonly></td>
                                 </tr>
-                                <tr class="d-none">
+                                <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
                                             <input class="form-check-input mt-0 me-2" type="checkbox" id="useIgst" aria-label="Use IGST instead of CGST/SGST">
                                             <span class="me-2">IGST (%):</span>
-                                            <input type="number" step="0.01" id="igstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="0">
+                                            <input type="number" step="0.01" id="igstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="18">
                                         </div>
                                     </td>
                                     <td colspan="2" class="text-end">
