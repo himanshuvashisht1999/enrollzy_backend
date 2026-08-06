@@ -509,6 +509,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
         });
 
+        Route::post('customer-categories/import', [CustomerCategoryController::class, 'import'])->name('customer-categories.import');
+        Route::get('customer-categories/sample-download', [CustomerCategoryController::class, 'downloadSample'])->name('customer-categories.sample');
         Route::resource('customer-categories', CustomerCategoryController::class)->names('customer-categories');
         Route::post('quick-add-category', [CustomerCategoryController::class, 'quickStore'])->name('quick-add-category');
         Route::post('quick-add-interest', [InterestedInController::class, 'quickStore'])->name('quick-add-interest');

@@ -295,7 +295,7 @@
                 </li>
 
                 {{-- Expert Management --}}
-                <!-- <li class="nav-item">
+                <li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'active' : 'collapsed' }}"
                             data-bs-toggle="collapse" href="#expertMenu" role="button"
                             aria-expanded="{{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'true' : 'false' }}">
@@ -314,7 +314,7 @@
 
                             </ul>
                         </div>
-                    </li> -->
+                    </li>
 
                 {{-- Alumni Management --}}
                 <li class="nav-item">
