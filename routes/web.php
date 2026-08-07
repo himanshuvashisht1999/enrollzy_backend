@@ -505,6 +505,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
         // Customer Management Module Routes
         Route::prefix('customers')->name('customers.main.')->group(function () {
+            Route::post('import', [CustomerController::class, 'import'])->name('import');
+            Route::get('sample-download', [CustomerController::class, 'downloadSample'])->name('sample-download');
             Route::resource('index', CustomerController::class);
             Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
         });
@@ -526,6 +528,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::resource('calling-actions', CallingActionController::class);
             Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
             Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
+            Route::post('calling-history/import', [CallingController::class, 'importHistory'])->name('calling-history.import');
+            Route::get('calling-history/sample', [CallingController::class, 'downloadSample'])->name('calling-history.sample');
             Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
         });
 

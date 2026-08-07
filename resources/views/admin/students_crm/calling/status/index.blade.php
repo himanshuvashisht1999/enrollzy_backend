@@ -21,6 +21,7 @@
                     <thead class="bg-light">
                         <tr>
                             <th>#</th>
+                            <th>ID</th>
                             <th>Status Name</th>
                             <th>Date Required</th>
                             <th class="text-center">Action</th>
@@ -79,6 +80,7 @@
             ajax: "{{ route('admin.students-crm.calling-statuses.index') }}",
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'id', name: 'id' },
                 { data: 'name', name: 'name' },
                 { data: 'date_require', name: 'date_require' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
@@ -113,7 +115,8 @@
                 if(res.status == 1) {
                     $('#status_id').val(res.data.id);
                     $('#name').val(res.data.name);
-                    $('#date_require').val(res.data.date_require);
+                    let dr = res.data.date_require ? res.data.date_require.toString().toLowerCase().trim() : 'no';
+                    $('#date_require').val(dr).trigger('change');
                     $('#modalTitle').text('Edit Calling Status');
                     $('#createModal').modal('show');
                 }

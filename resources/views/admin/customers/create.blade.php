@@ -67,9 +67,21 @@
                                             <label class="form-label">Category</label>
                                             <select name="category_id" class="form-select select2" required>
                                                 <option value="">Select Category</option>
-                                                @foreach($categories as $cat)
-                                                    <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                                                @endforeach
+                                                @php
+                                                    function renderCategoryOptions($categories, $level = 0) {
+                                                        foreach ($categories as $cat) {
+                                                            echo '<option value="'.$cat->id.'"'.
+                                                                (old('category_id') == $cat->id ? ' selected' : '').
+                                                                '>';
+                                                            echo str_repeat("— ", $level).$cat->name;
+                                                            echo '</option>';
+                                                            if ($cat->childrenRecursive && $cat->childrenRecursive->count()) {
+                                                                renderCategoryOptions($cat->childrenRecursive, $level + 1);
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp
+                                                @php renderCategoryOptions($categories); @endphp
                                             </select>
                                         </div>
                                         <div class="col-md-3">

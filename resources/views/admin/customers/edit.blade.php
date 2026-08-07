@@ -77,9 +77,21 @@
                                             <label class="form-label">Category</label>
                                             <select name="category_id" class="form-select select2" required>
                                                 <option value="">Select Category</option>
-                                                @foreach($categories as $cat)
-                                                    <option value="{{ $cat->id }}" {{ old('category_id', $customer->category_id) == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                                                @endforeach
+                                                @php
+                                                    function renderCategoryOptions($categories, $selectedId, $level = 0) {
+                                                        foreach ($categories as $cat) {
+                                                            echo '<option value="'.$cat->id.'"'.
+                                                                (old('category_id', $selectedId) == $cat->id ? ' selected' : '').
+                                                                '>';
+                                                            echo str_repeat("— ", $level).$cat->name;
+                                                            echo '</option>';
+                                                            if ($cat->childrenRecursive && $cat->childrenRecursive->count()) {
+                                                                renderCategoryOptions($cat->childrenRecursive, $selectedId, $level + 1);
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp
+                                                @php renderCategoryOptions($categories, $customer->category_id); @endphp
                                             </select>
                                         </div>
                                         <div class="col-md-3">

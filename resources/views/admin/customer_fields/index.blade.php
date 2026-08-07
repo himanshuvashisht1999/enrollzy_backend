@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Customer Fields')
+@section('title', 'Student Fields')
 
 @push('css')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
@@ -10,7 +10,7 @@
 <div class="container-fluid">
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-primary">Dynamic Customer Profile Fields</h6>
+            <h6 class="m-0 fw-bold text-primary">Dynamic Student Profile Fields</h6>
             <a class="btn btn-primary btn-sm rounded-pill px-3" href="{{ route('admin.customer-fields.create') }}">
                 <i class="fas fa-plus me-1"></i> Add Field
             </a>

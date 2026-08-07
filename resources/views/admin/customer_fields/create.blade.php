@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add Customer Field')
+@section('title', 'Add Student Field')
 
 @section('content')
 <div class="container-fluid">

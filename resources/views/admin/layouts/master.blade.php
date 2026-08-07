@@ -378,7 +378,7 @@
                 </li>
 
                 {{-- Student Management --}}
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/students*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#studentMenu" role="button"
                         aria-expanded="{{ request()->is('admin/students*') ? 'true' : 'false' }}">
@@ -393,7 +393,7 @@
                                     href="{{ route('students.create') }}">Add Student</a></li>
                         </ul>
                     </div>
-                </li>
+                </li>  -->
 
                 {{-- Community Group --}}
                 <li class="nav-item">
@@ -491,19 +491,19 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}"
                         href="{{ route('admin.customers.main.index.index') }}">
-                        <i class="fas fa-users me-2"></i> Customers list
+                        <i class="fas fa-users me-2"></i> Students list
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-categories.index') }}">
-                        <i class="fas fa-tags me-2"></i> Customers Category
+                        <i class="fas fa-tags me-2"></i> Students Category
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-fields.index') }}">
-                        <i class="fas fa-list-alt me-2"></i> Customer Fields
+                        <i class="fas fa-list-alt me-2"></i> Students Fields
                     </a>
                 </li>
 

@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Customer Categories')
+@section('title', 'Student Categories')
 
 @push('css')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
@@ -10,7 +10,7 @@
 <div class="container-fluid">
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-primary">Managed Customer Categories</h6>
+            <h6 class="m-0 fw-bold text-primary">Managed Student Categories</h6>
             <div>
                 <button class="btn btn-success btn-sm rounded-pill px-3 me-2" data-bs-toggle="modal" data-bs-target="#importModal">
                     <i class="fas fa-file-excel me-1"></i> Import Data
@@ -26,6 +26,7 @@
                     <thead class="bg-light">
                         <tr>
                             <th>#</th>
+                            <th>Cat ID</th>
                             <th>Category Name</th>
                             <th>Parent</th>
                             <th>Type</th>
@@ -130,6 +131,7 @@
             ajax: "{{ route('admin.customer-categories.index') }}",
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'id', name: 'id' },
                 { data: 'name', name: 'name' },
                 { data: 'parent_name', name: 'parent_name' },
                 { data: 'customer_type', name: 'customer_type' },
