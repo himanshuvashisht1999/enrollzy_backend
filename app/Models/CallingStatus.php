@@ -15,6 +15,7 @@ class CallingStatus extends Model
     protected $fillable = [
         'name',
         'status',
-        'organization_id'
+        'organization_id',
+        'date_require'
     ];
 }

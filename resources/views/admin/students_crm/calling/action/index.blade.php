@@ -21,6 +21,7 @@
                     <thead class="bg-light">
                         <tr>
                             <th>#</th>
+                            <th>ID</th>
                             <th>Action Name</th>
                             <th>Current State</th>
                             <th class="text-center">Action</th>
@@ -79,6 +80,7 @@
             ajax: "{{ route('admin.students-crm.calling-actions.index') }}",
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'id', name: 'id' },
                 { data: 'name', name: 'name' },
                 { data: 'status', name: 'status' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }

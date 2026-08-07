@@ -29,4 +29,9 @@ class CustomerCategory extends Model
     {
         return $this->hasMany(CustomerCategory::class, 'parent_id');
     }
+
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
+    }
 }

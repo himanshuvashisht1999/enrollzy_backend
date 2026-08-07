@@ -7,6 +7,9 @@ use App\Models\CustomerCategory;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
+use App\Imports\CustomerCategoryImport;
+use App\Exports\CustomerCategorySampleExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerCategoryController extends Controller
 {
@@ -127,6 +130,29 @@ class CustomerCategoryController extends Controller
             'organization_id' => auth()->user()->organization_id,
         ]);
         return response()->json(['status' => 1, 'data' => $item]);
+    }
+
+    public function import(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'message' => $validator->errors()->first()]);
+        }
+
+        try {
+            Excel::import(new CustomerCategoryImport(auth()->user()->organization_id), $request->file('file'));
+            return response()->json(['status' => 1, 'message' => 'Categories imported successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function downloadSample()
+    {
+        return Excel::download(new CustomerCategorySampleExport, 'customer_categories_sample.xlsx');
     }
 }
 

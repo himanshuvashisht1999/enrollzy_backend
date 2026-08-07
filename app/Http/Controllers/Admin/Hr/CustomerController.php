@@ -11,6 +11,9 @@ use App\Models\Institute;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
+use App\Imports\CustomerImport;
+use App\Exports\CustomerSampleExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 
 class CustomerController extends Controller
@@ -19,9 +22,20 @@ class CustomerController extends Controller
     {
         if ($request->ajax()) {
             $organization_id = auth()->user()->organization_id;
-            $data = Customer::where('organization_id', $organization_id)
-                ->with('category')
-                ->latest();
+            $data = Customer::where('organization_id', $organization_id)->with('category');
+
+            if (!$request->filled('filter_name') && !$request->filled('filter_phone')) {
+                $data->whereRaw('1 = 0');
+            } else {
+                if ($request->filled('filter_name')) {
+                    $data->where('name', 'like', '%' . $request->filter_name . '%');
+                }
+                if ($request->filled('filter_phone')) {
+                    $data->where('phone', 'like', '%' . $request->filter_phone . '%');
+                }
+            }
+
+            $data = $data->latest();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -50,6 +64,7 @@ class CustomerController extends Controller
         $institutes = Institute::where('organization_id', $organization_id)->get();
         $categories = CustomerCategory::where('parent_id', 0)
             ->where('organization_id', $organization_id)
+            ->with('childrenRecursive')
             ->get();
         $interested_ins = \App\Models\InterestedIn::where('organization_id', $organization_id)->where('status', 'active')->get();
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 'active')->get();
@@ -152,6 +167,7 @@ class CustomerController extends Controller
         $institutes = Institute::where('organization_id', auth()->user()->organization_id)->get();
         $categories = CustomerCategory::where('parent_id', 0)
             ->where('organization_id', auth()->user()->organization_id)
+            ->with('childrenRecursive')
             ->get();
         $fields = CustomerField::where('status', 'active')
             ->where('organization_id', auth()->user()->organization_id)
@@ -264,5 +280,28 @@ class CustomerController extends Controller
             'status' => 1,
             'data' => $categories,
         ]);
+    }
+
+    public function import(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'message' => $validator->errors()->first()]);
+        }
+
+        try {
+            Excel::import(new CustomerImport(auth()->user()->organization_id), $request->file('file'));
+            return response()->json(['status' => 1, 'message' => 'Students imported successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function downloadSample()
+    {
+        return Excel::download(new CustomerSampleExport, 'students_sample.xlsx');
     }
 }

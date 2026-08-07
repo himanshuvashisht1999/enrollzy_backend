@@ -12,15 +12,40 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Models\CustomerCategory;
+use App\Models\WhatsappTemplate;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\CallingHistoryImport;
+use App\Exports\CallingHistorySampleExport;
 
 class CallingController extends Controller
 {
     public function index(Request $request)
     {
+        $organization_id = auth()->user()->organization_id;
+
         if ($request->ajax()) {
-            $organization_id = auth()->user()->organization_id;
             // For general list, we show students/customers who need calling
-            $data = Customer::where('organization_id', $organization_id)->latest();
+            $data = Customer::where('organization_id', $organization_id);
+
+            if ($request->filled('category')) {
+                $data->where('category_id', $request->category);
+            }
+            if ($request->filled('country')) {
+                $data->where('country', $request->country);
+            }
+            if ($request->filled('state')) {
+                $data->where('state', $request->state);
+            }
+            if ($request->filled('city')) {
+                $data->where('city', $request->city);
+            }
+            // Logic for user_with_out_status if needed
+            // if ($request->filled('user_with_out_status') && $request->user_with_out_status == 1) {
+            //    $data->whereDoesntHave('callingHistory'); // Adjust based on relation
+            // }
+
+            $data = $data->latest();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -31,18 +56,22 @@ class CallingController extends Controller
                     return $row->category->name ?? '<span class="text-muted small">No Category</span>';
                 })
                 ->addColumn('action', function ($row) {
-                    $btn = '<button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" data-id="'.$row->id.'"><i class="fas fa-phone-alt"></i> Call</button>';
+                    $btn = '<button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" data-id="'.$row->id.'" data-name="'.$row->name.'" data-phone="'.$row->phone.'" data-category="'.($row->category_id ?? '').'"><i class="fas fa-phone-alt"></i> Update Status</button>';
                     return $btn;
                 })
                 ->rawColumns(['contact', 'category_name', 'action'])
                 ->make(true);
         }
 
-        $organization_id = auth()->user()->organization_id;
-        $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 'active')->get();
-        $actions = CallingAction::where('organization_id', $organization_id)->where('status', 'active')->get();
+        $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
+        $actions = CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
+        $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
+        $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
+        
+        $count = Customer::where('organization_id', $organization_id)->count();
+        $user_with_out_status = request('user_with_out_status', 0);
 
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status'));
     }
 
     public function history(Request $request)
@@ -103,6 +132,7 @@ class CallingController extends Controller
                 'comment' => $request->remark,
                 'date_required' => $request->next_call_date, // Legacy Next Date field
                 'updated_by' => auth()->id(),
+                'status' => 1,
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
@@ -110,6 +140,29 @@ class CallingController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => 0, 'message' => $e->getMessage()]);
         }
+    }
+
+    public function importHistory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'message' => $validator->errors()->first()]);
+        }
+
+        try {
+            Excel::import(new CallingHistoryImport(auth()->user()->organization_id), $request->file('file'));
+            return response()->json(['status' => 1, 'message' => 'Calling history imported successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function downloadSample()
+    {
+        return Excel::download(new CallingHistorySampleExport, 'calling_history_sample.xlsx');
     }
 }
 
