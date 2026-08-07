@@ -25,6 +25,11 @@ class CustomerCategory extends Model
         return $this->belongsTo(CustomerCategory::class, 'parent_id');
     }
 
+    public function customers()
+    {
+        return $this->hasMany(Customer::class, 'category_id');
+    }
+
     public function children()
     {
         return $this->hasMany(CustomerCategory::class, 'parent_id');

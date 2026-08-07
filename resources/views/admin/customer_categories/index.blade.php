@@ -30,6 +30,7 @@
                             <th>Category Name</th>
                             <th>Parent</th>
                             <th>Type</th>
+                            <th>Total Students</th>
                             <th>Status</th>
                             <th class="text-center">Action</th>
                         </tr>
@@ -135,6 +136,7 @@
                 { data: 'name', name: 'name' },
                 { data: 'parent_name', name: 'parent_name' },
                 { data: 'customer_type', name: 'customer_type' },
+                { data: 'customers_count', name: 'customers_count', searchable: false },
                 { data: 'status', name: 'status' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]

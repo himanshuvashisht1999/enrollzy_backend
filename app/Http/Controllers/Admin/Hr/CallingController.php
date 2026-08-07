@@ -153,6 +153,11 @@ class CallingController extends Controller
         }
 
         try {
+            set_time_limit(0);
+            ini_set('memory_limit', '-1');
+            ignore_user_abort(true);
+            \Illuminate\Support\Facades\DB::disableQueryLog();
+
             Excel::import(new CallingHistoryImport(auth()->user()->organization_id), $request->file('file'));
             return response()->json(['status' => 1, 'message' => 'Calling history imported successfully']);
         } catch (\Exception $e) {
