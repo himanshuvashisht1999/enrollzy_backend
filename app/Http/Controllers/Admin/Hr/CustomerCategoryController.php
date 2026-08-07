@@ -17,12 +17,15 @@ class CustomerCategoryController extends Controller
     {
         if ($request->ajax()) {
             $organization_id = auth()->user()->organization_id;
-            $data = CustomerCategory::where('organization_id', $organization_id)->with('parent')->latest();
+            $data = CustomerCategory::where('organization_id', $organization_id)->with('parent')->withCount('customers')->latest();
 
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('parent_name', function ($row) {
                     return $row->parent->name ?? '<span class="text-muted">No Parent</span>';
+                })
+                ->addColumn('customers_count', function ($row) {
+                    return '<span class="badge bg-info text-dark">'.$row->customers_count.'</span>';
                 })
                 ->addColumn('status', function ($row) {
                     return GetStatusBadge($row->status);
@@ -38,7 +41,7 @@ class CustomerCategoryController extends Controller
                     $btn .= '</div>';
                     return $btn;
                 })
-                ->rawColumns(['parent_name', 'status', 'action'])
+                ->rawColumns(['parent_name', 'customers_count', 'status', 'action'])
                 ->make(true);
         }
 
