@@ -13,10 +13,26 @@ use Illuminate\Support\Facades\Storage;
 
 class ScholarshipController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $scholarships = Scholarship::orderBy('sort_order')->get();
-        return view('admin.scholarships.index', compact('scholarships'));
+        $query = Scholarship::query();
+
+        if ($request->filled('title')) {
+            $query->where('title', 'like', '%' . $request->title . '%');
+        }
+        if ($request->filled('type')) {
+            $query->whereIn('scholarship_type', (array) $request->type);
+        }
+        if ($request->filled('category')) {
+            $query->whereIn('category', (array) $request->category);
+        }
+
+        $scholarships = $query->orderBy('sort_order')->get();
+        
+        $types = Scholarship::whereNotNull('scholarship_type')->where('scholarship_type', '!=', '')->distinct()->pluck('scholarship_type');
+        $categories = Scholarship::whereNotNull('category')->where('category', '!=', '')->distinct()->pluck('category');
+
+        return view('admin.scholarships.index', compact('scholarships', 'types', 'categories'));
     }
 
     public function create()

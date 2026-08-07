@@ -10,6 +10,37 @@
     </a>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form action="{{ route('admin.scholarships.index') }}" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Title</label>
+                <input type="text" name="title" value="{{ request('title') }}" class="form-control" placeholder="Search title...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Type</label>
+                <select name="type[]" class="form-control select2" multiple data-placeholder="Select types...">
+                    @foreach($types as $t)
+                        <option value="{{ $t }}" {{ is_array(request('type')) && in_array($t, request('type')) ? 'selected' : '' }}>{{ $t }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Category</label>
+                <select name="category[]" class="form-control select2" multiple data-placeholder="Select categories...">
+                    @foreach($categories as $c)
+                        <option value="{{ $c }}" {{ is_array(request('category')) && in_array($c, request('category')) ? 'selected' : '' }}>{{ $c }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary px-4"><i class="fas fa-search me-1"></i> Filter</button>
+                <a href="{{ route('admin.scholarships.index') }}" class="btn btn-light ms-2">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -86,3 +117,18 @@
     </div>
 </div>
 @endsection
+
+@push('css')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@endpush
+
+@push('js')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            width: '100%',
+        });
+    });
+</script>
+@endpush
