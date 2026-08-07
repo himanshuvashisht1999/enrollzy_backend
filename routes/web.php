@@ -576,3 +576,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         });
     });
 });
+
+Route::get('/fix-negative-durations', function() {
+    \Illuminate\Support\Facades\DB::table('attendance')->where('duration', '<', 0)->update(['duration' => \Illuminate\Support\Facades\DB::raw('ABS(duration)')]);
+    \Illuminate\Support\Facades\DB::table('breaks')->where('duration', '<', 0)->update(['duration' => \Illuminate\Support\Facades\DB::raw('ABS(duration)')]);
+    return 'Fixed all negative durations on the live database!';
+});

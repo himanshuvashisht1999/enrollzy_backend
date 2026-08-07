@@ -104,7 +104,7 @@ class ClockController extends Controller
         $break = Breaks::find($request->break_id);
         $startTime = Carbon::parse($break->start);
         $now = Carbon::now();
-        $durationInMinutes = $now->diffInMinutes($startTime);
+        $durationInMinutes = abs($now->diffInMinutes($startTime));
 
         try {
             $break->update([
@@ -184,7 +184,7 @@ class ClockController extends Controller
 
         $startTime = Carbon::parse($attend->check_in);
         $now = Carbon::now();
-        $durationInMinutes = $now->diffInMinutes($startTime);
+        $durationInMinutes = abs($now->diffInMinutes($startTime));
 
         try {
             $attend->update([
