@@ -85,6 +85,41 @@
                         @enderror
                     </div>
 
+                    @php
+                        $cFields = !empty($careerRoadmapSubModule->custom_fields) 
+                            ? (is_array($careerRoadmapSubModule->custom_fields) ? $careerRoadmapSubModule->custom_fields : json_decode($careerRoadmapSubModule->custom_fields, true)) 
+                            : [];
+                    @endphp
+
+                    <hr class="my-4">
+                    <h5 class="mb-3 text-primary"><i class="fas fa-link me-2"></i>Action Buttons Configuration</h5>
+                    <p class="text-muted small">Configure left and right buttons for this card. Note: A button will only be displayed on the website if its <strong>Label</strong> is provided.</p>
+                    
+                    <div class="row bg-light p-3 rounded mb-4 border">
+                        <div class="col-md-6 border-end">
+                            <h6 class="fw-bold mb-3 text-dark">Left Button Configuration</h6>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Button Label (Text)</label>
+                                <input type="text" class="form-control" name="btn1_label" value="{{ old('btn1_label', $cFields['btn1_label'] ?? 'Get Guidance') }}" placeholder="e.g. Get Guidance (Leave empty to hide button)">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Button URL</label>
+                                <input type="text" class="form-control" name="btn1_url" value="{{ old('btn1_url', $cFields['btn1_url'] ?? '/contact-us') }}" placeholder="e.g. /contact-us or https://...">
+                            </div>
+                        </div>
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="fw-bold mb-3 text-dark">Right Button Configuration</h6>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Button Label (Text)</label>
+                                <input type="text" class="form-control" name="btn2_label" value="{{ old('btn2_label', $cFields['btn2_label'] ?? 'Talk to Counselor') }}" placeholder="e.g. Talk to Counselor (Leave empty to hide button)">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Button URL</label>
+                                <input type="text" class="form-control" name="btn2_url" value="{{ old('btn2_url', $cFields['btn2_url'] ?? '/contact-us') }}" placeholder="e.g. /contact-us or https://...">
+                            </div>
+                        </div>
+                    </div>
+
                     <hr class="my-4">
                     
                     <h5 class="mb-3">Custom Fields (Optional)</h5>

@@ -48,7 +48,8 @@
                             <th>Session Details</th>
                             <th>Financials</th>
                             <th>Status</th>
-                            {{-- <th class="text-end pe-4">Actions</th> --}}
+                            <th>Meeting Link</th>
+                            <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -115,18 +116,71 @@
                                 </td>
                                 <td>
                                     <span class="badge rounded-pill {{ 
-                                        $booking->status == 'Confirmed' ? 'bg-success' : 
-                                        ($booking->status == 'Completed' ? 'bg-info' : 
-                                        ($booking->status == 'Cancelled' ? 'bg-danger' : 'bg-warning')) 
+                                        $booking->status == 'Confirmed' || $booking->status == 'confirmed' ? 'bg-success' : 
+                                        ($booking->status == 'Completed' || $booking->status == 'completed' ? 'bg-info' : 
+                                        ($booking->status == 'Cancelled' || $booking->status == 'cancelled' ? 'bg-danger' : 'bg-warning')) 
                                     }} px-3 py-2">
-                                        {{ $booking->status }}
+                                        {{ ucfirst($booking->status) }}
                                     </span>
                                 </td>
-                                {{-- 
+                                <td>
+                                    @if($booking->meeting_link)
+                                        <a href="{{ $booking->meeting_link }}" target="_blank" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-video me-1"></i> Join Call</a>
+                                        <button class="btn btn-sm btn-light border me-1" onclick="copyMeetingLink('{{ $booking->meeting_link }}', this)" title="Copy Link">
+                                            <i class="fas fa-copy text-secondary"></i> <span class="copy-text d-none d-xl-inline">Copy</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editAdminBookingModal{{ $booking->id }}" title="Edit Link">
+                                            <i class="fas fa-edit text-secondary"></i>
+                                        </button>
+                                    @else
+                                        <span class="text-muted small me-1">Not provided</span>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editAdminBookingModal{{ $booking->id }}">
+                                            <i class="fas fa-plus me-1"></i> Add Link
+                                        </button>
+                                    @endif
+                                </td>
                                 <td class="text-end pe-4">
-                                    <a href="#" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Details</a>
-                                </td> 
-                                --}}
+                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editAdminBookingModal{{ $booking->id }}">
+                                        <i class="fas fa-cog me-1"></i> Manage
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Admin Booking Modal -->
+                            <div class="modal fade" id="editAdminBookingModal{{ $booking->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow">
+                                        <form action="{{ route('admin.bookings.update', $booking->id) }}" method="POST">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold">Manage Booking #{{ $booking->booking_id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Meeting / Video Call Link</label>
+                                                    <input type="url" name="meeting_link" class="form-control" placeholder="https://meet.google.com/xyz-abc" value="{{ $booking->meeting_link }}">
+                                                    <small class="form-text text-muted">Enter Google Meet, Zoom, or video call link for student and expert.</small>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Booking Status</label>
+                                                    <select name="status" class="form-select">
+                                                        <option value="pending" {{ strtolower($booking->status) == 'pending' ? 'selected' : '' }}>Pending</option>
+                                                        <option value="confirmed" {{ strtolower($booking->status) == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                                                        <option value="completed" {{ strtolower($booking->status) == 'completed' ? 'selected' : '' }}>Completed</option>
+                                                        <option value="cancelled" {{ strtolower($booking->status) == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                             </tr>
                         @empty
                             <tr>
@@ -147,4 +201,19 @@
         </div>
     </div>
 </div>
+
+<script>
+function copyMeetingLink(url, btn) {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success"></i> <span class="text-success small fw-bold">Copied!</span>';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }).catch(err => {
+        alert('Failed to copy link: ' + err);
+    });
+}
+</script>
 @endsection

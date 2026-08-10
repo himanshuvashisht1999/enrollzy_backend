@@ -56,9 +56,11 @@ class ExpertController extends Controller
             // Simple validation for new fields
             'slug' => 'nullable|unique:experts,slug',
             'contact_number' => 'nullable|numeric|digits:10',
+            'price_per_min' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->all();
+        $data['is_featured'] = $request->has('is_featured') ? (int)$request->is_featured : 0;
 
         // SYNC ROLE Column for Legacy Support / DB Constraint
         $category = \App\Models\ExpertCategory::find($request->expert_category_id);
@@ -139,9 +141,11 @@ class ExpertController extends Controller
             'password' => 'nullable|min:6',
             'img' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
              'slug' => 'nullable|unique:experts,slug,' . $expert->id,
+             'price_per_min' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->all();
+        $data['is_featured'] = $request->has('is_featured') ? (int)$request->is_featured : 0;
 
         // SYNC ROLE Column for Legacy Support / DB Constraint
         $category = \App\Models\ExpertCategory::find($request->expert_category_id);

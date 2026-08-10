@@ -41,4 +41,26 @@ class BookingController extends Controller
         // For detailed view if needed, currently index covers requirements
         return view('admin.bookings.show', compact('booking'));
     }
+
+    public function update(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $request->validate([
+            'meeting_link' => ['nullable', 'url'],
+            'status'       => ['nullable', 'string'],
+        ]);
+
+        $data = [];
+        if ($request->has('meeting_link')) {
+            $data['meeting_link'] = $request->meeting_link;
+        }
+        if ($request->filled('status')) {
+            $data['status'] = $request->status;
+        }
+
+        $booking->update($data);
+
+        return redirect()->back()->with('success', 'Booking updated successfully.');
+    }
 }

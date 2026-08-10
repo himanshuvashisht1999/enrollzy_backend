@@ -49,19 +49,28 @@ class CareerRoadmapSubModuleController extends Controller
         ]);
 
         // Process custom fields
-        $customFields = null;
+        $customFields = [];
         if ($request->has('custom_field_names') && $request->has('custom_field_values')) {
             $names = $request->custom_field_names;
             $values = $request->custom_field_values;
-            $customFields = [];
             foreach ($names as $index => $name) {
                 if (!empty($name) && isset($values[$index])) {
                     $customFields[$name] = $values[$index];
                 }
             }
-            if (empty($customFields)) {
-                $customFields = null;
-            }
+        }
+
+        if ($request->has('btn1_label')) {
+            $customFields['btn1_label'] = $request->input('btn1_label');
+            $customFields['btn1_url'] = $request->input('btn1_url');
+        }
+        if ($request->has('btn2_label')) {
+            $customFields['btn2_label'] = $request->input('btn2_label');
+            $customFields['btn2_url'] = $request->input('btn2_url');
+        }
+
+        if (empty($customFields)) {
+            $customFields = null;
         }
 
         $data = [
@@ -108,19 +117,28 @@ class CareerRoadmapSubModuleController extends Controller
         ]);
 
         // Process custom fields
-        $customFields = null;
+        $customFields = [];
         if ($request->has('custom_field_names') && $request->has('custom_field_values')) {
             $names = $request->custom_field_names;
             $values = $request->custom_field_values;
-            $customFields = [];
             foreach ($names as $index => $name) {
                 if (!empty($name) && isset($values[$index])) {
                     $customFields[$name] = $values[$index];
                 }
             }
-            if (empty($customFields)) {
-                $customFields = null;
-            }
+        }
+
+        if ($request->has('btn1_label')) {
+            $customFields['btn1_label'] = $request->input('btn1_label');
+            $customFields['btn1_url'] = $request->input('btn1_url');
+        }
+        if ($request->has('btn2_label')) {
+            $customFields['btn2_label'] = $request->input('btn2_label');
+            $customFields['btn2_url'] = $request->input('btn2_url');
+        }
+
+        if (empty($customFields)) {
+            $customFields = null;
         }
 
         $data = [
