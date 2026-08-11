@@ -84,8 +84,8 @@
                         <input type="date" class="form-control rounded-3" name="probation_end_date" id="probation_end_date" value="{{ old('probation_end_date') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-semibold">Salary / Pay Rate</label>
-                        <input type="number" class="form-control rounded-3" name="salary" value="{{ old('salary') }}" placeholder="e.g. 50000">
+                        <label class="form-label fw-semibold">Salary / Pay Rate <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control rounded-3" name="salary" value="{{ old('salary') }}" placeholder="e.g. 50000" required>
                     </div>
 
                     {{-- Work Schedule --}}

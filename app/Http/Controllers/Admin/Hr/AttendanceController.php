@@ -71,9 +71,17 @@ class AttendanceController extends Controller
                 $totalAttendanceDuration += $checkIn->diffInMinutes($checkOut);
             
                 foreach ($attendance->breaks as $break) {
-                    $breakStart = Carbon::parse($break->start_time);
-                    $breakEnd = Carbon::parse($break->end_time);
-                    $totalBreakDuration += $breakStart->diffInMinutes($breakEnd);
+                    if ($break->start && $break->end) {
+                        $breakStart = Carbon::parse($break->start);
+                        $breakEnd = Carbon::parse($break->end);
+                        $breakDuration = $breakStart->diffInMinutes($breakEnd);
+                        
+                        if (strtolower($break->type) == 'lunch') {
+                            $totalBreakDuration += max(0, $breakDuration - 30);
+                        } else {
+                            $totalBreakDuration += $breakDuration;
+                        }
+                    }
                 }
             }
             
@@ -99,7 +107,20 @@ class AttendanceController extends Controller
         $totalBreak = $attendance->reduce(function ($carry, $attendance) {
             return $carry + $attendance->breaks->sum('duration');
         }, 0);
-        $totalWork = $attendance->sum('duration');
+
+        $unpaidBreak = $attendance->reduce(function ($carry, $attendance) {
+            return $carry + $attendance->breaks->sum(function ($break) {
+                if (strtolower($break->type) === 'lunch') {
+                    return max(0, $break->duration - 30);
+                }
+                return $break->duration;
+            });
+        }, 0);
+
+        $totalWork = $attendance->sum('duration') - $unpaidBreak;
+        if ($totalWork < 0) {
+            $totalWork = 0;
+        }
 
         return view('admin.hr.attendance.show', compact('attendance', 'totalWork', 'totalBreak'));
     }

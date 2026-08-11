@@ -122,6 +122,7 @@ class StaffController extends Controller
             'marital_status' => 'required',
             'employment_type' => 'required',
             'rolename' => 'required',
+            'salary' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -205,6 +206,7 @@ class StaffController extends Controller
             'status' => 'required',
             'department_id' => 'required',
             'designation_id' => 'required',
+            'salary' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {

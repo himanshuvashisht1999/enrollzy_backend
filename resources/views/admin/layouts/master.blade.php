@@ -241,7 +241,7 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accreditation-approvals.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.campus-types.index') }}">Campus Type</a></li>
+                                    href="{{ route('admin.campus-types.index') }}">Location Type</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"
                                     href="{{ route('admin.facilities.index') }}">Facilities</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.sports.*') ? 'active' : '' }}"

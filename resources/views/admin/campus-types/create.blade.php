@@ -1,11 +1,11 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add Campus Type')
+@section('title', 'Add Location Type')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0 fw-bold">Add Campus Type</h4>
+        <h4 class="mb-0 fw-bold">Add Location Type</h4>
     </div>
     <a href="{{ route('admin.campus-types.index') }}" class="btn btn-light border">
         <i class="fas fa-arrow-left me-1"></i> Back

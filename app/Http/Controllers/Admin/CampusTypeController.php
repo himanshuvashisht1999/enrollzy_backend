@@ -33,7 +33,7 @@ class CampusTypeController extends Controller
             'sort_order' => $request->sort_order ?? 0,
         ]);
 
-        return redirect()->route('admin.campus-types.index')->with('success', 'Campus Type created successfully.');
+        return redirect()->route('admin.campus-types.index')->with('success', 'Location Type created successfully.');
     }
 
     public function edit(CampusType $campusType)
@@ -55,12 +55,12 @@ class CampusTypeController extends Controller
             'sort_order' => $request->sort_order ?? 0,
         ]);
 
-        return redirect()->route('admin.campus-types.index')->with('success', 'Campus Type updated successfully.');
+        return redirect()->route('admin.campus-types.index')->with('success', 'Location Type updated successfully.');
     }
 
     public function destroy(CampusType $campusType)
     {
         $campusType->delete();
-        return redirect()->route('admin.campus-types.index')->with('success', 'Campus Type deleted successfully.');
+        return redirect()->route('admin.campus-types.index')->with('success', 'Location Type deleted successfully.');
     }
 }

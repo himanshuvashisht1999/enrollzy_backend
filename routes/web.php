@@ -613,3 +613,24 @@ Route::group(['prefix' => 'expert', 'as' => 'expert.'], function () {
     });
 });
 
+Route::get('/admin/fix-attendance-time', function (\Illuminate\Http\Request $request) {
+    // Default to +570 minutes (9.5 hours for USA EDT to IST)
+    $minutes = (int) $request->get('minutes', 570);
+    
+    // Fix attendance records before Aug 6th
+    $count = \Illuminate\Support\Facades\DB::table('attendance')
+        ->whereDate('date', '<', '2026-08-06')
+        ->update([
+            'check_in' => \Illuminate\Support\Facades\DB::raw("DATE_ADD(check_in, INTERVAL $minutes MINUTE)"),
+            'check_out' => \Illuminate\Support\Facades\DB::raw("IF(check_out IS NOT NULL, DATE_ADD(check_out, INTERVAL $minutes MINUTE), NULL)")
+        ]);
+        
+    $breakCount = \Illuminate\Support\Facades\DB::table('breaks')
+        ->whereDate('created_at', '<', '2026-08-06')
+        ->update([
+            'start' => \Illuminate\Support\Facades\DB::raw("DATE_ADD(start, INTERVAL $minutes MINUTE)"),
+            'end' => \Illuminate\Support\Facades\DB::raw("IF(end IS NOT NULL, DATE_ADD(end, INTERVAL $minutes MINUTE), NULL)")
+        ]);
+        
+    return "Fixed $count attendance records and $breakCount break records by adding $minutes minutes!";
+});
