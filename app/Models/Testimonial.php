@@ -8,8 +8,8 @@ class Testimonial extends Model
 {
     protected $guarded = [];
 
-    public function mentorProfile()
+    public function expert()
     {
-        return $this->belongsTo(MentorProfile::class, 'mentor_profile_id');
+        return $this->belongsTo(Expert::class, 'expert_id');
     }
 }

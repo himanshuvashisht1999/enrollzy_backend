@@ -29,8 +29,8 @@ class TestimonialController extends Controller
 
     public function create()
     {
-        $mentors = MentorProfile::with('user')->get();
-        return view('admin.testimonials.create', compact('mentors'));
+        $experts = \App\Models\Expert::get();
+        return view('admin.testimonials.create', compact('experts'));
     }
 
     public function store(Request $request)
@@ -38,7 +38,7 @@ class TestimonialController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'role' => 'nullable|string|max:255',
-            'mentor_profile_id' => 'nullable|integer',
+            'expert_id' => 'nullable|integer',
             'content' => 'required|string',
             'rating' => 'nullable|integer|min:1|max:5',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -59,8 +59,8 @@ class TestimonialController extends Controller
 
     public function edit(Testimonial $testimonial)
     {
-        $mentors = MentorProfile::with('user')->get();
-        return view('admin.testimonials.edit', compact('testimonial', 'mentors'));
+        $experts = \App\Models\Expert::get();
+        return view('admin.testimonials.edit', compact('testimonial', 'experts'));
     }
 
     public function update(Request $request, Testimonial $testimonial)
@@ -68,7 +68,7 @@ class TestimonialController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'role' => 'nullable|string|max:255',
-            'mentor_profile_id' => 'nullable|integer',
+            'expert_id' => 'nullable|integer',
             'content' => 'required|string',
             'rating' => 'nullable|integer|min:1|max:5',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
