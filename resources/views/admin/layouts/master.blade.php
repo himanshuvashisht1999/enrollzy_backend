@@ -298,17 +298,19 @@
                 <li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'active' : 'collapsed' }}"
                             data-bs-toggle="collapse" href="#expertMenu" role="button"
-                            aria-expanded="{{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'true' : 'false' }}">
+                            aria-expanded="{{ request()->is('admin/experts*') || request()->is('admin/slots*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'true' : 'false' }}">
                             <span><i class="fas fa-user-tie me-2"></i>Expert Management</span>
                             <i class="fas fa-chevron-down small menu-arrow"></i>
                         </a>
-                        <div class="collapse {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'show' : '' }}"
+                        <div class="collapse {{ request()->is('admin/experts*') || request()->is('admin/slots*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'show' : '' }}"
                             id="expertMenu">
                             <ul class="nav flex-column ps-3">
                                 <li><a class="nav-link sub-link {{ request()->routeIs('experts.*') ? 'active' : '' }}"
                                         href="{{ route('experts.index') }}">Experts List</a></li>
                                 <li><a class="nav-link sub-link {{ request()->routeIs('expert-categories.*') ? 'active' : '' }}"
                                         href="{{ route('expert-categories.index') }}">Categories</a></li>
+                                <li><a class="nav-link sub-link {{ request()->routeIs('admin.slots.*') ? 'active' : '' }}"
+                                        href="{{ route('admin.slots.index') }}">Manage Slots</a></li>
                                 <li><a class="nav-link sub-link {{ request()->routeIs('admin.bookings.index') ? 'active' : '' }}"
                                         href="{{ route('admin.bookings.index') }}">Bookings</a></li>
 
@@ -739,8 +741,8 @@
                 </li>
                 @if($isExpert)
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('expert.leads.*') ? 'active' : '' }}"
-                            href="{{ route('expert.leads.index') }}">
+                        <a class="nav-link {{ request()->routeIs('expert.leads.*') || request()->routeIs('leads.*') ? 'active' : '' }}"
+                            href="{{ \Illuminate\Support\Facades\Route::has('expert.leads.index') ? route('expert.leads.index') : (\Illuminate\Support\Facades\Route::has('leads.index') ? route('leads.index', ['type' => 'Expert']) : '#') }}">
                             <i class="fas fa-envelope-open-text"></i> My Leads
                         </a>
                     </li>
@@ -756,7 +758,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('expert.payouts.*') ? 'active' : '' }}"
-                            href="{{ route('expert.payouts.index') }}">
+                            href="{{ \Illuminate\Support\Facades\Route::has('expert.payouts.index') ? route('expert.payouts.index') : '#' }}">
                             <i class="fas fa-wallet"></i> Payouts
                         </a>
                     </li>

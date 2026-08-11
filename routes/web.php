@@ -90,9 +90,13 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/experts/{expert}/commission', [ExpertController::class, 'updateCommission'])->name('experts.commission.update');
     Route::resource('/admin/expert-categories', \App\Http\Controllers\Admin\ExpertCategoryController::class)->names('expert-categories');
 
-    // Expert Bookings
+    // Expert Bookings & Slots
     Route::get('/admin/expert-bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('admin.bookings.index');
-    Route::resource('/admin/expert-categories', \App\Http\Controllers\Admin\ExpertCategoryController::class)->names('expert-categories');
+    Route::put('/admin/expert-bookings/{id}', [\App\Http\Controllers\Admin\BookingController::class, 'update'])->name('admin.bookings.update');
+    Route::get('/admin/slots', [\App\Http\Controllers\Admin\SlotController::class, 'index'])->name('admin.slots.index');
+    Route::post('/admin/slots', [\App\Http\Controllers\Admin\SlotController::class, 'store'])->name('admin.slots.store');
+    Route::put('/admin/slots/{id}', [\App\Http\Controllers\Admin\SlotController::class, 'update'])->name('admin.slots.update');
+    Route::delete('/admin/slots/{id}', [\App\Http\Controllers\Admin\SlotController::class, 'destroy'])->name('admin.slots.destroy');
 
     // Alumni
     Route::resource('/admin/alumni', \App\Http\Controllers\Admin\AlumniController::class)->names([
@@ -582,3 +586,30 @@ Route::get('/fix-negative-durations', function() {
     \Illuminate\Support\Facades\DB::table('breaks')->where('duration', '<', 0)->update(['duration' => \Illuminate\Support\Facades\DB::raw('ABS(duration)')]);
     return 'Fixed all negative durations on the live database!';
 });
+
+// ==========================================
+// ✅ EXPERT PORTAL ROUTES
+// ==========================================
+Route::group(['prefix' => 'expert', 'as' => 'expert.'], function () {
+    Route::get('/login', [\App\Http\Controllers\Expert\AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Expert\AuthController::class, 'login'])->name('login.submit');
+    Route::post('/logout', [\App\Http\Controllers\Expert\AuthController::class, 'logout'])->name('logout');
+
+    Route::middleware(['auth:expert'])->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Expert\DashboardController::class, 'index'])->name('dashboard');
+
+        // Slot Management
+        Route::get('/slots', [\App\Http\Controllers\Expert\SlotController::class, 'index'])->name('slots.index');
+        Route::post('/slots', [\App\Http\Controllers\Expert\SlotController::class, 'store'])->name('slots.store');
+        Route::put('/slots/{id}', [\App\Http\Controllers\Expert\SlotController::class, 'update'])->name('slots.update');
+        Route::delete('/slots/{id}', [\App\Http\Controllers\Expert\SlotController::class, 'destroy'])->name('slots.destroy');
+
+        // Booking & Session Approvals
+        Route::get('/bookings', [\App\Http\Controllers\Expert\BookingController::class, 'index'])->name('bookings.index');
+        Route::post('/bookings/{id}/approve', [\App\Http\Controllers\Expert\BookingController::class, 'approve'])->name('bookings.approve');
+        Route::post('/bookings/{id}/reject', [\App\Http\Controllers\Expert\BookingController::class, 'reject'])->name('bookings.reject');
+        Route::post('/bookings/{id}/complete', [\App\Http\Controllers\Expert\BookingController::class, 'complete'])->name('bookings.complete');
+        Route::post('/bookings/{id}/update-link', [\App\Http\Controllers\Expert\BookingController::class, 'updateMeetingLink'])->name('bookings.update-link');
+    });
+});
+

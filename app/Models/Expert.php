@@ -16,6 +16,7 @@ class Expert extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'price_per_min',
         'password',
         'role',
         'expert_category_id',
@@ -77,7 +78,7 @@ class Expert extends Authenticatable
         'total_reviews', 'verified_student_reviews_only', 'student_testimonials', 'peer_reviews', 'awards_recognition',
         'contact_number', 'public_contact_allowed', 'profile_visibility', 'profile_claimed', 'verification_status',
         'meta_title', 'meta_description', 'focus_keywords', 'schema_type', 'canonical_url', 'indexing_status',
-        'data_source', 'confidence_score', 'last_updated_on', 'status'
+        'data_source', 'confidence_score', 'last_updated_on', 'status', 'is_featured'
     ];
 
     protected $casts = [
