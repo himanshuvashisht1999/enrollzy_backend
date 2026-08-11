@@ -31,7 +31,7 @@
             <h6 class="m-0 fw-bold text-primary">Find Calling User</h6>
         </div>
         <div class="card-body">
-            <form id="filterForm" class="row">
+            <form id="filterForm" class="row" action="{{ route('admin.students-crm.calling-module.index') }}" method="GET">
                 <input type="hidden" name="group" value="{{ request('group', 1) }}">
                 
                 <div class="form-group col-lg-3 mb-3">
@@ -74,6 +74,14 @@
                 </div>
 
                 <div class="form-group col-lg-3 mb-3">
+                    <input type="text" name="filter_name" id="nameFilter" class="form-control rounded-3" placeholder="Search by Full Name">
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
+                    <input type="text" name="filter_phone" id="phoneFilter" class="form-control rounded-3" placeholder="Search by Phone Number">
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
                     <span class="d-block mb-2">User Without Status</span>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleUserWithoutStatus" name="user_with_out_status" value="1" {{ $user_with_out_status == 1 ? 'checked' : '' }}>
@@ -95,35 +103,53 @@
 
                 <div class="col-lg-12 d-flex gap-2">
                     <button class="btn btn-primary px-4 rounded-pill" type="submit" id="submitSearchButton">Search</button>
-                    <button type="button" class="btn btn-info px-4 rounded-pill text-white" id="resetBtn">Reset</button>
+                    <a href="{{ route('admin.students-crm.calling-module.index') }}" class="btn btn-info px-4 rounded-pill text-white" id="resetBtn">Reset</a>
                     <button type="button" class="btn btn-secondary px-4 rounded-pill" id="restartBtn">Re-Start</button>
                 </div>
             </form>
         </div>
     </div>
 
+    @if(isset($data) && $data->count() > 0)
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-primary">All Users</h6>
+            <h6 class="m-0 fw-bold text-primary">Calling User</h6>
             <span class="text-muted small">Total number of contacts are <span id="totalContacts">{{ $count }}</span></span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle" id="callingTable" width="100%">
+                <table class="table table-hover align-middle" width="100%">
                     <thead class="bg-light">
                         <tr>
-                            <th>#</th>
                             <th>Student / Contact</th>
                             <th>Category</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @foreach($data as $item)
+                        <tr>
+                            <td><b>{{ $item->name }}</b><br><small class="text-muted">{{ $item->phone }}</small></td>
+                            <td>{{ $item->category->name ?? '<span class="text-muted small">No Category</span>' }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" 
+                                    data-id="{{ $item->id }}" 
+                                    data-name="{{ $item->name }}" 
+                                    data-phone="{{ $item->phone }}" 
+                                    data-category="{{ $item->category_id ?? '' }}">
+                                    <i class="fas fa-phone-alt"></i> Update Status
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+    @elseif(request()->has('category') || request()->has('country') || request()->has('state') || request()->has('city') || request()->has('filter_name') || request()->has('filter_phone') || request()->has('sequence_mode') || request()->has('user_with_out_status'))
+    <div class="alert alert-info mt-3 shadow-sm border-0 rounded-4">No more users found for the selected filters.</div>
+    @endif
 </div>
 
 <!-- Update Calling Status Modal -->
@@ -231,52 +257,15 @@
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
     $(document).ready(function() {
-        let table = $('#callingTable').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: "{{ route('admin.students-crm.calling-module.index') }}",
-                data: function(d) {
-                    d.category = $('#categoryFilter').val();
-                    d.country = $('#countryFilter').val();
-                    d.state = $('#stateFilter').val();
-                    d.city = $('#cityFilter').val();
-                    d.user_with_out_status = $('#toggleUserWithoutStatus').is(':checked') ? 1 : 0;
-                    d.sequence_mode = $('#toggleSequence').is(':checked') ? 1 : 0;
-                }
-            },
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'contact', name: 'contact' },
-                { data: 'category_name', name: 'category_name' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ],
-            drawCallback: function(settings) {
-                $('#totalContacts').text(settings.json.recordsFiltered);
-            }
-        });
-
-        $('#filterForm').on('submit', function(e) {
-            e.preventDefault();
-            table.draw();
-        });
-
-        $('#resetBtn').on('click', function() {
-            $('#filterForm')[0].reset();
-            $('#stateFilter').html('<option value="">Select State</option>');
-            $('#cityFilter').html('<option value="">Select City</option>');
-            $('#toggleLabel').text('No');
-            $('#sequenceLabel').text('OFF (Normal)');
-            table.draw();
-        });
-
         $('#restartBtn').on('click', function() {
             let cat = $('#categoryFilter').val();
             if(!cat) {
                 Swal.fire('Warning', 'Please select a category first before clicking Re-Start.', 'warning');
                 return;
             }
-            table.draw();
+            
+            // For now just submit the form with sequence_mode or re-start flag if implemented
+            $('#filterForm').submit();
         });
 
         $(document).on('click', '.open-calling-modal', function() {
@@ -310,8 +299,9 @@
                     if(res.status == 1) {
                         $('#callModal').modal('hide');
                         $('#callForm')[0].reset();
-                        table.ajax.reload();
-                        Swal.fire('Interactions Logged', res.message, 'success');
+                        Swal.fire('Interactions Logged', res.message, 'success').then(() => {
+                            window.location.reload();
+                        });
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }

@@ -28,10 +28,10 @@ class CustomerController extends Controller
                 $data->whereRaw('1 = 0');
             } else {
                 if ($request->filled('filter_name')) {
-                    $data->where('name', 'like', '%' . $request->filter_name . '%');
+                    $data->where('name', $request->filter_name);
                 }
                 if ($request->filled('filter_phone')) {
-                    $data->where('phone', 'like', '%' . $request->filter_phone . '%');
+                    $data->where('phone', $request->filter_phone);
                 }
             }
 

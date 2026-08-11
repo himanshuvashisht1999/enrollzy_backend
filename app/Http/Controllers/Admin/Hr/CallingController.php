@@ -24,10 +24,20 @@ class CallingController extends Controller
     {
         $organization_id = auth()->user()->organization_id;
 
-        if ($request->ajax()) {
-            // For general list, we show students/customers who need calling
-            $data = Customer::where('organization_id', $organization_id);
+        $data = Customer::where('organization_id', $organization_id);
 
+        $hasFilter = $request->filled('category') || 
+                     $request->filled('country') || 
+                     $request->filled('state') || 
+                     $request->filled('city') || 
+                     $request->filled('filter_name') || 
+                     $request->filled('filter_phone') || 
+                     $request->user_with_out_status == 1 || 
+                     $request->sequence_mode == 1;
+
+        if (!$hasFilter) {
+            $data->whereRaw('1 = 0');
+        } else {
             if ($request->filled('category')) {
                 $data->where('category_id', $request->category);
             }
@@ -40,38 +50,30 @@ class CallingController extends Controller
             if ($request->filled('city')) {
                 $data->where('city', $request->city);
             }
-            // Logic for user_with_out_status if needed
-            // if ($request->filled('user_with_out_status') && $request->user_with_out_status == 1) {
-            //    $data->whereDoesntHave('callingHistory'); // Adjust based on relation
-            // }
-
-            $data = $data->latest();
-
-            return DataTables::of($data)
-                ->addIndexColumn()
-                ->addColumn('contact', function ($row) {
-                    return '<b>'.$row->name.'</b><br><small class="text-muted">'.$row->phone.'</small>';
-                })
-                ->addColumn('category_name', function ($row) {
-                    return $row->category->name ?? '<span class="text-muted small">No Category</span>';
-                })
-                ->addColumn('action', function ($row) {
-                    $btn = '<button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" data-id="'.$row->id.'" data-name="'.$row->name.'" data-phone="'.$row->phone.'" data-category="'.($row->category_id ?? '').'"><i class="fas fa-phone-alt"></i> Update Status</button>';
-                    return $btn;
-                })
-                ->rawColumns(['contact', 'category_name', 'action'])
-                ->make(true);
+            if ($request->filled('filter_name')) {
+                $data->where('name', $request->filter_name);
+            }
+            if ($request->filled('filter_phone')) {
+                $data->where('phone', $request->filter_phone);
+            }
         }
 
+        $calling_ids = CallingHistory::where('organization_id', $organization_id)->pluck('user_id');
+        $data->whereNotIn('id', $calling_ids);
+
+        $data = $data->latest();
+        
+        $count = $data->count();
+        $data = $data->limit(1)->get();
+        
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
         $actions = CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
         $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
         $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
         
-        $count = Customer::where('organization_id', $organization_id)->count();
         $user_with_out_status = request('user_with_out_status', 0);
 
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data'));
     }
 
     public function history(Request $request)
