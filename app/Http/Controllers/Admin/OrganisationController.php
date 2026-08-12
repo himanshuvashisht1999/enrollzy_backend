@@ -360,8 +360,9 @@ class OrganisationController extends Controller
     {
         $organisationTypes = \App\Models\OrganisationType::where('status', true)->get();
         $brandTypes = Organisation::BRAND_TYPES;
+        $campusTypeNews = \App\Models\CampusTypeNew::where('status', true)->orderBy('sort_order')->get();
 
-        return view('admin.organisations.edit', compact('organisation', 'organisationTypes', 'brandTypes'));
+        return view('admin.organisations.edit', compact('organisation', 'organisationTypes', 'brandTypes', 'campusTypeNews'));
     }
 
     public function update(Request $request, Organisation $organisation)
@@ -370,6 +371,7 @@ class OrganisationController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'organisation_type_id' => 'required|exists:organisation_types,id',
+            'campus_type_new_id' => 'nullable|exists:campus_type_news,id',
             'organisation_id_number' => 'nullable|string|max:255',
             'brand_type' => 'nullable|string|in:' . implode(',', Organisation::BRAND_TYPES),
             'central_authority' => 'nullable|string|max:255',
@@ -756,9 +758,13 @@ class OrganisationController extends Controller
             $value = $value === 'Active' ? 1 : ($value === 'Archived' ? 2 : 0);
         }
 
-        $organisation->update([$field => $value]);
-
-        return response()->json(['status' => 'success']);
+        try {
+            $organisation->update([$field => $value]);
+            return response()->json(['status' => 'success', 'field' => $field, 'value' => $value]);
+        } catch (\Exception $e) {
+            \Log::error('Autosave error for field ' . $field . ': ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
+        }
     }
 
     public function getCampusesJson($id)

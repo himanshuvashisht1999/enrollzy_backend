@@ -9,6 +9,7 @@ class Organisation extends Model
     protected $fillable = [
         'name',
         'organisation_type_id',
+        'campus_type_new_id',
         'organisation_id_number',
         'brand_type',
         'franchise_partner_name',

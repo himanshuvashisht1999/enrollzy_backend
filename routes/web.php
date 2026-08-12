@@ -415,6 +415,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('organisation-types', \App\Http\Controllers\Admin\OrganisationTypeController::class);
         Route::resource('accreditation-approvals', \App\Http\Controllers\Admin\AccreditationApprovalController::class);
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class);
+        Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class);
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
         Route::resource('organisation-sub-types', \App\Http\Controllers\Admin\OrganisationSubTypeController::class);
         Route::resource('languages', \App\Http\Controllers\Admin\LanguageController::class);

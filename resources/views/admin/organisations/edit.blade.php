@@ -64,6 +64,19 @@
                                 </select>
                             </div>
 
+                            {{-- Campus Type (shown only when Organisation Type = School) --}}
+                            <div class="col-md-6" id="campus_type_new_wrapper" style="display:none;">
+                                <label class="form-label fw-bold">Campus Type</label>
+                                <select name="campus_type_new_id" id="campus_type_new_id" class="form-select">
+                                    <option value="">Select Campus Type</option>
+                                    @foreach($campusTypeNews as $ct)
+                                        <option value="{{ $ct->id }}" {{ old('campus_type_new_id', $organisation->campus_type_new_id) == $ct->id ? 'selected' : '' }}>
+                                            {{ $ct->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             {{-- <div class="col-md-6">
                                 <label class="form-label fw-bold">Brand Type</label>
                                 <select name="brand_type" class="form-select">
@@ -92,7 +105,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Is Top Institution?</label>
-                                <select name="is_top" class="form-select">
+                                <select name="is_top" id="is_top" class="form-select">
                                     <option value="0" {{ old('is_top', $organisation->is_top ?? 0) == 0 ? 'selected' : '' }}>No</option>
                                     <option value="1" {{ old('is_top', $organisation->is_top ?? 0) == 1 ? 'selected' : '' }}>Yes (Top Institution)</option>
                                 </select>
@@ -1613,6 +1626,15 @@
                     console.log(`Setting ${id} display to: ${el.style.display}`);
                 }
             });
+
+            // Toggle Campus Type New dropdown (only for School = type ID 4)
+            const campusTypeWrapper = document.getElementById('campus_type_new_wrapper');
+            if (campusTypeWrapper) {
+                const isSchool = parseInt(val) === 4;
+                campusTypeWrapper.style.display = isSchool ? '' : 'none';
+                // NOTE: Do NOT disable the select — disabling breaks autosave listeners.
+                // Hidden via display:none is enough to prevent form submission confusion.
+            }
         }
 
         if (typeSelect) {
@@ -1620,6 +1642,44 @@
             // Run once on load
             toggleFields();
         }
+
+        // Directly attach autosave to select fields via jQuery so Select2 events are captured.
+        // (Select2 intercepts native change events; jQuery .on('change') works correctly with it.)
+        function directAutosave(fieldName, value) {
+            const orgId = orgIdInput ? orgIdInput.value : null;
+            if (!orgId) {
+                console.warn('directAutosave: orgId not found');
+                return;
+            }
+            console.log('directAutosave firing for field:', fieldName, 'value:', value);
+            showStatus('Saving...', 'info');
+            fetch(autosaveRouteTemplate.replace(':id', orgId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ field: fieldName, value: value })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('directAutosave response [' + fieldName + ']:', data);
+                showStatus(data.status === 'success' ? 'Saved ✓' : ('Error: ' + (data.message || '')), data.status === 'success' ? 'success' : 'danger');
+            })
+            .catch(err => {
+                console.error('directAutosave error [' + fieldName + ']:', err);
+                showStatus('Error', 'danger');
+            });
+        }
+
+        // Use jQuery .on('change') so Select2 events are captured correctly
+        $('#campus_type_new_id').on('change', function() {
+            directAutosave('campus_type_new_id', $(this).val());
+        });
+
+        $('#is_top').on('change', function() {
+            directAutosave('is_top', $(this).val());
+        });
 
         // Feature: Counselling/Regulatory Body Sync & Jurisdiction
         const cb_name = document.getElementById('cb_name_sync');
@@ -1803,85 +1863,98 @@
         // ------------------------------------------------------------------
         // Feature 3: Auto-save Logic
         // ------------------------------------------------------------------
-        const inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
-        
-        inputs.forEach(input => {
-            input.addEventListener('change', function(e) {
-                // If this is the type select, ensure toggle runs (it has its own listener, but safe to verify)
-                if (this.id === 'organisation_type_id') {
-                    toggleFields();
-                }
 
-                const orgId = orgIdInput ? orgIdInput.value : null;
-                if (!orgId) return;
+        // Shared autosave sender function
+        function sendAutosave(fieldName, value, isFile, fileInput) {
+            const orgId = orgIdInput ? orgIdInput.value : null;
+            if (!orgId || !fieldName) return;
 
-                // Prepare Data
-                let fieldName = this.name.replace('[]', '');
-                let value = this.value;
-                let isFile = (this.type === 'file');
+            let bodyData;
+            let headers = { 'X-CSRF-TOKEN': "{{ csrf_token() }}" };
 
-                // Determine payload
-                let bodyData;
-                let headers = { 'X-CSRF-TOKEN': "{{ csrf_token() }}" };
+            if (isFile && fileInput) {
+                const formData = new FormData();
+                formData.append('field', fieldName);
+                if (fileInput.files.length > 0) formData.append(fieldName, fileInput.files[0]);
+                bodyData = formData;
+            } else {
+                headers['Content-Type'] = 'application/json';
+                bodyData = JSON.stringify({ field: fieldName, value: value });
+            }
 
-                if (isFile) {
-                    const formData = new FormData();
-                    formData.append('field', fieldName);
-                    if (this.files.length > 0) {
-                        formData.append(fieldName, this.files[0]);
-                    }
-                    bodyData = formData;
-                    // Don't set Content-Type for FormData, browser does it with boundary
+            showStatus(isFile ? 'Uploading...' : 'Saving...', 'info');
+
+            fetch(autosaveRouteTemplate.replace(':id', orgId), {
+                method: 'POST',
+                headers: headers,
+                body: bodyData
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('Autosave response for field [' + fieldName + ']:', data);
+                if (data.status === 'success') {
+                    showStatus('Saved ✓', 'success');
                 } else {
-                    headers['Content-Type'] = 'application/json';
-                    
-                    // Special Handling for Checkboxes
-                    if (this.type === 'checkbox') {
-                         if (this.name.includes('[]')) {
-                             // Array Checkbox: Collect ALL checked inputs of this name
-                             const allChecked = document.querySelectorAll(`input[name="${this.name}"]:checked`);
-                             const values = Array.from(allChecked).map(cb => cb.value);
-                             value = values.join(',');
-                         } else {
-                             // Boolean Toggle
-                             value = this.checked ? 1 : 0;
-                         }
-                    } else if (this.name.includes('[]') && this.type === 'text') {
-                        // Array Text: Collect ALL inputs of this name
-                        const allInputs = document.querySelectorAll(`input[name="${this.name}"]`);
-                        value = Array.from(allInputs).map(i => i.value).filter(v => v.trim() !== '');
+                    showStatus('Error: ' + (data.message || 'Unknown'), 'danger');
+                    console.error('Autosave server error:', data);
+                }
+            })
+            .catch(err => {
+                console.error("Autosave Error:", err);
+                showStatus('Error', 'danger');
+            });
+        }
+
+        // 1. jQuery-based listener for ALL select elements (Select2 compatible)
+        $('select.form-select').on('change', function() {
+            const $el = $(this);
+            const fieldName = $el.attr('name') ? $el.attr('name').replace('[]', '') : null;
+            if (!fieldName) return;
+
+            if ($el.attr('id') === 'organisation_type_id') {
+                toggleFields();
+            }
+
+            const value = $el.val();
+            sendAutosave(fieldName, value, false, null);
+        });
+
+        // 2. Vanilla JS listener for inputs and textareas (not affected by Select2)
+        const nonSelectInputs = document.querySelectorAll('input:not([type=hidden]):not([type=file]), textarea');
+        nonSelectInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                let fieldName = this.name ? this.name.replace('[]', '') : null;
+                if (!fieldName) return;
+
+                let value = this.value;
+
+                if (this.type === 'checkbox') {
+                    if (this.name.includes('[]')) {
+                        const allChecked = document.querySelectorAll(`input[name="${this.name}"]:checked`);
+                        value = Array.from(allChecked).map(cb => cb.value).join(',');
+                    } else {
+                        value = this.checked ? 1 : 0;
                     }
-                    
-                    bodyData = JSON.stringify({
-                        field: fieldName,
-                        value: value
-                    });
+                } else if (this.name.includes('[]') && this.type === 'text') {
+                    const allInputs = document.querySelectorAll(`input[name="${this.name}"]`);
+                    value = Array.from(allInputs).map(i => i.value).filter(v => v.trim() !== '');
                 }
 
-                // UI Feedback
-                showStatus(isFile ? 'Uploading...' : 'Saving...', 'info');
+                sendAutosave(fieldName, value, false, null);
+            });
+        });
 
-                // API Call
-                fetch(autosaveRouteTemplate.replace(':id', orgId), {
-                    method: 'POST',
-                    headers: headers,
-                    body: bodyData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showStatus('Saved', 'success');
-                    } else {
-                        showStatus('Error', 'danger');
-                    }
-                })
-                .catch(err => {
-                    console.error("Autosave Error:", err);
-                    showStatus('Error', 'danger');
-                });
+        // 3. File input listener
+        const fileInputs = document.querySelectorAll('input[type=file]');
+        fileInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const fieldName = this.name ? this.name.replace('[]', '') : null;
+                if (!fieldName) return;
+                sendAutosave(fieldName, null, true, this);
             });
         });
     });
+
 </script>
 
 
