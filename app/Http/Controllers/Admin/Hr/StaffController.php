@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
 use Spatie\Permission\Models\Role;
+use App\Models\StaffType;
 
 class StaffController extends Controller
 {
@@ -101,7 +102,8 @@ class StaffController extends Controller
             $Organization = Organization::where('id', $user->organization_id)->get();
             $roles = Role::where('guard_name', 'admin')->where('name', '!=', 'superadmin')->get();
         }
-        return view('admin.hr.staff.create', compact('department', 'designation', 'Organization', 'roles'));
+        $staffTypes = StaffType::where('status', 1)->get();
+        return view('admin.hr.staff.create', compact('department', 'designation', 'Organization', 'roles', 'staffTypes'));
     }
 
     public function store(Request $request)
@@ -165,6 +167,7 @@ class StaffController extends Controller
                 'marital_status' => $request->marital_status,
                 'probation_end_date' => $request->probation_end_date,
                 'employment_type' => $request->employment_type,
+                'staff_type_id' => $request->staff_type_id,
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
@@ -190,7 +193,8 @@ class StaffController extends Controller
             $designation = Designation::where('organization_id', $user->organization_id)->get();
             $roles = Role::where('guard_name', 'admin')->where('name', '!=', 'superadmin')->get();
         }
-        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation', 'roles'));
+        $staffTypes = StaffType::where('status', 1)->get();
+        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation', 'roles', 'staffTypes'));
     }
 
     public function update(Request $request, $id)
@@ -245,6 +249,7 @@ class StaffController extends Controller
                 'marital_status' => $request->marital_status,
                 'probation_end_date' => $request->probation_end_date,
                 'employment_type' => $request->employment_type,
+                'staff_type_id' => $request->staff_type_id,
                 'profile_image' => $profileImagePath,
             ];
 

@@ -42,6 +42,11 @@ class Admin extends Authenticatable
     {
         return $this->belongsTo(Organization::class);
     }
+    public function staffType()
+    {
+        return $this->belongsTo(StaffType::class, 'staff_type_id');
+    }
+
     public function isSuperAdmin()
     {
         return $this->role === 'superadmin';

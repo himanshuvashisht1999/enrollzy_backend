@@ -69,6 +69,15 @@
                             <option value="internship">Internship</option>
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Staff Type</label>
+                        <select name="staff_type_id" class="form-select rounded-3">
+                            <option value="">Select Staff Type</option>
+                            @foreach ($staffTypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
                     {{-- Dates --}}
                     <div class="col-md-3">

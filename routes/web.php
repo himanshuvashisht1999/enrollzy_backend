@@ -451,6 +451,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::resource('leaves', \App\Http\Controllers\Admin\Hr\LeavesController::class);
 
             // Staff Module Routes
+            Route::resource('staff-types', \App\Http\Controllers\Admin\Hr\StaffTypeController::class);
             Route::resource('departments', \App\Http\Controllers\Admin\Hr\DepartmentController::class);
             Route::resource('designations', \App\Http\Controllers\Admin\Hr\DesignationController::class);
             Route::resource('staff', \App\Http\Controllers\Admin\Hr\StaffController::class);

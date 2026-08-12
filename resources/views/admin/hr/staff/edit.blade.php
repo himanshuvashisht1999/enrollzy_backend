@@ -72,6 +72,15 @@
                             <option value="internship" {{ $staff->employment_type == 'internship' ? 'selected' : '' }}>Internship</option>
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Staff Type</label>
+                        <select name="staff_type_id" class="form-select rounded-3">
+                            <option value="">Select Staff Type</option>
+                            @foreach ($staffTypes as $type)
+                                <option value="{{ $type->id }}" {{ $staff->staff_type_id == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
                     {{-- Dates --}}
                     <div class="col-md-3">

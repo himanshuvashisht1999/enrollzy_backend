@@ -446,6 +446,8 @@
                                     href="{{ route('admin.hr.departments.index') }}">Departments</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.designations.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.designations.index') }}">Designations</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.staff-types.index') }}">Staff Types</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.staff.index') }}">Staff Members</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
