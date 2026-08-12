@@ -177,7 +177,7 @@
                             <select name="status_id" class="form-select rounded-3" id="status_id" required>
                                 <option value="" selected disabled>Select</option>
                                 @foreach($statuses as $status)
-                                    <option value="{{ $status->id }}">{{ $status->name }}</option>
+                                    <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}">{{ $status->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -187,7 +187,7 @@
                         </div>
                         <div class="col-lg-3">
                             <label class="form-label small fw-bold">Action Taken <span class="text-danger">*</span></label>
-                            <select name="action_id" class="form-select rounded-3" required>
+                            <select name="action_id" id="action_id" class="form-select rounded-3" required>
                                 <option value="">Select Action</option>
                                 @foreach($actions as $action)
                                     <option value="{{ $action->id }}">{{ $action->name }}</option>
@@ -353,6 +353,15 @@
             $('#caption').val(caption);
             if (CKEDITOR.instances['message-editor']) {
                 CKEDITOR.instances['message-editor'].setData(msg);
+            }
+        });
+
+        $('#status_id').on('change', function() {
+            let actionId = $(this).find('option:selected').data('action');
+            if(actionId) {
+                $('#action_id').val(actionId).trigger('change');
+            } else {
+                $('#action_id').val('').trigger('change');
             }
         });
 

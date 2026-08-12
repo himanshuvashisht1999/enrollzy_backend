@@ -24,6 +24,7 @@
                             <th>ID</th>
                             <th>Status Name</th>
                             <th>Date Required</th>
+                            <th>More Details?</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -52,8 +53,24 @@
                         <input type="text" name="name" id="name" class="form-control rounded-3" placeholder="e.g. Interested, Callback" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label small fw-bold">Calling Action (Optional)</label>
+                        <select name="calling_action_id" id="calling_action_id" class="form-select rounded-3">
+                            <option value="">-- Select Action --</option>
+                            @foreach($actions as $action)
+                                <option value="{{ $action->id }}">{{ $action->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-bold">Requires Date? <span class="text-danger">*</span></label>
                         <select name="date_require" id="date_require" class="form-select rounded-3" required>
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">More Details? <span class="text-danger">*</span></label>
+                        <select name="is_more_details" id="is_more_details" class="form-select rounded-3" required>
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                         </select>
@@ -83,6 +100,7 @@
                 { data: 'id', name: 'id' },
                 { data: 'name', name: 'name' },
                 { data: 'date_require', name: 'date_require' },
+                { data: 'is_more_details', name: 'is_more_details' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]
         });
@@ -115,8 +133,11 @@
                 if(res.status == 1) {
                     $('#status_id').val(res.data.id);
                     $('#name').val(res.data.name);
+                    $('#calling_action_id').val(res.data.calling_action_id).trigger('change');
                     let dr = res.data.date_require ? res.data.date_require.toString().toLowerCase().trim() : 'no';
                     $('#date_require').val(dr).trigger('change');
+                    let imd = res.data.is_more_details ? res.data.is_more_details.toString().toLowerCase().trim() : 'no';
+                    $('#is_more_details').val(imd).trigger('change');
                     $('#modalTitle').text('Edit Calling Status');
                     $('#createModal').modal('show');
                 }
@@ -126,6 +147,9 @@
         $('#createModal').on('hidden.bs.modal', function() {
             $('#statusForm')[0].reset();
             $('#status_id').val('');
+            $('#calling_action_id').val('').trigger('change');
+            $('#date_require').val('no').trigger('change');
+            $('#is_more_details').val('no').trigger('change');
             $('#modalTitle').text('New Calling Status');
         });
     });

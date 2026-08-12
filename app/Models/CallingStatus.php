@@ -16,6 +16,13 @@ class CallingStatus extends Model
         'name',
         'status',
         'organization_id',
-        'date_require'
+        'date_require',
+        'is_more_details',
+        'calling_action_id'
     ];
+
+    public function callingAction()
+    {
+        return $this->belongsTo(CallingAction::class, 'calling_action_id');
+    }
 }
