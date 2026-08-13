@@ -60,7 +60,13 @@ class CallingController extends Controller
             }
         }
 
-        $calling_ids = CallingHistory::where('organization_id', $organization_id)->pluck('user_id');
+        $historyQuery = CallingHistory::where('organization_id', $organization_id);
+        
+        if ($request->user_with_out_status != 1) {
+            $historyQuery->where('is_done', 1);
+        }
+        
+        $calling_ids = $historyQuery->pluck('user_id');
         $data->whereNotIn('id', $calling_ids);
 
         $data = $data->latest();
@@ -87,8 +93,17 @@ class CallingController extends Controller
         if ($request->ajax()) {
             $organization_id = auth()->user()->organization_id;
             $data = CallingHistory::with(['customer', 'calling_status', 'calling_action', 'staff'])
-                ->where('organization_id', $organization_id)
-                ->latest();
+                ->where('organization_id', $organization_id);
+                
+            if (auth()->user()->role == 'staff') {
+                $data->where('updated_by', auth()->id());
+            } else {
+                if ($request->filled('staff_id')) {
+                    $data->where('updated_by', $request->staff_id);
+                }
+            }
+            
+            $data = $data->latest();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -110,8 +125,13 @@ class CallingController extends Controller
                 ->rawColumns(['customer_info', 'status_info', 'action_info', 'staff_info', 'call_date'])
                 ->make(true);
         }
+        
+        $staffs = [];
+        if (auth()->user()->role != 'staff') {
+            $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', auth()->user()->organization_id)->get();
+        }
 
-        return view('admin.students_crm.calling.history');
+        return view('admin.students_crm.calling.history', compact('staffs'));
     }
 
     public function store(Request $request)
@@ -119,7 +139,7 @@ class CallingController extends Controller
         $validator = Validator::make($request->all(), [
             'customer_id' => 'required',
             'status_id' => 'required',
-            'action_id' => 'required',
+            'action_id' => 'nullable',
             'next_call_date' => 'nullable|date',
         ]);
 
@@ -152,6 +172,7 @@ class CallingController extends Controller
             CallingHistory::create([
                 'user_type' => 'customer',
                 'user_id' => $request->customer_id,
+                'category_id' => $request->category,
                 'user_name' => $customer->name ?? '',
                 'user_phone' => $customer->phone ?? '',
                 'reason' => $request->status_id, // Legacy Status field
@@ -169,6 +190,7 @@ class CallingController extends Controller
                 'assign_to_staff_id' => $request->assign_to_staff_id,
                 'updated_by' => auth()->id(),
                 'status' => 1,
+                'is_done' => 1,
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
@@ -204,6 +226,20 @@ class CallingController extends Controller
     public function downloadSample()
     {
         return Excel::download(new CallingHistorySampleExport, 'calling_history_sample.xlsx');
+    }
+
+    public function restart(Request $request)
+    {
+        $query = CallingHistory::where('updated_by', auth()->id())
+            ->where('organization_id', auth()->user()->organization_id);
+            
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        $query->update(['is_done' => 0]);
+
+        return redirect()->back()->with('success', 'Restart calling Successfully');
     }
 }
 

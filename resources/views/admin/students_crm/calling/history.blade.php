@@ -11,9 +11,19 @@
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 fw-bold text-primary">Student Outreach History & Timeline</h6>
-            <button class="btn btn-success btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#importModal">
-                <i class="fas fa-file-excel me-1"></i> Import Data
-            </button>
+            <div class="d-flex gap-2 align-items-center">
+                @if(auth()->user()->role != 'staff')
+                <select id="staffFilter" class="form-select form-select-sm rounded-pill" style="width: 200px;">
+                    <option value="">All Staff</option>
+                    @foreach($staffs as $staff)
+                        <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                    @endforeach
+                </select>
+                @endif
+                <button class="btn btn-success btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#importModal">
+                    <i class="fas fa-file-excel me-1"></i> Import Data
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -76,10 +86,17 @@
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('#historyTable').DataTable({
+        let table = $('#historyTable').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('admin.students-crm.calling-history.index') }}",
+            ajax: {
+                url: "{{ route('admin.students-crm.calling-history.index') }}",
+                data: function(d) {
+                    if ($('#staffFilter').length) {
+                        d.staff_id = $('#staffFilter').val();
+                    }
+                }
+            },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'customer_info', name: 'customer_info' },
@@ -95,6 +112,10 @@
                 { data: 'comment', name: 'comment' }
             ],
             language: { search: "_INPUT_", searchPlaceholder: "Search history..." }
+        });
+
+        $('#staffFilter').on('change', function() {
+            table.ajax.reload();
         });
 
         $('#importForm').on('submit', function(e) {

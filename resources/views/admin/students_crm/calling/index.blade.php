@@ -168,25 +168,16 @@
                 <input type="hidden" id="category_val" name="category">
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-lg-4">
+                        <div class="col-lg-6">
                             <label class="form-label small fw-bold">Name</label>
                             <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-6">
                             <label class="form-label small fw-bold">Call Status <span class="text-danger">*</span></label>
                             <select name="status_id" class="form-select rounded-3" id="status_id" required>
                                 <option value="" selected disabled>Select</option>
                                 @foreach($statuses as $status)
                                     <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" data-more-details="{{ $status->is_more_details }}" data-date-require="{{ $status->date_require }}">{{ $status->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-lg-4">
-                            <label class="form-label small fw-bold">Action Taken <span class="text-danger">*</span></label>
-                            <select name="action_id" id="action_id" class="form-select rounded-3" required>
-                                <option value="">Select Action</option>
-                                @foreach($actions as $action)
-                                    <option value="{{ $action->id }}">{{ $action->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -222,9 +213,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4" id="date-field" style="display:none;">
+
+                        <div class="col-lg-6" id="date-field" style="display:none;">
                             <label class="form-label small fw-bold">Reminder Date</label>
                             <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
+                        </div>
+
+                        <div class="col-lg-6">
+                            <label class="form-label small fw-bold">Action Taken</label>
+                            <select name="action_id" id="action_id" class="form-select rounded-3">
+                                <option value="">Select Action</option>
+                                @foreach($actions as $action)
+                                    <option value="{{ $action->id }}">{{ $action->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         
                         <!-- Video Meeting Container -->
@@ -318,13 +320,19 @@
     $(document).ready(function() {
         $('#restartBtn').on('click', function() {
             let cat = $('#categoryFilter').val();
+            let group = '{{ request('group', 1) }}';
+            let baseUrl = '{{ route('admin.students-crm.calling-module.restart') }}';
+            
             if(!cat) {
                 Swal.fire('Warning', 'Please select a category first before clicking Re-Start.', 'warning');
                 return;
             }
             
-            // For now just submit the form with sequence_mode or re-start flag if implemented
-            $('#filterForm').submit();
+            var params = new URLSearchParams();
+            params.set('group', group);
+            params.set('category', cat);
+            
+            window.location.href = baseUrl + '?' + params.toString();
         });
 
         $(document).on('click', '.open-calling-modal', function() {
@@ -476,10 +484,8 @@
             let actionText = $(this).find('option:selected').text().trim().toLowerCase();
             if(actionText === 'arrange video meeting') {
                 $('#video-meeting-container').show();
-                $('#meeting_date').prop('required', true);
             } else {
                 $('#video-meeting-container').hide();
-                $('#meeting_date').prop('required', false);
             }
         });
 
