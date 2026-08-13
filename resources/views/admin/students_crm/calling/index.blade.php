@@ -153,7 +153,7 @@
 </div>
 
 <!-- Update Calling Status Modal -->
-<div class="modal fade" id="callModal" tabindex="-1">
+<div class="modal fade" id="callModal">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">
             <div class="modal-header border-0 pb-0">
@@ -168,24 +168,20 @@
                 <input type="hidden" id="category_val" name="category">
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             <label class="form-label small fw-bold">Name</label>
                             <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
                         </div>
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             <label class="form-label small fw-bold">Call Status <span class="text-danger">*</span></label>
                             <select name="status_id" class="form-select rounded-3" id="status_id" required>
                                 <option value="" selected disabled>Select</option>
                                 @foreach($statuses as $status)
-                                    <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}">{{ $status->name }}</option>
+                                    <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" data-more-details="{{ $status->is_more_details }}" data-date-require="{{ $status->date_require }}">{{ $status->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-3" id="date-field">
-                            <label class="form-label small fw-bold">Reminder Date</label>
-                            <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
-                        </div>
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             <label class="form-label small fw-bold">Action Taken <span class="text-danger">*</span></label>
                             <select name="action_id" id="action_id" class="form-select rounded-3" required>
                                 <option value="">Select Action</option>
@@ -193,6 +189,69 @@
                                     <option value="{{ $action->id }}">{{ $action->name }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        
+                        <!-- More Details Container -->
+                        <div id="more-details-container" class="col-12" style="display:none; margin-top: 0px;">
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <label class="form-label small fw-bold">University / Organization</label>
+                                    <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type University</option>
+                                        @foreach($universities as $uni)
+                                            <option value="{{ $uni->id }}">{{ $uni->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="form-label small fw-bold">Course</label>
+                                    <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Course</option>
+                                        @foreach($courses as $course)
+                                            <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="form-label small fw-bold">Course Type</label>
+                                    <select name="course_type" id="course_type" class="form-select rounded-3">
+                                        <option value="">Select Type</option>
+                                        <option value="online">Online</option>
+                                        <option value="offline">Offline</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4" id="date-field" style="display:none;">
+                            <label class="form-label small fw-bold">Reminder Date</label>
+                            <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
+                        </div>
+                        
+                        <!-- Video Meeting Container -->
+                        <div id="video-meeting-container" class="col-12" style="display:none; margin-top: 0px;">
+                            <div class="row g-3">
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Meeting Date</label>
+                                    <input type="date" name="meeting_date" id="meeting_date" class="form-control rounded-3">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Time Slot</label>
+                                    <input type="time" name="time_slot" id="time_slot" class="form-control rounded-3">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Google Meeting Link</label>
+                                    <input type="url" name="meeting_link" id="meeting_link" class="form-control rounded-3" placeholder="https://meet.google.com/...">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Assign Lead to Staff</label>
+                                    <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select Staff</option>
+                                        @foreach($staffs as $staff)
+                                            <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="col-12">
@@ -299,6 +358,13 @@
                     if(res.status == 1) {
                         $('#callModal').modal('hide');
                         $('#callForm')[0].reset();
+                        $('#university_input').val(null).trigger('change');
+                        $('#course_input').val(null).trigger('change');
+                        $('#assign_to_staff_id').val(null).trigger('change');
+                        $('#more-details-container').hide();
+                        $('#video-meeting-container').hide();
+                        $('#date-field').hide();
+                        $('#call_date').prop('required', false);
                         Swal.fire('Interactions Logged', res.message, 'success').then(() => {
                             window.location.reload();
                         });
@@ -357,11 +423,63 @@
         });
 
         $('#status_id').on('change', function() {
-            let actionId = $(this).find('option:selected').data('action');
+            let selected = $(this).find('option:selected');
+            let actionId = selected.data('action');
+            let moreDetails = selected.data('more-details');
+            let dateRequire = selected.data('date-require');
+            
             if(actionId) {
                 $('#action_id').val(actionId).trigger('change');
             } else {
                 $('#action_id').val('').trigger('change');
+            }
+            
+            if(moreDetails === 'yes') {
+                $('#more-details-container').show();
+            } else {
+                $('#more-details-container').hide();
+            }
+            
+            if(dateRequire === 'yes') {
+                $('#date-field').show();
+                $('#call_date').prop('required', true);
+            } else {
+                $('#date-field').hide();
+                $('#call_date').prop('required', false);
+            }
+        });
+        
+        $('#university_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type University",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#assign_to_staff_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select Staff",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#action_id').on('change', function() {
+            let actionText = $(this).find('option:selected').text().trim().toLowerCase();
+            if(actionText === 'arrange video meeting') {
+                $('#video-meeting-container').show();
+                $('#meeting_date').prop('required', true);
+            } else {
+                $('#video-meeting-container').hide();
+                $('#meeting_date').prop('required', false);
             }
         });
 

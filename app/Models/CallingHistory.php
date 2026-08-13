@@ -27,8 +27,22 @@ class CallingHistory extends Model
         'is_done',
         'image',
         'status',
-        'organization_id'
+        'organization_id',
+        'university_id',
+        'university_text',
+        'course_id',
+        'course_text',
+        'course_type',
+        'meeting_date',
+        'time_slot',
+        'meeting_link',
+        'assign_to_staff_id'
     ];
+
+    public function assignedStaff()
+    {
+        return $this->belongsTo(Admin::class, 'assign_to_staff_id');
+    }
 
     public function customer()
     {

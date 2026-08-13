@@ -852,9 +852,26 @@
 
         // Smoothly handle collapse arrows and active states
         $(document).ready(function () {
+            // Fix Bootstrap 5 Modal Select2 focus issue
+            if ($.fn.modal && $.fn.modal.Constructor) {
+                $.fn.modal.Constructor.prototype.enforceFocus = function() {};
+                $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+            }
+            
             // Initialize Select2 globally for all select dropdowns
-            $('select.form-select').select2({
-                width: '100%'
+            $('select.form-select:not(.custom-select2)').each(function() {
+                let $this = $(this);
+                let modal = $this.closest('.modal');
+                if (modal.length) {
+                    $this.select2({
+                        width: '100%',
+                        dropdownParent: modal
+                    });
+                } else {
+                    $this.select2({
+                        width: '100%'
+                    });
+                }
             });
 
             $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {

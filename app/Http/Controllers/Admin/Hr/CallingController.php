@@ -7,6 +7,8 @@ use App\Models\CallingHistory;
 use App\Models\CallingStatus;
 use App\Models\CallingAction;
 use App\Models\Customer;
+use App\Models\Course;
+use App\Models\Organisation;
 use App\Models\CallingManualUser;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
@@ -72,8 +74,12 @@ class CallingController extends Controller
         $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
         
         $user_with_out_status = request('user_with_out_status', 0);
-
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data'));
+        $universities = Organisation::whereIn('organisation_type_id', [1, 2])->where('status', 1)->get();
+        $courses = Course::where('status', 1)->get();
+        
+        $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
+        
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs'));
     }
 
     public function history(Request $request)
@@ -123,6 +129,25 @@ class CallingController extends Controller
 
         try {
             $customer = Customer::find($request->customer_id);
+            $university_id = null;
+            $university_text = null;
+            if ($request->filled('university_input')) {
+                if (is_numeric($request->university_input)) {
+                    $university_id = $request->university_input;
+                } else {
+                    $university_text = $request->university_input;
+                }
+            }
+
+            $course_id = null;
+            $course_text = null;
+            if ($request->filled('course_input')) {
+                if (is_numeric($request->course_input)) {
+                    $course_id = $request->course_input;
+                } else {
+                    $course_text = $request->course_input;
+                }
+            }
             
             CallingHistory::create([
                 'user_type' => 'customer',
@@ -133,6 +158,15 @@ class CallingController extends Controller
                 'calling_action_id' => $request->action_id,
                 'comment' => $request->remark,
                 'date_required' => $request->next_call_date, // Legacy Next Date field
+                'university_id' => $university_id,
+                'university_text' => $university_text,
+                'course_id' => $course_id,
+                'course_text' => $course_text,
+                'course_type' => $request->course_type,
+                'meeting_date' => $request->meeting_date,
+                'time_slot' => $request->time_slot,
+                'meeting_link' => $request->meeting_link,
+                'assign_to_staff_id' => $request->assign_to_staff_id,
                 'updated_by' => auth()->id(),
                 'status' => 1,
                 'organization_id' => auth()->user()->organization_id,
