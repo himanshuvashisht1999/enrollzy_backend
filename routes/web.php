@@ -535,6 +535,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
             Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
             Route::get('calling-module/restart', [CallingController::class, 'restart'])->name('calling-module.restart');
+            Route::get('calling-module/get-courses', [CallingController::class, 'getCoursesByProgramLevel'])->name('calling-module.get-courses');
             Route::post('calling-history/import', [CallingController::class, 'importHistory'])->name('calling-history.import');
             Route::get('calling-history/sample', [CallingController::class, 'downloadSample'])->name('calling-history.sample');
             Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');

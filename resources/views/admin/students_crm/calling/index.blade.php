@@ -186,18 +186,22 @@
                         <div id="more-details-container" class="col-12" style="display:none; margin-top: 0px;">
                             <div class="row g-3">
                                 <div class="col-lg-4">
-                                    <label class="form-label small fw-bold">University / Organization</label>
-                                    <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
-                                        <option value="">Select or Type University</option>
-                                        @foreach($universities as $uni)
-                                            <option value="{{ $uni->id }}">{{ $uni->name }}</option>
-                                        @endforeach
+                                    <label class="form-label small fw-bold">Program Level</label>
+                                    <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Program Level</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @if(isset($program_levels))
+                                            @foreach($program_levels as $pl)
+                                                <option value="{{ $pl->id }}">{{ $pl->title }}</option>
+                                            @endforeach
+                                        @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-4">
                                     <label class="form-label small fw-bold">Course</label>
                                     <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Course</option>
+                                        <option value="Not decided yet">Not decided yet</option>
                                         @foreach($courses as $course)
                                             <option value="{{ $course->id }}">{{ $course->name }}</option>
                                         @endforeach
@@ -205,11 +209,29 @@
                                 </div>
                                 <div class="col-lg-4">
                                     <label class="form-label small fw-bold">Course Type</label>
-                                    <select name="course_type" id="course_type" class="form-select rounded-3">
-                                        <option value="">Select Type</option>
-                                        <option value="online">Online</option>
-                                        <option value="offline">Offline</option>
+                                    <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Course Type</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @if(isset($program_types))
+                                            @foreach($program_types as $pt)
+                                                <option value="{{ $pt->title }}">{{ $pt->title }}</option>
+                                            @endforeach
+                                        @endif
                                     </select>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="form-label small fw-bold">University / Organization</label>
+                                    <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type University</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @foreach($universities as $uni)
+                                            <option value="{{ $uni->id }}">{{ $uni->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="form-label small fw-bold">Session</label>
+                                    <input type="text" name="session" id="session_input" class="form-control rounded-3" placeholder="e.g. 2024-2025">
                                 </div>
                             </div>
                         </div>
@@ -473,6 +495,22 @@
             width: '100%'
         });
 
+        $('#program_level_id').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Program Level",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course Type",
+            allowClear: true,
+            width: '100%'
+        });
+
         $('#assign_to_staff_id').select2({
             dropdownParent: $('#callModal .modal-content'),
             placeholder: "Select Staff",
@@ -487,6 +525,31 @@
             } else {
                 $('#video-meeting-container').hide();
             }
+        });
+        
+        $('#program_level_id').on('change', function() {
+            let levelId = $(this).val();
+            let courseSelect = $('#course_input');
+            courseSelect.html('<option value="">Loading...</option>').trigger('change');
+            
+            $.ajax({
+                url: '{{ route("admin.students-crm.calling-module.get-courses") }}',
+                type: 'GET',
+                data: { program_level_id: levelId },
+                success: function(res) {
+                    let html = '<option value="">Select or Type Course</option>';
+                    html += '<option value="Not decided yet">Not decided yet</option>';
+                    if(res && res.length > 0) {
+                        res.forEach(c => {
+                            html += `<option value="${c.id}">${c.name}</option>`;
+                        });
+                    }
+                    courseSelect.html(html).trigger('change');
+                },
+                error: function() {
+                    courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
+                }
+            });
         });
 
         // Countries API

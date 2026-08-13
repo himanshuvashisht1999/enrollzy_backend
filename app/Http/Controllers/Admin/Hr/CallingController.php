@@ -80,12 +80,15 @@ class CallingController extends Controller
         $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
         
         $user_with_out_status = request('user_with_out_status', 0);
-        $universities = Organisation::whereIn('organisation_type_id', [1, 2])->where('status', 1)->get();
+        $universities = \App\Models\Organisation::where('status', 1)->get();
         $courses = Course::where('status', 1)->get();
         
         $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
         
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs'));
+        $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
+        $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types'));
     }
 
     public function history(Request $request)
@@ -168,6 +171,16 @@ class CallingController extends Controller
                     $course_text = $request->course_input;
                 }
             }
+
+            $program_level_id = null;
+            $program_level_text = null;
+            if ($request->filled('program_level_id')) {
+                if (is_numeric($request->program_level_id)) {
+                    $program_level_id = $request->program_level_id;
+                } else {
+                    $program_level_text = $request->program_level_id;
+                }
+            }
             
             CallingHistory::create([
                 'user_type' => 'customer',
@@ -181,9 +194,12 @@ class CallingController extends Controller
                 'date_required' => $request->next_call_date, // Legacy Next Date field
                 'university_id' => $university_id,
                 'university_text' => $university_text,
+                'program_level_id' => $program_level_id,
+                'program_level_text' => $program_level_text,
                 'course_id' => $course_id,
                 'course_text' => $course_text,
                 'course_type' => $request->course_type,
+                'session' => $request->session,
                 'meeting_date' => $request->meeting_date,
                 'time_slot' => $request->time_slot,
                 'meeting_link' => $request->meeting_link,
@@ -240,6 +256,18 @@ class CallingController extends Controller
         $query->update(['is_done' => 0]);
 
         return redirect()->back()->with('success', 'Restart calling Successfully');
+    }
+
+    public function getCoursesByProgramLevel(Request $request)
+    {
+        if ($request->ajax()) {
+            $courses = Course::where('status', 1);
+            if ($request->filled('program_level_id') && is_numeric($request->program_level_id)) {
+                $courses->where('program_level_id', $request->program_level_id);
+            }
+            return response()->json($courses->get(['id', 'name']));
+        }
+        return response()->json([]);
     }
 }
 
