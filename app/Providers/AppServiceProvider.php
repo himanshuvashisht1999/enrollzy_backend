@@ -27,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            if (method_exists($user, 'hasRole') && ($user->hasRole('admin') || $user->hasRole('superadmin'))) {
+                return true;
+            }
+            if (isset($user->is_admin) && $user->is_admin) {
+                return true;
+            }
+            return null;
+        });
+
         try {
             if (Schema::hasTable('settings')) {
                 $site_settings = Setting::first();

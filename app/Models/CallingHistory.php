@@ -64,4 +64,9 @@ class CallingHistory extends Model
         // On our system staff is likely an Admin user or linked to staff table
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function logs()
+    {
+        return $this->hasMany(CallingHistoryLog::class, 'history_id', 'id')->orderBy('id', 'desc');
+    }
 }

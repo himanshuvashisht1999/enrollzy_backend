@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Course;
 use App\Models\Organisation;
 use App\Models\CallingManualUser;
+use App\Models\CallingHistoryLog;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -95,7 +96,7 @@ class CallingController extends Controller
     {
         if ($request->ajax()) {
             $organization_id = auth()->user()->organization_id;
-            $data = CallingHistory::with(['customer', 'calling_status', 'calling_action', 'staff'])
+            $data = CallingHistory::with(['customer', 'calling_status', 'calling_action', 'staff', 'logs.calling_action', 'logs.user'])
                 ->where('organization_id', $organization_id);
                 
             if (auth()->user()->role == 'staff') {
@@ -107,6 +108,8 @@ class CallingController extends Controller
             }
             
             $data = $data->latest();
+            
+            $calling_actions = CallingAction::where('status', 1)->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -116,8 +119,21 @@ class CallingController extends Controller
                 ->addColumn('status_info', function ($row) {
                     return $row->calling_status->name ?? 'N/A';
                 })
-                ->addColumn('action_info', function ($row) {
-                    return $row->calling_action->name ?? 'N/A';
+                ->addColumn('action_info', function ($row) use ($calling_actions) {
+                    $options = '';
+                    foreach ($calling_actions as $action) {
+                        $selected = $row->calling_action_id == $action->id ? 'selected' : '';
+                        $options .= "<option value='{$action->id}' {$selected}>{$action->name}</option>";
+                    }
+                    $select = "<select class='form-select form-select-sm d-inline-block w-auto' onchange='updateStatus(this, {$row->id})'>
+                                <option value=''>Select Action</option>
+                                {$options}
+                               </select>";
+                    
+                    $logsJson = htmlspecialchars(json_encode($row->logs), ENT_QUOTES, 'UTF-8');
+                    $infoIcon = "<i class='fas fa-info-circle text-primary ms-2 show-logs' style='cursor:pointer;' data-logs='{$logsJson}' data-bs-toggle='modal' data-bs-target='#logsModal'></i>";
+
+                    return $select . $infoIcon;
                 })
                 ->addColumn('staff_info', function ($row) {
                     return $row->staff->name ?? 'N/A';
@@ -135,6 +151,27 @@ class CallingController extends Controller
         }
 
         return view('admin.students_crm.calling.history', compact('staffs'));
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $item = CallingHistory::find($id);
+        if ($item) {
+            $item->calling_action_id = $request->status;
+            $item->save();
+            
+            CallingHistoryLog::create([
+                'history_id' => $id,
+                'log_type' => 'Updated',
+                'updated_by' => auth()->user()->id,
+                'status' => 'Active',
+                'calling_action_id' => $request->status
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Item not found.'], 404);
     }
 
     public function store(Request $request)

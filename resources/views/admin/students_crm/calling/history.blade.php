@@ -147,6 +147,110 @@
             });
         });
     });
+
+    function updateStatus(element, itemId) {
+        const status = element.value;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        
+        if (!status) return;
+
+        $.ajax({
+            url: `/admin/students-crm/calling-history/history-update-status/${itemId}`,
+            type: 'POST',
+            data: {
+                _token: csrfToken ? csrfToken.getAttribute('content') : '{{ csrf_token() }}',
+                status: status
+            },
+            success: function(res) {
+                if(res.success) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Status updated successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    $('#historyTable').DataTable().ajax.reload(null, false);
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Failed to update status', 'error');
+            }
+        });
+    }
+
+    $(document).on('click', '.show-logs', function() {
+        const logsJson = $(this).attr('data-logs') || '[]';
+        let logs = [];
+        try {
+            logs = JSON.parse(logsJson);
+        } catch (e) {
+            console.error('Invalid logs JSON', e);
+        }
+
+        const tbody = $('#logsTableBody');
+        tbody.empty();
+
+        if (!logs.length) {
+            tbody.append('<tr><td colspan="5" class="text-center">No logs found</td></tr>');
+        } else {
+            logs.forEach(function (log, index) {
+                let actionName = log.calling_action ? log.calling_action.name : 'N/A';
+                let updatedBy = log.user ? log.user.name : 'N/A';
+                let dateFormatted = '';
+                if (log.created_at) {
+                    const d = new Date(log.created_at);
+                    if (!isNaN(d)) {
+                        dateFormatted = d.toLocaleString('en-GB', {
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hour12: true
+                        });
+                    }
+                }
+
+                tbody.append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${log.log_type || 'N/A'}</td>
+                        <td>${actionName}</td>
+                        <td>${updatedBy}</td>
+                        <td>${dateFormatted}</td>
+                    </tr>
+                `);
+            });
+        }
+    });
 </script>
+
+<div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold" id="logsModalLabel">Calling History Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Log Type</th>
+                                <th>Calling Action</th>
+                                <th>Updated By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endpush
 
