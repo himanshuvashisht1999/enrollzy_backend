@@ -230,16 +230,16 @@
                             <div class="tab-pane" id="location" role="tabpanel">
                                 <div class="row g-3">
                                     <div class="col-md-4">
+                                        <label class="form-label">Pincode</label>
+                                        <input type="text" name="pincode" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
                                         <label class="form-label">City</label>
                                         <input type="text" name="city" class="form-control">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">State</label>
                                         <input type="text" name="state" class="form-control">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Pincode</label>
-                                        <input type="text" name="pincode" class="form-control">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Full Address</label>
