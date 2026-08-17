@@ -283,6 +283,7 @@
                             <!-- 4. Academic -->
                             <div class="tab-pane" id="academic" role="tabpanel">
                                 <div class="row g-3">
+                                    @if($organisation->organisation_type_id == 3)
                                     <div class="col-md-6">
                                         <label class="form-label">Exams Prepared For</label>
                                         <select name="exams_prepared_for[]" class="form-select select2" multiple>
@@ -291,6 +292,7 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    @endif
                                     <div class="col-md-6">
                                         <label class="form-label">Target Classes</label>
                                         <select name="target_classes[]" class="form-select select2" multiple>
