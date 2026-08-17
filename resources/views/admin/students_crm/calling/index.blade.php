@@ -56,6 +56,19 @@
                 </div>
 
                 <div class="form-group col-lg-3 mb-3">
+                    <select name="session_id" class="form-select rounded-3" id="sessionFilter">
+                        <option value="">Select Session</option>
+                        @if(isset($sessions))
+                            @foreach($sessions as $session)
+                                <option value="{{ $session->id }}" {{ request('session_id') == $session->id ? 'selected' : '' }}>
+                                    {{ $session->name }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
                     <select name="country" class="form-select rounded-3" id="countryFilter">
                         <option value="">Select Country</option>
                     </select>
@@ -231,7 +244,14 @@
                                 </div>
                                 <div class="col-lg-6">
                                     <label class="form-label small fw-bold">Session</label>
-                                    <input type="text" name="session" id="session_input" class="form-control rounded-3" placeholder="e.g. 2024-2025">
+                                    <select name="session" id="session_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select Session</option>
+                                        @if(isset($sessions))
+                                            @foreach($sessions as $session)
+                                                <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
                                 </div>
                             </div>
                         </div>

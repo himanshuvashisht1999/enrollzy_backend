@@ -35,6 +35,7 @@ class CallingController extends Controller
                      $request->filled('city') || 
                      $request->filled('filter_name') || 
                      $request->filled('filter_phone') || 
+                     $request->filled('session_id') ||
                      $request->user_with_out_status == 1 || 
                      $request->sequence_mode == 1;
 
@@ -58,6 +59,10 @@ class CallingController extends Controller
             }
             if ($request->filled('filter_phone')) {
                 $data->where('phone', $request->filter_phone);
+            }
+            if ($request->filled('session_id')) {
+                // session_ids is a JSON array
+                $data->whereJsonContains('session_ids', (string)$request->session_id);
             }
         }
 
@@ -88,8 +93,9 @@ class CallingController extends Controller
         
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
         
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions'));
     }
 
     public function history(Request $request)
