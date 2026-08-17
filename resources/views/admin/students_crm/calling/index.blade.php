@@ -210,8 +210,19 @@
                                         @endif
                                     </select>
                                 </div>
-                                <div class="col-lg-4">
-                                    <label class="form-label small fw-bold">Course</label>
+                                <div class="col-lg-4" id="school_type_container" style="display:none;">
+                                    <label class="form-label small fw-bold">School Type</label>
+                                    <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type School Type</option>
+                                        @if(isset($school_types))
+                                            @foreach($school_types as $st)
+                                                <option value="{{ $st->id }}">{{ $st->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="course_container">
+                                    <label class="form-label small fw-bold" id="course_label">Course</label>
                                     <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Course</option>
                                         <option value="Not decided yet">Not decided yet</option>
@@ -220,7 +231,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-lg-4">
+                                <div class="col-lg-4" id="course_type_container">
                                     <label class="form-label small fw-bold">Course Type</label>
                                     <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Course Type</option>
@@ -232,13 +243,13 @@
                                         @endif
                                     </select>
                                 </div>
-                                <div class="col-lg-6">
-                                    <label class="form-label small fw-bold">University / Organization</label>
+                                <div class="col-lg-6" id="university_container">
+                                    <label class="form-label small fw-bold" id="university_label">University / Organization</label>
                                     <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type University</option>
                                         <option value="Not decided yet">Not decided yet</option>
                                         @foreach($universities as $uni)
-                                            <option value="{{ $uni->id }}">{{ $uni->name }}</option>
+                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}">{{ $uni->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -547,8 +558,61 @@
             }
         });
         
+        let allUniversities = [];
+        $(document).ready(function() {
+            $('#university_input option').each(function() {
+                allUniversities.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    typeId: $(this).data('type-id')
+                });
+            });
+        });
+
+        $('#school_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type School Type",
+            allowClear: true,
+            width: '100%'
+        });
+
         $('#program_level_id').on('change', function() {
             let levelId = $(this).val();
+            let selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+            
+            let universitySelect = $('#university_input');
+            universitySelect.empty();
+
+            if (selectedText === 'school') {
+                $('#school_type_container').show();
+                $('#course_label').text('Choose Class');
+                $('#course_type_container').hide();
+                $('#university_label').text('School Name');
+                
+                allUniversities.forEach(function(u) {
+                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            } else {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('University / Organization');
+                
+                allUniversities.forEach(function(u) {
+                    if (u.typeId != 4 || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            }
+            universitySelect.trigger('change');
+
             let courseSelect = $('#course_input');
             courseSelect.html('<option value="">Loading...</option>').trigger('change');
             

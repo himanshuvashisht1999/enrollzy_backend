@@ -94,8 +94,9 @@ class CallingController extends Controller
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
+        $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
         
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types'));
     }
 
     public function history(Request $request)
@@ -224,6 +225,16 @@ class CallingController extends Controller
                     $program_level_text = $request->program_level_id;
                 }
             }
+
+            $school_type_id = null;
+            $school_type_text = null;
+            if ($request->filled('school_type')) {
+                if (is_numeric($request->school_type)) {
+                    $school_type_id = $request->school_type;
+                } else {
+                    $school_type_text = $request->school_type;
+                }
+            }
             
             CallingHistory::create([
                 'user_type' => 'customer',
@@ -239,6 +250,8 @@ class CallingController extends Controller
                 'university_text' => $university_text,
                 'program_level_id' => $program_level_id,
                 'program_level_text' => $program_level_text,
+                'school_type_id' => $school_type_id,
+                'school_type_text' => $school_type_text,
                 'course_id' => $course_id,
                 'course_text' => $course_text,
                 'course_type' => $request->course_type,
