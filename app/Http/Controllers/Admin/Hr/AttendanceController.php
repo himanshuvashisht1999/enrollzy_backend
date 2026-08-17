@@ -76,11 +76,7 @@ class AttendanceController extends Controller
                         $breakEnd = Carbon::parse($break->end);
                         $breakDuration = $breakStart->diffInMinutes($breakEnd);
                         
-                        if (strtolower($break->type) == 'lunch') {
-                            $totalBreakDuration += max(0, $breakDuration - 30);
-                        } else {
-                            $totalBreakDuration += $breakDuration;
-                        }
+                        $totalBreakDuration += $breakDuration;
                     }
                 }
             }
@@ -110,9 +106,6 @@ class AttendanceController extends Controller
 
         $unpaidBreak = $attendance->reduce(function ($carry, $attendance) {
             return $carry + $attendance->breaks->sum(function ($break) {
-                if (strtolower($break->type) === 'lunch') {
-                    return max(0, $break->duration - 30);
-                }
                 return $break->duration;
             });
         }, 0);

@@ -114,7 +114,54 @@ class CallingController extends Controller
                     $data->where('updated_by', $request->staff_id);
                 }
             }
-            
+
+            if ($request->filled('from_date') && $request->filled('to_date')) {
+                $data->whereBetween('created_at', [$request->from_date . ' 00:00:00', $request->to_date . ' 23:59:59']);
+            }
+
+            if ($request->filled('call_status_id')) {
+                $data->where('reason', $request->call_status_id);
+            }
+
+            if ($request->filled('call_action_id')) {
+                $data->where('calling_action_id', $request->call_action_id);
+            }
+
+            if ($request->filled('filter_name')) {
+                $data->where(function($q) use ($request) {
+                    $q->where('user_name', 'LIKE', '%' . $request->filter_name . '%')
+                      ->orWhereHas('customer', function($q2) use ($request) {
+                          $q2->where('name', 'LIKE', '%' . $request->filter_name . '%');
+                      });
+                });
+            }
+
+            if ($request->filled('filter_phone')) {
+                $data->where(function($q) use ($request) {
+                    $q->where('user_phone', 'LIKE', '%' . $request->filter_phone . '%')
+                      ->orWhereHas('customer', function($q2) use ($request) {
+                          $q2->where('phone', 'LIKE', '%' . $request->filter_phone . '%');
+                      });
+                });
+            }
+
+            if ($request->filled('category') || $request->filled('country') || $request->filled('state') || $request->filled('city')) {
+                $data->whereHas('customer', function($q) use ($request) {
+                    if ($request->filled('category')) {
+                        $q->where('category_id', $request->category);
+                    }
+                    if ($request->filled('country')) {
+                        $q->where('country', $request->country);
+                    }
+                    if ($request->filled('state')) {
+                        $q->where('state', $request->state);
+                    }
+                    if ($request->filled('city')) {
+                        $q->where('city', $request->city);
+                    }
+                });
+            }
+
             $data = $data->latest();
             
             $calling_actions = CallingAction::where('status', 1)->get();
@@ -139,9 +186,11 @@ class CallingController extends Controller
                                </select>";
                     
                     $logsJson = htmlspecialchars(json_encode($row->logs), ENT_QUOTES, 'UTF-8');
-                    $infoIcon = "<i class='fas fa-info-circle text-primary ms-2 show-logs' style='cursor:pointer;' data-logs='{$logsJson}' data-bs-toggle='modal' data-bs-target='#logsModal'></i>";
+                    $rowJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+                    $infoIcon = "<i class='fas fa-info-circle text-primary ms-2 show-logs' style='cursor:pointer;' data-logs='{$logsJson}' data-bs-toggle='modal' data-bs-target='#logsModal' title='View Logs'></i>";
+                    $viewIcon = "<i class='fas fa-eye text-success ms-2 show-details' style='cursor:pointer;' data-row='{$rowJson}' data-bs-toggle='modal' data-bs-target='#detailsModal' title='View Details'></i>";
 
-                    return $select . $infoIcon;
+                    return $select . $infoIcon . $viewIcon;
                 })
                 ->addColumn('staff_info', function ($row) {
                     return $row->staff->name ?? 'N/A';
@@ -154,11 +203,15 @@ class CallingController extends Controller
         }
         
         $staffs = [];
+        $organization_id = auth()->user()->organization_id;
         if (auth()->user()->role != 'staff') {
-            $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', auth()->user()->organization_id)->get();
+            $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
         }
+        $statuses = CallingStatus::where('status', 1)->get();
+        $actions = CallingAction::where('status', 1)->get();
+        $categories = CustomerCategory::where('organization_id', $organization_id)->get();
 
-        return view('admin.students_crm.calling.history', compact('staffs'));
+        return view('admin.students_crm.calling.history', compact('staffs', 'statuses', 'actions', 'categories'));
     }
 
     public function updateStatus(Request $request, $id)

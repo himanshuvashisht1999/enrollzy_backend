@@ -85,28 +85,18 @@ class PayRollController extends Controller
             $endOfMonth = $startOfMonth->copy()->endOfMonth();
             $totalMonthDays = $endOfMonth->day;
             
-            $takenLunchMinutes = 0;
             $takenLunchPersonalMinutes = 0;
 
             foreach ($attendance as $attend) {
                 foreach ($attend->breaks as $break) {
-                    if ($break->type == 'lunch') {
-                        $takenLunchMinutes += $break->duration;
-                    } elseif ($break->type == 'personal') {
+                    if ($break->type == 'personal') {
                         $takenLunchPersonalMinutes += $break->duration;
                     }
                 }
             }
             $uniqueAttendanceDates = $attendance->pluck('date')->unique()->count();
-            $expectedLunchTime = $uniqueAttendanceDates * 30;
-            $lunchDifference = $takenLunchMinutes - $expectedLunchTime;
             
-            if ($lunchDifference < 0) {
-                $extraHoursWorked = abs($lunchDifference) / 60;
-            } else {
-                $totalWorkedHoursDecimal = max(0, $totalWorkedHoursDecimal - ($lunchDifference / 60));
-                $extraHoursWorked = 0;
-            }
+            $extraHoursWorked = 0;
 
             $totalExpectedWorkingDays = 0;
             for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
@@ -159,8 +149,8 @@ class PayRollController extends Controller
                 'expected_hours' => $totalExpectedWorkingHours,
                 'working_hours' => number_format($totalWorkedHoursDecimal, 2),
                 'extra_hours' => number_format($extraHoursWorked, 2),
-                'expected_lunch_time' => $expectedLunchTime / 60,
-                'taken_lunch_time' => number_format(($takenLunchMinutes / 60), 2),
+                'expected_lunch_time' => 0,
+                'taken_lunch_time' => 0,
                 'taken_personal_lunch_time' => number_format(($takenLunchPersonalMinutes / 60), 2),
                 'salary_basis' => 'Monthly: ' . env('CURRENCY', '₹') . ' ' . $totalMonthPayForNormalHours,
                 'normal_pay' => env('CURRENCY', '₹') . ' ' . number_format($totalAmountToBePaid, 2),
@@ -193,17 +183,7 @@ class PayRollController extends Controller
             $monthNameFull = $startOfMonth->format('F');
             $endOfMonth = $startOfMonth->copy()->endOfMonth();
             
-            $takenLunchMinutes = 0;
-            foreach ($attendance as $attend) {
-                foreach ($attend->breaks as $break) {
-                    if ($break->type == 'lunch') $takenLunchMinutes += $break->duration;
-                }
-            }
             $uniqueAttendanceDates = $attendance->pluck('date')->unique()->count();
-            $expectedLunchTime = $uniqueAttendanceDates * 30;
-            $lunchDifference = $takenLunchMinutes - $expectedLunchTime;
-            
-            if ($lunchDifference > 0) $totalWorkedHoursDecimal -= $lunchDifference / 60;
             
             $totalExpectedWorkingDays = 0;
             for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
