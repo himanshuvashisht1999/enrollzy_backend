@@ -232,13 +232,13 @@
                                     </select>
                                 </div>
                                 <div class="col-lg-4" id="course_type_container">
-                                    <label class="form-label small fw-bold">Course Type</label>
+                                    <label class="form-label small fw-bold">Program Mode</label>
                                     <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
-                                        <option value="">Select or Type Course Type</option>
+                                        <option value="">Select or Type Program Mode</option>
                                         <option value="Not decided yet">Not decided yet</option>
                                         @if(isset($program_types))
                                             @foreach($program_types as $pt)
-                                                <option value="{{ $pt->title }}">{{ $pt->title }}</option>
+                                                <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
                                             @endforeach
                                         @endif
                                     </select>
@@ -559,12 +559,31 @@
         });
         
         let allUniversities = [];
+        let allCourseTypes = [];
+        let allCourses = [];
+        let courseProgramTypes = @json($course_program_types ?? []);
+        
         $(document).ready(function() {
             $('#university_input option').each(function() {
                 allUniversities.push({
                     id: $(this).val(),
                     text: $(this).text(),
                     typeId: $(this).data('type-id')
+                });
+            });
+            
+            $('#course_type option').each(function() {
+                allCourseTypes.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    dbId: $(this).data('db-id')
+                });
+            });
+
+            $('#course_input option').each(function() {
+                allCourses.push({
+                    id: $(this).val(),
+                    text: $(this).text()
                 });
             });
         });
@@ -592,6 +611,19 @@
                 
                 allUniversities.forEach(function(u) {
                     if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            } else if (selectedText === 'competetive coaching' || selectedText === 'competitive coaching') {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('Choose institute');
+                
+                allUniversities.forEach(function(u) {
+                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 3) {
                         let option = new Option(u.text, u.id, false, false);
                         $(option).attr('data-type-id', u.typeId);
                         universitySelect.append(option);
@@ -627,6 +659,12 @@
                         res.forEach(c => {
                             html += `<option value="${c.id}">${c.name}</option>`;
                         });
+                    } else {
+                        allCourses.forEach(function(c) {
+                            if (c.id && c.id !== 'Not decided yet') {
+                                html += `<option value="${c.id}">${c.text}</option>`;
+                            }
+                        });
                     }
                     courseSelect.html(html).trigger('change');
                 },
@@ -634,6 +672,45 @@
                     courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
                 }
             });
+        });
+
+        $('#course_input').on('change', function() {
+            let courseId = $(this).val();
+            let programLevelText = $('#program_level_id').find('option:selected').text().trim().toLowerCase();
+            
+            let courseTypeSelect = $('#course_type');
+            
+            if (programLevelText === 'competetive coaching' || programLevelText === 'competitive coaching') {
+                courseTypeSelect.empty();
+                
+                let option1 = new Option('Select or Type Program Mode', '', false, false);
+                let option2 = new Option('Not decided yet', 'Not decided yet', false, false);
+                courseTypeSelect.append(option1).append(option2);
+
+                if (courseId && courseId !== 'Not decided yet') {
+                    let allowedTypeIds = courseProgramTypes
+                        .filter(cpt => cpt.course_id == courseId)
+                        .map(cpt => parseInt(cpt.program_type_id));
+                        
+                    allCourseTypes.forEach(function(ct) {
+                        if (ct.id && ct.id !== 'Not decided yet' && allowedTypeIds.includes(parseInt(ct.dbId))) {
+                            let option = new Option(ct.text, ct.id, false, false);
+                            $(option).attr('data-db-id', ct.dbId);
+                            courseTypeSelect.append(option);
+                        }
+                    });
+                }
+                courseTypeSelect.trigger('change');
+            } else {
+                // Restore all course types if not coaching
+                courseTypeSelect.empty();
+                allCourseTypes.forEach(function(ct) {
+                    let option = new Option(ct.text, ct.id, false, false);
+                    if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
+                    courseTypeSelect.append(option);
+                });
+                courseTypeSelect.trigger('change');
+            }
         });
 
         // Countries API

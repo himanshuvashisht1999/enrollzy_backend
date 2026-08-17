@@ -95,8 +95,9 @@ class CallingController extends Controller
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
         $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
+        $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
         
-        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types'));
+        return view('admin.students_crm.calling.index', compact('statuses', 'actions', 'categories', 'templates', 'count', 'user_with_out_status', 'data', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types'));
     }
 
     public function history(Request $request)
