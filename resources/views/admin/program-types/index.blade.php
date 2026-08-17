@@ -1,12 +1,12 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Manage Program Types')
+@section('title', 'Manage Program Modes')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0 fw-bold">Program Types</h4>
-        <p class="text-muted mb-0">Manage your program types list.</p>
+        <h4 class="mb-0 fw-bold">Program Modes</h4>
+        <p class="text-muted mb-0">Manage your program modes list.</p>
     </div>
     <a href="{{ route('admin.program-types.create') }}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Add New

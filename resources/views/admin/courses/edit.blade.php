@@ -108,6 +108,21 @@
                             </select>
                         </div>
 
+                        {{-- Program Modes --}}
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Program Modes</label>
+                            <select name="program_types[]" class="form-select select2" multiple="multiple">
+                                @if(isset($programTypes))
+                                    @foreach($programTypes as $type)
+                                        <option value="{{ $type->id }}" {{ in_array($type->id, old('program_types', $course->programTypes->pluck('id')->toArray())) ? 'selected' : '' }}>
+                                            {{ $type->title }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            <small class="text-muted">Select one or more program modes.</small>
+                        </div>
+
                         {{-- Duration --}}
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Duration</label>

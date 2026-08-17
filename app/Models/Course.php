@@ -45,4 +45,9 @@ class Course extends Model
     {
         return $this->belongsTo(Discipline::class, 'discipline_id');
     }
+
+    public function programTypes()
+    {
+        return $this->belongsToMany(ProgramType::class, 'course_program_type');
+    }
 }

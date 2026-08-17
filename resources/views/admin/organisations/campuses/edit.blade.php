@@ -142,7 +142,7 @@
                                         <input type="text" name="campus_name" class="form-control"
                                             value="{{ $campus->campus_name }}" required>
                                     </div>
-                                    <div class="col-md-6">
+                                    {{-- <div class="col-md-6">
                                         <label class="form-label">Campus Type *</label>
                                         <select name="campus_type" class="form-select" required>
                                             @foreach(['Main', 'Regional', 'Satellite', 'Centre', 'Branch'] as $type)
@@ -150,6 +150,19 @@
                                                     {{ $type }} Campus
                                                 </option>
                                             @endforeach
+                                        </select>
+                                    </div> --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">School Type</label>
+                                        <select name="campus_type_new_id" class="form-select">
+                                            <option value="">Select School Type</option>
+                                            @if(isset($schoolTypes))
+                                                @foreach($schoolTypes as $st)
+                                                    <option value="{{ $st->id }}" {{ (old('campus_type_new_id') ?? $campus->campus_type_new_id) == $st->id ? 'selected' : '' }}>
+                                                        {{ $st->title }}
+                                                    </option>
+                                                @endforeach
+                                            @endif
                                         </select>
                                     </div>
                                     <div class="col-md-6">

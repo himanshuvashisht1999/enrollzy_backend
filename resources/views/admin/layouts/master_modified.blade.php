@@ -245,7 +245,7 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-levels.*') ? 'active' : '' }}"
                                     href="{{ route('admin.program-levels.index') }}">Program Level</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-types.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.program-types.index') }}">Program Type</a></li>
+                                    href="{{ route('admin.program-types.index') }}">Program Mode</a></li>
                             <!-- wrapped sublink missing -->
 @can('stream-offereds-browse')
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.stream-offereds.*') ? 'active' : '' }}"
@@ -275,7 +275,7 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.campus-types.index') }}">Location Type</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus_type_new.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.campus_type_new.index') }}">Campus Type</a></li>
+                                    href="{{ route('admin.campus_type_new.index') }}">School Type</a></li>
                             <!-- wrapped sublink missing -->
 @can('facilities-browse')
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"

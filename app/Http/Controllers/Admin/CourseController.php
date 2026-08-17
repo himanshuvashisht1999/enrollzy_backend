@@ -30,10 +30,11 @@ class CourseController extends Controller
         $programLevels = \App\Models\ProgramLevel::where('status', true)->get();
         $streamOffereds = \App\Models\StreamOffered::where('status', true)->get();
         $disciplines = \App\Models\Discipline::where('status', true)->get();
+        $programTypes = \App\Models\ProgramType::where('status', true)->get();
 
         return view(
             'admin.courses.create',
-            compact('programLevels', 'streamOffereds', 'disciplines')
+            compact('programLevels', 'streamOffereds', 'disciplines', 'programTypes')
         );
 
     }
@@ -60,6 +61,10 @@ class CourseController extends Controller
         $course = new Course($data);
         $course->save();
 
+        if ($request->has('program_types')) {
+            $course->programTypes()->sync($request->program_types);
+        }
+
         return redirect()->route('admin.courses.index')->with('success', 'Course created successfully.');
     }
 
@@ -72,10 +77,11 @@ class CourseController extends Controller
         $programLevels = \App\Models\ProgramLevel::where('status', true)->get();
         $streamOffereds = \App\Models\StreamOffered::where('status', true)->get();
         $disciplines = \App\Models\Discipline::where('status', true)->get();
+        $programTypes = \App\Models\ProgramType::where('status', true)->get();
 
         return view(
             'admin.courses.edit',
-            compact('course', 'programLevels', 'streamOffereds', 'disciplines')
+            compact('course', 'programLevels', 'streamOffereds', 'disciplines', 'programTypes')
         );
     }
 
@@ -98,6 +104,12 @@ class CourseController extends Controller
         ])->validate();
 
         $course->update($data);
+
+        if ($request->has('program_types')) {
+            $course->programTypes()->sync($request->program_types);
+        } else {
+            $course->programTypes()->sync([]);
+        }
 
         return redirect()->route('admin.courses.index')->with('success', 'Course updated successfully.');
     }

@@ -34,7 +34,8 @@ class CampusController extends Controller
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
         $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
-        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster'));
+        $schoolTypes = \App\Models\CampusTypeNew::all();
+        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes'));
     }
 
     /**
@@ -64,7 +65,8 @@ class CampusController extends Controller
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
         $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
-        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster'));
+        $schoolTypes = \App\Models\CampusTypeNew::all();
+        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes'));
     }
 
     /**

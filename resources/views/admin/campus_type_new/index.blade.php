@@ -1,12 +1,12 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Manage Campus Types')
+@section('title', 'Manage School Types')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0 fw-bold">Campus Types</h4>
-        <p class="text-muted mb-0">Manage your campus types list.</p>
+        <h4 class="mb-0 fw-bold">School Types</h4>
+        <p class="text-muted mb-0">Manage your school types list.</p>
     </div>
     <a href="{{ route('admin.campus_type_new.create') }}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Add New

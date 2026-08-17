@@ -163,7 +163,7 @@
                                         <input type="text" name="campus_name" class="form-control" placeholder="Enter name"
                                             required>
                                     </div>
-                                    <div class="col-md-6">
+                                    {{-- <div class="col-md-6">
                                         <label class="form-label">Campus Type *</label>
                                         <select name="campus_type" class="form-select" required>
                                             <option value="Main">Main Campus</option>
@@ -172,6 +172,19 @@
                                             @if($organisation->organisation_type_id == 3)
                                                 <option value="Centre">Centre</option>
                                                 <option value="Branch">Branch</option>
+                                            @endif
+                                        </select>
+                                    </div> --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">School Type</label>
+                                        <select name="campus_type_new_id" class="form-select">
+                                            <option value="">Select School Type</option>
+                                            @if(isset($schoolTypes))
+                                                @foreach($schoolTypes as $st)
+                                                    <option value="{{ $st->id }}" {{ old('campus_type_new_id') == $st->id ? 'selected' : '' }}>
+                                                        {{ $st->title }}
+                                                    </option>
+                                                @endforeach
                                             @endif
                                         </select>
                                     </div>

@@ -65,7 +65,7 @@
                             </div>
 
                             {{-- Campus Type (shown only when Organisation Type = School) --}}
-                            <div class="col-md-6" id="campus_type_new_wrapper" style="display:none;">
+                            {{-- <div class="col-md-6" id="campus_type_new_wrapper" style="display:none;">
                                 <label class="form-label fw-bold">Campus Type</label>
                                 <select name="campus_type_new_id" id="campus_type_new_id" class="form-select">
                                     <option value="">Select Campus Type</option>
@@ -75,7 +75,7 @@
                                         </option>
                                     @endforeach
                                 </select>
-                            </div>
+                            </div> --}}
 
                             {{-- <div class="col-md-6">
                                 <label class="form-label fw-bold">Brand Type</label>

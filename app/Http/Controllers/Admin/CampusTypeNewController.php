@@ -29,7 +29,7 @@ class CampusTypeNewController extends Controller
 
         CampusTypeNew::create($request->all());
 
-        return redirect()->route('admin.campus_type_new.index')->with('success', 'Campus Type created successfully.');
+        return redirect()->route('admin.campus_type_new.index')->with('success', 'School Type created successfully.');
     }
 
     public function edit(CampusTypeNew $campusTypeNew)
@@ -47,13 +47,13 @@ class CampusTypeNewController extends Controller
 
         $campusTypeNew->update($request->all());
 
-        return redirect()->route('admin.campus_type_new.index')->with('success', 'Campus Type updated successfully.');
+        return redirect()->route('admin.campus_type_new.index')->with('success', 'School Type updated successfully.');
     }
 
     public function destroy(CampusTypeNew $campusTypeNew)
     {
         $campusTypeNew->delete();
 
-        return redirect()->route('admin.campus_type_new.index')->with('success', 'Campus Type deleted successfully.');
+        return redirect()->route('admin.campus_type_new.index')->with('success', 'School Type deleted successfully.');
     }
 }

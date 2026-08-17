@@ -1,11 +1,11 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Add Program Type')
+@section('title', 'Add Program Mode')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0 fw-bold">Add Program Type</h4>
+        <h4 class="mb-0 fw-bold">Add Program Mode</h4>
     </div>
     <a href="{{ route('admin.program-types.index') }}" class="btn btn-light border">
         <i class="fas fa-arrow-left me-1"></i> Back
