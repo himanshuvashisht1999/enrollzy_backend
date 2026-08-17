@@ -152,6 +152,7 @@
                                             @endforeach
                                         </select>
                                     </div> --}}
+                                    @if($organisation->organisation_type_id == 4)
                                     <div class="col-md-6">
                                         <label class="form-label">School Type</label>
                                         <select name="campus_type_new_id" class="form-select">
@@ -165,6 +166,7 @@
                                             @endif
                                         </select>
                                     </div>
+                                    @endif
                                     <div class="col-md-6">
                                         <label class="form-label">Established Year</label>
                                         <input type="number" name="established_year" class="form-control"
