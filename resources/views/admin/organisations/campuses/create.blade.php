@@ -231,15 +231,15 @@
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="form-label">Pincode</label>
-                                        <input type="text" name="pincode" class="form-control">
+                                        <input type="text" name="pincode" id="pincode" class="form-control">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">City</label>
-                                        <input type="text" name="city" class="form-control">
+                                        <input type="text" name="city" id="city" class="form-control">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">State</label>
-                                        <input type="text" name="state" class="form-control">
+                                        <input type="text" name="state" id="state" class="form-control">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Full Address</label>
@@ -759,6 +759,19 @@
 
             $(document).on('click', '.remove-class-profile-btn', function() {
                 $(this).closest('.class-profile-item').remove();
+            });
+
+            // Pincode Lookup
+            $('#pincode').on('keyup', function () {
+                let pin = $(this).val();
+                if (pin.length === 6) {
+                    $.getJSON(`https://api.postalpincode.in/pincode/${pin}`, function (res) {
+                        if (res[0].Status === 'Success') {
+                            $('#city').val(res[0].PostOffice[0].District);
+                            $('#state').val(res[0].PostOffice[0].State);
+                        }
+                    });
+                }
             });
 
             showTab(0);
