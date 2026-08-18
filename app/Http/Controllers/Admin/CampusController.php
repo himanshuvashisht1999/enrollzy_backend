@@ -128,7 +128,7 @@ class CampusController extends Controller
     {
         $request->validate([
             'campus_name' => 'required|string|max:255',
-            'campus_type' => 'required',
+            // 'campus_type' => 'required',
         ]);
 
         $input = $request->all();
