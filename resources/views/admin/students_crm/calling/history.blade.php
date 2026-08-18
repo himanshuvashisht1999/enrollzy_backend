@@ -258,10 +258,64 @@
             table.ajax.reload();
         });
 
-        // Initialize Country, State, City (assuming we have functions from Calling Module)
-        // Note: For full dynamic country/state/city dropdowns we might need to copy over the AJAX functions if they aren't globally available.
-        if (typeof getStates === "function") {
-            // Usually the country/state logic is loaded or we can rely on standard select2 for locations if initialized.
+        // Countries API
+        const API_BASE = 'https://countriesnow.space/api/v0.1';
+        loadCountries();
+
+        $('#countryFilter').on('change', function () {
+            const country = $(this).val();
+            $('#stateFilter').html('<option value="">Select State</option>');
+            $('#cityFilter').html('<option value="">Select City</option>');
+            if (country) loadStates(country);
+        });
+
+        $('#stateFilter').on('change', function () {
+            const country = $('#countryFilter').val();
+            const state   = $(this).val();
+            $('#cityFilter').html('<option value="">Select City</option>');
+            if (country && state) loadCities(country, state);
+        });
+
+        function loadCountries() {
+            $.get(API_BASE + '/countries', function(res){
+                let html = '<option value="">Select Country</option>';
+                res.data.forEach(c => {
+                    html += `<option value="${c.country}">${c.country}</option>`;
+                });
+                $('#countryFilter').html(html);
+            });
+        }
+
+        function loadStates(country) {
+            $.ajax({
+                type: 'POST',
+                url: API_BASE + '/countries/states',
+                contentType: 'application/json',
+                data: JSON.stringify({ country }),
+                success: function(res){
+                    let html = '<option value="">Select State</option>';
+                    res.data.states.forEach(s => {
+                        html += `<option value="${s.name}">${s.name}</option>`;
+                    });
+                    $('#stateFilter').html(html);
+                }
+            });
+        }
+
+        function loadCities(country, state) {
+            $.ajax({
+                type: 'POST',
+                url: API_BASE + '/countries/state/cities',
+                contentType: 'application/json',
+                data: JSON.stringify({ country, state }),
+                success: function(res){
+                    let html = '<option value="">Select City</option>';
+                    res.data.forEach(city => {
+                        html += `<option value="${city}">${city}</option>`;
+                    });
+                    $('#cityFilter').html(html);
+                }
+            });
         }
 
         // Show details modal

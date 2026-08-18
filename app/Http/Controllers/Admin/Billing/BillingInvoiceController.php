@@ -137,8 +137,18 @@ class BillingInvoiceController extends Controller
     public function destroy(string $id)
     {
         $invoice = BillingInvoice::findOrFail($id);
-        $invoice->delete();
-        return redirect()->route('admin.billing.invoices.index')->with('success', 'Invoice deleted successfully.');
+
+        if ($invoice->status !== 'unpaid') {
+            return redirect()->route('admin.billing.invoices.index')->with('error', 'Only unpaid invoices can be cancelled.');
+        }
+
+        if ($invoice->payments()->exists()) {
+            return redirect()->route('admin.billing.invoices.index')->with('error', 'Cannot cancel an invoice that has associated payments.');
+        }
+
+        $invoice->status = 'cancelled';
+        $invoice->save();
+        return redirect()->route('admin.billing.invoices.index')->with('success', 'Invoice cancelled successfully.');
     }
 
     public function downloadPdf($id)
