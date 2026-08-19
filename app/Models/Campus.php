@@ -44,6 +44,7 @@ class Campus extends Model
         'target_classes' => 'array',
         'class_profile' => 'array',
         'facilities' => 'array',
+        'campus_type_new_id' => 'array',
     ];
 
     protected static function boot()

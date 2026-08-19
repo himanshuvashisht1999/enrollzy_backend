@@ -30,6 +30,8 @@ class CallingHistory extends Model
         'organization_id',
         'university_id',
         'university_text',
+        'program_level_id',
+        'program_level_text',
         'school_type_id',
         'school_type_text',
         'course_id',

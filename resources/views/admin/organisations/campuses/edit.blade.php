@@ -155,11 +155,10 @@
                                     @if($organisation->organisation_type_id == 4)
                                     <div class="col-md-6">
                                         <label class="form-label">School Type</label>
-                                        <select name="campus_type_new_id" class="form-select">
-                                            <option value="">Select School Type</option>
+                                        <select name="campus_type_new_id[]" class="form-select select2" multiple data-placeholder="Select School Type(s)">
                                             @if(isset($schoolTypes))
                                                 @foreach($schoolTypes as $st)
-                                                    <option value="{{ $st->id }}" {{ (old('campus_type_new_id') ?? $campus->campus_type_new_id) == $st->id ? 'selected' : '' }}>
+                                                    <option value="{{ $st->id }}" {{ in_array($st->id, old('campus_type_new_id', is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : (is_string($campus->campus_type_new_id) ? json_decode($campus->campus_type_new_id, true) ?? [] : [$campus->campus_type_new_id]))) ? 'selected' : '' }}>
                                                         {{ $st->title }}
                                                     </option>
                                                 @endforeach

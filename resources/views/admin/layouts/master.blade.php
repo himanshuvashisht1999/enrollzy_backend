@@ -199,111 +199,161 @@
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Core Management</div>
 
                 {{-- Academics Group --}}
-                <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
+                
+<!-- wrapped parent #academicsMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['organisations-browse', 'organisation-courses-browse', 'exams-browse', 'dynamic-exams-browse', 'courses-browse', 'scholarships-browse', 'noteworthy-categories-browse', 'noteworthy-mentions-browse', 'trending-skills-browse', 'program-levels-browse', 'program-types-browse', 'stream-offereds-browse', 'disciplines-browse', 'specializations-browse', 'organisation-types-browse', 'accreditation-approvals-browse', 'campus-types-browse', 'facilities-browse', 'sports-browse', 'exam-stages-browse']))
+<li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#academicsMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-graduation-cap"></i> Academics</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
                         id="academicsMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisations.*') || request()->routeIs('admin.organisation-courses.*') ? 'active' : '' }}"
                                     href="{{ route('admin.organisations.index') }}">Organisations</a></li>
                             <!-- wrapped sublink missing -->
-@can('exams-browse')
+@if($user && method_exists($user, 'can') && $user->can('exams-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}"
                                     href="{{ route('admin.exams.index') }}">Exams List</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('dynamic-exams-browse')
+@if($user && method_exists($user, 'can') && $user->can('dynamic-exams-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.dynamic-exams.*') ? 'active' : '' }}"
                                     href="{{ route('admin.dynamic-exams.index') }}">Dynamic Exams</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}"
+                            <!-- wrapped courses -->
+@if($user && method_exists($user, 'can') && $user->can('courses-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}"
                                     href="{{ route('admin.courses.index') }}">Course Master</a></li>
+@endif
+
+                            <!-- wrapped scholarships -->
+@if($user && method_exists($user, 'can') && $user->can('scholarships-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.scholarships.index') }}">Scholarships</a></li>
+@endif
+
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
 
                             <!-- wrapped sublink missing -->
-@can('noteworthy-categories-browse')
+@if($user && method_exists($user, 'can') && $user->can('noteworthy-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.noteworthy-categories.index') }}">Noteworthy Categories</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('noteworthy-mentions-browse')
+@if($user && method_exists($user, 'can') && $user->can('noteworthy-mentions-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-mentions.*') ? 'active' : '' }}"
                                     href="{{ route('admin.noteworthy-mentions.index') }}">Noteworthy Mentions</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.*') ? 'active' : '' }}"
+                            <!-- wrapped trending-skills -->
+@if($user && method_exists($user, 'can') && $user->can('trending-skills-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.*') ? 'active' : '' }}"
                                     href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-levels.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped program-levels -->
+@if($user && method_exists($user, 'can') && $user->can('program-levels-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.program-levels.*') ? 'active' : '' }}"
                                     href="{{ route('admin.program-levels.index') }}">Program Level</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-types.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped program-types -->
+@if($user && method_exists($user, 'can') && $user->can('program-types-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.program-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.program-types.index') }}">Program Mode</a></li>
+@endif
+
                             <!-- wrapped sublink missing -->
-@can('stream-offereds-browse')
+@if($user && method_exists($user, 'can') && $user->can('stream-offereds-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.stream-offereds.*') ? 'active' : '' }}"
                                     href="{{ route('admin.stream-offereds.index') }}">Stream Offered</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.disciplines.*') ? 'active' : '' }}"
+                            <!-- wrapped disciplines -->
+@if($user && method_exists($user, 'can') && $user->can('disciplines-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.disciplines.*') ? 'active' : '' }}"
                                     href="{{ route('admin.disciplines.index') }}">Discipline</a></li>
+@endif
+
                             <!-- wrapped sublink missing -->
-@can('specializations-browse')
+@if($user && method_exists($user, 'can') && $user->can('specializations-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.specializations.*') ? 'active' : '' }}"
                                     href="{{ route('admin.specializations.index') }}">Specialization</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('organisation-types-browse')
+@if($user && method_exists($user, 'can') && $user->can('organisation-types-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisation-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.organisation-types.index') }}">Organisation Type</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('accreditation-approvals-browse')
+@if($user && method_exists($user, 'can') && $user->can('accreditation-approvals-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.accreditation-approvals.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
+                            <!-- wrapped campus-types -->
+@if($user && method_exists($user, 'can') && $user->can('campus-types-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.campus-types.index') }}">Location Type</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus_type_new.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped campus-types -->
+@if($user && method_exists($user, 'can') && $user->can('campus-types-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.campus_type_new.*') ? 'active' : '' }}"
                                     href="{{ route('admin.campus_type_new.index') }}">School Type</a></li>
+@endif
+
                             <!-- wrapped sublink missing -->
-@can('facilities-browse')
+@if($user && method_exists($user, 'can') && $user->can('facilities-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"
                                     href="{{ route('admin.facilities.index') }}">Facilities</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('sports-browse')
+@if($user && method_exists($user, 'can') && $user->can('sports-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.sports.*') ? 'active' : '' }}"
                                     href="{{ route('admin.sports.index') }}">Sports</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"
+                            <!-- wrapped languages -->
+@if($user && method_exists($user, 'can') && $user->can('languages-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"
                                     href="{{ route('admin.languages.index') }}">Languages</a></li>
+@endif
+
                             <!-- wrapped sublink missing -->
-@can('exam-stages-browse')
+@if($user && method_exists($user, 'can') && $user->can('exam-stages-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.exam-stages.*') ? 'active' : '' }}"
                                     href="{{ route('admin.exam-stages.index') }}">Exam Stages</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.caste-categories.*') ? 'active' : '' }}"
+                            <!-- wrapped caste-categories -->
+@if($user && method_exists($user, 'can') && $user->can('caste-categories-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.caste-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.caste-categories.index') }}">Caste Categories</a></li>
+@endif
+
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- Career Roadmap Management --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #careerRoadmapMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['career-roadmap-categories-browse', 'career-roadmap-stages-browse', 'career-roadmap-sub-modules-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/career-roadmap*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#careerRoadmapMenu" role="button"
                         aria-expanded="{{ request()->is('admin/career-roadmap*') ? 'true' : 'false' }}">
@@ -313,29 +363,34 @@
                     <div class="collapse {{ request()->is('admin/career-roadmap*') ? 'show' : '' }}" id="careerRoadmapMenu">
                         <ul class="nav flex-column ps-3">
                             <!-- wrapped sublink missing -->
-@can('career-roadmap-categories-browse')
+@if($user && method_exists($user, 'can') && $user->can('career-roadmap-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.career-roadmap-categories.index') }}">Categories</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('career-roadmap-stages-browse')
+@if($user && method_exists($user, 'can') && $user->can('career-roadmap-stages-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-stages.*') ? 'active' : '' }}"
                                     href="{{ route('admin.career-roadmap-stages.index') }}">Stages</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('career-roadmap-sub-modules-browse')
+@if($user && method_exists($user, 'can') && $user->can('career-roadmap-sub-modules-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-sub-modules.*') ? 'active' : '' }}"
                                     href="{{ route('admin.career-roadmap-sub-modules.index') }}">Sub Modules</a></li>
-@endcan
+@endif
 
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- FAQ Management --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #faqMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['faqs-browse', 'categories-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faq-*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#faqMenu" role="button"
                         aria-expanded="{{ request()->is('admin/faq-*') ? 'true' : 'false' }}">
@@ -351,9 +406,14 @@
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- Expert Management --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #expertMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['experts-browse', 'expert-categories-browse']))
+<li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'active' : 'collapsed' }}"
                             data-bs-toggle="collapse" href="#expertMenu" role="button"
                             aria-expanded="{{ request()->is('admin/experts*') || request()->is('admin/slots*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'true' : 'false' }}">
@@ -364,28 +424,41 @@
                             id="expertMenu">
                             <ul class="nav flex-column ps-3">
                                 <!-- wrapped sublink missing -->
-@can('experts-browse')
+@if($user && method_exists($user, 'can') && $user->can('experts-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('experts.*') ? 'active' : '' }}"
                                         href="{{ route('experts.index') }}">Experts List</a></li>
-@endcan
+@endif
 
                                 <!-- wrapped sublink missing -->
-@can('expert-categories-browse')
+@if($user && method_exists($user, 'can') && $user->can('expert-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('expert-categories.*') ? 'active' : '' }}"
                                         href="{{ route('expert-categories.index') }}">Categories</a></li>
-@endcan
+@endif
 
-                                <li><a class="nav-link sub-link {{ request()->routeIs('admin.slots.*') ? 'active' : '' }}"
+                                <!-- wrapped experts -->
+@if($user && method_exists($user, 'can') && $user->can('experts-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.slots.*') ? 'active' : '' }}"
                                         href="{{ route('admin.slots.index') }}">Manage Slots</a></li>
-                                <li><a class="nav-link sub-link {{ request()->routeIs('admin.bookings.index') ? 'active' : '' }}"
+@endif
+
+                                <!-- wrapped experts -->
+@if($user && method_exists($user, 'can') && $user->can('experts-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.bookings.index') ? 'active' : '' }}"
                                         href="{{ route('admin.bookings.index') }}">Bookings</a></li>
+@endif
+
 
                             </ul>
                         </div>
                     </li>
+@endif
+
 
                 {{-- Alumni Management --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #alumniMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['alumni-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/alumni*') || (request()->routeIs('leads.index') && request()->type == 'Alumni') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#alumniMenu" role="button"
                         aria-expanded="{{ request()->is('admin/alumni*') || (request()->routeIs('leads.index') && request()->type == 'Alumni') ? 'true' : 'false' }}">
@@ -396,19 +469,24 @@
                         id="alumniMenu">
                         <ul class="nav flex-column ps-3">
                             <!-- wrapped sublink missing -->
-@can('alumni-browse')
+@if($user && method_exists($user, 'can') && $user->can('alumni-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.alumni.*') ? 'active' : '' }}"
                                     href="{{ route('admin.alumni.index') }}">Alumni List</a></li>
-@endcan
+@endif
 
                             <li><a class="nav-link sub-link {{ request()->routeIs('leads.index') && request()->type == 'Alumni' ? 'active' : '' }}"
                                     href="{{ route('leads.index', ['type' => 'Alumni']) }}">Alumni Leads</a></li>
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- Mentor Management --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #mentorMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['mentor-profiles-browse', 'mentor-verifications-browse', 'mentor-languages-browse', 'mentor-degrees-browse', 'mentor-industries-browse', 'mentor-commissions-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/mentor*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#mentorMenu" role="button"
                         aria-expanded="{{ request()->is('admin/mentor*') ? 'true' : 'false' }}">
@@ -448,6 +526,8 @@
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- Student Management --}}
                 <!-- <li class="nav-item">
@@ -468,7 +548,10 @@
                 </li>  -->
 
                 {{-- Community Group --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #communityMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['community-categories-browse', 'community-questions-browse', 'community-replies-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/community*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#communityMenu" role="button"
                         aria-expanded="{{ request()->is('admin/community*') ? 'true' : 'false' }}">
@@ -478,25 +561,34 @@
                     <div class="collapse {{ request()->is('admin/community*') ? 'show' : '' }}" id="communityMenu">
                         <ul class="nav flex-column ps-3">
                             <!-- wrapped sublink missing -->
-@can('community-categories-browse')
+@if($user && method_exists($user, 'can') && $user->can('community-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.community-categories.index') }}">Categories</a></li>
-@endcan
+@endif
 
                             <!-- wrapped sublink missing -->
-@can('community-questions-browse')
+@if($user && method_exists($user, 'can') && $user->can('community-questions-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-questions.*') ? 'active' : '' }}"
                                     href="{{ route('admin.community-questions.index') }}">Questions</a></li>
-@endcan
+@endif
 
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-replies.*') ? 'active' : '' }}"
+                            <!-- wrapped community-replies -->
+@if($user && method_exists($user, 'can') && $user->can('community-replies-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.community-replies.*') ? 'active' : '' }}"
                                     href="{{ route('admin.community-replies.index') }}">Answers</a></li>
+@endif
+
                         </ul>
                     </div>
                 </li>
+@endif
+
 
                 {{-- Human Resource Group --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #hrMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['leaves-browse', 'leaves-setting-browse', 'holiday-browse', 'department-browse', 'designation-browse', 'staff-browse', 'roles-browse', 'attandance-browse', 'advancepay-browse', 'payroll-browse', 'payout-browse', 'project-browse', 'milestone-browse', 'task-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/hr*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#hrMenu" role="button"
                         aria-expanded="{{ request()->is('admin/hr*') ? 'true' : 'false' }}">
@@ -507,167 +599,314 @@
                         <ul class="nav flex-column ps-3">
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Leaves Module
                             </div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leaves.*') ? 'active' : '' }}"
+                            <!-- wrapped leaves -->
+@if($user && method_exists($user, 'can') && $user->can('leaves-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leaves.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.leaves.index') }}">Applied Leaves</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-settings.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped leaves-setting -->
+@if($user && method_exists($user, 'can') && $user->can('leaves-setting-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-settings.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.leave-settings.index') }}">Leave Settings</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-policies.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped leaves-setting -->
+@if($user && method_exists($user, 'can') && $user->can('leaves-setting-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-policies.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.leave-policies.index') }}">Leave Policies</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.holidays.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped holiday -->
+@if($user && method_exists($user, 'can') && $user->can('holiday-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.holidays.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.holidays.index') }}">Holidays</a></li>
+@endif
+
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Staff Module
                             </div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.departments.*') ? 'active' : '' }}"
+                            <!-- wrapped department -->
+@if($user && method_exists($user, 'can') && $user->can('department-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.departments.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.departments.index') }}">Departments</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.designations.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped designation -->
+@if($user && method_exists($user, 'can') && $user->can('designation-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.designations.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.designations.index') }}">Designations</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff-types.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped staff -->
+@if($user && method_exists($user, 'can') && $user->can('staff-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.staff-types.index') }}">Staff Types</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped staff -->
+@if($user && method_exists($user, 'can') && $user->can('staff-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.staff.index') }}">Staff Members</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped roles -->
+@if($user && method_exists($user, 'can') && $user->can('roles-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.roles.index') }}">Roles & Permissions</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.banks.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped staff -->
+@if($user && method_exists($user, 'can') && $user->can('staff-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.banks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.banks.index') }}">Bank Accounts</a></li>
+@endif
+
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Salary Module
                             </div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.attendance.*') ? 'active' : '' }}"
+                            <!-- wrapped attandance -->
+@if($user && method_exists($user, 'can') && $user->can('attandance-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.attendance.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.attendance.index') }}">Attendance</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.advance.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped advancepay -->
+@if($user && method_exists($user, 'can') && $user->can('advancepay-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.advance.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.advance.index') }}">Advance Pay</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payroll.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped payroll -->
+@if($user && method_exists($user, 'can') && $user->can('payroll-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payroll.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.payroll.index') }}">Generate PayRoll</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payout.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped payout -->
+@if($user && method_exists($user, 'can') && $user->can('payout-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payout.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.payout.index') }}">View Payout</a></li>
+@endif
+
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Communication
                             </div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.index') ? 'active' : '' }}"
+                            <!-- wrapped whatsapp -->
+@if($user && method_exists($user, 'can') && $user->can('whatsapp-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.whatsapp_template.index') }}">Whatsapp Templates</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.report') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped whatsapp -->
+@if($user && method_exists($user, 'can') && $user->can('whatsapp-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.report') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.whatsapp_template.report') }}">Whatsapp Report</a></li>
+@endif
+
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Project & Tasks
                             </div>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.lead-sources.*') ? 'active' : '' }}"
+                            <!-- wrapped project -->
+@if($user && method_exists($user, 'can') && $user->can('project-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.lead-sources.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.lead-sources.index') }}">Lead Source</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.clients.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped project -->
+@if($user && method_exists($user, 'can') && $user->can('project-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.clients.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.clients.index') }}">Project Users</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.project-categories.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped project -->
+@if($user && method_exists($user, 'can') && $user->can('project-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.project-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.project-categories.index') }}">Project Category</a>
                             </li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.index.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped project -->
+@if($user && method_exists($user, 'can') && $user->can('project-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.index.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.index.index') }}">Project List</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.milestones.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped milestone -->
+@if($user && method_exists($user, 'can') && $user->can('milestone-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.milestones.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.milestones.index') }}">All Milestones</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
+@endif
+
+                            <!-- wrapped task -->
+@if($user && method_exists($user, 'can') && $user->can('task-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
+@endif
+
 
                         </ul>
                     </div>
                 </li>
+@endif
 
-                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+
+                <!-- wrapped heading -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['customer-browse', 'customer-category-browse', 'customer-fields-browse', 'institutes-browse', 'interested-ins-browse', 'customer-sessions-browse']))
+<div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+@endif
                 <!-- wrapped toplevel missing -->
-@can('customer-fields-browse')
+@if($user && method_exists($user, 'can') && $user->can('customer-fields-browse'))
+<!-- wrapped standalone customer -->
+@if($user && method_exists($user, 'can') && $user->can('customer-browse'))
 <li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}"
                         href="{{ route('admin.customers.main.index.index') }}">
                         <i class="fas fa-users me-2"></i> Students list
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone customer-category -->
+@if($user && method_exists($user, 'can') && $user->can('customer-category-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-categories.index') }}">
                         <i class="fas fa-tags me-2"></i> Students Category
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone customer-fields -->
+@if($user && method_exists($user, 'can') && $user->can('customer-fields-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-fields.index') }}">
                         <i class="fas fa-list-alt me-2"></i> Students Fields
                     </a>
                 </li>
-@endcan
+@endif
+@endif
 
 
-                <li class="nav-item">
+                <!-- wrapped standalone institutes -->
+@if($user && method_exists($user, 'can') && $user->can('institutes-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}"
                         href="{{ route('admin.institutes.index') }}">
                         <i class="fas fa-university me-2"></i> Institutes
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone interested-ins -->
+@if($user && method_exists($user, 'can') && $user->can('interested-ins-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.interested-ins.*') ? 'active' : '' }}"
                         href="{{ route('admin.interested-ins.index') }}">
                         <i class="fas fa-thumbs-up me-2"></i> Interested In
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone customer-sessions -->
+@if($user && method_exists($user, 'can') && $user->can('customer-sessions-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-sessions.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-sessions.index') }}">
                         <i class="fas fa-calendar-alt me-2"></i> Sessions
                     </a>
                 </li>
+@endif
 
-                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Consultants</div>
-                <li class="nav-item">
+                <!-- wrapped heading -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['consultant-browse', 'consultant-category-browse', 'consultant-setting-browse']))
+<div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Consultants</div>
+@endif
+                <!-- wrapped standalone consultant -->
+@if($user && method_exists($user, 'can') && $user->can('consultant-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.consultants.*') ? 'active' : '' }}"
                         href="{{ route('admin.consultants.index') }}">
                         <i class="fas fa-user-tie me-2"></i> Consultants list
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone consultant-category -->
+@if($user && method_exists($user, 'can') && $user->can('consultant-category-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.consultant-categories.*') ? 'active' : '' }}"
                         href="{{ route('admin.consultant-categories.index') }}">
                         <i class="fas fa-folder me-2"></i> Consultant Categories
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone consultant-setting -->
+@if($user && method_exists($user, 'can') && $user->can('consultant-setting-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.consultant-settings.*') ? 'active' : '' }}"
                         href="{{ route('admin.consultant-settings.index') }}">
                         <i class="fas fa-cog me-2"></i> Consultant Settings
                     </a>
                 </li>
+@endif
 
-                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
-                <li class="nav-item">
+                <!-- wrapped heading -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['customer-browse', 'calling-status-browse', 'calling-action-browse', 'calling-module-browse', 'calling-history-browse']))
+<div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
+@endif
+                <!-- wrapped standalone customer -->
+@if($user && method_exists($user, 'can') && $user->can('customer-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && request()->get('type') == 'class' ? 'active' : '' }}"
                         href="{{ route('admin.customers.main.index.index', ['type' => 'class']) }}">
                         <i class="fas fa-school me-2"></i> Classes
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone calling-status -->
+@if($user && method_exists($user, 'can') && $user->can('calling-status-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-statuses.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-statuses.index') }}">
                         <i class="fas fa-check-circle me-2"></i> Calling Status
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone calling-action -->
+@if($user && method_exists($user, 'can') && $user->can('calling-action-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-actions.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-actions.index') }}">
                         <i class="fas fa-phone-square me-2"></i> Calling Action
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone calling-module -->
+@if($user && method_exists($user, 'can') && $user->can('calling-module-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-module.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-module.index') }}">
                         <i class="fas fa-phone-alt me-2"></i> Calling Module
                     </a>
                 </li>
-                <li class="nav-item">
+@endif
+                <!-- wrapped standalone calling-history -->
+@if($user && method_exists($user, 'can') && $user->can('calling-history-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-history.index') }}">
                         <i class="fas fa-history me-2"></i> Calling History
                     </a>
                 </li>
+@endif
 
-                <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
+                <!-- wrapped heading -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['blogs-browse', 'categories-browse', 'faqs-browse', 'testimonials-browse', 'video-testimonials-browse', 'contact-us-browse', 'about-us-browse']))
+<div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
+@endif
 
                 {{-- Content Group --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #contentMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['blogs-browse', 'categories-browse', 'faqs-browse', 'testimonials-browse', 'video-testimonials-browse', 'contact-us-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#contentMenu" role="button"
                         aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'true' : 'false' }}">
@@ -678,53 +917,61 @@
                         id="contentMenu">
                         <ul class="nav flex-column ps-3">
                             <!-- wrapped cms missing -->
-@can('blogs-browse')
+@if($user && method_exists($user, 'can') && $user->can('blogs-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('blogs.index') ? 'active' : '' }}"
                                     href="{{ route('blogs.index') }}">Blogs</a></li>
-@endcan
+@endif
 
                             <!-- wrapped cms missing -->
-@can('categories-browse')
+@if($user && method_exists($user, 'can') && $user->can('categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('categories.index') ? 'active' : '' }}"
                                     href="{{ route('categories.index') }}">Blog Categories</a></li>
-@endcan
+@endif
 
                             <!-- wrapped cms missing -->
-@can('faqs-browse')
+@if($user && method_exists($user, 'can') && $user->can('faqs-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('faqs.index') ? 'active' : '' }}"
                                     href="{{ route('faqs.index') }}">FAQs</a></li>
-@endcan
+@endif
 
                             <!-- wrapped cms missing -->
-@can('testimonials-browse')
+@if($user && method_exists($user, 'can') && $user->can('testimonials-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('testimonials.index') ? 'active' : '' }}"
                                     href="{{ route('testimonials.index') }}">Testimonials</a></li>
-@endcan
+@endif
 
                             <!-- wrapped cms missing -->
-@can('video-testimonials-browse')
+@if($user && method_exists($user, 'can') && $user->can('video-testimonials-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.video-testimonials.*') ? 'active' : '' }}"
                                     href="{{ route('admin.video-testimonials.index') }}">Video Stories</a></li>
-@endcan
+@endif
 
                             <!-- wrapped cms missing -->
-@can('contact-us-browse')
+@if($user && method_exists($user, 'can') && $user->can('contact-us-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.contact-us.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.contact-us.edit') }}">Contact Us</a></li>
-@endcan
+@endif
 
                         </ul>
                     </div>
                 </li>
-                <li class="nav-item">
+@endif
+
+                <!-- wrapped standalone about-us -->
+@if($user && method_exists($user, 'can') && $user->can('about-us-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"
                         href="{{ route('admin.about_us.edit') }}">
                         <i class="fas fa-info-circle"></i> About Us Page
                     </a>
                 </li>
+@endif
 
                 {{-- Frontend Setup Group --}}
-                <li class="nav-item">
+                
+<!-- wrapped parent #homepageMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['homepage-sections-browse', 'homepage-stream-tabs-browse', 'header-links-browse', 'mega-menu-browse', 'header-menus-browse', 'footer-setup-browse', 'hero-sliders-browse', 'trending-skills-browse', 'school-marquees-browse', 'institute-marquees-browse', 'home-services-browse', 'pages-browse']))
+<li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#homepageMenu" role="button"
                         aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
@@ -748,8 +995,12 @@
                                     href="{{ route('admin.footer-setup.index') }}">Footer Setup</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
-                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
+                            <!-- wrapped trending-skills -->
+@if($user && method_exists($user, 'can') && $user->can('trending-skills-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
                                     href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
+@endif
+
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-courses.*') ? 'active' : '' }}"
                                     href="{{ route('admin.trending-courses.index') }}">Trending Courses</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.school-marquees.index') ? 'active' : '' }}"
@@ -765,10 +1016,18 @@
                         </ul>
                     </div>
                 </li>
+@endif
 
-                <div class="sidebar-heading px-3 text-uppercase fw-bold">Billing</div>
 
-                <li class="nav-item">
+                <!-- wrapped heading -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['billing-services-browse', 'billing-invoices-browse', 'billing-payments-browse', 'seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse', 'scholarships-browse', 'settings-browse', 'commission-browse']))
+<div class="sidebar-heading px-3 text-uppercase fw-bold">Billing</div>
+@endif
+
+                
+<!-- wrapped parent #billingMenu -->
+@if($user && method_exists($user, 'canAny') && $user->canAny(['billing-services-browse', 'billing-invoices-browse', 'billing-payments-browse']))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.billing.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#billingMenu" role="button"
                         aria-expanded="{{ request()->routeIs('admin.billing.*') ? 'true' : 'false' }}">
@@ -787,14 +1046,12 @@
                         </ul>
                     </div>
                 </li>
+@endif
+
                 <!-- Scholarships Top-Level Nav -->
                 <!-- wrapped toplevel missing -->
-@can('settings-browse')
-<li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}" href="{{ route('admin.scholarships.index') }}">
-                        <i class="fas fa-graduation-cap"></i> Scholarships
-                    </a>
-                </li>
+@if($user && method_exists($user, 'can') && $user->can('settings-browse'))
+
 
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>
 
@@ -805,13 +1062,16 @@
                         <i class="fas fa-envelope-open-text"></i> Student Leads
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- wrapped standalone settings -->
+@if($user && method_exists($user, 'can') && $user->can('settings-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"
                         href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-tools"></i> General Settings
                     </a>
 
-                    <!-- SEO Settings Dropdown -->
+                    @if($user && method_exists($user, 'canAny') && $user->canAny(['seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse']))
+<!-- SEO Settings Dropdown -->
                     <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
                         data-bs-toggle="collapse" href="#seoSettingsMenu" role="button"
                         aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}"
@@ -825,7 +1085,8 @@
                         <ul class="nav flex-column sub-menu">
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
-@endcan
+@endif
+@endif
 
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
@@ -833,14 +1094,18 @@
                                     href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
                         </ul>
                     </div>
+@endif
                 </li>
 
-                <li class="nav-item">
+                <!-- wrapped standalone commission -->
+@if($user && method_exists($user, 'can') && $user->can('commission-browse'))
+<li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
                         href="{{ route('admin.commission.index') }}">
                         <i class="fas fa-percent"></i> Commission Rules
                     </a>
                 </li>
+@endif
             @endif
 
             @if($isExpert || $isAlumni)

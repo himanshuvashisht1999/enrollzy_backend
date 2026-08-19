@@ -37,6 +37,10 @@
                     <label class="form-label small fw-bold">To Date</label>
                     <input type="date" name="to_date" id="toDateFilter" class="form-control rounded-3">
                 </div>
+                <div class="form-group col-lg-3 mb-3">
+                    <label class="form-label small fw-bold">Reminder Date</label>
+                    <input type="date" name="reminder_date" id="reminderDateFilter" class="form-control rounded-3">
+                </div>
                 
                 <div class="form-group col-lg-3 mb-3">
                     <label class="form-label small fw-bold">Category</label>
@@ -217,6 +221,7 @@
                     if ($('#staffFilter').length) d.staff_id = $('#staffFilter').val();
                     d.from_date = $('#fromDateFilter').val();
                     d.to_date = $('#toDateFilter').val();
+                    d.reminder_date = $('#reminderDateFilter').val();
                     d.category = $('#categoryFilter').val();
                     d.call_status_id = $('#statusFilter').val();
                     d.call_action_id = $('#actionFilter').val();

@@ -249,7 +249,24 @@
                                         <option value="">Select or Type University</option>
                                         <option value="Not decided yet">Not decided yet</option>
                                         @foreach($universities as $uni)
-                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}">{{ $uni->name }}</option>
+                                            @php
+                                                $types = [];
+                                                $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
+                                                if(is_array($orgType)) {
+                                                    $types = array_merge($types, $orgType);
+                                                }
+                                                if ($uni->campuses) {
+                                                    foreach($uni->campuses as $campus) {
+                                                        $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
+                                                        if(is_array($campType)) {
+                                                            $types = array_merge($types, $campType);
+                                                        }
+                                                    }
+                                                }
+                                                // Clean up array
+                                                $types = array_values(array_unique(array_filter($types)));
+                                            @endphp
+                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -565,10 +582,15 @@
         
         $(document).ready(function() {
             $('#university_input option').each(function() {
+                let stid = $(this).attr('data-school-type-id');
+                try {
+                    stid = JSON.parse(stid);
+                } catch(e) {}
                 allUniversities.push({
                     id: $(this).val(),
                     text: $(this).text(),
-                    typeId: $(this).data('type-id')
+                    typeId: $(this).data('type-id'),
+                    schoolTypeId: stid
                 });
             });
             
@@ -609,13 +631,11 @@
                 $('#course_type_container').hide();
                 $('#university_label').text('School Name');
                 
-                allUniversities.forEach(function(u) {
-                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
-                        let option = new Option(u.text, u.id, false, false);
-                        $(option).attr('data-type-id', u.typeId);
-                        universitySelect.append(option);
-                    }
-                });
+                $('#school_type').val('');
+                // Let the school_type change event handle populating universitySelect
+                setTimeout(function() {
+                    $('#school_type').trigger('change');
+                }, 10);
             } else if (selectedText === 'competetive coaching' || selectedText === 'competitive coaching') {
                 $('#school_type_container').hide();
                 $('#course_label').text('Course');
@@ -672,6 +692,31 @@
                     courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
                 }
             });
+        });
+
+        $('#school_type').on('change', function() {
+            let schoolTypeId = $(this).val();
+            let universitySelect = $('#university_input');
+            let currentVal = universitySelect.val();
+            universitySelect.empty();
+            
+            allUniversities.forEach(function(u) {
+                if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                    if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    } else {
+                        let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
+                        if (sTypes.includes(String(schoolTypeId))) {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        }
+                    }
+                }
+            });
+            universitySelect.val(currentVal).trigger('change');
         });
 
         $('#course_input').on('change', function() {

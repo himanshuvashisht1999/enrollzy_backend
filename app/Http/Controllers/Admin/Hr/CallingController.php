@@ -86,7 +86,7 @@ class CallingController extends Controller
         $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
         
         $user_with_out_status = request('user_with_out_status', 0);
-        $universities = \App\Models\Organisation::where('status', 1)->get();
+        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
         $courses = Course::where('status', 1)->get();
         
         $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
@@ -117,6 +117,10 @@ class CallingController extends Controller
 
             if ($request->filled('from_date') && $request->filled('to_date')) {
                 $data->whereBetween('created_at', [$request->from_date . ' 00:00:00', $request->to_date . ' 23:59:59']);
+            }
+
+            if ($request->filled('reminder_date')) {
+                $data->whereDate('date_required', $request->reminder_date);
             }
 
             if ($request->filled('call_status_id')) {

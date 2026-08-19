@@ -52,10 +52,10 @@
                 <label class="form-label fw-bold">Status</label>
                 <select name="status" class="form-select">
                     <option value="">All Status</option>
-                    <option value="unpaid"  {{ $status == 'unpaid'  ? 'selected' : '' }}>Unpaid</option>
-                    <option value="partial" {{ $status == 'partial' ? 'selected' : '' }}>Partial</option>
-                    <option value="paid"    {{ $status == 'paid'    ? 'selected' : '' }}>Paid</option>
-                    <option value="draft"   {{ $status == 'draft'   ? 'selected' : '' }}>Draft</option>
+                    <option value="unpaid"    {{ $status == 'unpaid'    ? 'selected' : '' }}>Unpaid</option>
+                    <option value="partial"   {{ $status == 'partial'   ? 'selected' : '' }}>Partial</option>
+                    <option value="paid"      {{ $status == 'paid'      ? 'selected' : '' }}>Paid</option>
+                    <option value="cancelled" {{ $status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
             </div>
 
@@ -103,15 +103,15 @@
                                 <span class="badge bg-warning text-dark">Partial</span>
                             @elseif($invoice->status == 'unpaid')
                                 <span class="badge bg-danger">Unpaid</span>
-                            @elseif($invoice->status == 'draft')
-                                <span class="badge bg-secondary">Draft</span>
+                            @elseif($invoice->status == 'cancelled')
+                                <span class="badge bg-secondary">Cancelled</span>
                             @else
                                 <span class="badge bg-dark">{{ ucfirst($invoice->status) }}</span>
                             @endif
                         </td>
                         <td class="text-end pe-4">
                             <a href="{{ route('admin.billing.invoices.show', $invoice->id) }}" class="btn btn-sm btn-outline-primary me-2">
-                                <i class="fas fa-eye"></i> View
+                                <i class="fas fa-eye"></i>
                             </a>
                             <form action="{{ route('admin.billing.invoices.destroy', $invoice->id) }}" method="POST" class="d-inline">
                                 @csrf
