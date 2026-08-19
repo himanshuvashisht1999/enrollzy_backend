@@ -33,24 +33,50 @@
                 </div>
             </div>
 
+            {{--
             <div class="mb-4">
                 <label class="form-label fw-bold">Search Keywords (Comma Separated)</label>
                 <textarea name="keywords" class="form-control" rows="2">{{ old('keywords', is_array($homepageStreamTab->keywords) ? implode(', ', $homepageStreamTab->keywords) : $homepageStreamTab->keywords) }}</textarea>
                 <small class="text-muted">Universities in DB matching these keywords will be automatically filtered under this stream tab.</small>
             </div>
+            --}}
 
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Important Exams (Comma Separated)</label>
-                    <textarea name="default_exams" class="form-control" rows="4">{{ old('default_exams', is_array($homepageStreamTab->default_exams) ? implode(', ', $homepageStreamTab->default_exams) : $homepageStreamTab->default_exams) }}</textarea>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Featured Colleges</label>
+                    <select name="feature_colleges[]" class="form-select select2" multiple>
+                        @php $selectedColleges = old('feature_colleges', $homepageStreamTab->feature_colleges ?? []); @endphp
+                        @foreach($organisations as $id => $orgName)
+                            <option value="{{ $id }}" {{ is_array($selectedColleges) && in_array($id, $selectedColleges) ? 'selected' : '' }}>{{ $orgName }}</option>
+                        @endforeach
+                    </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Top States (Comma Separated)</label>
-                    <textarea name="default_states" class="form-control" rows="4">{{ old('default_states', is_array($homepageStreamTab->default_states) ? implode(', ', $homepageStreamTab->default_states) : $homepageStreamTab->default_states) }}</textarea>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Important Exams</label>
+                    <select name="default_exams[]" class="form-select select2" multiple>
+                        @php $selectedExams = old('default_exams', $homepageStreamTab->default_exams ?? []); @endphp
+                        @foreach($exams as $id => $examName)
+                            <option value="{{ $id }}" {{ is_array($selectedExams) && in_array($id, $selectedExams) ? 'selected' : '' }}>{{ $examName }}</option>
+                        @endforeach
+                    </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Related Courses (Comma Separated)</label>
-                    <textarea name="default_courses" class="form-control" rows="4">{{ old('default_courses', is_array($homepageStreamTab->default_courses) ? implode(', ', $homepageStreamTab->default_courses) : $homepageStreamTab->default_courses) }}</textarea>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Related Courses</label>
+                    <select name="default_courses[]" class="form-select select2" multiple>
+                        @php $selectedCourses = old('default_courses', $homepageStreamTab->default_courses ?? []); @endphp
+                        @foreach($courses as $id => $courseName)
+                            <option value="{{ $id }}" {{ is_array($selectedCourses) && in_array($id, $selectedCourses) ? 'selected' : '' }}>{{ $courseName }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Top States</label>
+                    <select name="default_states[]" class="form-select select2" multiple>
+                        @php $selectedStates = old('default_states', $homepageStreamTab->default_states ?? []); @endphp
+                        @foreach($states as $state)
+                            <option value="{{ $state }}" {{ is_array($selectedStates) && in_array($state, $selectedStates) ? 'selected' : '' }}>{{ $state }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -75,4 +101,16 @@
         </form>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: 'Select items',
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 @endsection

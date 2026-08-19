@@ -15,9 +15,25 @@ class HomepageStreamTabController extends Controller
         return view('admin.homepage-stream-tabs.index', compact('tabs'));
     }
 
+    private function getCommonData()
+    {
+        $organisations = \App\Models\Organisation::where('status', 1)->pluck('name', 'id')->toArray();
+        $exams = \App\Models\DynamicExam::where('status', 'Active')->pluck('name', 'id')->toArray();
+        $courses = \App\Models\Course::where('status', 1)->pluck('name', 'id')->toArray();
+        $states = [
+            'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 
+            'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 
+            'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 
+            'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 
+            'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Lakshadweep', 'Puducherry'
+        ];
+
+        return compact('organisations', 'exams', 'courses', 'states');
+    }
+
     public function create()
     {
-        return view('admin.homepage-stream-tabs.create');
+        return view('admin.homepage-stream-tabs.create', $this->getCommonData());
     }
 
     public function store(Request $request)
@@ -26,9 +42,10 @@ class HomepageStreamTabController extends Controller
             'name' => 'required|string|max:255',
             'key' => 'nullable|string|max:255|unique:homepage_stream_tabs,key',
             'keywords' => 'nullable|string',
-            'default_exams' => 'nullable|string',
-            'default_states' => 'nullable|string',
-            'default_courses' => 'nullable|string',
+            'feature_colleges' => 'nullable|array',
+            'default_exams' => 'nullable|array',
+            'default_states' => 'nullable|array',
+            'default_courses' => 'nullable|array',
             'sort_order' => 'required|integer',
             'status' => 'required|boolean',
         ]);
@@ -45,9 +62,10 @@ class HomepageStreamTabController extends Controller
             'key' => $key,
             'name' => $request->name,
             'keywords' => $parseList($request->keywords),
-            'default_exams' => $parseList($request->default_exams),
-            'default_states' => $parseList($request->default_states),
-            'default_courses' => $parseList($request->default_courses),
+            'feature_colleges' => $request->feature_colleges ?? [],
+            'default_exams' => $request->default_exams ?? [],
+            'default_states' => $request->default_states ?? [],
+            'default_courses' => $request->default_courses ?? [],
             'sort_order' => $request->sort_order,
             'status' => $request->status,
         ]);
@@ -57,7 +75,7 @@ class HomepageStreamTabController extends Controller
 
     public function edit(HomepageStreamTab $homepageStreamTab)
     {
-        return view('admin.homepage-stream-tabs.edit', compact('homepageStreamTab'));
+        return view('admin.homepage-stream-tabs.edit', array_merge(['homepageStreamTab' => $homepageStreamTab], $this->getCommonData()));
     }
 
     public function update(Request $request, HomepageStreamTab $homepageStreamTab)
@@ -66,9 +84,10 @@ class HomepageStreamTabController extends Controller
             'name' => 'required|string|max:255',
             'key' => 'nullable|string|max:255|unique:homepage_stream_tabs,key,' . $homepageStreamTab->id,
             'keywords' => 'nullable|string',
-            'default_exams' => 'nullable|string',
-            'default_states' => 'nullable|string',
-            'default_courses' => 'nullable|string',
+            'feature_colleges' => 'nullable|array',
+            'default_exams' => 'nullable|array',
+            'default_states' => 'nullable|array',
+            'default_courses' => 'nullable|array',
             'sort_order' => 'required|integer',
             'status' => 'required|boolean',
         ]);
@@ -85,9 +104,10 @@ class HomepageStreamTabController extends Controller
             'key' => $key,
             'name' => $request->name,
             'keywords' => $parseList($request->keywords),
-            'default_exams' => $parseList($request->default_exams),
-            'default_states' => $parseList($request->default_states),
-            'default_courses' => $parseList($request->default_courses),
+            'feature_colleges' => $request->feature_colleges ?? [],
+            'default_exams' => $request->default_exams ?? [],
+            'default_states' => $request->default_states ?? [],
+            'default_courses' => $request->default_courses ?? [],
             'sort_order' => $request->sort_order,
             'status' => $request->status,
         ]);

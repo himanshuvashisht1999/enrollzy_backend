@@ -18,6 +18,7 @@ class HomepageStreamTab extends Model
         'default_exams',
         'default_states',
         'default_courses',
+        'feature_colleges',
         'sort_order',
         'status',
     ];
@@ -27,6 +28,7 @@ class HomepageStreamTab extends Model
         'default_exams' => 'array',
         'default_states' => 'array',
         'default_courses' => 'array',
+        'feature_colleges' => 'array',
         'status' => 'boolean',
         'sort_order' => 'integer',
     ];
