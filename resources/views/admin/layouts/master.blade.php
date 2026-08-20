@@ -995,6 +995,8 @@
                                     href="{{ route('admin.footer-setup.index') }}">Footer Setup</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
                                     href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.filtered-pages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.filtered-pages.index') }}">Filtered Pages</a></li>
                             <!-- wrapped trending-skills -->
 @if($user && method_exists($user, 'can') && $user->can('trending-skills-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"

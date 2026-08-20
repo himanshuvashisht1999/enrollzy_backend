@@ -178,7 +178,7 @@
                                                         <option value="Government">Government</option>
                                                         <option value="Private">Private</option>
                                                         <option value="Trust">Trust</option>
-                                                        <option value="PPP">PPP</option>
+                                                        <option value="Minority">Minority</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-md-12">

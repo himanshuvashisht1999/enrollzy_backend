@@ -181,7 +181,7 @@
                                                 <label class="form-label">Ownership Type</label>
                                                 <select name="ownership_type" class="form-select">
                                                     <option value="">Select Ownership</option>
-                                                    @foreach(['Government', 'Private', 'Trust', 'PPP'] as $opt)
+                                                    @foreach(['Government', 'Private', 'Trust', 'Minority'] as $opt)
                                                         <option value="{{ $opt }}" {{ old('ownership_type', $organisation->ownership_type) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
                                                 </select>

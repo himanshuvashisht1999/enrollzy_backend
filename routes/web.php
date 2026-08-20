@@ -283,6 +283,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Benefits (Why Choose Us)
     Route::resource('/admin/home-benefits', \App\Http\Controllers\Admin\HomeBenefitController::class)->names('admin.home-benefits')->middleware('can:department-browse');
 
+    // Filtered Pages
+    Route::resource('/admin/filtered-pages', \App\Http\Controllers\Admin\FilteredPageController::class)->names('admin.filtered-pages');
+
     // Advanced Scholarships
     Route::resource('/admin/scholarships', \App\Http\Controllers\Admin\ScholarshipController::class)->names('admin.scholarships')->middleware('can:department-browse');
     // Autosave routes for create and edit
