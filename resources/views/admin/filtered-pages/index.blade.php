@@ -16,6 +16,7 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Title</th>
                         <th>Slug</th>
                         <th>Category</th>
                         <th>State / City</th>
@@ -27,12 +28,13 @@
                     @foreach($filteredPages as $page)
                     <tr>
                         <td>{{ $page->id }}</td>
+                        <td>{{ $page->title }}</td>
                         <td>{{ $page->slug }}</td>
                         <td>{{ $page->category }}</td>
                         <td>{{ $page->state ?? 'All' }} / {{ $page->city ?? 'All' }}</td>
                         <td>
                             @php
-                                $frontendUrl = 'http://127.0.0.1:8000/filtered/' . $page->slug;
+                                $frontendUrl = env('FRONTEND_URL') . '/' . $page->slug;
                             @endphp
                             <a href="{{ $frontendUrl }}" target="_blank" class="btn btn-info btn-sm">
                                 <i class="fas fa-external-link-alt"></i> View

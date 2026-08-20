@@ -26,6 +26,7 @@ class FilteredPageController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug',
             'category' => 'required',
         ]);
@@ -45,6 +46,7 @@ class FilteredPageController extends Controller
     public function update(Request $request, FilteredPage $filteredPage)
     {
         $request->validate([
+            'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug,' . $filteredPage->id,
             'category' => 'required',
         ]);

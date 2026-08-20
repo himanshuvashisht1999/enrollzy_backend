@@ -10,6 +10,10 @@
             @csrf
             @method('PUT')
             <div class="row mb-3">
+                <div class="col-md-12 mb-3">
+                    <label>Page Title * (This will display on the frontend)</label>
+                    <input type="text" name="title" class="form-control" value="{{ $filteredPage->title }}" required>
+                </div>
                 <div class="col-md-6">
                     <label>Page Slug (Unique) *</label>
                     <input type="text" name="slug" class="form-control" value="{{ $filteredPage->slug }}" required>

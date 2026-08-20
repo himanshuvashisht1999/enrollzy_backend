@@ -80,12 +80,15 @@
                     <label class="form-label fw-bold">Sort Order <span class="text-danger">*</span></label>
                     <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', 0) }}" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                    <input type="hidden" name="status" value="1">
+                    {{-- 
                     <select name="status" class="form-select" required>
                         <option value="1" {{ old('status', '1') == '1' ? 'selected' : '' }}>Active</option>
                         <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Inactive</option>
                     </select>
+                    --}}
                 </div>
             </div>
 

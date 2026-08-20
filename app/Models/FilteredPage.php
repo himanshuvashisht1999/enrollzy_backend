@@ -10,6 +10,7 @@ class FilteredPage extends Model
     use HasFactory;
 
     protected $fillable = [
+        'title',
         'slug',
         'category',
         'ownership_type',
