@@ -878,6 +878,23 @@
                     </a>
                 </li>
 @endif
+                @if($user && method_exists($user, 'can') && $user->can('lead-assign-browse'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-assign.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-assign.index') }}">
+                        <i class="fas fa-tasks me-2"></i> Lead Assign
+                    </a>
+                </li>
+                @endif
+                <!-- wrapped standalone calling-dashboard -->
+@if($user && method_exists($user, 'can') && $user->can('calling-dashboard-browse'))
+<li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-dashboard.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-dashboard.index') }}">
+                        <i class="fas fa-chart-pie me-2"></i> Calling Dashboard
+                    </a>
+                </li>
+@endif
                 <!-- wrapped standalone calling-module -->
 @if($user && method_exists($user, 'can') && $user->can('calling-module-browse'))
 <li class="nav-item">

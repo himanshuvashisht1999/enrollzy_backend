@@ -23,11 +23,82 @@ use App\Exports\CallingHistorySampleExport;
 
 class CallingController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $organization_id = auth()->user()->organization_id;
+        $staff_id = auth()->id();
+
+        // Filters
+        $assign_from = $request->input('assign_from');
+        $assign_to = $request->input('assign_to');
+        $work_from = $request->input('work_from');
+        $work_to = $request->input('work_to');
+
+        // Total Assigned
+        $assignments = \App\Models\LeadAssignment::where('staff_id', $staff_id);
+        if ($assign_from && $assign_to) {
+            $assignments->whereBetween('created_at', [$assign_from . ' 00:00:00', $assign_to . ' 23:59:59']);
+        }
+        $assignedCustomerIds = $assignments->pluck('customer_id')->toArray();
+        $totalAssigned = count($assignedCustomerIds);
+
+        // Fetch histories for assigned customers by this staff
+        $historyQuery = \App\Models\CallingHistory::where('organization_id', $organization_id)
+            ->whereIn('user_id', $assignedCustomerIds)
+            ->where('updated_by', $staff_id);
+
+        if ($work_from && $work_to) {
+            $historyQuery->whereBetween('created_at', [$work_from . ' 00:00:00', $work_to . ' 23:59:59']);
+        }
+
+        // Distinct done users
+        $doneUsersQuery = clone $historyQuery;
+        $doneCount = $doneUsersQuery->distinct('user_id')->count('user_id');
+        $pendingCount = $totalAssigned - $doneCount;
+
+        // Status Breakdown for the latest history per user
+        // Using eloquent to get the latest record per user_id in the filtered scope
+        $latestHistories = collect();
+        if ($totalAssigned > 0) {
+            $historySub = \Illuminate\Support\Facades\DB::table('calling_histories')
+                ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
+                ->where('organization_id', $organization_id)
+                ->whereIn('user_id', $assignedCustomerIds)
+                ->where('updated_by', $staff_id);
+                
+            if ($work_from && $work_to) {
+                $historySub->whereBetween('created_at', [$work_from . ' 00:00:00', $work_to . ' 23:59:59']);
+            }
+            $historySub->groupBy('user_id');
+
+            $latestHistoriesIds = $historySub->pluck('id')->toArray();
+
+            $latestHistories = \Illuminate\Support\Facades\DB::table('calling_histories')
+                ->whereIn('id', $latestHistoriesIds)
+                ->get();
+        }
+
+        // Group by reason (status_id)
+        $statusCounts = $latestHistories->groupBy('reason')->map(function ($row) {
+            return $row->count();
+        })->toArray();
+
+        $allStatuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->get();
+
+        return view('admin.students_crm.calling.dashboard', compact(
+            'totalAssigned', 'doneCount', 'pendingCount', 'statusCounts', 'allStatuses',
+            'assign_from', 'assign_to', 'work_from', 'work_to'
+        ));
+    }
+
     public function index(Request $request)
     {
         $organization_id = auth()->user()->organization_id;
 
         $data = Customer::where('organization_id', $organization_id);
+
+        $assigned_ids = \App\Models\LeadAssignment::where('staff_id', auth()->id())->pluck('customer_id');
+        $data->whereIn('id', $assigned_ids);
 
         $hasFilter = $request->filled('category') || 
                      $request->filled('country') || 

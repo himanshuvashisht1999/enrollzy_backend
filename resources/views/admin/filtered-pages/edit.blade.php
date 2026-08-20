@@ -6,13 +6,26 @@
         <h6 class="m-0 font-weight-bold text-primary">Edit Filtered Page</h6>
     </div>
     <div class="card-body">
-        <form action="{{ route('admin.filtered-pages.update', $filteredPage) }}" method="POST">
+        <form action="{{ route('admin.filtered-pages.update', $filteredPage) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="row mb-3">
                 <div class="col-md-12 mb-3">
                     <label>Page Title * (This will display on the frontend)</label>
                     <input type="text" name="title" class="form-control" value="{{ $filteredPage->title }}" required>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label>Sub Title</label>
+                    <input type="text" name="sub_title" class="form-control" value="{{ $filteredPage->sub_title }}">
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label>Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    @if($filteredPage->image)
+                        <div class="mt-2">
+                            <img src="{{ asset($filteredPage->image) }}" alt="image" width="100">
+                        </div>
+                    @endif
                 </div>
                 <div class="col-md-6">
                     <label>Page Slug (Unique) *</label>
@@ -27,7 +40,7 @@
                         <option value="Coaching" {{ $filteredPage->category == 'Coaching' ? 'selected' : '' }}>Coaching</option>
                         <option value="Carrier Road Map" {{ $filteredPage->category == 'Carrier Road Map' ? 'selected' : '' }}>Carrier Road Map</option>
                         <option value="Exam" {{ $filteredPage->category == 'Exam' ? 'selected' : '' }}>Exam</option>
-                        <option value="Schoolship" {{ $filteredPage->category == 'Schoolship' ? 'selected' : '' }}>Schoolship</option>
+                        <option value="Scholarship" {{ $filteredPage->category == 'Scholarship' ? 'selected' : '' }}>Scholarship</option>
                     </select>
                 </div>
             </div>

@@ -17,9 +17,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Title</th>
-                        <th>Slug</th>
                         <th>Category</th>
-                        <th>State / City</th>
                         <th>Frontend Link</th>
                         <th>Actions</th>
                     </tr>
@@ -29,9 +27,7 @@
                     <tr>
                         <td>{{ $page->id }}</td>
                         <td>{{ $page->title }}</td>
-                        <td>{{ $page->slug }}</td>
                         <td>{{ $page->category }}</td>
-                        <td>{{ $page->state ?? 'All' }} / {{ $page->city ?? 'All' }}</td>
                         <td>
                             @php
                                 $frontendUrl = env('FRONTEND_URL') . '/' . $page->slug;
@@ -44,11 +40,15 @@
                             </button>
                         </td>
                         <td>
-                            <a href="{{ route('admin.filtered-pages.edit', $page) }}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="{{ route('admin.filtered-pages.edit', $page) }}" class="btn btn-warning btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
                             <form action="{{ route('admin.filtered-pages.destroy', $page) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-danger btn-sm">Delete</button>
+                                <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </form>
                         </td>
                     </tr>

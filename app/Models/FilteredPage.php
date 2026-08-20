@@ -11,6 +11,8 @@ class FilteredPage extends Model
 
     protected $fillable = [
         'title',
+        'sub_title',
+        'image',
         'slug',
         'category',
         'ownership_type',

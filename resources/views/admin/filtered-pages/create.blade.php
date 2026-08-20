@@ -6,12 +6,20 @@
         <h6 class="m-0 font-weight-bold text-primary">Create Filtered Page</h6>
     </div>
     <div class="card-body">
-        <form action="{{ route('admin.filtered-pages.store') }}" method="POST">
+        <form action="{{ route('admin.filtered-pages.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row mb-3">
                 <div class="col-md-12 mb-3">
                     <label>Page Title * (This will display on the frontend)</label>
                     <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label>Sub Title</label>
+                    <input type="text" name="sub_title" class="form-control">
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label>Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
                 </div>
                 <div class="col-md-6">
                     <label>Page Slug (Unique) *</label>
@@ -26,7 +34,7 @@
                         <option value="Coaching">Coaching</option>
                         <option value="Carrier Road Map">Carrier Road Map</option>
                         <option value="Exam">Exam</option>
-                        <option value="Schoolship">Schoolship</option>
+                        <option value="Scholarship">Scholarship</option>
                     </select>
                 </div>
             </div>

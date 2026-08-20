@@ -651,6 +651,22 @@
                         <i class="fas fa-phone-square me-2"></i> Calling Action
                     </a>
                 </li>
+                @can('lead-assign-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-assign.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-assign.index') }}">
+                        <i class="fas fa-tasks me-2"></i> Lead Assign
+                    </a>
+                </li>
+                @endcan
+                @can('calling-dashboard-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-dashboard.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-dashboard.index') }}">
+                        <i class="fas fa-chart-pie me-2"></i> Calling Dashboard
+                    </a>
+                </li>
+                @endcan
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-module.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-module.index') }}">

@@ -533,16 +533,20 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
         // Student CRM & Calling Module Routes
         Route::prefix('students-crm')->name('students-crm.')->group(function () {
+            Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
             Route::resource('calling-statuses', CallingStatusController::class)->middleware('can:calling-status-browse');
             Route::resource('calling-actions', CallingActionController::class)->middleware('can:calling-action-browse');
             Route::get('calling-module', [CallingController::class, 'index'])->name('calling-module.index');
             Route::post('calling-module', [CallingController::class, 'store'])->name('calling-module.store');
             Route::get('calling-module/restart', [CallingController::class, 'restart'])->name('calling-module.restart');
             Route::get('calling-module/get-courses', [CallingController::class, 'getCoursesByProgramLevel'])->name('calling-module.get-courses');
-            Route::post('calling-history/import', [CallingController::class, 'importHistory'])->name('calling-history.import');
-            Route::get('calling-history/sample', [CallingController::class, 'downloadSample'])->name('calling-history.sample');
-            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
-            Route::post('calling-history/history-update-status/{id}', [CallingController::class, 'updateStatus'])->name('calling-history.update-status');
+            Route::post('calling-history/import', [CallingController::class, 'importHistory'])->name('calling-history.import')->middleware('can:calling-history-add');
+            Route::get('calling-history/sample', [CallingController::class, 'downloadSample'])->name('calling-history.sample')->middleware('can:calling-history-browse');
+            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index')->middleware('can:calling-history-browse');
+            Route::post('calling-history/history-update-status/{id}', [CallingController::class, 'updateStatus'])->name('calling-history.update-status')->middleware('can:calling-history-edit');
+            
+            Route::get('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'index'])->name('lead-assign.index')->middleware('can:lead-assign-browse');
+            Route::post('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'store'])->name('lead-assign.store')->middleware('can:lead-assign-add');
         });
 
         // Consultant Management Module Routes

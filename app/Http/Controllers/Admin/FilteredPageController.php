@@ -29,9 +29,17 @@ class FilteredPageController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug',
             'category' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        FilteredPage::create($request->all());
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+            $imageName = time() . '_' . uniqid() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/filtered_pages'), $imageName);
+            $data['image'] = 'images/filtered_pages/' . $imageName;
+        }
+
+        FilteredPage::create($data);
 
         return redirect()->route('admin.filtered-pages.index')->with('success', 'Filtered Page created successfully.');
     }
@@ -49,9 +57,17 @@ class FilteredPageController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug,' . $filteredPage->id,
             'category' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $filteredPage->update($request->all());
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+            $imageName = time() . '_' . uniqid() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/filtered_pages'), $imageName);
+            $data['image'] = 'images/filtered_pages/' . $imageName;
+        }
+
+        $filteredPage->update($data);
 
         return redirect()->route('admin.filtered-pages.index')->with('success', 'Filtered Page updated successfully.');
     }
