@@ -547,6 +547,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             
             Route::get('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'index'])->name('lead-assign.index')->middleware('can:lead-assign-browse');
             Route::post('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'store'])->name('lead-assign.store')->middleware('can:lead-assign-add');
+            Route::get('lead-assign/{staff}', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'show'])->name('lead-assign.show')->middleware('can:lead-assign-browse');
         });
 
         // Consultant Management Module Routes

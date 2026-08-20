@@ -76,5 +76,44 @@
             </form>
         </div>
     </div>
+
+    <!-- Assigned Leads Summary Table -->
+    <div class="card shadow mb-4 border-0 rounded-4 mt-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 fw-bold text-primary">Assigned Leads Overview</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Total Leads Assigned</th>
+                            <th>Assignment Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($assignmentsSummary as $summary)
+                            <tr>
+                                <td>{{ $summary->staff->name ?? 'Unknown Staff' }}</td>
+                                <td><span class="badge bg-info text-dark">{{ $summary->total_leads }}</span></td>
+                                <td>{{ \Carbon\Carbon::parse($summary->batch_date)->format('d M, Y h:i A') }}</td>
+                                <td>
+                                    <a href="{{ route('admin.students-crm.lead-assign.show', ['staff' => $summary->staff_id, 'batch' => $summary->batch_date]) }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                        <i class="fas fa-eye me-1"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No leads have been assigned yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

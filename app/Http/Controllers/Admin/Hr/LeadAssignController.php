@@ -20,7 +20,16 @@ class LeadAssignController extends Controller
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
         $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->get();
         
-        return view('admin.students_crm.lead_assign.index', compact('categories', 'statuses', 'staffs'));
+        $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
+            ->whereHas('staff', function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
+            ->with('staff')
+            ->groupBy('staff_id', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.students_crm.lead_assign.index', compact('categories', 'statuses', 'staffs', 'assignmentsSummary'));
     }
 
     public function store(Request $request)
@@ -56,10 +65,9 @@ class LeadAssignController extends Controller
         }
 
         $assignments = [];
+        $skipped = 0;
         $now = now();
         foreach ($customers as $customerId) {
-            // Delete existing assignments for this customer? Or allow multiple? "admin can assign same data to another also" -> allow multiple.
-            // Or maybe check if already assigned to this staff.
             $exists = LeadAssignment::where('customer_id', $customerId)->where('staff_id', $request->staff_id)->exists();
             if (!$exists) {
                 $assignments[] = [
@@ -69,6 +77,8 @@ class LeadAssignController extends Controller
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
+            } else {
+                $skipped++;
             }
         }
 
@@ -76,6 +86,27 @@ class LeadAssignController extends Controller
             LeadAssignment::insert($assignments);
         }
 
-        return redirect()->back()->with('success', count($assignments) . ' leads assigned successfully.');
+        $msg = count($assignments) . ' leads assigned successfully.';
+        if ($skipped > 0) {
+            $msg .= ' (' . $skipped . ' leads were skipped because they are already assigned to this staff member).';
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    public function show(Request $request, $staff_id)
+    {
+        $organization_id = auth()->user()->organization_id;
+        $staff = Admin::where('organization_id', $organization_id)->findOrFail($staff_id);
+        
+        $query = LeadAssignment::with('customer')->where('staff_id', $staff_id);
+
+        if ($request->has('batch')) {
+            $query->where('created_at', $request->query('batch'));
+        }
+
+        $assignments = $query->latest()->paginate(20);
+
+        return view('admin.students_crm.lead_assign.show', compact('staff', 'assignments'));
     }
 }

@@ -6,5 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class LeadAssignment extends Model
 {
-    //
+    protected $guarded = [];
+
+    public function staff()
+    {
+        return $this->belongsTo(Admin::class, 'staff_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
 }
