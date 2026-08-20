@@ -142,42 +142,88 @@
                             <!-- 2. Academic Interest -->
                             <div class="section-head">2. Program of Interest</div>
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label class="form-label">Interested Categories (Multi-select)</label>
-                                    @php $currentInterests = is_array($customer->interested_in_ids) ? $customer->interested_in_ids : json_decode($customer->interested_in_ids, true) ?? []; @endphp
-                                    <select name="interested_in_ids[]" class="form-select select2" multiple>
-                                        @foreach($interested_ins as $interest)
-                                            <option value="{{ $interest->id }}" {{ in_array($interest->id, old('interested_in_ids', $currentInterests)) ? 'selected' : '' }}>{{ $interest->name }}</option>
+                                <div class="col-lg-4">
+                                    <label class="form-label small fw-bold">Program Level</label>
+                                    <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Program Level</option>
+                                        <option value="Not decided yet" {{ old('program_level_id', $customer->program_level_id ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        @if(isset($program_levels))
+                                            @foreach($program_levels as $pl)
+                                                <option value="{{ $pl->id }}" {{ old('program_level_id', $customer->program_level_id ?? '') == $pl->id ? 'selected' : '' }}>{{ $pl->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="school_type_container" style="display:none;">
+                                    <label class="form-label small fw-bold">School Type</label>
+                                    <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type School Type</option>
+                                        @if(isset($school_types))
+                                            @foreach($school_types as $st)
+                                                <option value="{{ $st->id }}" {{ old('school_type', $customer->school_type ?? '') == $st->id ? 'selected' : '' }}>{{ $st->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="course_container">
+                                    <label class="form-label small fw-bold" id="course_label">Course</label>
+                                    <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Course</option>
+                                        <option value="Not decided yet" {{ old('course_input', $customer->course_input ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        @foreach($courses as $course)
+                                            <option value="{{ $course->id }}" {{ old('course_input', $customer->course_input ?? '') == $course->id ? 'selected' : '' }}>{{ $course->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Specific Course/Program</label>
-                                    <input type="text" name="interested_in_course" class="form-control" value="{{ old('interested_in_course', $customer->interested_in_course) }}">
+                                <div class="col-lg-4" id="course_type_container">
+                                    <label class="form-label small fw-bold">Program Mode</label>
+                                    <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Program Mode</option>
+                                        <option value="Not decided yet" {{ old('course_type', $customer->course_type ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        @if(isset($program_types))
+                                            @foreach($program_types as $pt)
+                                                <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}" {{ old('course_type', $customer->course_type ?? '') == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Session</label>
-                                    @php $currentSessions = is_array($customer->session_ids) ? $customer->session_ids : json_decode($customer->session_ids, true) ?? []; @endphp
-                                    <select name="session_ids[]" class="form-select select2" multiple>
-                                        @foreach($sessions as $session)
-                                            <option value="{{ $session->id }}" {{ in_array($session->id, old('session_ids', $currentSessions)) ? 'selected' : '' }}>{{ $session->name }}</option>
+                                <div class="col-lg-6" id="university_container">
+                                    <label class="form-label small fw-bold" id="university_label">University / Organization</label>
+                                    <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type University</option>
+                                        <option value="Not decided yet" {{ old('university_input', $customer->university_input ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        @foreach($universities as $uni)
+                                            @php
+                                                $types = [];
+                                                $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
+                                                if(is_array($orgType)) {
+                                                    $types = array_merge($types, $orgType);
+                                                }
+                                                if ($uni->campuses) {
+                                                    foreach($uni->campuses as $campus) {
+                                                        $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
+                                                        if(is_array($campType)) {
+                                                            $types = array_merge($types, $campType);
+                                                        }
+                                                    }
+                                                }
+                                                // Clean up array
+                                                $types = array_values(array_unique(array_filter($types)));
+                                            @endphp
+                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}" {{ old('university_input', $customer->university_input ?? '') == $uni->id ? 'selected' : '' }}>{{ $uni->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Mode</label>
-                                    <div class="d-flex gap-3 mt-1">
-                                        @foreach(['Offline', 'Online', 'Hybrid'] as $m)
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="mode" id="m_{{ $m }}" value="{{ $m }}" {{ old('mode', $customer->mode) == $m ? 'checked' : '' }}>
-                                                <label class="form-check-label small" for="m_{{ $m }}">{{ $m }}</label>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Program Level</label>
-                                    <input type="text" name="program_level" class="form-control" placeholder="e.g. UG, PG" value="{{ old('program_level', $customer->program_level) }}">
+                                <div class="col-lg-6">
+                                    <label class="form-label small fw-bold">Session</label>
+                                    <select name="session_id" id="session_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select Session</option>
+                                        @if(isset($sessions))
+                                            @foreach($sessions as $session)
+                                                <option value="{{ $session->id }}" {{ old('session_id', $customer->session_id ?? '') == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
                                 </div>
                             </div>
 
@@ -390,6 +436,237 @@
                     $('input[name="sibling_name"]').val('');
                     $('input[name="sibling_age"]').val('');
                 }
+            });
+
+            $('#university_input').select2({
+                tags: true,
+                placeholder: "Select or Type University",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#course_input').select2({
+                tags: true,
+                placeholder: "Select or Type Course",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#program_level_id').select2({
+                tags: true,
+                placeholder: "Select or Type Program Level",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#course_type').select2({
+                tags: true,
+                placeholder: "Select or Type Program Mode",
+                allowClear: true,
+                width: '100%'
+            });
+            
+            $('#school_type').select2({
+                tags: true,
+                placeholder: "Select or Type School Type",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#session_input').select2({
+                placeholder: "Select Session",
+                allowClear: true,
+                width: '100%'
+            });
+
+            let allUniversities = [];
+            let allCourseTypes = [];
+            let allCourses = [];
+            let courseProgramTypes = @json($course_program_types ?? []);
+            
+            $('#university_input option').each(function() {
+                let stid = $(this).attr('data-school-type-id');
+                try {
+                    stid = JSON.parse(stid);
+                } catch(e) {}
+                allUniversities.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    typeId: $(this).data('type-id'),
+                    schoolTypeId: stid
+                });
+            });
+            
+            $('#course_type option').each(function() {
+                allCourseTypes.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    dbId: $(this).data('db-id')
+                });
+            });
+
+            $('#course_input option').each(function() {
+                allCourses.push({
+                    id: $(this).val(),
+                    text: $(this).text()
+                });
+            });
+
+            let isInitialLoad = true;
+
+            $('#program_level_id').on('change', function() {
+                let levelId = $(this).val();
+                let selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+                
+                let universitySelect = $('#university_input');
+                let currentUniversity = isInitialLoad ? universitySelect.val() : null;
+                universitySelect.empty();
+
+                if (selectedText === 'school') {
+                    $('#school_type_container').show();
+                    $('#course_label').text('Choose Class');
+                    $('#course_type_container').hide();
+                    $('#university_label').text('School Name');
+                    
+                    if(!isInitialLoad) $('#school_type').val('');
+                    setTimeout(function() {
+                        $('#school_type').trigger('change');
+                    }, 10);
+                } else if (selectedText === 'competetive coaching' || selectedText === 'competitive coaching') {
+                    $('#school_type_container').hide();
+                    $('#course_label').text('Course');
+                    $('#course_type_container').show();
+                    $('#university_label').text('Choose institute');
+                    
+                    allUniversities.forEach(function(u) {
+                        if (!u.id || u.id === 'Not decided yet' || u.typeId == 3) {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        }
+                    });
+                } else {
+                    $('#school_type_container').hide();
+                    $('#course_label').text('Course');
+                    $('#course_type_container').show();
+                    $('#university_label').text('University / Organization');
+                    
+                    allUniversities.forEach(function(u) {
+                        if (u.typeId != 4 || !u.id || u.id === 'Not decided yet') {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        }
+                    });
+                }
+                if (isInitialLoad && currentUniversity) universitySelect.val(currentUniversity);
+                universitySelect.trigger('change');
+
+                let courseSelect = $('#course_input');
+                let currentCourse = isInitialLoad ? courseSelect.val() : null;
+                
+                $.ajax({
+                    url: '{{ route("admin.students-crm.calling-module.get-courses") }}',
+                    type: 'GET',
+                    data: { program_level_id: levelId },
+                    success: function(res) {
+                        let html = '<option value="">Select or Type Course</option>';
+                        html += '<option value="Not decided yet">Not decided yet</option>';
+                        if(res && res.length > 0) {
+                            res.forEach(c => {
+                                html += `<option value="${c.id}">${c.name}</option>`;
+                            });
+                        } else {
+                            allCourses.forEach(function(c) {
+                                if (c.id && c.id !== 'Not decided yet') {
+                                    html += `<option value="${c.id}">${c.text}</option>`;
+                                }
+                            });
+                        }
+                        courseSelect.html(html);
+                        if (isInitialLoad && currentCourse) courseSelect.val(currentCourse);
+                        courseSelect.trigger('change');
+                    },
+                    error: function() {
+                        courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
+                    }
+                });
+            });
+
+            $('#school_type').on('change', function() {
+                let schoolTypeId = $(this).val();
+                let universitySelect = $('#university_input');
+                let currentVal = universitySelect.val();
+                universitySelect.empty();
+                
+                allUniversities.forEach(function(u) {
+                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                        if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        } else {
+                            let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
+                            if (sTypes.includes(String(schoolTypeId))) {
+                                let option = new Option(u.text, u.id, false, false);
+                                $(option).attr('data-type-id', u.typeId);
+                                universitySelect.append(option);
+                            }
+                        }
+                    }
+                });
+                universitySelect.val(currentVal).trigger('change');
+            });
+
+            $('#course_input').on('change', function() {
+                let courseId = $(this).val();
+                let programLevelText = $('#program_level_id').find('option:selected').text().trim().toLowerCase();
+                
+                let courseTypeSelect = $('#course_type');
+                let currentCourseType = isInitialLoad ? courseTypeSelect.val() : null;
+                
+                if (programLevelText === 'competetive coaching' || programLevelText === 'competitive coaching') {
+                    courseTypeSelect.empty();
+                    
+                    let option1 = new Option('Select or Type Program Mode', '', false, false);
+                    let option2 = new Option('Not decided yet', 'Not decided yet', false, false);
+                    courseTypeSelect.append(option1).append(option2);
+
+                    if (courseId && courseId !== 'Not decided yet') {
+                        let allowedTypeIds = courseProgramTypes
+                            .filter(cpt => cpt.course_id == courseId)
+                            .map(cpt => parseInt(cpt.program_type_id));
+                            
+                        allCourseTypes.forEach(function(ct) {
+                            if (ct.id && ct.id !== 'Not decided yet' && allowedTypeIds.includes(parseInt(ct.dbId))) {
+                                let option = new Option(ct.text, ct.id, false, false);
+                                $(option).attr('data-db-id', ct.dbId);
+                                courseTypeSelect.append(option);
+                            }
+                        });
+                    }
+                    if (isInitialLoad && currentCourseType) courseTypeSelect.val(currentCourseType);
+                    courseTypeSelect.trigger('change');
+                } else {
+                    courseTypeSelect.empty();
+                    allCourseTypes.forEach(function(ct) {
+                        let option = new Option(ct.text, ct.id, false, false);
+                        if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
+                        courseTypeSelect.append(option);
+                    });
+                    if (isInitialLoad && currentCourseType) courseTypeSelect.val(currentCourseType);
+                    courseTypeSelect.trigger('change');
+                }
+            });
+
+            if ($('#program_level_id').val()) {
+                $('#program_level_id').trigger('change');
+            } else {
+                isInitialLoad = false;
+            }
+            
+            $(document).ajaxStop(function() {
+                isInitialLoad = false;
             });
         });
     </script>

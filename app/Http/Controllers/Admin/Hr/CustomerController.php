@@ -183,9 +183,16 @@ class CustomerController extends Controller
         
         $fieldValues = UserCustomerField::where('user_id', $id)->pluck('value', 'customer_field_id')->toArray();
         $interested_ins = \App\Models\InterestedIn::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where('organization_id', auth()->user()->organization_id)->where('status', 1)->get();
 
-        return view('admin.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues', 'interested_ins', 'sessions'));
+        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
+        $courses = \App\Models\Course::where('status', 1)->get();
+        $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
+        $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
+        $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
+
+        return view('admin.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues', 'interested_ins', 'sessions', 'universities', 'courses', 'program_levels', 'program_types', 'school_types', 'course_program_types'));
     }
 
     public function update(Request $request, $id)
