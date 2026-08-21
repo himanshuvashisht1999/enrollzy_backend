@@ -18,6 +18,7 @@ class LeadAssignController extends Controller
         $organization_id = auth()->user()->organization_id;
         $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
+        // $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->role('Counselor')->get();
         $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->get();
         
         $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
