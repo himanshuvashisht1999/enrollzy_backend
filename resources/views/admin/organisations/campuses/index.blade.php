@@ -25,7 +25,9 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Type</th>
+                                        @if($organisation->organisation_type_id == 4)
+                                            <th>Type</th>
+                                        @endif
                                         <th>Location</th>
                                         <th>Est. Year</th>
                                         <th>Status</th>
@@ -36,7 +38,18 @@
                                     @foreach($campuses as $campus)
                                         <tr>
                                             <td>{{ $campus->campus_name }}</td>
-                                            <td><span class="badge bg-info">{{ $campus->campus_type }}</span></td>
+                                            @if($organisation->organisation_type_id == 4)
+                                                <td>
+                                                    @if(is_array($campus->campus_type_new_id) && count($campus->campus_type_new_id) > 0)
+                                                        @php
+                                                            $campusTypeTitles = \App\Models\CampusTypeNew::whereIn('id', $campus->campus_type_new_id)->pluck('title')->toArray();
+                                                        @endphp
+                                                        @foreach($campusTypeTitles as $typeTitle)
+                                                            <span class="badge bg-info">{{ $typeTitle }}</span>
+                                                        @endforeach
+                                                    @endif
+                                                </td>
+                                            @endif
                                             <td>{{ $campus->city }}, {{ $campus->state }}</td>
                                             <td>{{ $campus->established_year }}</td>
                                             <td>
