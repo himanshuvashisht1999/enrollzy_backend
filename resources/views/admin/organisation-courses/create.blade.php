@@ -377,6 +377,13 @@
                                     <input type="number" step="0.01" name="total_fees" class="form-control"
                                         value="{{ old('total_fees') }}">
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status" id="status_type3" value="1" checked>
+                                        <label class="form-check-label" for="status_type3">Active</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

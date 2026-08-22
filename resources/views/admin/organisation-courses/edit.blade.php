@@ -360,6 +360,13 @@
                                     <input type="number" step="0.01" name="total_fees" class="form-control"
                                         value="{{ old('total_fees', $organisationCourse->total_fees) }}">
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status" id="status_type3" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="status_type3">Active</label>
+                                    </div>
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">Course Languages (Multiple)</label>
                                     <select name="course_languages[]" class="form-select select2" multiple>

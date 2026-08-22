@@ -24,6 +24,7 @@ class FilteredPage extends Model
         'state',
         'city',
         'coaching_category_id',
+        'program_type_id',
     ];
 
     public function schoolType()

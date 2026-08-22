@@ -128,6 +128,17 @@
                             @endif
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Program Mode</label>
+                        <select name="program_type_id" class="form-control">
+                            <option value="">Select Program Mode</option>
+                            @if(isset($programTypes))
+                                @foreach($programTypes as $pt)
+                                    <option value="{{ $pt->id }}">{{ $pt->title }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
                 </div>
             </div>
 
