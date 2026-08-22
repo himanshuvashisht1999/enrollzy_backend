@@ -241,8 +241,10 @@
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
 
+@if($user && method_exists($user, 'can') && $user->can('course-types-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.course-types.*') ? 'active' : '' }}"
                                     href="{{ route('admin.course-types.index') }}">Course Type</a></li>
+@endif
 
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('noteworthy-categories-browse'))
@@ -893,12 +895,14 @@
                 </li>
                 @endif
 
+                @if($user && method_exists($user, 'can') && $user->can('target-leads-browse'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.target-leads.*') ? 'active' : '' }}"
                         href="{{ route('admin.target-leads.index') }}">
                         <i class="fas fa-bullseye me-2"></i> Assign Target Leads
                     </a>
                 </li>
+                @endif
                 <!-- wrapped standalone calling-dashboard -->
 @if($user && method_exists($user, 'can') && $user->can('calling-dashboard-browse'))
 <li class="nav-item">

@@ -420,7 +420,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class)->middleware('can:campus-types-browse');
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class);
         Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class);
-        Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class);
+        Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class)->middleware('can:course-types-browse');
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
         Route::resource('organisation-sub-types', \App\Http\Controllers\Admin\OrganisationSubTypeController::class);
         Route::resource('languages', \App\Http\Controllers\Admin\LanguageController::class);
@@ -552,7 +552,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::get('lead-assign/{staff}', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'show'])->name('lead-assign.show')->middleware('can:lead-assign-browse');
         });
         
-        Route::resource('target-leads', \App\Http\Controllers\Admin\TargetLeadController::class);
+        Route::resource('target-leads', \App\Http\Controllers\Admin\TargetLeadController::class)->middleware('can:target-leads-browse');
 
         // Consultant Management Module Routes
         Route::prefix('consultants')->name('consultants.')->group(function () {
