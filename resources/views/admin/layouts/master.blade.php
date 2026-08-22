@@ -892,6 +892,13 @@
                     </a>
                 </li>
                 @endif
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.target-leads.*') ? 'active' : '' }}"
+                        href="{{ route('admin.target-leads.index') }}">
+                        <i class="fas fa-bullseye me-2"></i> Assign Target Leads
+                    </a>
+                </li>
                 <!-- wrapped standalone calling-dashboard -->
 @if($user && method_exists($user, 'can') && $user->can('calling-dashboard-browse'))
 <li class="nav-item">

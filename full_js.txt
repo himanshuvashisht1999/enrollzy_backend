@@ -1,0 +1,438 @@
+﻿@push('js')
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#restartBtn').on('click', function() {
+            let cat = $('#categoryFilter').val();
+            let group = '{{ request('group', 1) }}';
+            let baseUrl = '{{ route('admin.students-crm.calling-module.restart') }}';
+            
+            if(!cat) {
+                Swal.fire('Warning', 'Please select a category first before clicking Re-Start.', 'warning');
+                return;
+            }
+            
+            var params = new URLSearchParams();
+            params.set('group', group);
+            params.set('category', cat);
+            
+            window.location.href = baseUrl + '?' + params.toString();
+        });
+
+        $(document).on('click', '.open-calling-modal', function() {
+            let id = $(this).data('id');
+            let name = $(this).data('name');
+            let phone = $(this).data('phone');
+            let cat = $(this).data('category');
+
+            $('#customer_id').val(id);
+            $('#user_name').val(name);
+            $('#user_phone').val(phone);
+            $('#category_val').val(cat);
+            $('#callModal').modal('show');
+        });
+
+        $('#callForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Sync CKEditor
+            if (CKEDITOR.instances['message-editor']) {
+                CKEDITOR.instances['message-editor'].updateElement();
+            }
+
+            $.ajax({
+                url: "{{ route('admin.students-crm.calling-module.store') }}",
+                type: "POST",
+                data: new FormData(this),
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if(res.status == 1) {
+                        $('#callModal').modal('hide');
+                        $('#callForm')[0].reset();
+                        $('#university_input').val(null).trigger('change');
+                        $('#course_input').val(null).trigger('change');
+                        $('#assign_to_staff_id').val(null).trigger('change');
+                        $('#more-details-container').hide();
+                        $('#video-meeting-container').hide();
+                        $('#date-field').hide();
+                        $('#call_date').prop('required', false);
+                        Swal.fire('Interactions Logged', res.message, 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                }
+            });
+        });
+
+        // Group Radio
+        const radios = document.querySelectorAll('input[type="radio"][name="group"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                const selectedValue = this.value;
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + "?group=" + selectedValue;
+                window.location.href = newUrl;
+            });
+        });
+
+        // Switches Labels
+        $('#toggleUserWithoutStatus').on('change', function() {
+            $('#toggleLabel').text(this.checked ? 'Yes' : 'No');
+        });
+        $('#toggleSequence').on('change', function() {
+            $('#sequenceLabel').text(this.checked ? 'ON (Pending only)' : 'OFF (Normal)');
+        });
+
+        // Whatsapp Toggle
+        $('#is_whatsapp_message').on('change', function() {
+            if(this.checked) {
+                $('#whatsapp_fields').show();
+            } else {
+                $('#whatsapp_fields').hide();
+                $('#caption').val('');
+                if (CKEDITOR.instances['message-editor']) {
+                    CKEDITOR.instances['message-editor'].setData('');
+                }
+            }
+        });
+
+        // CKEditor Init
+        if (typeof CKEDITOR !== 'undefined') {
+            CKEDITOR.replace('message-editor', {});
+        }
+
+        $('#whatsapp_template_id').on('change', function() {
+            let selected = $(this).find('option:selected');
+            let caption = selected.data('caption') || '';
+            let msg = selected.data('message') || '';
+            
+            $('#caption').val(caption);
+            if (CKEDITOR.instances['message-editor']) {
+                CKEDITOR.instances['message-editor'].setData(msg);
+            }
+        });
+
+        $('#status_id').on('change', function() {
+            let selected = $(this).find('option:selected');
+            let actionId = selected.data('action');
+            let moreDetails = selected.data('more-details');
+            let dateRequire = selected.data('date-require');
+            
+            if(actionId) {
+                $('#action_id').val(actionId).trigger('change');
+            } else {
+                $('#action_id').val('').trigger('change');
+            }
+            
+            if(moreDetails === 'yes') {
+                $('#more-details-container').show();
+            } else {
+                $('#more-details-container').hide();
+            }
+            
+            if(dateRequire === 'yes') {
+                $('#date-field').show();
+                $('#call_date').prop('required', true);
+            } else {
+                $('#date-field').hide();
+                $('#call_date').prop('required', false);
+            }
+        });
+        
+        $('#university_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type University",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#program_level_id').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Program Level",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course Type",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#assign_to_staff_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select Staff",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#action_id').on('change', function() {
+            let actionText = $(this).find('option:selected').text().trim().toLowerCase();
+            if(actionText === 'arrange video meeting') {
+                $('#video-meeting-container').show();
+            } else {
+                $('#video-meeting-container').hide();
+            }
+        });
+        
+        let allUniversities = [];
+        let allCourseTypes = [];
+        let allCourses = [];
+        let courseProgramTypes = @json($course_program_types ?? []);
+        
+        $(document).ready(function() {
+            $('#university_input option').each(function() {
+                let stid = $(this).attr('data-school-type-id');
+                try {
+                    stid = JSON.parse(stid);
+                } catch(e) {}
+                allUniversities.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    typeId: $(this).data('type-id'),
+                    schoolTypeId: stid
+                });
+            });
+            
+            $('#course_type option').each(function() {
+                allCourseTypes.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    dbId: $(this).data('db-id')
+                });
+            });
+
+            $('#course_input option').each(function() {
+                allCourses.push({
+                    id: $(this).val(),
+                    text: $(this).text()
+                });
+            });
+        });
+
+        $('#school_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type School Type",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#program_level_id').on('change', function() {
+            let levelId = $(this).val();
+            let selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+            
+            let universitySelect = $('#university_input');
+            universitySelect.empty();
+
+            if (selectedText === 'school') {
+                $('#school_type_container').show();
+                $('#course_label').text('Choose Class');
+                $('#course_type_container').hide();
+                $('#university_label').text('School Name');
+                
+                $('#school_type').val('');
+                // Let the school_type change event handle populating universitySelect
+                setTimeout(function() {
+                    $('#school_type').trigger('change');
+                }, 10);
+            } else if (selectedText === 'competetive coaching' || selectedText === 'competitive coaching') {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('Choose institute');
+                
+                allUniversities.forEach(function(u) {
+                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 3) {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            } else {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('University / Organization');
+                
+                allUniversities.forEach(function(u) {
+                    if (u.typeId != 4 || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            }
+            universitySelect.trigger('change');
+
+            let courseSelect = $('#course_input');
+            courseSelect.html('<option value="">Loading...</option>').trigger('change');
+            
+            $.ajax({
+                url: '{{ route("admin.students-crm.calling-module.get-courses") }}',
+                type: 'GET',
+                data: { program_level_id: levelId },
+                success: function(res) {
+                    let html = '<option value="">Select or Type Course</option>';
+                    html += '<option value="Not decided yet">Not decided yet</option>';
+                    if(res && res.length > 0) {
+                        res.forEach(c => {
+                            html += `<option value="${c.id}">${c.name}</option>`;
+                        });
+                    } else {
+                        allCourses.forEach(function(c) {
+                            if (c.id && c.id !== 'Not decided yet') {
+                                html += `<option value="${c.id}">${c.text}</option>`;
+                            }
+                        });
+                    }
+                    courseSelect.html(html).trigger('change');
+                },
+                error: function() {
+                    courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
+                }
+            });
+        });
+
+        $('#school_type').on('change', function() {
+            let schoolTypeId = $(this).val();
+            let universitySelect = $('#university_input');
+            let currentVal = universitySelect.val();
+            universitySelect.empty();
+            
+            allUniversities.forEach(function(u) {
+                if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                    if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    } else {
+                        let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
+                        if (sTypes.includes(String(schoolTypeId))) {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        }
+                    }
+                }
+            });
+            universitySelect.val(currentVal).trigger('change');
+        });
+
+        $('#course_input').on('change', function() {
+            let courseId = $(this).val();
+            let programLevelText = $('#program_level_id').find('option:selected').text().trim().toLowerCase();
+            
+            let courseTypeSelect = $('#course_type');
+            
+            if (programLevelText === 'competetive coaching' || programLevelText === 'competitive coaching') {
+                courseTypeSelect.empty();
+                
+                let option1 = new Option('Select or Type Program Mode', '', false, false);
+                let option2 = new Option('Not decided yet', 'Not decided yet', false, false);
+                courseTypeSelect.append(option1).append(option2);
+
+                if (courseId && courseId !== 'Not decided yet') {
+                    let allowedTypeIds = courseProgramTypes
+                        .filter(cpt => cpt.course_id == courseId)
+                        .map(cpt => parseInt(cpt.program_type_id));
+                        
+                    allCourseTypes.forEach(function(ct) {
+                        if (ct.id && ct.id !== 'Not decided yet' && allowedTypeIds.includes(parseInt(ct.dbId))) {
+                            let option = new Option(ct.text, ct.id, false, false);
+                            $(option).attr('data-db-id', ct.dbId);
+                            courseTypeSelect.append(option);
+                        }
+                    });
+                }
+                courseTypeSelect.trigger('change');
+            } else {
+                // Restore all course types if not coaching
+                courseTypeSelect.empty();
+                allCourseTypes.forEach(function(ct) {
+                    let option = new Option(ct.text, ct.id, false, false);
+                    if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
+                    courseTypeSelect.append(option);
+                });
+                courseTypeSelect.trigger('change');
+            }
+        });
+
+        // Countries API
+        const API_BASE = 'https://countriesnow.space/api/v0.1';
+        loadCountries();
+
+        $('#countryFilter').on('change', function () {
+            const country = $(this).val();
+            $('#stateFilter').html('<option value="">Select State</option>');
+            $('#cityFilter').html('<option value="">Select City</option>');
+            if (country) loadStates(country);
+        });
+
+        $('#stateFilter').on('change', function () {
+            const country = $('#countryFilter').val();
+            const state   = $(this).val();
+            $('#cityFilter').html('<option value="">Select City</option>');
+            if (country && state) loadCities(country, state);
+        });
+
+        function loadCountries() {
+            $.get(API_BASE + '/countries', function(res){
+                let html = '<option value="">Select Country</option>';
+                res.data.forEach(c => {
+                    html += `<option value="${c.country}">${c.country}</option>`;
+                });
+                $('#countryFilter').html(html);
+            });
+        }
+
+        function loadStates(country) {
+            $.ajax({
+                type: 'POST',
+                url: API_BASE + '/countries/states',
+                contentType: 'application/json',
+                data: JSON.stringify({ country }),
+                success: function(res){
+                    let html = '<option value="">Select State</option>';
+                    res.data.states.forEach(s => {
+                        html += `<option value="${s.name}">${s.name}</option>`;
+                    });
+                    $('#stateFilter').html(html);
+                }
+            });
+        }
+
+        function loadCities(country, state) {
+            $.ajax({
+                type: 'POST',
+                url: API_BASE + '/countries/state/cities',
+                contentType: 'application/json',
+                data: JSON.stringify({ country, state }),
+                success: function(res){
+                    let html = '<option value="">Select City</option>';
+                    res.data.forEach(city => {
+                        html += `<option value="${city}">${city}</option>`;
+                    });
+                    $('#cityFilter').html(html);
+                }
+            });
+        }
+    });
+</script>
+@endpush

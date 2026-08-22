@@ -27,67 +27,139 @@ class CallingController extends Controller
     {
         $organization_id = auth()->user()->organization_id;
         $staff_id = auth()->id();
+        $today = now()->format('Y-m-d');
+        $currentMonth = now()->format('F');
+        $currentYear = now()->format('Y');
 
-        // Filters
-        $assign_from = $request->input('assign_from');
-        $assign_to = $request->input('assign_to');
-        $work_from = $request->input('work_from');
-        $work_to = $request->input('work_to');
+        // 1. Leads assigned today
+        $assignedToday = \App\Models\LeadAssignment::where('staff_id', $staff_id)
+            ->whereDate('created_at', now())
+            ->pluck('customer_id')->toArray();
+        $leadsAssignedTodayCount = count($assignedToday);
 
-        // Total Assigned
-        $assignments = \App\Models\LeadAssignment::where('staff_id', $staff_id);
-        if ($assign_from && $assign_to) {
-            $assignments->whereBetween('created_at', [$assign_from . ' 00:00:00', $assign_to . ' 23:59:59']);
+        // 2. Leads pending in queue (assigned today but no calling history by this staff)
+        $workedOnCustomerIds = \App\Models\CallingHistory::where('updated_by', $staff_id)
+            ->whereIn('user_id', $assignedToday)
+            ->pluck('user_id')->toArray();
+        
+        $pendingInQueueCount = $leadsAssignedTodayCount - count(array_unique($workedOnCustomerIds));
+
+        // 3. Follow-ups due today & Overdue
+        // We need to find customers whose LATEST calling history by this staff has date_required = today
+        $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
+            ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
+            ->where('updated_by', $staff_id)
+            ->groupBy('user_id');
+
+        $latestHistoriesIds = $latestHistoriesSub->pluck('id')->toArray();
+
+        $latestHistories = \App\Models\CallingHistory::with(['customer', 'calling_status'])
+            ->whereIn('id', $latestHistoriesIds)
+            ->get();
+        
+        $followUpsDueToday = $latestHistories->filter(function($h) use ($today) {
+            return $h->date_required === $today;
+        });
+        $followUpsDueTodayCount = $followUpsDueToday->count();
+
+        $overdueFollowUps = $latestHistories->filter(function($h) use ($today) {
+            return !empty($h->date_required) && $h->date_required < $today;
+        });
+
+        // 4. Admissions this month
+        $admissionStatus = \App\Models\CallingStatus::where('organization_id', $organization_id)
+            ->where('name', 'like', '%Admission%')
+            ->first();
+            
+        $admissionsThisMonthCount = 0;
+        if ($admissionStatus) {
+            $admissionsThisMonthCount = \App\Models\CallingHistory::where('updated_by', $staff_id)
+                ->where('reason', $admissionStatus->id)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
         }
-        $assignedCustomerIds = $assignments->pluck('customer_id')->toArray();
-        $totalAssigned = count($assignedCustomerIds);
 
-        // Fetch histories for assigned customers by this staff
-        $historyQuery = \App\Models\CallingHistory::where('organization_id', $organization_id)
-            ->whereIn('user_id', $assignedCustomerIds)
-            ->where('updated_by', $staff_id);
-
-        if ($work_from && $work_to) {
-            $historyQuery->whereBetween('created_at', [$work_from . ' 00:00:00', $work_to . ' 23:59:59']);
+        // Target
+        $targetRecord = \App\Models\TargetLead::where('staff_id', $staff_id)
+            ->where('year', $currentYear)
+            ->where('month', $currentMonth)
+            ->first();
+            
+        $admissionsTarget = $targetRecord ? $targetRecord->month_target_admissions : 0;
+        
+        $targetProgress = 0;
+        if ($admissionsTarget > 0) {
+            $targetProgress = round(($admissionsThisMonthCount / $admissionsTarget) * 100);
+            if ($targetProgress > 100) $targetProgress = 100;
         }
 
-        // Distinct done users
-        $doneUsersQuery = clone $historyQuery;
-        $doneCount = $doneUsersQuery->distinct('user_id')->count('user_id');
-        $pendingCount = $totalAssigned - $doneCount;
-
-        // Status Breakdown for the latest history per user
-        // Using eloquent to get the latest record per user_id in the filtered scope
-        $latestHistories = collect();
-        if ($totalAssigned > 0) {
-            $historySub = \Illuminate\Support\Facades\DB::table('calling_histories')
-                ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
-                ->where('organization_id', $organization_id)
-                ->whereIn('user_id', $assignedCustomerIds)
-                ->where('updated_by', $staff_id);
-                
-            if ($work_from && $work_to) {
-                $historySub->whereBetween('created_at', [$work_from . ' 00:00:00', $work_to . ' 23:59:59']);
+        // Build the Queue List
+        $queue = collect();
+        
+        foreach ($overdueFollowUps as $history) {
+            if($history->customer) {
+                $queue->push([
+                    'type' => 'overdue',
+                    'customer' => $history->customer,
+                    'history' => $history,
+                    'sort_date' => $history->date_required
+                ]);
             }
-            $historySub->groupBy('user_id');
-
-            $latestHistoriesIds = $historySub->pluck('id')->toArray();
-
-            $latestHistories = \Illuminate\Support\Facades\DB::table('calling_histories')
-                ->whereIn('id', $latestHistoriesIds)
-                ->get();
         }
+        
+        foreach ($followUpsDueToday as $history) {
+            if($history->customer) {
+                $queue->push([
+                    'type' => 'due_today',
+                    'customer' => $history->customer,
+                    'history' => $history,
+                    'sort_date' => $history->date_required
+                ]);
+            }
+        }
+        
+        $unattemptedIds = array_diff($assignedToday, $workedOnCustomerIds);
+        if (!empty($unattemptedIds)) {
+            $unattemptedCustomers = \App\Models\Customer::whereIn('id', $unattemptedIds)->get();
+            foreach ($unattemptedCustomers as $customer) {
+                $queue->push([
+                    'type' => 'new',
+                    'customer' => $customer,
+                    'history' => null,
+                    'sort_date' => $today
+                ]);
+            }
+        }
+        
+        $queue = $queue->sortBy(function($item) {
+            if ($item['type'] === 'overdue') return '1_' . $item['sort_date'];
+            if ($item['type'] === 'due_today') return '2_' . $item['sort_date'];
+            return '3_' . $item['sort_date'];
+        })->values();
 
-        // Group by reason (status_id)
-        $statusCounts = $latestHistories->groupBy('reason')->map(function ($row) {
-            return $row->count();
-        })->toArray();
-
-        $allStatuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->get();
+        $statuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
+        $actions = \App\Models\CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
+        $categories = \App\Models\CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
+        $templates = \App\Models\WhatsappTemplate::where('organization_id', $organization_id)->get();
+        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
+        $courses = \App\Models\Course::where('status', 1)->get();
+        $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
+        $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
+        $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
+        $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
+        $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
 
         return view('admin.students_crm.calling.dashboard', compact(
-            'totalAssigned', 'doneCount', 'pendingCount', 'statusCounts', 'allStatuses',
-            'assign_from', 'assign_to', 'work_from', 'work_to'
+            'leadsAssignedTodayCount',
+            'pendingInQueueCount',
+            'followUpsDueTodayCount',
+            'admissionsThisMonthCount',
+            'admissionsTarget',
+            'targetProgress',
+            'queue',
+            'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types'
         ));
     }
 

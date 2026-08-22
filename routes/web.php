@@ -551,6 +551,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'store'])->name('lead-assign.store')->middleware('can:lead-assign-add');
             Route::get('lead-assign/{staff}', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'show'])->name('lead-assign.show')->middleware('can:lead-assign-browse');
         });
+        
+        Route::resource('target-leads', \App\Http\Controllers\Admin\TargetLeadController::class);
 
         // Consultant Management Module Routes
         Route::prefix('consultants')->name('consultants.')->group(function () {
