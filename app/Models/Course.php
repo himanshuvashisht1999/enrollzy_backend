@@ -10,7 +10,22 @@ class Course extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'status', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration', 'sort_order'];
+    protected $fillable = [
+        'name', 'slug', 'status', 'program_level_id', 'stream_offered_id', 
+        'discipline_id', 'duration', 'sort_order',
+        'full_form', 'course_type_id', 'available_modes', 'overview',
+        'generic_eligibility', 'common_entrance_exams', 'core_curriculum',
+        'common_specializations', 'skills_gained', 'career_scope',
+        'average_salary_range', 'higher_education_options', 'course_comparison',
+        'pros_cons', 'faqs'
+    ];
+
+    protected $casts = [
+        'available_modes' => 'array',
+        'common_entrance_exams' => 'array',
+        'common_specializations' => 'array',
+        'faqs' => 'array',
+    ];
 
     /**
      * Boot function from Laravel.
@@ -49,5 +64,10 @@ class Course extends Model
     public function programTypes()
     {
         return $this->belongsToMany(ProgramType::class, 'course_program_type');
+    }
+
+    public function courseType()
+    {
+        return $this->belongsTo(CourseType::class, 'course_type_id');
     }
 }

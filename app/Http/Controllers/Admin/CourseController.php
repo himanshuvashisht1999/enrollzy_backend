@@ -31,10 +31,13 @@ class CourseController extends Controller
         $streamOffereds = \App\Models\StreamOffered::where('status', true)->get();
         $disciplines = \App\Models\Discipline::where('status', true)->get();
         $programTypes = \App\Models\ProgramType::where('status', true)->get();
+        $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
+        $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
+        $specializations = \App\Models\Specialization::where('status', true)->get();
 
         return view(
             'admin.courses.create',
-            compact('programLevels', 'streamOffereds', 'disciplines', 'programTypes')
+            compact('programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations')
         );
 
     }
@@ -78,10 +81,13 @@ class CourseController extends Controller
         $streamOffereds = \App\Models\StreamOffered::where('status', true)->get();
         $disciplines = \App\Models\Discipline::where('status', true)->get();
         $programTypes = \App\Models\ProgramType::where('status', true)->get();
+        $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
+        $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
+        $specializations = \App\Models\Specialization::where('status', true)->get();
 
         return view(
             'admin.courses.edit',
-            compact('course', 'programLevels', 'streamOffereds', 'disciplines', 'programTypes')
+            compact('course', 'programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations')
         );
     }
 

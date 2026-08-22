@@ -241,6 +241,9 @@
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
 
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.course-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.course-types.index') }}">Course Type</a></li>
+
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('noteworthy-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-categories.*') ? 'active' : '' }}"

@@ -133,6 +133,117 @@
                                    placeholder="e.g. 2 Years">
                         </div>
 
+                        {{-- Course Full Form --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Course Full Form</label>
+                            <input type="text" name="full_form" class="form-control" value="{{ old('full_form', $course->full_form) }}" placeholder="e.g. Master of Business Administration">
+                        </div>
+
+                        {{-- Course Type --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Course Type</label>
+                            <select name="course_type_id" class="form-select select2">
+                                <option value="">-- Select Course Type --</option>
+                                @if(isset($courseTypes))
+                                    @foreach($courseTypes as $ct)
+                                        <option value="{{ $ct->id }}" {{ old('course_type_id', $course->course_type_id) == $ct->id ? 'selected' : '' }}>
+                                            {{ $ct->title }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
+                        {{-- Common Entrance Exams --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Common Entrance Exams</label>
+                            <select name="common_entrance_exams[]" class="form-select select2" multiple="multiple">
+                                @if(isset($exams))
+                                    @php
+                                        $selectedExams = old('common_entrance_exams', is_array($course->common_entrance_exams) ? $course->common_entrance_exams : (is_string($course->common_entrance_exams) ? json_decode($course->common_entrance_exams, true) ?? [] : [$course->common_entrance_exams]));
+                                        if(!is_array($selectedExams)) $selectedExams = [];
+                                    @endphp
+                                    @foreach($exams as $exam)
+                                        <option value="{{ $exam->id }}" {{ in_array($exam->id, $selectedExams) ? 'selected' : '' }}>
+                                            {{ $exam->name ?? $exam->title }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
+                        {{-- Common Specializations --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Common Specializations</label>
+                            <select name="common_specializations[]" class="form-select select2" multiple="multiple">
+                                @if(isset($specializations))
+                                    @php
+                                        $selectedSpecs = old('common_specializations', is_array($course->common_specializations) ? $course->common_specializations : (is_string($course->common_specializations) ? json_decode($course->common_specializations, true) ?? [] : [$course->common_specializations]));
+                                        if(!is_array($selectedSpecs)) $selectedSpecs = [];
+                                    @endphp
+                                    @foreach($specializations as $spec)
+                                        <option value="{{ $spec->id }}" {{ in_array($spec->id, $selectedSpecs) ? 'selected' : '' }}>
+                                            {{ $spec->title }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
+                        {{-- Average Salary Range --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Average Salary Range</label>
+                            <input type="text" name="average_salary_range" class="form-control" value="{{ old('average_salary_range', $course->average_salary_range) }}" placeholder="e.g. 5 LPA - 10 LPA">
+                        </div>
+
+                        {{-- Overview --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Overview</label>
+                            <textarea name="overview" class="form-control editor">{{ old('overview', $course->overview) }}</textarea>
+                        </div>
+
+                        {{-- Generic Eligibility --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Generic Eligibility</label>
+                            <textarea name="generic_eligibility" class="form-control editor">{{ old('generic_eligibility', $course->generic_eligibility) }}</textarea>
+                        </div>
+
+                        {{-- Core Curriculum --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Core Curriculum / Subjects</label>
+                            <textarea name="core_curriculum" class="form-control editor">{{ old('core_curriculum', $course->core_curriculum) }}</textarea>
+                        </div>
+
+                        {{-- Skills Gained --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Skills Gained</label>
+                            <textarea name="skills_gained" class="form-control editor">{{ old('skills_gained', $course->skills_gained) }}</textarea>
+                        </div>
+
+                        {{-- Career Scope --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Career Scope & Job Roles</label>
+                            <textarea name="career_scope" class="form-control editor">{{ old('career_scope', $course->career_scope) }}</textarea>
+                        </div>
+
+                        {{-- Higher Education Options --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Higher Education Options</label>
+                            <textarea name="higher_education_options" class="form-control editor">{{ old('higher_education_options', $course->higher_education_options) }}</textarea>
+                        </div>
+
+                        {{-- Course Comparison --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Course Comparison</label>
+                            <textarea name="course_comparison" class="form-control editor">{{ old('course_comparison', $course->course_comparison) }}</textarea>
+                        </div>
+
+                        {{-- Pros & Cons --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Pros & Cons / Who Should Take This</label>
+                            <textarea name="pros_cons" class="form-control editor">{{ old('pros_cons', $course->pros_cons) }}</textarea>
+                        </div>
+
                         {{-- Submit --}}
                         <div class="col-12 mt-4">
                             <button type="submit" class="btn btn-primary px-4">
@@ -148,3 +259,12 @@
     </div>
 </div>
 @endsection
+@push('js')
+<script>
+    $(document).ready(function() {
+        if (typeof initializeTinyMCE === 'function') {
+            initializeTinyMCE('.editor');
+        }
+    });
+</script>
+@endpush
