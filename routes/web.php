@@ -419,6 +419,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('accreditation-approvals', \App\Http\Controllers\Admin\AccreditationApprovalController::class)->middleware('can:accreditation-approvals-browse');
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class)->middleware('can:campus-types-browse');
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class);
+        Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class);
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
         Route::resource('organisation-sub-types', \App\Http\Controllers\Admin\OrganisationSubTypeController::class);
         Route::resource('languages', \App\Http\Controllers\Admin\LanguageController::class);

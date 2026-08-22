@@ -45,6 +45,7 @@ class Campus extends Model
         'class_profile' => 'array',
         'facilities' => 'array',
         'campus_type_new_id' => 'array',
+        'coaching_category_ids' => 'array',
     ];
 
     protected static function boot()

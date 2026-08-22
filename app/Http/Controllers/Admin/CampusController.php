@@ -35,7 +35,8 @@ class CampusController extends Controller
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
         $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
         $schoolTypes = \App\Models\CampusTypeNew::all();
-        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes'));
+        $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->orderBy('sort_order')->get();
+        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories'));
     }
 
     /**
@@ -66,7 +67,8 @@ class CampusController extends Controller
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
         $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
         $schoolTypes = \App\Models\CampusTypeNew::all();
-        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes'));
+        $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->orderBy('sort_order')->get();
+        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories'));
     }
 
     /**

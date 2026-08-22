@@ -23,6 +23,7 @@ class FilteredPage extends Model
         'stream_id',
         'state',
         'city',
+        'coaching_category_id',
     ];
 
     public function schoolType()

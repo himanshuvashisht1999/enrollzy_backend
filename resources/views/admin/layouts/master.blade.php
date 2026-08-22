@@ -313,6 +313,9 @@
                                     href="{{ route('admin.campus_type_new.index') }}">School Type</a></li>
 @endif
 
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.coaching-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.coaching-categories.index') }}">Coaching Category</a></li>
+
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('facilities-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"

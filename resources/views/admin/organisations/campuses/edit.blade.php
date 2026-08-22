@@ -166,6 +166,26 @@
                                         </select>
                                     </div>
                                     @endif
+                                    @if($organisation->organisation_type_id == 3)
+                                    <div class="col-md-6">
+                                        <label class="form-label">Coaching Category</label>
+                                        <select name="coaching_category_ids[]" class="form-select select2" multiple data-placeholder="Select Coaching Category">
+                                            @if(isset($coachingCategories))
+                                                @php
+                                                    $selectedCategories = old('coaching_category_ids', is_array($campus->coaching_category_ids) ? $campus->coaching_category_ids : (is_string($campus->coaching_category_ids) ? json_decode($campus->coaching_category_ids, true) ?? [] : [$campus->coaching_category_ids]));
+                                                    if (!is_array($selectedCategories)) {
+                                                        $selectedCategories = [];
+                                                    }
+                                                @endphp
+                                                @foreach($coachingCategories as $cc)
+                                                    <option value="{{ $cc->id }}" {{ in_array($cc->id, $selectedCategories) ? 'selected' : '' }}>
+                                                        {{ $cc->title }}
+                                                    </option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                    </div>
+                                    @endif
                                     <div class="col-md-6">
                                         <label class="form-label">Established Year</label>
                                         <input type="number" name="established_year" class="form-control"

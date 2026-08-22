@@ -113,6 +113,24 @@
                 </div>
             </div>
 
+            <!-- Fields specific for Coaching -->
+            <div id="coachingFields" style="display: none; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+                <h5>Coaching Details</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Coaching Category</label>
+                        <select name="coaching_category_id" class="form-control">
+                            <option value="">Select Coaching Category</option>
+                            @if(isset($coachingCategories))
+                                @foreach($coachingCategories as $cc)
+                                    <option value="{{ $cc->id }}">{{ $cc->title }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Shared Location Fields -->
             <div id="locationFields" style="display: none; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
                 <h5>Location Details</h5>
@@ -147,6 +165,7 @@ $(document).ready(function() {
         
         $('#schoolFields').hide();
         $('#universityFields').hide();
+        $('#coachingFields').hide();
         $('#locationFields').hide();
         
         if (cat === 'School') {
@@ -154,6 +173,9 @@ $(document).ready(function() {
             $('#locationFields').show();
         } else if (cat === 'University') {
             $('#universityFields').show();
+            $('#locationFields').show();
+        } else if (cat === 'Coaching') {
+            $('#coachingFields').show();
             $('#locationFields').show();
         }
     }

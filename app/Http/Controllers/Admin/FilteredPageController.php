@@ -20,7 +20,8 @@ class FilteredPageController extends Controller
     {
         $schoolTypes = CampusTypeNew::where('status', 1)->get();
         $streams = StreamOffered::where('status', 1)->get();
-        return view('admin.filtered-pages.create', compact('schoolTypes', 'streams'));
+        $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
+        return view('admin.filtered-pages.create', compact('schoolTypes', 'streams', 'coachingCategories'));
     }
 
     public function store(Request $request)
@@ -48,7 +49,8 @@ class FilteredPageController extends Controller
     {
         $schoolTypes = CampusTypeNew::where('status', 1)->get();
         $streams = StreamOffered::where('status', 1)->get();
-        return view('admin.filtered-pages.edit', compact('filteredPage', 'schoolTypes', 'streams'));
+        $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
+        return view('admin.filtered-pages.edit', compact('filteredPage', 'schoolTypes', 'streams', 'coachingCategories'));
     }
 
     public function update(Request $request, FilteredPage $filteredPage)
