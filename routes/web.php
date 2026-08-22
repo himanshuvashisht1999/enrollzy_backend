@@ -462,6 +462,10 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::resource('designations', \App\Http\Controllers\Admin\Hr\DesignationController::class)->middleware('can:designation-browse');
             Route::resource('staff', \App\Http\Controllers\Admin\Hr\StaffController::class)->middleware('can:staff-browse');
             Route::resource('roles', \App\Http\Controllers\Admin\Hr\RoleController::class)->middleware('can:roles-browse');
+            
+            Route::get('role-assign-rules', [\App\Http\Controllers\Admin\Hr\RoleAssignRuleController::class, 'index'])->name('role-assign-rules.index')->middleware('can:role-assign-rules-browse');
+            Route::post('role-assign-rules', [\App\Http\Controllers\Admin\Hr\RoleAssignRuleController::class, 'store'])->name('role-assign-rules.store')->middleware('can:role-assign-rules-edit');
+
             Route::resource('banks', \App\Http\Controllers\Admin\Hr\BanksController::class);
             Route::post('change-staff-role', [\App\Http\Controllers\Admin\Hr\StaffController::class, 'changeStaffRole'])->name('change-staff-role');
 
@@ -536,6 +540,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
         // Student CRM & Calling Module Routes
         Route::prefix('students-crm')->name('students-crm.')->group(function () {
+            Route::post('calling-dashboard/unlock-number', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'unlockNumber'])->name('calling-dashboard.unlock');
             Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
             Route::resource('calling-statuses', CallingStatusController::class)->middleware('can:calling-status-browse');
             Route::resource('calling-actions', CallingActionController::class)->middleware('can:calling-action-browse');

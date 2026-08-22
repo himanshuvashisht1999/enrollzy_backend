@@ -96,14 +96,16 @@ class StaffController extends Controller
             $designation = Designation::get();
             $Organization = Organization::get();
             $roles = Role::where('guard_name', 'admin')->get();
+            $managers = Admin::where('status', 1)->get();
         }else{
             $department = HrDepartment::where('organization_id', $user->organization_id)->get();
             $designation = Designation::where('organization_id', $user->organization_id)->get();
             $Organization = Organization::where('id', $user->organization_id)->get();
             $roles = Role::where('guard_name', 'admin')->where('name', '!=', 'superadmin')->get();
+            $managers = Admin::where('organization_id', $user->organization_id)->where('status', 1)->get();
         }
         $staffTypes = StaffType::where('status', 1)->get();
-        return view('admin.hr.staff.create', compact('department', 'designation', 'Organization', 'roles', 'staffTypes'));
+        return view('admin.hr.staff.create', compact('department', 'designation', 'Organization', 'roles', 'staffTypes', 'managers'));
     }
 
     public function store(Request $request)
@@ -168,6 +170,7 @@ class StaffController extends Controller
                 'probation_end_date' => $request->probation_end_date,
                 'employment_type' => $request->employment_type,
                 'staff_type_id' => $request->staff_type_id,
+                'manager_id' => $request->manager_id,
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
@@ -188,13 +191,15 @@ class StaffController extends Controller
             $department = HrDepartment::get();
             $designation = Designation::get();
             $roles = Role::where('guard_name', 'admin')->get();
+            $managers = Admin::where('status', 1)->where('id', '!=', $staffId)->get();
         }else{
             $department = HrDepartment::where('organization_id', $user->organization_id)->get();
             $designation = Designation::where('organization_id', $user->organization_id)->get();
             $roles = Role::where('guard_name', 'admin')->where('name', '!=', 'superadmin')->get();
+            $managers = Admin::where('organization_id', $user->organization_id)->where('status', 1)->where('id', '!=', $staffId)->get();
         }
         $staffTypes = StaffType::where('status', 1)->get();
-        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation', 'roles', 'staffTypes'));
+        return view('admin.hr.staff.edit', compact('staff', 'department', 'designation', 'roles', 'staffTypes', 'managers'));
     }
 
     public function update(Request $request, $id)
@@ -250,6 +255,7 @@ class StaffController extends Controller
                 'probation_end_date' => $request->probation_end_date,
                 'employment_type' => $request->employment_type,
                 'staff_type_id' => $request->staff_type_id,
+                'manager_id' => $request->manager_id,
                 'profile_image' => $profileImagePath,
             ];
 

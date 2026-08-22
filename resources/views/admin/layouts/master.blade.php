@@ -668,6 +668,10 @@
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.roles.index') }}">Roles & Permissions</a></li>
 @endif
+@if($user && method_exists($user, 'can') && $user->can('role-assign-rules-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.role-assign-rules.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.role-assign-rules.index') }}">Role Assign Rules</a></li>
+@endif
 
                             <!-- wrapped staff -->
 @if($user && method_exists($user, 'can') && $user->can('staff-browse'))

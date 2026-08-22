@@ -121,6 +121,62 @@
         </div>
     </div>
 
+    <!-- Team Metrics -->
+    @if($hasSubordinates)
+    <div class="mb-5">
+        <h5 class="fw-bold mb-3 border-bottom pb-2">Team Performance <small class="text-muted fw-normal ms-2">(Leads delegated to your subordinates in this date range)</small></h5>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card metric-card shadow-sm h-100 p-3 bg-primary bg-opacity-10 border-primary border-opacity-25">
+                    <div class="metric-value text-primary">{{ $teamLeadsDelegated }}</div>
+                    <div class="metric-title text-primary">Leads Delegated to Team</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card metric-card shadow-sm h-100 p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+                    <div class="metric-value text-success">{{ $teamAdmissionsCount }}</div>
+                    <div class="metric-title text-success">Team Admissions Achieved</div>
+                </div>
+            </div>
+        </div>
+        
+        @if(count($teamMetrics) > 0)
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="py-3 px-4">Subordinate Name</th>
+                                <th class="py-3 px-4">Role</th>
+                                <th class="py-3 px-4 text-center">Leads Assigned</th>
+                                <th class="py-3 px-4 text-center">Worked On</th>
+                                <th class="py-3 px-4 text-center">Pending (New)</th>
+                                <th class="py-3 px-4 text-center">Follow-ups Due</th>
+                                <th class="py-3 px-4 text-center text-success">Admissions Closed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($teamMetrics as $sub)
+                            <tr>
+                                <td class="py-3 px-4 fw-bold">{{ $sub['name'] }}</td>
+                                <td class="py-3 px-4 text-muted">{{ $sub['role'] }}</td>
+                                <td class="py-3 px-4 text-center">{{ $sub['leads_assigned'] }}</td>
+                                <td class="py-3 px-4 text-center">{{ $sub['leads_worked'] }}</td>
+                                <td class="py-3 px-4 text-center text-danger">{{ $sub['leads_pending'] }}</td>
+                                <td class="py-3 px-4 text-center text-warning">{{ $sub['followups_due'] }}</td>
+                                <td class="py-3 px-4 text-center text-success fw-bold">{{ $sub['admissions'] }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
+
     <!-- Lead Queue -->
     <div class="d-flex justify-content-between align-items-end mb-3">
         <div>
@@ -180,11 +236,20 @@
                         </div>
                     @endif
                     
-                    <div class="text-muted small">
-                        <i class="fas fa-lock me-1 text-warning"></i> {{ substr($customer->mobile, 0, 2) }}XXX XX{{ substr($customer->mobile, -3) }}
+                    @php
+                        $maskedPhone = substr($customer->phone, 0, 2) . 'XXX XX' . substr($customer->phone, -3);
+                        $isUnlocked = (isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
+                    @endphp
+                    <div class="text-muted small phone-container-{{ $customer->id }}">
+                        @if($isUnlocked)
+                            <i class="fas fa-phone me-1 text-success"></i> <span class="real-phone">{{ $customer->phone }}</span>
+                        @else
+                            <i class="fas fa-lock me-1 text-warning"></i> <span class="masked-phone">{{ $maskedPhone }}</span>
+                            <a href="javascript:void(0);" class="unlock-phone-btn ms-2 text-primary" data-id="{{ $customer->id }}"><i class="fas fa-eye"></i> View</a>
+                        @endif
                     </div>
                     
-                    <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $customer->mobile }}" data-category="{{ $customer->category_id }}" style="font-weight: 500;">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" style="font-weight: 500;">
                         Call & Update
                     </button>
                 </div>
@@ -463,6 +528,32 @@ data-bs-dismiss="modal">Cancel</button>
             params.set('category', cat);
             
             window.location.href = baseUrl + '?' + params.toString();
+        });
+
+        $(document).on('click', '.unlock-phone-btn', function() {
+            let id = $(this).data('id');
+            let btn = $(this);
+            
+            $.ajax({
+                url: "{{ route('admin.students-crm.calling-dashboard.unlock') }}",
+                type: 'POST',
+                data: {
+                    customer_id: id,
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(res) {
+                    if (res.status == 1) {
+                        $('.phone-container-' + id).html('<i class="fas fa-phone me-1 text-success"></i> <span class="real-phone">' + res.phone + '</span>');
+                        $('.call-btn-' + id).attr('data-phone', res.phone);
+                        $('.call-btn-' + id).data('phone', res.phone); // update jQuery data too
+                    } else {
+                        Swal.fire('Locked', res.message, 'warning');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Something went wrong', 'error');
+                }
+            });
         });
 
         $(document).on('click', '.open-calling-modal', function() {

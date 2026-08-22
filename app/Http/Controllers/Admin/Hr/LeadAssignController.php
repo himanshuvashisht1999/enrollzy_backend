@@ -15,11 +15,26 @@ class LeadAssignController extends Controller
 {
     public function index()
     {
-        $organization_id = auth()->user()->organization_id;
+        $user = auth()->user();
+        $organization_id = $user->organization_id;
         $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
-        // $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->role('Counselor')->get();
-        $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->get();
+        
+        // Filter Staff based on Role Assign Rules and Manager hierarchy
+        if (isset($user->is_admin) && $user->is_admin) {
+            $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->get();
+        } else {
+            $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
+                $q->where('name', $user->role);
+            })->pluck('can_assign_to_role_id');
+            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
+
+            $staffs = Admin::where('organization_id', $organization_id)
+                ->where('status', 1)
+                ->whereIn('role', $allowedRoleNames)
+                ->where('manager_id', $user->id)
+                ->get();
+        }
         
         $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
             ->whereHas('staff', function($q) use ($organization_id) {
@@ -41,8 +56,15 @@ class LeadAssignController extends Controller
             'end_number' => 'required|integer|gte:start_number'
         ]);
 
-        $organization_id = auth()->user()->organization_id;
+        $user = auth()->user();
+        $organization_id = $user->organization_id;
         $query = Customer::where('organization_id', $organization_id);
+
+        // If not top level, they can only assign leads they currently own
+        if (!isset($user->is_admin) || !$user->is_admin) {
+            $myAssignedCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id');
+            $query->whereIn('id', $myAssignedCustomerIds);
+        }
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -62,24 +84,34 @@ class LeadAssignController extends Controller
         $customers = $query->orderBy('id', 'asc')->skip($skip)->take($take)->pluck('id');
 
         if ($customers->isEmpty()) {
-            return redirect()->back()->with('error', 'No leads found for the given criteria.');
+            return redirect()->back()->with('error', 'No leads found for the given criteria (or you do not own them).');
         }
 
         $assignments = [];
         $skipped = 0;
         $now = now();
+        
         foreach ($customers as $customerId) {
-            $exists = LeadAssignment::where('customer_id', $customerId)->where('staff_id', $request->staff_id)->exists();
-            if (!$exists) {
+            $existingAssignment = LeadAssignment::where('customer_id', $customerId)->first();
+            
+            if ($existingAssignment) {
+                if ($existingAssignment->staff_id == $request->staff_id) {
+                    $skipped++;
+                } else {
+                    // Update current ownership (Delegation or Reassignment)
+                    $existingAssignment->staff_id = $request->staff_id;
+                    $existingAssignment->assigned_by = $user->id;
+                    $existingAssignment->updated_at = $now;
+                    $existingAssignment->save();
+                }
+            } else {
                 $assignments[] = [
                     'customer_id' => $customerId,
                     'staff_id' => $request->staff_id,
-                    'assigned_by' => auth()->id(),
+                    'assigned_by' => $user->id,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
-            } else {
-                $skipped++;
             }
         }
 
@@ -87,9 +119,10 @@ class LeadAssignController extends Controller
             LeadAssignment::insert($assignments);
         }
 
-        $msg = count($assignments) . ' leads assigned successfully.';
+        $assignedCount = $customers->count() - $skipped;
+        $msg = "Successfully assigned $assignedCount leads to the selected staff.";
         if ($skipped > 0) {
-            $msg .= ' (' . $skipped . ' leads were skipped because they are already assigned to this staff member).';
+            $msg .= " ($skipped skipped because they were already assigned to this staff.)";
         }
 
         return redirect()->back()->with('success', $msg);

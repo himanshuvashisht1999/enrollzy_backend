@@ -30,7 +30,7 @@
                 <div class="col-md-6">
                     <label class="form-label fw-bold d-block">Status</label>
                     <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" category="checkbox" name="status" id="status" value="1" checked>
+                        <input class="form-check-input" type="checkbox" name="status" id="status" value="1" checked>
                         <label class="form-check-label" for="status">Active</label>
                     </div>
                 </div>

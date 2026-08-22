@@ -61,6 +61,15 @@
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <label class="form-label fw-semibold">Reports To (Manager)</label>
+                        <select name="manager_id" class="form-select rounded-3">
+                            <option value="">No Manager (Top Level)</option>
+                            @foreach ($managers as $mgr)
+                                <option value="{{ $mgr->id }}">{{ $mgr->name }} ({{ $mgr->role ?? 'Staff' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold">Employment Type <span class="text-danger">*</span></label>
                         <select name="employment_type" class="form-select rounded-3" required>
                             <option value="full_time">Full Time</option>

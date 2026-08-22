@@ -27,7 +27,10 @@ class CoachingCategoryController extends Controller
             'sort_order' => 'integer',
         ]);
 
-        CoachingCategory::create($request->all());
+        $data = $request->all();
+        $data['status'] = $request->has('status') ? 1 : 0;
+        
+        CoachingCategory::create($data);
 
         return redirect()->route('admin.coaching-categories.index')->with('success', 'Coaching Category created successfully.');
     }
@@ -45,7 +48,10 @@ class CoachingCategoryController extends Controller
             'sort_order' => 'integer',
         ]);
 
-        $coachingCategory->update($request->all());
+        $data = $request->all();
+        $data['status'] = $request->has('status') ? 1 : 0;
+        
+        $coachingCategory->update($data);
 
         return redirect()->route('admin.coaching-categories.index')->with('success', 'Coaching Category updated successfully.');
     }

@@ -23,6 +23,29 @@ use App\Exports\CallingHistorySampleExport;
 
 class CallingController extends Controller
 {
+    public function unlockNumber(Request $request)
+    {
+        $customerId = $request->customer_id;
+        $user = auth()->user();
+        
+        if ($user->unlocked_lead_id && $user->unlocked_lead_id != $customerId) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'You must update the status of the previously unlocked lead before viewing another number.'
+            ]);
+        }
+        
+        $customer = \App\Models\Customer::find($customerId);
+        
+        $user->unlocked_lead_id = $customerId;
+        $user->save();
+        
+        return response()->json([
+            'status' => 1,
+            'phone' => $customer->phone
+        ]);
+    }
+
     public function dashboard(Request $request)
     {
         $organization_id = auth()->user()->organization_id;
@@ -98,6 +121,94 @@ class CallingController extends Controller
             if ($targetProgress > 100) $targetProgress = 100;
         }
 
+        // --- TEAM METRICS ---
+        $subordinates = \App\Models\Admin::where('manager_id', $staff_id)->where('status', 1)->get();
+        $hasSubordinates = $subordinates->count() > 0;
+        
+        $teamLeadsDelegated = 0;
+        $teamAdmissionsCount = 0;
+        $teamMetrics = [];
+        
+        if ($hasSubordinates) {
+            $subordinateIds = $subordinates->pluck('id')->toArray();
+            
+            // Total leads delegated to them in this date range
+            $teamLeadsDelegated = \App\Models\LeadAssignment::whereIn('staff_id', $subordinateIds)
+                ->where('assigned_by', $staff_id)
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
+                ->count();
+                
+            if ($admissionStatus) {
+                $teamAdmissionsCount = \App\Models\CallingHistory::whereIn('updated_by', $subordinateIds)
+                    ->where('reason', $admissionStatus->id)
+                    ->whereDate('created_at', '>=', $startDate)
+                    ->whereDate('created_at', '<=', $endDate)
+                    ->count();
+            }
+            
+            // Roll up team admissions into personal target progress! (User request)
+            $admissionsThisMonthCount += $teamAdmissionsCount; // include team admissions
+            if ($admissionsTarget > 0) {
+                $targetProgress = round(($admissionsThisMonthCount / $admissionsTarget) * 100);
+                if ($targetProgress > 100) $targetProgress = 100;
+            }
+            
+            // Build subordinate leaderboard
+            foreach ($subordinates as $sub) {
+                // Get the exact customers assigned to this sub by me in this date range
+                $subAssignedCustomers = \App\Models\LeadAssignment::where('staff_id', $sub->id)
+                    ->where('assigned_by', $staff_id)
+                    ->whereDate('created_at', '>=', $startDate)
+                    ->whereDate('created_at', '<=', $endDate)
+                    ->pluck('customer_id')->toArray();
+                
+                $subLeadsCount = count($subAssignedCustomers);
+
+                // How many of these has the sub worked on?
+                $subWorkedOnCustomers = \App\Models\CallingHistory::where('updated_by', $sub->id)
+                    ->whereIn('user_id', $subAssignedCustomers)
+                    ->pluck('user_id')->toArray();
+                $subWorkedOnCount = count(array_unique($subWorkedOnCustomers));
+                
+                // Pending means Assigned - Worked On
+                $subPendingCount = $subLeadsCount - $subWorkedOnCount;
+
+                // Follow ups due in this date range for this sub
+                $subLatestSub = \Illuminate\Support\Facades\DB::table('calling_histories')
+                    ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
+                    ->where('updated_by', $sub->id)
+                    ->groupBy('user_id');
+                
+                $subLatestIds = $subLatestSub->pluck('id')->toArray();
+                
+                $subFollowUpsDue = \App\Models\CallingHistory::whereIn('id', $subLatestIds)
+                    ->where('date_required', '>=', $startDate)
+                    ->where('date_required', '<=', $endDate)
+                    ->count();
+                    
+                $subAdmissions = 0;
+                if ($admissionStatus) {
+                    $subAdmissions = \App\Models\CallingHistory::where('updated_by', $sub->id)
+                        ->where('reason', $admissionStatus->id)
+                        ->whereDate('created_at', '>=', $startDate)
+                        ->whereDate('created_at', '<=', $endDate)
+                        ->count();
+                }
+                
+                $teamMetrics[] = [
+                    'name' => $sub->name,
+                    'role' => $sub->role,
+                    'leads_assigned' => $subLeadsCount,
+                    'leads_worked' => $subWorkedOnCount,
+                    'leads_pending' => $subPendingCount,
+                    'followups_due' => $subFollowUpsDue,
+                    'admissions' => $subAdmissions
+                ];
+            }
+        }
+        // --- END TEAM METRICS ---
+
         // Build the Queue List
         $queue = collect();
         
@@ -155,6 +266,8 @@ class CallingController extends Controller
         $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
         $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
 
+        $unlocked_lead_id = auth()->user()->unlocked_lead_id;
+
         return view('admin.students_crm.calling.dashboard', compact(
             'leadsAssignedTodayCount',
             'pendingInQueueCount',
@@ -165,6 +278,11 @@ class CallingController extends Controller
             'queue',
             'startDate',
             'endDate',
+            'hasSubordinates',
+            'teamLeadsDelegated',
+            'teamAdmissionsCount',
+            'teamMetrics',
+            'unlocked_lead_id',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types'
         ));
     }
@@ -472,6 +590,12 @@ class CallingController extends Controller
                 'is_done' => 1,
                 'organization_id' => auth()->user()->organization_id,
             ]);
+
+            $user = auth()->user();
+            if ($user->unlocked_lead_id == $request->customer_id) {
+                $user->unlocked_lead_id = null;
+                $user->save();
+            }
 
             return response()->json(['status' => 1, 'message' => 'Calling record saved successfully']);
         } catch (\Exception $e) {
