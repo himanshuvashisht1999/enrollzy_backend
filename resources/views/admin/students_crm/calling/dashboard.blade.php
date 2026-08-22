@@ -59,24 +59,42 @@
 
 @section('content')
 <div class="container-fluid py-4" style="background-color: #f4f6fb; min-height: 100vh;">
+    <!-- Date Filter Form -->
+    <form method="GET" action="{{ route('admin.students-crm.calling-dashboard.index') }}" class="mb-4 bg-white p-3 rounded-3 shadow-sm border-0">
+        <div class="row align-items-end g-3">
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ $startDate }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ $endDate }}" required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary rounded-pill px-4">Filter</button>
+                <a href="{{ route('admin.students-crm.calling-dashboard.index') }}" class="btn btn-light rounded-pill px-4 ms-2">Today</a>
+            </div>
+        </div>
+    </form>
+
     <!-- Top Metrics -->
     <div class="row g-3 mb-5">
         <div class="col">
             <div class="card metric-card shadow-sm h-100 p-3">
                 <div class="metric-value">{{ $leadsAssignedTodayCount }}</div>
-                <div class="metric-title">Leads assigned today</div>
+                <div class="metric-title">Leads assigned (in range)</div>
             </div>
         </div>
         <div class="col">
             <div class="card metric-card shadow-sm h-100 p-3">
                 <div class="metric-value">{{ $pendingInQueueCount }}</div>
-                <div class="metric-title">Leads pending in queue</div>
+                <div class="metric-title">Pending in queue</div>
             </div>
         </div>
         <div class="col">
             <div class="card metric-card shadow-sm h-100 p-3">
                 <div class="metric-value">{{ $followUpsDueTodayCount }}</div>
-                <div class="metric-title">Follow-ups due today</div>
+                <div class="metric-title">Follow-ups due (in range)</div>
             </div>
         </div>
         <div class="col">
@@ -84,7 +102,7 @@
                 <div class="d-flex align-items-baseline gap-2">
                     <div class="metric-value">{{ $admissionsThisMonthCount }}/{{ $admissionsTarget }}</div>
                 </div>
-                <div class="metric-title mb-2">Admissions this month</div>
+                <div class="metric-title mb-2">Admissions (for Selected Month)</div>
                 <div class="progress" style="height: 4px;">
                     <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $targetProgress }}%"></div>
                 </div>
@@ -109,7 +127,7 @@
             <h5 class="fw-bold mb-2">Your lead queue</h5>
             <div class="d-flex gap-3 align-items-center" style="font-size: 0.85rem;">
                 <span><i class="fas fa-circle text-danger me-1" style="font-size: 8px;"></i> Overdue follow-up</span>
-                <span><i class="fas fa-circle text-warning me-1" style="font-size: 8px;"></i> Due today</span>
+                <span><i class="fas fa-circle text-warning me-1" style="font-size: 8px;"></i> Due (in range)</span>
                 <span><i class="fas fa-circle text-primary me-1" style="font-size: 8px;"></i> New, unattempted</span>
             </div>
         </div>
@@ -132,7 +150,7 @@
                     $typeLabel = '<span class="status-badge text-overdue bg-danger bg-opacity-10 px-2 py-1 rounded">OVERDUE FOLLOW-UP</span>';
                 } elseif ($type === 'due_today') {
                     $typeClass = 'type-due_today';
-                    $typeLabel = '<span class="status-badge text-due_today bg-warning bg-opacity-10 px-2 py-1 rounded">FOLLOW-UP TODAY</span>';
+                    $typeLabel = '<span class="status-badge text-due_today bg-warning bg-opacity-10 px-2 py-1 rounded">FOLLOW-UP DUE</span>';
                 } else {
                     $typeClass = 'type-new';
                     $typeLabel = '<span class="status-badge text-new bg-primary bg-opacity-10 px-2 py-1 rounded">NEW UNATTEMPTED</span>';
@@ -859,6 +877,36 @@ data-bs-dismiss="modal">Cancel</button>
                 }
             });
         }
+        // Date Filter Restrictions
+        $('#start_date').on('change', function() {
+            var startDateVal = $(this).val();
+            if (startDateVal) {
+                var parts = startDateVal.split('-');
+                var year = parts[0];
+                var month = parts[1];
+                
+                // new Date(year, monthIndex, 0) gives the last day of the previous month.
+                // Since our 'month' string is 1-indexed (e.g. '07' for July), passing it as monthIndex (which is 0-indexed) 
+                // means we are getting the last day of the month we want!
+                var lastDay = new Date(year, parseInt(month), 0).getDate();
+                
+                var firstDayStr = year + "-" + month + "-01";
+                var lastDayStr = year + "-" + month + "-" + lastDay;
+                
+                $('#end_date').attr('min', firstDayStr);
+                $('#end_date').attr('max', lastDayStr);
+                
+                var currentEndDate = $('#end_date').val();
+                if(currentEndDate < firstDayStr || currentEndDate > lastDayStr) {
+                    $('#end_date').val(startDateVal);
+                }
+            } else {
+                $('#end_date').removeAttr('min').removeAttr('max');
+            }
+        });
+        
+        // Trigger immediately on load to enforce constraints if values exist
+        $('#start_date').trigger('change');
     });
 </script>
 @endpush

@@ -421,6 +421,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class);
         Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class);
         Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class)->middleware('can:course-types-browse');
+        Route::resource('exam-categories', \App\Http\Controllers\Admin\ExamCategoryController::class)->middleware('can:exam-categories-browse');
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
         Route::resource('organisation-sub-types', \App\Http\Controllers\Admin\OrganisationSubTypeController::class);
         Route::resource('languages', \App\Http\Controllers\Admin\LanguageController::class);

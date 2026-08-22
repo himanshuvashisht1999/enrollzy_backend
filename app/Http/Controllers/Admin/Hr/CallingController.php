@@ -27,25 +27,29 @@ class CallingController extends Controller
     {
         $organization_id = auth()->user()->organization_id;
         $staff_id = auth()->id();
-        $today = now()->format('Y-m-d');
-        $currentMonth = now()->format('F');
-        $currentYear = now()->format('Y');
+        
+        $startDate = $request->input('start_date', now()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        
+        $currentMonth = \Carbon\Carbon::parse($startDate)->format('F');
+        $currentYear = \Carbon\Carbon::parse($startDate)->format('Y');
 
-        // 1. Leads assigned today
+        // 1. Leads assigned in date range
         $assignedToday = \App\Models\LeadAssignment::where('staff_id', $staff_id)
-            ->whereDate('created_at', now())
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->pluck('customer_id')->toArray();
         $leadsAssignedTodayCount = count($assignedToday);
 
-        // 2. Leads pending in queue (assigned today but no calling history by this staff)
+        // 2. Leads pending in queue (assigned in date range but no calling history by this staff)
         $workedOnCustomerIds = \App\Models\CallingHistory::where('updated_by', $staff_id)
             ->whereIn('user_id', $assignedToday)
             ->pluck('user_id')->toArray();
         
         $pendingInQueueCount = $leadsAssignedTodayCount - count(array_unique($workedOnCustomerIds));
 
-        // 3. Follow-ups due today & Overdue
-        // We need to find customers whose LATEST calling history by this staff has date_required = today
+        // 3. Follow-ups due in date range & Overdue
+        // We need to find customers whose LATEST calling history by this staff has date_required = date range
         $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
             ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
             ->where('updated_by', $staff_id)
@@ -57,16 +61,16 @@ class CallingController extends Controller
             ->whereIn('id', $latestHistoriesIds)
             ->get();
         
-        $followUpsDueToday = $latestHistories->filter(function($h) use ($today) {
-            return $h->date_required === $today;
+        $followUpsDueToday = $latestHistories->filter(function($h) use ($startDate, $endDate) {
+            return $h->date_required >= $startDate && $h->date_required <= $endDate;
         });
         $followUpsDueTodayCount = $followUpsDueToday->count();
 
-        $overdueFollowUps = $latestHistories->filter(function($h) use ($today) {
-            return !empty($h->date_required) && $h->date_required < $today;
+        $overdueFollowUps = $latestHistories->filter(function($h) use ($startDate) {
+            return !empty($h->date_required) && $h->date_required < $startDate;
         });
 
-        // 4. Admissions this month
+        // 4. Admissions in date range
         $admissionStatus = \App\Models\CallingStatus::where('organization_id', $organization_id)
             ->where('name', 'like', '%Admission%')
             ->first();
@@ -75,12 +79,12 @@ class CallingController extends Controller
         if ($admissionStatus) {
             $admissionsThisMonthCount = \App\Models\CallingHistory::where('updated_by', $staff_id)
                 ->where('reason', $admissionStatus->id)
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
                 ->count();
         }
 
-        // Target
+        // Target for the start date's month
         $targetRecord = \App\Models\TargetLead::where('staff_id', $staff_id)
             ->where('year', $currentYear)
             ->where('month', $currentMonth)
@@ -127,7 +131,7 @@ class CallingController extends Controller
                     'type' => 'new',
                     'customer' => $customer,
                     'history' => null,
-                    'sort_date' => $today
+                    'sort_date' => $startDate
                 ]);
             }
         }
@@ -159,6 +163,8 @@ class CallingController extends Controller
             'admissionsTarget',
             'targetProgress',
             'queue',
+            'startDate',
+            'endDate',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types'
         ));
     }

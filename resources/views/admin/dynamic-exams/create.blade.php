@@ -50,8 +50,8 @@
                                 <label class="form-label">Exam Category</label>
                                 <select name="exam_category[]" class="form-select select2" multiple
                                     data-placeholder="Select Category">
-                                    @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
-                                        <option value="{{ $opt }}" {{ in_array($opt, old('exam_category', [])) ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @foreach($examCategories as $opt)
+                                        <option value="{{ $opt->title }}" {{ in_array($opt->title, old('exam_category', [])) ? 'selected' : '' }}>{{ $opt->title }}</option>
                                     @endforeach
                                 </select>
                             </div>

@@ -246,6 +246,11 @@
                                     href="{{ route('admin.course-types.index') }}">Course Type</a></li>
 @endif
 
+@if($user && method_exists($user, 'can') && $user->can('exam-categories-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.exam-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.exam-categories.index') }}">Exam Category</a></li>
+@endif
+
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('noteworthy-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-categories.*') ? 'active' : '' }}"

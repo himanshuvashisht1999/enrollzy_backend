@@ -144,8 +144,8 @@
                             <label class="form-label">Exam Category</label>
                             @php $cats = is_array($dynamicExam->exam_category) ? $dynamicExam->exam_category : []; @endphp
                             <select name="exam_category[]" class="form-select select2-multi" multiple data-placeholder="Select Category">
-                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
-                                    <option value="{{ $opt }}" {{ in_array($opt, $cats) ? 'selected' : '' }}>{{ $opt }}</option>
+                                @foreach($examCategories as $opt)
+                                    <option value="{{ $opt->title }}" {{ in_array($opt->title, $cats) ? 'selected' : '' }}>{{ $opt->title }}</option>
                                 @endforeach
                             </select>
                         </div>

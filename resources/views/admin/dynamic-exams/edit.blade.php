@@ -384,9 +384,9 @@
                                         }
                                         $selectedCats = is_array($selectedCats) ? $selectedCats : [];
                                     @endphp
-                                    @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
-                                        <option value="{{ $opt }}"
-                                            {{ in_array($opt, $selectedCats) ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @foreach($examCategories as $opt)
+                                        <option value="{{ $opt->title }}"
+                                            {{ in_array($opt->title, $selectedCats) ? 'selected' : '' }}>{{ $opt->title }}</option>
                                     @endforeach
                                 </select>
                             </div>

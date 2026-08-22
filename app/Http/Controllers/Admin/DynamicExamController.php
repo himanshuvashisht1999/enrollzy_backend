@@ -32,7 +32,8 @@ class DynamicExamController extends Controller
 
     public function create()
     {
-        return view('admin.dynamic-exams.create');
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
+        return view('admin.dynamic-exams.create', compact('examCategories'));
     }
 
     public function store(Request $request)
@@ -97,8 +98,9 @@ class DynamicExamController extends Controller
         $dynamicExam->load('sections');
         $organisations = Organisation::where('status', true)->select('id', 'name')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
 
-        return view('admin.dynamic-exams.edit', compact('dynamicExam', 'organisations', 'allStages'));
+        return view('admin.dynamic-exams.edit', compact('dynamicExam', 'organisations', 'allStages', 'examCategories'));
     }
 
     public function update(Request $request, DynamicExam $dynamicExam)
@@ -282,8 +284,9 @@ class DynamicExamController extends Controller
         $organisations = Organisation::where('status', true)->select('id', 'name', 'organisation_type_id')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
         $casteCategories = CasteCategory::where('status', true)->orderBy('name')->get();
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
 
-        return view('admin.dynamic-exams.data', compact('dynamicExam', 'organisations', 'allStages', 'casteCategories'));
+        return view('admin.dynamic-exams.data', compact('dynamicExam', 'organisations', 'allStages', 'casteCategories', 'examCategories'));
     }
 
     public function saveData(Request $request, DynamicExam $dynamicExam)
