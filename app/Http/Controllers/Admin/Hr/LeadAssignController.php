@@ -61,7 +61,7 @@ class LeadAssignController extends Controller
         $query = Customer::where('organization_id', $organization_id);
 
         // If not top level, they can only assign leads they currently own
-        if (!isset($user->is_admin) || !$user->is_admin) {
+        if (!in_array($user->role, ['superadmin', 'admin', 'Admin'])) {
             $myAssignedCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id');
             $query->whereIn('id', $myAssignedCustomerIds);
         }
