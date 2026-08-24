@@ -40,7 +40,13 @@ class CallingHistory extends Model
         'meeting_date',
         'time_slot',
         'meeting_link',
-        'assign_to_staff_id'
+        'assign_to_staff_id',
+        'current_university_id',
+        'current_university_text',
+        'current_course_id',
+        'current_course_text',
+        'current_course_type',
+        'current_session'
     ];
 
     public function assignedStaff()

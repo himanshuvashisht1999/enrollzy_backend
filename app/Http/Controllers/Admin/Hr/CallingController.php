@@ -565,6 +565,26 @@ class CallingController extends Controller
                     $school_type_text = $request->school_type;
                 }
             }
+
+            $current_university_id = null;
+            $current_university_text = null;
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $current_university_id = $request->current_university;
+                } else {
+                    $current_university_text = $request->current_university;
+                }
+            }
+
+            $current_course_id = null;
+            $current_course_text = null;
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $current_course_id = $request->current_course;
+                } else {
+                    $current_course_text = $request->current_course;
+                }
+            }
             
             CallingHistory::create([
                 'user_type' => 'customer',
@@ -586,6 +606,12 @@ class CallingController extends Controller
                 'course_text' => $course_text,
                 'course_type' => $request->course_type,
                 'session' => $request->session,
+                'current_university_id' => $current_university_id,
+                'current_university_text' => $current_university_text,
+                'current_course_id' => $current_course_id,
+                'current_course_text' => $current_course_text,
+                'current_course_type' => $request->current_program_mode,
+                'current_session' => $request->current_session,
                 'meeting_date' => $request->meeting_date,
                 'time_slot' => $request->time_slot,
                 'meeting_link' => $request->meeting_link,
