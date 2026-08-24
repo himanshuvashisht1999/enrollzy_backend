@@ -263,7 +263,7 @@
         @endforelse
     </div>
 </div>
-> <!-- Update Calling Status Modal -->
+<!-- Update Calling Status Modal -->
   <div class="modal fade" id="callModal">
       <div class="modal-dialog modal-xl modal-dialog-centered">
           <div class="modal-content border-0 rounded-4 shadow-lg">

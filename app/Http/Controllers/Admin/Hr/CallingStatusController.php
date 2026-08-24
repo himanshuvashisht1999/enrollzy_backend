@@ -28,6 +28,9 @@ class CallingStatusController extends Controller
                 ->addColumn('is_more_details', function ($row) {
                     return $row->is_more_details === 'yes' ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>';
                 })
+                ->addColumn('current_academic_details', function ($row) {
+                    return $row->current_academic_details === 'yes' ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>';
+                })
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
                     $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-status" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>';
@@ -39,7 +42,7 @@ class CallingStatusController extends Controller
                     $btn .= '</div>';
                     return $btn;
                 })
-                ->rawColumns(['date_require', 'comment_require', 'is_more_details', 'action'])
+                ->rawColumns(['date_require', 'comment_require', 'is_more_details', 'current_academic_details', 'action'])
                 ->make(true);
         }
         $actions = CallingAction::where('organization_id', auth()->user()->organization_id)->where('status', 1)->get();
@@ -53,6 +56,7 @@ class CallingStatusController extends Controller
             'date_require' => 'required|in:yes,no',
             'comment_require' => 'required|in:yes,no',
             'is_more_details' => 'required|in:yes,no',
+            'current_academic_details' => 'required|in:yes,no',
             'calling_action_id' => 'nullable|integer',
         ]);
 
@@ -66,6 +70,7 @@ class CallingStatusController extends Controller
                 'date_require' => $request->date_require,
                 'comment_require' => $request->comment_require,
                 'is_more_details' => $request->is_more_details,
+                'current_academic_details' => $request->current_academic_details,
                 'calling_action_id' => $request->calling_action_id,
                 'organization_id' => auth()->user()->organization_id,
             ]);
@@ -91,6 +96,7 @@ class CallingStatusController extends Controller
             'date_require' => 'required|in:yes,no',
             'comment_require' => 'required|in:yes,no',
             'is_more_details' => 'required|in:yes,no',
+            'current_academic_details' => 'required|in:yes,no',
             'calling_action_id' => 'nullable|integer',
         ]);
 
@@ -104,6 +110,7 @@ class CallingStatusController extends Controller
                 'date_require' => $request->date_require,
                 'comment_require' => $request->comment_require,
                 'is_more_details' => $request->is_more_details,
+                'current_academic_details' => $request->current_academic_details,
                 'calling_action_id' => $request->calling_action_id,
             ]);
 

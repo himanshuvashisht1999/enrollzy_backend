@@ -26,6 +26,7 @@
                             <th>Date Required</th>
                             <th>Comment Required</th>
                             <th>More Details?</th>
+                            <th>Current Academic Details?</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -83,6 +84,13 @@
                             <option value="yes">Yes</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Current Academic Details? <span class="text-danger">*</span></label>
+                        <select name="current_academic_details" id="current_academic_details" class="form-select rounded-3" required>
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
@@ -110,6 +118,7 @@
                 { data: 'date_require', name: 'date_require' },
                 { data: 'comment_require', name: 'comment_require' },
                 { data: 'is_more_details', name: 'is_more_details' },
+                { data: 'current_academic_details', name: 'current_academic_details' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]
         });
@@ -149,6 +158,8 @@
                     $('#comment_require').val(cr).trigger('change');
                     let imd = res.data.is_more_details ? res.data.is_more_details.toString().toLowerCase().trim() : 'no';
                     $('#is_more_details').val(imd).trigger('change');
+                    let cad = res.data.current_academic_details ? res.data.current_academic_details.toString().toLowerCase().trim() : 'no';
+                    $('#current_academic_details').val(cad).trigger('change');
                     $('#modalTitle').text('Edit Calling Status');
                     $('#createModal').modal('show');
                 }
@@ -162,6 +173,7 @@
             $('#date_require').val('no').trigger('change');
             $('#comment_require').val('no').trigger('change');
             $('#is_more_details').val('no').trigger('change');
+            $('#current_academic_details').val('no').trigger('change');
             $('#modalTitle').text('New Calling Status');
         });
     });

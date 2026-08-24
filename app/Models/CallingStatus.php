@@ -19,6 +19,7 @@ class CallingStatus extends Model
         'date_require',
         'comment_require',
         'is_more_details',
+        'current_academic_details',
         'calling_action_id'
     ];
 
