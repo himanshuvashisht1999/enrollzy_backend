@@ -519,6 +519,11 @@ class CallingController extends Controller
             return response()->json(['status' => 0, 'message' => $validator->errors()->first()]);
         }
 
+        $statusRecord = \App\Models\CallingStatus::find($request->status_id);
+        if ($statusRecord && $statusRecord->comment_require === 'yes' && empty($request->remark)) {
+            return response()->json(['status' => 0, 'message' => 'The comments field is required for this call status.']);
+        }
+
         try {
             $customer = Customer::find($request->customer_id);
             $university_id = null;

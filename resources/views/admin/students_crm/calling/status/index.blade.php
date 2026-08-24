@@ -24,6 +24,7 @@
                             <th>ID</th>
                             <th>Status Name</th>
                             <th>Date Required</th>
+                            <th>Comment Required</th>
                             <th>More Details?</th>
                             <th class="text-center">Action</th>
                         </tr>
@@ -69,6 +70,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label small fw-bold">Requires Comment? <span class="text-danger">*</span></label>
+                        <select name="comment_require" id="comment_require" class="form-select rounded-3" required>
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-bold">More Details? <span class="text-danger">*</span></label>
                         <select name="is_more_details" id="is_more_details" class="form-select rounded-3" required>
                             <option value="no">No</option>
@@ -100,6 +108,7 @@
                 { data: 'id', name: 'id' },
                 { data: 'name', name: 'name' },
                 { data: 'date_require', name: 'date_require' },
+                { data: 'comment_require', name: 'comment_require' },
                 { data: 'is_more_details', name: 'is_more_details' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]
@@ -136,6 +145,8 @@
                     $('#calling_action_id').val(res.data.calling_action_id).trigger('change');
                     let dr = res.data.date_require ? res.data.date_require.toString().toLowerCase().trim() : 'no';
                     $('#date_require').val(dr).trigger('change');
+                    let cr = res.data.comment_require ? res.data.comment_require.toString().toLowerCase().trim() : 'no';
+                    $('#comment_require').val(cr).trigger('change');
                     let imd = res.data.is_more_details ? res.data.is_more_details.toString().toLowerCase().trim() : 'no';
                     $('#is_more_details').val(imd).trigger('change');
                     $('#modalTitle').text('Edit Calling Status');
@@ -149,6 +160,7 @@
             $('#status_id').val('');
             $('#calling_action_id').val('').trigger('change');
             $('#date_require').val('no').trigger('change');
+            $('#comment_require').val('no').trigger('change');
             $('#is_more_details').val('no').trigger('change');
             $('#modalTitle').text('New Calling Status');
         });

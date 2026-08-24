@@ -279,6 +279,18 @@
                                         </select>
                                     </div>
                                     @endif
+                                    <div class="col-md-6">
+                                        <label class="form-label">Target Classes</label>
+                                        <select name="target_classes[]" class="form-select select2" multiple>
+                                            @php
+                                                $selectedClasses = $campus->target_classes ?? [];
+                                            @endphp
+                                            @for($i = 6; $i <= 12; $i++)
+                                                <option value="{{ $i }}" {{ in_array((string)$i, $selectedClasses) ? 'selected' : '' }}>Class {{ $i }}</option>
+                                            @endfor
+                                            <option value="Dropper" {{ in_array('Dropper', $selectedClasses) ? 'selected' : '' }}>Dropper</option>
+                                        </select>
+                                    </div>
                                     <div class="col-12">
                                         <label class="form-label">About Campus</label>
                                         <textarea name="about_institute" id="about_institute"

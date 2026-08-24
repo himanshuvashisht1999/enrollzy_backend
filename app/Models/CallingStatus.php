@@ -17,6 +17,7 @@ class CallingStatus extends Model
         'status',
         'organization_id',
         'date_require',
+        'comment_require',
         'is_more_details',
         'calling_action_id'
     ];

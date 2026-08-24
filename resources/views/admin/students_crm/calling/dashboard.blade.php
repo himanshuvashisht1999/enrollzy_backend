@@ -290,7 +290,7 @@ class="text-danger">*</span></label>
                                   <option value="" selected disabled>Select</option>
                                   @foreach($statuses as $status)
                                       <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" 
-data-more-details="{{ $status->is_more_details }}" data-date-require="{{ $status->date_require }}">{{ $status->name 
+data-more-details="{{ $status->is_more_details }}" data-date-require="{{ $status->date_require }}" data-comment-require="{{ $status->comment_require ?? 'no' }}">{{ $status->name 
 }}</option>
                                   @endforeach
                               </select>
@@ -656,6 +656,7 @@ data-bs-dismiss="modal">Cancel</button>
             let actionId = selected.data('action');
             let moreDetails = selected.data('more-details');
             let dateRequire = selected.data('date-require');
+            let commentRequire = selected.data('comment-require');
             
             if(actionId) {
                 $('#action_id').val(actionId).trigger('change');
@@ -675,6 +676,12 @@ data-bs-dismiss="modal">Cancel</button>
             } else {
                 $('#date-field').hide();
                 $('#call_date').prop('required', false);
+            }
+
+            if(commentRequire === 'yes') {
+                $('#message').prop('required', true);
+            } else {
+                $('#message').prop('required', false);
             }
         });
         
