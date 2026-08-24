@@ -541,6 +541,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         // Student CRM & Calling Module Routes
         Route::prefix('students-crm')->name('students-crm.')->group(function () {
             Route::post('calling-dashboard/unlock-number', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'unlockNumber'])->name('calling-dashboard.unlock');
+            Route::get('calling-dashboard/customer-history/{id}', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'customerHistory'])->name('calling-dashboard.customer-history');
             Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
             Route::resource('calling-statuses', CallingStatusController::class)->middleware('can:calling-status-browse');
             Route::resource('calling-actions', CallingActionController::class)->middleware('can:calling-action-browse');

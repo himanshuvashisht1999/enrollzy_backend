@@ -287,6 +287,99 @@ class CallingController extends Controller
         ));
     }
 
+    public function customerHistory($id)
+    {
+        $histories = \App\Models\CallingHistory::with([
+            'calling_status', 'calling_action', 'staff',
+            'university', 'course', 'programLevel', 'schoolType', 'sessionModel',
+            'currentUniversity', 'currentCourse', 'currentSessionModel'
+        ])
+            ->where('user_id', $id)
+            ->where('user_type', 'customer')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        $html = '<div class="table-responsive"><table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 20%;">Date</th>
+                    <th style="width: 30%;">Staff / Status / Action</th>
+                    <th style="width: 50%;">Details & Comment</th>
+                </tr>
+            </thead>
+            <tbody>';
+            
+        if($histories->count() > 0) {
+            foreach($histories as $h) {
+                $status = $h->calling_status ? $h->calling_status->name : '-';
+                $action = $h->calling_action ? $h->calling_action->name : '-';
+                $staff = $h->staff ? $h->staff->name : 'System';
+                $date = $h->created_at->format('d M Y, h:i A');
+                
+                $details = [];
+                if($h->date_required) $details[] = "<b>Next Date:</b> " . \Carbon\Carbon::parse($h->date_required)->format('d M Y');
+                if($h->meeting_date) $details[] = "<b>Meeting:</b> " . \Carbon\Carbon::parse($h->meeting_date)->format('d M Y') . ' ' . $h->time_slot;
+                
+                if($h->current_course_text) $details[] = "<b>Curr Course:</b> " . $h->current_course_text;
+                elseif($h->currentCourse) $details[] = "<b>Curr Course:</b> " . $h->currentCourse->name;
+                
+                if($h->current_university_text) $details[] = "<b>Curr Uni:</b> " . $h->current_university_text;
+                elseif($h->currentUniversity) $details[] = "<b>Curr Uni:</b> " . $h->currentUniversity->name;
+                
+                if($h->current_session) {
+                    $sName = $h->currentSessionModel ? $h->currentSessionModel->name : $h->current_session;
+                    $details[] = "<b>Curr Session:</b> " . $sName;
+                }
+                if($h->current_course_type) $details[] = "<b>Curr Mode:</b> " . $h->current_course_type;
+
+                if($h->programLevel) $details[] = "<b>Prog Level:</b> " . $h->programLevel->title;
+                elseif($h->program_level_text) $details[] = "<b>Prog Level:</b> " . $h->program_level_text;
+
+                if($h->course_text) $details[] = "<b>Course:</b> " . $h->course_text;
+                elseif($h->course) $details[] = "<b>Course:</b> " . $h->course->name;
+
+                if($h->university_text) $details[] = "<b>Uni:</b> " . $h->university_text;
+                elseif($h->university) $details[] = "<b>Uni:</b> " . $h->university->name;
+                
+                if($h->session) {
+                    $sName = $h->sessionModel ? $h->sessionModel->name : $h->session;
+                    $details[] = "<b>Session:</b> " . $sName;
+                }
+                
+                if($h->course_type) $details[] = "<b>Mode:</b> " . $h->course_type;
+                if($h->schoolType) $details[] = "<b>School Type:</b> " . $h->schoolType->title;
+                
+                $detailsHtml = implode(' | ', $details);
+                if($detailsHtml) {
+                    $detailsHtml = "<div class='small lh-sm text-secondary mb-1'>" . $detailsHtml . "</div>";
+                }
+                
+                $comment = $h->comment ? "<div class='small fw-medium'><i class='fas fa-comment text-muted me-1'></i>{$h->comment}</div>" : "";
+                
+                $html .= "<tr>
+                    <td class='text-nowrap'>{$date}</td>
+                    <td>
+                        <div class='fw-bold small'>{$staff}</div>
+                        <div class='mt-1'>
+                            <span class='badge bg-primary bg-opacity-10 text-primary border border-primary-subtle me-1'>{$status}</span> 
+                            <span class='small text-muted'>{$action}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {$detailsHtml}
+                        {$comment}
+                    </td>
+                </tr>";
+            }
+        } else {
+            $html .= '<tr><td colspan="3" class="text-center text-muted py-4">No previous history found</td></tr>';
+        }
+        
+        $html .= '</tbody></table></div>';
+        
+        return response()->json(['html' => $html]);
+    }
+
     public function index(Request $request)
     {
         $organization_id = auth()->user()->organization_id;

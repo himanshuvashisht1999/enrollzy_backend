@@ -271,15 +271,27 @@
                   <h5 class="fw-bold">Update Calling Status</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
+              <div class="modal-body pb-0">
+                  <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active fw-bold" data-bs-toggle="tab" href="#update-status-tab" role="tab">Update Status</a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link fw-bold" data-bs-toggle="tab" href="#history-tab" role="tab">History</a>
+                      </li>
+                  </ul>
+              </div>
               <form id="callForm" enctype="multipart/form-data">
                   @csrf
                   <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
                   <input type="hidden" id="customer_id" name="customer_id">
                   <input type="hidden" id="user_phone" name="user_phone">
                   <input type="hidden" id="category_val" name="category">
-                  <div class="modal-body">
-                      <div class="row g-3">
-                          <div class="col-lg-6">
+                  <div class="modal-body pt-0">
+                      <div class="tab-content">
+                          <div class="tab-pane active" id="update-status-tab" role="tabpanel">
+                              <div class="row g-3">
+                                  <div class="col-lg-6">
                               <label class="form-label small fw-bold">Name</label>
                               <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
                           </div>
@@ -532,12 +544,21 @@ id="message-editor" placeholder="Enter message"></textarea>
                                   </div>
                               </div>
                           </div>
+                          <!-- close row g-3 -->
+                          </div>
+                          <!-- close update-status-tab -->
+                          </div>
+                          
+                          <div class="tab-pane" id="history-tab" role="tabpanel">
+                              <div id="history-content" class="py-3">
+                                  <div class="text-center text-muted">Loading history...</div>
+                              </div>
+                          </div>
                       </div>
                   </div>
                   <div class="modal-footer border-0">
-                      <button type="button" class="btn btn-light rounded-pill px-4" 
-data-bs-dismiss="modal">Cancel</button>
-                      <button type="submit" class="btn btn-primary rounded-pill px-5">Save Log</button>
+                      <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary rounded-pill px-5" id="save-log-btn">Save Log</button>
                   </div>
               </form>
           </div>
@@ -605,7 +626,35 @@ data-bs-dismiss="modal">Cancel</button>
             $('#user_name').val(name);
             $('#user_phone').val(phone);
             $('#category_val').val(cat);
+            
+            // Reset tabs to default
+            $('.nav-tabs a[href="#update-status-tab"]').tab('show');
+            $('#save-log-btn').show();
+            
+            // Fetch History
+            $('#history-content').html('<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading history...</div>');
+            $.ajax({
+                url: "{{ url('admin/students-crm/calling-dashboard/customer-history') }}/" + id,
+                type: 'GET',
+                success: function(res) {
+                    $('#history-content').html(res.html);
+                },
+                error: function() {
+                    $('#history-content').html('<div class="text-center text-danger">Failed to load history</div>');
+                }
+            });
+
             $('#callModal').modal('show');
+        });
+
+        // Toggle Save Button based on active tab
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            let target = $(e.target).attr("href");
+            if (target === '#history-tab') {
+                $('#save-log-btn').hide();
+            } else {
+                $('#save-log-btn').show();
+            }
         });
 
         $('#callForm').on('submit', function(e) {
