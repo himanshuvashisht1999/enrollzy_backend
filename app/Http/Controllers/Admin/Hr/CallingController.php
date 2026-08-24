@@ -265,6 +265,7 @@ class CallingController extends Controller
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
         $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
         $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
+        $lead_qualities = \App\Models\LeadQuality::where('organization_id', $organization_id)->where('status', 1)->get();
 
         $unlocked_lead_id = auth()->user()->unlocked_lead_id;
 
@@ -283,7 +284,7 @@ class CallingController extends Controller
             'teamAdmissionsCount',
             'teamMetrics',
             'unlocked_lead_id',
-            'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types'
+            'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types', 'lead_qualities'
         ));
     }
 
@@ -292,7 +293,7 @@ class CallingController extends Controller
         $histories = \App\Models\CallingHistory::with([
             'calling_status', 'calling_action', 'staff',
             'university', 'course', 'programLevel', 'schoolType', 'sessionModel',
-            'currentUniversity', 'currentCourse', 'currentSessionModel'
+            'currentUniversity', 'currentCourse', 'currentSessionModel', 'leadQuality'
         ])
             ->where('user_id', $id)
             ->where('user_type', 'customer')
@@ -348,6 +349,8 @@ class CallingController extends Controller
                 
                 if($h->course_type) $details[] = "<b>Mode:</b> " . $h->course_type;
                 if($h->schoolType) $details[] = "<b>School Type:</b> " . $h->schoolType->title;
+                
+                if($h->leadQuality) $details[] = "<b>Lead Quality:</b> <span class='text-dark fw-bold'>" . $h->leadQuality->name . "</span>";
                 
                 $detailsHtml = implode(' | ', $details);
                 if($detailsHtml) {
@@ -678,11 +681,17 @@ class CallingController extends Controller
                     $current_course_text = $request->current_course;
                 }
             }
+
+            if ($request->filled('lead_quality_id')) {
+                $customer->lead_quality_id = $request->lead_quality_id;
+                $customer->save();
+            }
             
             CallingHistory::create([
                 'user_type' => 'customer',
                 'user_id' => $request->customer_id,
                 'category_id' => $request->category,
+                'lead_quality_id' => $request->lead_quality_id,
                 'user_name' => $customer->name ?? '',
                 'user_phone' => $customer->phone ?? '',
                 'reason' => $request->status_id, // Legacy Status field

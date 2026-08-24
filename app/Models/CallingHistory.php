@@ -16,6 +16,7 @@ class CallingHistory extends Model
         'user_type',
         'user_id',
         'category_id',
+        'lead_quality_id',
         'institute_id',
         'user_name',
         'user_phone',
@@ -89,4 +90,6 @@ class CallingHistory extends Model
     public function currentUniversity() { return $this->belongsTo(Organisation::class, 'current_university_id'); }
     public function currentCourse() { return $this->belongsTo(Course::class, 'current_course_id'); }
     public function currentSessionModel() { return $this->belongsTo(CustomerSession::class, 'current_session'); }
+    
+    public function leadQuality() { return $this->belongsTo(LeadQuality::class, 'lead_quality_id'); }
 }

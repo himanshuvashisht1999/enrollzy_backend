@@ -895,6 +895,15 @@
                     </a>
                 </li>
 @endif
+                <!-- wrapped standalone lead-quality -->
+@if($user && method_exists($user, 'can') && $user->can('lead-quality-browse'))
+<li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-qualities.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-qualities.index') }}">
+                        <i class="fas fa-star me-2"></i> Lead Quality
+                    </a>
+                </li>
+@endif
                 @if($user && method_exists($user, 'can') && $user->can('lead-assign-browse'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-assign.*') ? 'active' : '' }}"

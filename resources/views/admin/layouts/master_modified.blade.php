@@ -593,6 +593,8 @@
 @endcan
 
 
+
+
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}"
                         href="{{ route('admin.institutes.index') }}">
@@ -651,6 +653,14 @@
                         <i class="fas fa-phone-square me-2"></i> Calling Action
                     </a>
                 </li>
+                @if($user && method_exists($user, 'can') && $user->can('lead-quality-browse'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-qualities.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-qualities.index') }}">
+                        <i class="fas fa-star me-2"></i> Lead Quality
+                    </a>
+                </li>
+                @endif
                 @can('lead-assign-browse')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-assign.*') ? 'active' : '' }}"

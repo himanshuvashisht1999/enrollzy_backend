@@ -249,7 +249,7 @@
                         @endif
                     </div>
                     
-                    <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" style="font-weight: 500;">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" data-lead-quality="{{ $customer->lead_quality_id }}" style="font-weight: 500;">
                         Call & Update
                     </button>
                 </div>
@@ -493,6 +493,18 @@ rounded-3 custom-select2">
                               </div>
                           </div>
                           
+                          <div class="col-lg-6">
+                              <label class="form-label small fw-bold">Lead Quality</label>
+                              <select name="lead_quality_id" id="lead_quality_id" class="form-select rounded-3">
+                                  <option value="">Select Lead Quality</option>
+                                  @if(isset($lead_qualities))
+                                      @foreach($lead_qualities as $lq)
+                                          <option value="{{ $lq->id }}">{{ $lq->name }}</option>
+                                      @endforeach
+                                  @endif
+                              </select>
+                          </div>
+                          
                           <div class="col-12">
                               <label class="form-label small fw-bold">Comments</label>
                               <textarea id="message" name="remark" class="form-control rounded-3" rows="3" 
@@ -621,11 +633,17 @@ id="message-editor" placeholder="Enter message"></textarea>
             let name = $(this).data('name');
             let phone = $(this).data('phone');
             let cat = $(this).data('category');
+            let lq = $(this).data('lead-quality');
 
             $('#customer_id').val(id);
             $('#user_name').val(name);
             $('#user_phone').val(phone);
             $('#category_val').val(cat);
+            if(lq) {
+                $('#lead_quality_id').val(lq);
+            } else {
+                $('#lead_quality_id').val('');
+            }
             
             // Reset tabs to default
             $('.nav-tabs a[href="#update-status-tab"]').tab('show');

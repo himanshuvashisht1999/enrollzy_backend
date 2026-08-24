@@ -15,7 +15,7 @@ class Customer extends Model
 
     protected $fillable = [
         'name', 'email', 'mobile', 'password', 'image', 'phone', 'role', 
-        'category_id', 'institute_id', 'status', 'organization_id', 
+        'category_id', 'lead_quality_id', 'institute_id', 'status', 'organization_id', 
         'country', 'state', 'city', 'pincode', 'is_admin',
         'dob', 'gender', 'aadhaar_number', 'alternate_mobile',
         'interested_in_ids', 'interested_in_course', 'program_level', 'mode', 'session_ids',
@@ -64,5 +64,10 @@ class Customer extends Model
     public function custom_fields()
     {
         return $this->hasMany(UserCustomerField::class, 'user_id');
+    }
+
+    public function leadQuality()
+    {
+        return $this->belongsTo(LeadQuality::class, 'lead_quality_id');
     }
 }
