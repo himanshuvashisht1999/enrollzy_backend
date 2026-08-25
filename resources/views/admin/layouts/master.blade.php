@@ -912,6 +912,15 @@
                     </a>
                 </li>
                 @endif
+                
+                @if($user && method_exists($user, 'can') && $user->can('lead-activity-logs-browse'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-activity-logs.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-activity-logs.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Lead Activity Logs
+                    </a>
+                </li>
+                @endif
 
                 @if($user && method_exists($user, 'can') && $user->can('target-leads-browse'))
                 <li class="nav-item">

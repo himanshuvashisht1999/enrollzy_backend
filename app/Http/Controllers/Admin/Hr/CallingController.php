@@ -846,6 +846,14 @@ class CallingController extends Controller
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
+            \App\Models\LeadActivityLog::create([
+                'customer_id' => $request->customer_id,
+                'admin_id' => auth()->id(),
+                'action_type' => 'status_update',
+                'description' => 'Updated calling status to ' . ($statusRecord->name ?? 'Unknown'),
+                'properties' => ['status_id' => $request->status_id]
+            ]);
+
             $user = auth()->user();
             if ($user->unlocked_lead_id == $request->customer_id) {
                 $user->unlocked_lead_id = null;

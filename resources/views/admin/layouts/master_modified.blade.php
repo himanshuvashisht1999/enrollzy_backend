@@ -669,6 +669,15 @@
                     </a>
                 </li>
                 @endcan
+                
+                @can('lead-activity-logs-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-activity-logs.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-activity-logs.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Lead Activity Logs
+                    </a>
+                </li>
+                @endcan
                 @can('calling-dashboard-browse')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-dashboard.*') ? 'active' : '' }}"

@@ -99,10 +99,19 @@ class LeadAssignController extends Controller
                     $skipped++;
                 } else {
                     // Update current ownership (Delegation or Reassignment)
+                    $oldStaffId = $existingAssignment->staff_id;
                     $existingAssignment->staff_id = $request->staff_id;
                     $existingAssignment->assigned_by = $user->id;
                     $existingAssignment->updated_at = $now;
                     $existingAssignment->save();
+
+                    \App\Models\LeadActivityLog::create([
+                        'customer_id' => $customerId,
+                        'admin_id' => $user->id,
+                        'action_type' => 'reassigned',
+                        'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                        'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                    ]);
                 }
             } else {
                 $assignments[] = [
@@ -112,6 +121,14 @@ class LeadAssignController extends Controller
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
+                
+                \App\Models\LeadActivityLog::create([
+                    'customer_id' => $customerId,
+                    'admin_id' => $user->id,
+                    'action_type' => 'assigned',
+                    'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                    'properties' => ['new_staff_id' => $request->staff_id]
+                ]);
             }
         }
 
