@@ -469,25 +469,15 @@
                   <h5 class="fw-bold">Update Calling Status</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
-              <div class="modal-body pb-0">
-                  <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
-                      <li class="nav-item">
-                          <a class="nav-link active fw-bold" data-bs-toggle="tab" href="#update-status-tab" role="tab">Update Status</a>
-                      </li>
-                      <li class="nav-item">
-                          <a class="nav-link fw-bold" data-bs-toggle="tab" href="#history-tab" role="tab">History</a>
-                      </li>
-                  </ul>
-              </div>
-              <form id="callForm" enctype="multipart/form-data">
-                  @csrf
-                  <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
-                  <input type="hidden" id="customer_id" name="customer_id">
-                  <input type="hidden" id="user_phone" name="user_phone">
-                  <input type="hidden" id="category_val" name="category">
-                  <div class="modal-body pt-0">
-                      <div class="tab-content">
-                          <div class="tab-pane active" id="update-status-tab" role="tabpanel">
+              <div class="modal-body pt-3 pb-4">
+        <div class="row h-100">
+            <div class="col-md-7 pe-md-4">
+                <form id="callForm" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
+                    <input type="hidden" id="customer_id" name="customer_id">
+                    <input type="hidden" id="user_phone" name="user_phone">
+                    <input type="hidden" id="category_val" name="category">
                               <div class="row g-3">
                                   <div class="col-lg-6">
                               <label class="form-label small fw-bold">Name</label>
@@ -755,23 +745,22 @@ id="message-editor" placeholder="Enter message"></textarea>
                               </div>
                           </div>
                           <!-- close row g-3 -->
-                          </div>
-                          <!-- close update-status-tab -->
-                          </div>
-                          
-                          <div class="tab-pane" id="history-tab" role="tabpanel">
-                              <div id="history-content" class="py-3">
-                                  <div class="text-center text-muted">Loading history...</div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="modal-footer border-0">
-                      <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                      <button type="submit" class="btn btn-primary rounded-pill px-5" id="save-log-btn">Save Log</button>
-                  </div>
-              </form>
-          </div>
+                            </div>
+                    <div class="mt-4 text-end">
+                        <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5" id="save-log-btn">Save Update</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-5 bg-light border-start p-4 rounded-end overflow-auto" style="max-height: 80vh;">
+                <h6 class="fw-bold mb-4 text-secondary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Conversation History</h6>
+                <div id="history-content">
+                    <div class="text-center text-muted">Loading history...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
       </div>
   </div>
 @endsection
