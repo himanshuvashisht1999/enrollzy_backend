@@ -23,6 +23,32 @@ use App\Exports\CallingHistorySampleExport;
 
 class CallingController extends Controller
 {
+    public function reassign(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'staff_id' => 'required'
+        ]);
+
+        $user = auth()->user();
+
+        $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $request->customer_id)->first();
+        if ($existingAssignment) {
+            $existingAssignment->staff_id = $request->staff_id;
+            $existingAssignment->assigned_by = $user->id;
+            $existingAssignment->updated_at = now();
+            $existingAssignment->save();
+        } else {
+            \App\Models\LeadAssignment::create([
+                'customer_id' => $request->customer_id,
+                'staff_id' => $request->staff_id,
+                'assigned_by' => $user->id
+            ]);
+        }
+
+        return response()->json(['status' => 1, 'message' => 'Lead reassigned successfully!']);
+    }
+
     public function unlockNumber(Request $request)
     {
         $customerId = $request->customer_id;
@@ -253,13 +279,48 @@ class CallingController extends Controller
             return '3_' . $item['sort_date'];
         })->values();
 
+        $customerIdsInQueue = $queue->pluck('customer.id')->toArray();
+        $assignmentsLookup = \App\Models\LeadAssignment::where('staff_id', $staff_id)
+            ->whereIn('customer_id', $customerIdsInQueue)
+            ->orderBy('id', 'desc')
+            ->get()
+            ->unique('customer_id')
+            ->keyBy('customer_id');
+
+        $latestAssignmentsIds = \Illuminate\Support\Facades\DB::table('lead_assignments')
+            ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
+            ->groupBy('customer_id')
+            ->pluck('id')->toArray();
+
+        $delegatedLeads = \App\Models\LeadAssignment::with(['customer', 'staff'])
+            ->whereIn('id', $latestAssignmentsIds)
+            ->where('assigned_by', $staff_id)
+            ->where('staff_id', '!=', $staff_id)
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->get();
+
         $statuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
         $actions = \App\Models\CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
         $categories = \App\Models\CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
         $templates = \App\Models\WhatsappTemplate::where('organization_id', $organization_id)->get();
         $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
         $courses = \App\Models\Course::where('status', 1)->get();
-        $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
+        $user = auth()->user();
+        if (isset($user->is_admin) && $user->is_admin) {
+            $staffs = \App\Models\Admin::where('organization_id', $organization_id)->where('status', 1)->get();
+        } else {
+            $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
+                $q->where('name', $user->role);
+            })->pluck('can_assign_to_role_id');
+            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
+
+            $staffs = \App\Models\Admin::where('organization_id', $organization_id)
+                ->where('status', 1)
+                ->whereIn('role', $allowedRoleNames)
+                ->where('manager_id', $user->id)
+                ->get();
+        }
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
@@ -284,6 +345,8 @@ class CallingController extends Controller
             'teamAdmissionsCount',
             'teamMetrics',
             'unlocked_lead_id',
+            'assignmentsLookup',
+            'delegatedLeads',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types', 'lead_qualities'
         ));
     }

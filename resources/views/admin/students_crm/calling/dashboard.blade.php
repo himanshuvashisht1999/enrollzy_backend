@@ -192,77 +192,172 @@
         </div>
     </div>
 
-    <div class="queue-list shadow-sm border">
-        @forelse($queue as $item)
-            @php 
-                $customer = $item['customer'];
-                $history = $item['history'];
-                $type = $item['type'];
-                
-                $typeClass = '';
-                $typeLabel = '';
-                if ($type === 'overdue') {
-                    $typeClass = 'type-overdue';
-                    $typeLabel = '<span class="status-badge text-overdue bg-danger bg-opacity-10 px-2 py-1 rounded">OVERDUE FOLLOW-UP</span>';
-                } elseif ($type === 'due_today') {
-                    $typeClass = 'type-due_today';
-                    $typeLabel = '<span class="status-badge text-due_today bg-warning bg-opacity-10 px-2 py-1 rounded">FOLLOW-UP DUE</span>';
-                } else {
-                    $typeClass = 'type-new';
-                    $typeLabel = '<span class="status-badge text-new bg-primary bg-opacity-10 px-2 py-1 rounded">NEW UNATTEMPTED</span>';
-                }
-            @endphp
-            
-            <div class="queue-item {{ $typeClass }} p-3 border-bottom d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3 w-50">
-                    <div style="width: 140px;">
-                        {!! $typeLabel !!}
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
-                        <div class="lead-info-small">
-                            {{ $customer->interested_in_course ?? 'N/A' }} - {{ $customer->city ?? 'Unknown' }}
-                            @if($history && $history->date_required)
-                                <br><i class="far fa-calendar-alt mt-1"></i> {{ \Carbon\Carbon::parse($history->date_required)->format('d M') }}
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-flex align-items-center gap-4">
-                    @if($history && $history->calling_status)
-                        <div class="text-muted small text-end" style="width: 200px;">
-                            {{ $history->calling_status->name ?? 'No status' }}
-                        </div>
-                    @endif
-                    
-                    @php
-                        $maskedPhone = substr($customer->phone, 0, 2) . 'XXX XX' . substr($customer->phone, -3);
-                        $isUnlocked = (isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
+    <!-- Queue Tabs -->
+    <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#my-queue-tab">Your Lead Queue</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#delegated-queue-tab">Assigned to Team</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- My Queue Tab -->
+        <div class="tab-pane fade show active" id="my-queue-tab">
+            <div class="queue-list shadow-sm border">
+                @forelse($queue as $item)
+                    @php 
+                        $customer = $item['customer'];
+                        $history = $item['history'];
+                        $type = $item['type'];
+                        
+                        $typeClass = '';
+                        $typeLabel = '';
+                        if ($type === 'overdue') {
+                            $typeClass = 'type-overdue';
+                            $typeLabel = '<span class="status-badge text-overdue bg-danger bg-opacity-10 px-2 py-1 rounded">OVERDUE FOLLOW-UP</span>';
+                        } elseif ($type === 'due_today') {
+                            $typeClass = 'type-due_today';
+                            $typeLabel = '<span class="status-badge text-due_today bg-warning bg-opacity-10 px-2 py-1 rounded">FOLLOW-UP DUE</span>';
+                        } else {
+                            $typeClass = 'type-new';
+                            $typeLabel = '<span class="status-badge text-new bg-primary bg-opacity-10 px-2 py-1 rounded">NEW UNATTEMPTED</span>';
+                        }
                     @endphp
-                    <div class="text-muted small phone-container-{{ $customer->id }}">
-                        @if($isUnlocked)
-                            <i class="fas fa-phone me-1 text-success"></i> <span class="real-phone">{{ $customer->phone }}</span>
-                        @else
-                            <i class="fas fa-lock me-1 text-warning"></i> <span class="masked-phone">{{ $maskedPhone }}</span>
-                            <a href="javascript:void(0);" class="unlock-phone-btn ms-2 text-primary" data-id="{{ $customer->id }}"><i class="fas fa-eye"></i> View</a>
-                        @endif
-                    </div>
                     
-                    <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" data-lead-quality="{{ $customer->lead_quality_id }}" style="font-weight: 500;">
-                        Call & Update
-                    </button>
-                </div>
+                    <div class="queue-item {{ $typeClass }} p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3 w-50">
+                            <div style="width: 140px;">
+                                {!! $typeLabel !!}
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
+                                <div class="lead-info-small">
+                                    {{ $customer->interested_in_course ?? 'N/A' }} - {{ $customer->city ?? 'Unknown' }}
+                                    @if($history && $history->date_required)
+                                        <br><i class="far fa-calendar-alt mt-1"></i> {{ \Carbon\Carbon::parse($history->date_required)->format('d M') }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-4">
+                            @if($history && $history->calling_status)
+                                <div class="text-muted small text-end" style="width: 200px;">
+                                    {{ $history->calling_status->name ?? 'No status' }}
+                                </div>
+                            @endif
+                            
+                            @php
+                                $maskedPhone = substr($customer->phone, 0, 2) . 'XXX XX' . substr($customer->phone, -3);
+                                $isUnlocked = (isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
+                            @endphp
+                            <div class="text-muted small phone-container-{{ $customer->id }}">
+                                @if($isUnlocked)
+                                    <i class="fas fa-phone me-1 text-success"></i> <span class="real-phone">{{ $customer->phone }}</span>
+                                @else
+                                    <i class="fas fa-lock me-1 text-warning"></i> <span class="masked-phone">{{ $maskedPhone }}</span>
+                                    <a href="javascript:void(0);" class="unlock-phone-btn ms-2 text-primary" data-id="{{ $customer->id }}"><i class="fas fa-eye"></i> View</a>
+                                @endif
+                            </div>
+                            
+                            <div class="d-flex gap-2 mt-2 mt-md-0">
+                                @if(isset($assignmentsLookup[$customer->id]) && $assignmentsLookup[$customer->id]->assigned_by == auth()->id())
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" style="font-weight: 500;">
+                                        Reassign
+                                    </button>
+                                @endif
+                                <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" data-lead-quality="{{ $customer->lead_quality_id }}" style="font-weight: 500;">
+                                    Call & Update
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="p-5 text-center text-muted">
+                        <i class="fas fa-check-circle fs-1 mb-3 text-success"></i>
+                        <h5>You're all caught up!</h5>
+                        <p>There are no leads pending in your queue.</p>
+                    </div>
+                @endforelse
             </div>
-        @empty
-            <div class="p-5 text-center text-muted">
-                <i class="fas fa-check-circle fs-1 mb-3 text-success"></i>
-                <h5>You're all caught up!</h5>
-                <p>There are no leads pending in your queue.</p>
+        </div>
+
+        <!-- Delegated Queue Tab -->
+        <div class="tab-pane fade" id="delegated-queue-tab">
+            <div class="queue-list shadow-sm border">
+                @forelse($delegatedLeads as $assignment)
+                    @php 
+                        $customer = $assignment->customer;
+                    @endphp
+                    @if($customer)
+                    <div class="queue-item p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3 w-50">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
+                                <div class="lead-info-small">
+                                    Assigned to: <strong class="text-primary">{{ $assignment->staff->name ?? 'Unknown' }}</strong>
+                                    <br><i class="far fa-clock mt-1"></i> Assigned on: {{ \Carbon\Carbon::parse($assignment->created_at)->format('d M Y, h:i A') }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-4">
+                            <div class="d-flex gap-2 mt-2 mt-md-0">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" style="font-weight: 500;">
+                                    Reassign
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                @empty
+                    <div class="p-5 text-center text-muted">
+                        <i class="fas fa-users fs-1 mb-3 text-secondary"></i>
+                        <h5>No delegated leads found</h5>
+                        <p>You haven't assigned any leads to your team in this date range.</p>
+                    </div>
+                @endforelse
             </div>
-        @endforelse
+        </div>
     </div>
 </div>
+<!-- Reassign Lead Modal -->
+<div class="modal fade" id="reassignModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">Reassign Lead</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reassignForm">
+                @csrf
+                <input type="hidden" id="reassign_customer_id" name="customer_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Customer Name</label>
+                        <input type="text" class="form-control rounded-3 bg-light" id="reassign_customer_name" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Staff <span class="text-danger">*</span></label>
+                        <select name="staff_id" class="form-select rounded-3" required>
+                            <option value="">Select Staff</option>
+                            @foreach($staffs as $staff)
+                                <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5">Reassign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Update Calling Status Modal -->
   <div class="modal fade" id="callModal">
       <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -623,6 +718,43 @@ id="message-editor" placeholder="Enter message"></textarea>
                     }
                 },
                 error: function() {
+                    Swal.fire('Error', 'Something went wrong', 'error');
+                }
+            });
+        });
+
+        $(document).on('click', '.open-reassign-modal', function() {
+            let id = $(this).data('id');
+            let name = $(this).data('name');
+
+            $('#reassign_customer_id').val(id);
+            $('#reassign_customer_name').val(name);
+            $('#reassignModal').modal('show');
+        });
+
+        $('#reassignForm').on('submit', function(e) {
+            e.preventDefault();
+            let btn = $(this).find('button[type="submit"]');
+            let originalText = btn.text();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Reassigning...');
+
+            $.ajax({
+                url: "{{ route('admin.students-crm.calling-dashboard.reassign') }}",
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(res) {
+                    btn.prop('disabled', false).html(originalText);
+                    if (res.status == 1) {
+                        $('#reassignModal').modal('hide');
+                        Swal.fire('Success', res.message, 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                },
+                error: function(err) {
+                    btn.prop('disabled', false).html(originalText);
                     Swal.fire('Error', 'Something went wrong', 'error');
                 }
             });
