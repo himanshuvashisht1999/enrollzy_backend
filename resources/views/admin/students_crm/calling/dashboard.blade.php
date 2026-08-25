@@ -463,7 +463,7 @@
 
 <!-- Update Calling Status Modal -->
   <div class="modal fade" id="callModal">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 1250px;">
           <div class="modal-content border-0 rounded-4 shadow-lg">
               <div class="modal-header border-0 pb-0">
                   <h5 class="fw-bold">Update Calling Status</h5>
@@ -471,7 +471,7 @@
               </div>
               <div class="modal-body pt-3 pb-4">
         <div class="row h-100">
-            <div class="col-md-7 pe-md-4">
+            <div class="col-lg-7 pe-md-4">
                 <form id="callForm" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
@@ -752,7 +752,7 @@ id="message-editor" placeholder="Enter message"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="col-md-5 bg-light border-start p-4 rounded-end overflow-auto" style="max-height: 80vh;">
+            <div class="col-lg-5 bg-light border-start p-4 rounded-end overflow-auto" style="max-height: 80vh;">
                 <h6 class="fw-bold mb-4 text-secondary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Conversation History</h6>
                 <div id="history-content">
                     <div class="text-center text-muted">Loading history...</div>
@@ -875,14 +875,19 @@ id="message-editor" placeholder="Enter message"></textarea>
             
             // Fetch History
             $('#history-content').html('<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading history...</div>');
+            $('#callModal .modal-header').html('<div class="w-100 text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
             $.ajax({
                 url: "{{ url('admin/students-crm/calling-dashboard/customer-history') }}/" + id,
                 type: 'GET',
                 success: function(res) {
                     $('#history-content').html(res.html);
+                    if(res.headerHtml) {
+                        $('#callModal .modal-header').removeClass('pb-0').addClass('pb-3 border-bottom position-relative').html(res.headerHtml + '<button type="button" class="btn-close position-absolute" style="right: 1.5rem; top: 1.5rem;" data-bs-dismiss="modal"></button>');
+                    }
                 },
                 error: function() {
                     $('#history-content').html('<div class="text-center text-danger">Failed to load history</div>');
+                    $('#callModal .modal-header').html('<h5 class="fw-bold">Update Calling Status</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>');
                 }
             });
 

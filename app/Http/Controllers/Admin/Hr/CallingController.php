@@ -401,6 +401,8 @@ class CallingController extends Controller
 
     public function customerHistory($id)
     {
+        $customer = \App\Models\Customer::with('leadQuality')->find($id);
+        
         $histories = \App\Models\CallingHistory::with([
             'calling_status', 'calling_action', 'staff',
             'university', 'course', 'programLevel', 'schoolType', 'sessionModel',
@@ -411,87 +413,96 @@ class CallingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
             
-        $html = '<div class="table-responsive"><table class="table table-sm table-bordered">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 20%;">Date</th>
-                    <th style="width: 30%;">Staff / Status / Action</th>
-                    <th style="width: 50%;">Details & Comment</th>
-                </tr>
-            </thead>
-            <tbody>';
+        $latestHistory = $histories->first();
+        $statusName = $latestHistory && $latestHistory->calling_status ? $latestHistory->calling_status->name : 'New Lead';
+        $leadQualityName = $customer && $customer->leadQuality ? $customer->leadQuality->name : '';
+        
+        $nameParts = explode(' ', $customer->name ?? 'User');
+        $initials = strtoupper(substr($nameParts[0] ?? 'U', 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
+        
+        $phone = $customer->phone ?? '';
+        $user = auth()->user();
+        
+        if($user && $user->unlocked_lead_id == $id) {
+            $displayPhone = $phone;
+        } else {
+            $displayPhone = strlen($phone) >= 10 ? substr($phone, 0, 2) . '••••••' . substr($phone, -2) : $phone;
+        }
+        $displayPhone = "+91 " . $displayPhone;
+        
+        $qualityBadgeHtml = $leadQualityName ? "<span class='badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary fw-medium px-3 py-1' style='font-size: 0.75rem;'>&bull; " . strtoupper($leadQualityName) . "</span>" : "";
+        
+        $headerHtml = "
+        <div class='d-flex align-items-center justify-content-between w-100 pe-4'>
+            <div class='d-flex align-items-center gap-3'>
+                <div class='d-flex align-items-center justify-content-center fw-bold bg-primary bg-opacity-10 text-primary rounded-circle' style='width: 48px; height: 48px; font-size: 1.1rem;'>
+                    {$initials}
+                </div>
+                <div>
+                    <h5 class='fw-bold mb-1 text-dark'>{$customer->name}</h5>
+                    <div class='d-flex align-items-center text-muted' style='font-size: 0.8rem;'>
+                        <span class='text-uppercase me-2 text-secondary' style='letter-spacing: 0.5px;'>LEAD #EZ-{$customer->id}</span> 
+                        <span class='mx-1'>&middot;</span> 
+                        <span class='me-2'>{$displayPhone}</span> 
+                        <span class='mx-1'>&middot;</span> 
+                        <span>{$statusName}</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                {$qualityBadgeHtml}
+            </div>
+        </div>
+        ";
+            
+        $html = '<div style="border-left: 2px solid #dee2e6; padding-left: 1.5rem; margin-left: 0.5rem;" class="pb-1 mt-3">';
             
         if($histories->count() > 0) {
+            $loopIndex = 0;
             foreach($histories as $h) {
-                $status = $h->calling_status ? $h->calling_status->name : '-';
-                $action = $h->calling_action ? $h->calling_action->name : '-';
+                $status = $h->calling_status ? $h->calling_status->name : 'Unknown';
                 $staff = $h->staff ? $h->staff->name : 'System';
-                $date = $h->created_at->format('d M Y, h:i A');
+                $date = $h->created_at->format('d M Y, g:i A');
                 
-                $details = [];
-                if($h->date_required) $details[] = "<b>Next Date:</b> " . \Carbon\Carbon::parse($h->date_required)->format('d M Y');
-                if($h->meeting_date) $details[] = "<b>Meeting:</b> " . \Carbon\Carbon::parse($h->meeting_date)->format('d M Y') . ' ' . $h->time_slot;
-                
-                if($h->current_course_text) $details[] = "<b>Curr Course:</b> " . $h->current_course_text;
-                elseif($h->currentCourse) $details[] = "<b>Curr Course:</b> " . $h->currentCourse->name;
-                
-                if($h->current_university_text) $details[] = "<b>Curr Uni:</b> " . $h->current_university_text;
-                elseif($h->currentUniversity) $details[] = "<b>Curr Uni:</b> " . $h->currentUniversity->name;
-                
-                if($h->current_session) {
-                    $sName = $h->currentSessionModel ? $h->currentSessionModel->name : $h->current_session;
-                    $details[] = "<b>Curr Session:</b> " . $sName;
+                $staffInitials = 'S';
+                if($staff !== 'System') {
+                    $nameParts = explode(' ', $staff);
+                    $staffInitials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
                 }
-                if($h->current_course_type) $details[] = "<b>Curr Mode:</b> " . $h->current_course_type;
 
-                if($h->programLevel) $details[] = "<b>Prog Level:</b> " . $h->programLevel->title;
-                elseif($h->program_level_text) $details[] = "<b>Prog Level:</b> " . $h->program_level_text;
-
-                if($h->course_text) $details[] = "<b>Course:</b> " . $h->course_text;
-                elseif($h->course) $details[] = "<b>Course:</b> " . $h->course->name;
-
-                if($h->university_text) $details[] = "<b>Uni:</b> " . $h->university_text;
-                elseif($h->university) $details[] = "<b>Uni:</b> " . $h->university->name;
+                $leadQualityName = $h->leadQuality ? $h->leadQuality->name : '';
+                $leadQualityStr = $leadQualityName ? " &middot; " . $leadQualityName : "";
                 
-                if($h->session) {
-                    $sName = $h->sessionModel ? $h->sessionModel->name : $h->session;
-                    $details[] = "<b>Session:</b> " . $sName;
-                }
+                $markerColors = ['#4f637c', '#c79d46', '#c79d46', '#4f637c'];
+                $markerColor = isset($markerColors[$loopIndex % 4]) ? $markerColors[$loopIndex % 4] : '#6c757d';
                 
-                if($h->course_type) $details[] = "<b>Mode:</b> " . $h->course_type;
-                if($h->schoolType) $details[] = "<b>School Type:</b> " . $h->schoolType->title;
+                $comment = $h->comment ? "<div class='p-2 bg-white border rounded text-dark mt-2' style='font-size: 0.85rem;'>{$h->comment}</div>" : "";
                 
-                if($h->leadQuality) $details[] = "<b>Lead Quality:</b> <span class='text-dark fw-bold'>" . $h->leadQuality->name . "</span>";
+                $html .= "<div class='position-relative mb-4'>
+                    <span class='position-absolute' style='left: calc(-1.5rem - 6px); top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background-color: #fff; border: 2px solid {$markerColor}; box-shadow: 0 0 0 2px #fff;'></span>
+                    <div class='d-flex justify-content-between align-items-center mb-1'>
+                        <h6 class='mb-0 fw-bold text-dark' style='font-size: 0.9rem;'>{$status}</h6>
+                        <small class='text-muted' style='font-size: 0.75rem;'>{$date}</small>
+                    </div>
+                    <div class='d-flex align-items-center text-muted' style='font-size: 0.8rem;'>
+                        <span class='me-1 d-flex align-items-center justify-content-center fw-bold' style='width: 18px; height: 18px; border-radius: 3px; font-size: 0.6rem; background-color: #e9ecef; color: #4f637c;'>{$staffInitials}</span>
+                        <span>{$staff}{$leadQualityStr}</span>
+                    </div>
+                    {$comment}
+                </div>";
                 
-                $detailsHtml = implode(' | ', $details);
-                if($detailsHtml) {
-                    $detailsHtml = "<div class='small lh-sm text-secondary mb-1'>" . $detailsHtml . "</div>";
-                }
-                
-                $comment = $h->comment ? "<div class='small fw-medium'><i class='fas fa-comment text-muted me-1'></i>{$h->comment}</div>" : "";
-                
-                $html .= "<tr>
-                    <td class='text-nowrap'>{$date}</td>
-                    <td>
-                        <div class='fw-bold small'>{$staff}</div>
-                        <div class='mt-1'>
-                            <span class='badge bg-primary bg-opacity-10 text-primary border border-primary-subtle me-1'>{$status}</span> 
-                            <span class='small text-muted'>{$action}</span>
-                        </div>
-                    </td>
-                    <td>
-                        {$detailsHtml}
-                        {$comment}
-                    </td>
-                </tr>";
+                $loopIndex++;
             }
         } else {
-            $html .= '<tr><td colspan="3" class="text-center text-muted py-4">No previous history found</td></tr>';
+            $html .= '<div class="text-center text-muted py-4">No previous history found</div>';
         }
         
-        $html .= '</tbody></table></div>';
+        $html .= '</div>';
         
-        return response()->json(['html' => $html]);
+        return response()->json([
+            'html' => $html,
+            'headerHtml' => $headerHtml
+        ]);
     }
 
     public function index(Request $request)

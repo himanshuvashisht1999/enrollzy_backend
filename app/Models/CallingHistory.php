@@ -73,7 +73,7 @@ class CallingHistory extends Model
     public function staff()
     {
         // On our system staff is likely an Admin user or linked to staff table
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(Admin::class, 'updated_by');
     }
 
     public function logs()
