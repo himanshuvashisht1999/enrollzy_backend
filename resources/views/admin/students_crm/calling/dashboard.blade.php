@@ -59,20 +59,123 @@
 
 @section('content')
 <div class="container-fluid py-4" style="background-color: #f4f6fb; min-height: 100vh;">
-    <!-- Date Filter Form -->
-    <form method="GET" action="{{ route('admin.students-crm.calling-dashboard.index') }}" class="mb-4 bg-white p-3 rounded-3 shadow-sm border-0">
+        <!-- Date & Other Filters Form -->
+    <div class="form-group col-lg-3 mb-3">
+        <div class="radio-group" style="display: flex; align-items: center; gap: 20px;">
+            <div>
+                <input type="radio" id="option1" name="group" value="1" {{ request('group') != 2 ? 'checked' : '' }} style="transform: scale(1.3); margin-right: 5px;">
+                <label for="option1" style="font-size: 1rem; cursor: pointer;">Admin Data</label>
+            </div>
+            <div>
+                <input type="radio" id="option2" name="group" value="2" {{ request('group') == 2 ? 'checked' : '' }} style="transform: scale(1.3); margin-right: 5px;">
+                <label for="option2" style="font-size: 1rem; cursor: pointer;">Private Data</label>
+            </div>
+        </div>
+    </div>
+    <form method="GET" action="{{ route('admin.students-crm.calling-dashboard.index') }}" class="mb-4 bg-white p-3 rounded-3 shadow-sm border-0" id="filterForm">
+        <input type="hidden" name="group" id="hiddenGroup" value="{{ request('group', 1) }}">
         <div class="row align-items-end g-3">
-            <div class="col-md-3">
+            <div class="col-md-3 mb-3">
                 <label class="form-label text-muted small fw-bold mb-1">Start Date</label>
-                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ $startDate }}" required>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date', $startDate) }}" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 mb-3">
                 <label class="form-label text-muted small fw-bold mb-1">End Date</label>
-                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ $endDate }}" required>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date', $endDate) }}" required>
             </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary rounded-pill px-4">Filter</button>
-                <a href="{{ route('admin.students-crm.calling-dashboard.index') }}" class="btn btn-light rounded-pill px-4 ms-2">Today</a>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">Category</label>
+                <select name="category" class="form-select rounded-3" id="categoryFilter">
+                    <option value="">Select Categories</option>
+                    @php
+                        if(!function_exists('renderCategoryOptionsDashboard')) {
+                            function renderCategoryOptionsDashboard($categories, $level = 0) {
+                                foreach ($categories as $cat) {
+                                    echo '<option value="'.$cat->id.'"'.
+                                        (request('category') == $cat->id ? ' selected' : '').
+                                        '>';
+                                    echo str_repeat("— ", $level).$cat->name;
+                                    echo '</option>';
+                                    if ($cat->childrenRecursive && $cat->childrenRecursive->count()) {
+                                        renderCategoryOptionsDashboard($cat->childrenRecursive, $level + 1);
+                                    }
+                                }
+                            }
+                        }
+                    @endphp
+                    @php renderCategoryOptionsDashboard($categories); @endphp
+                </select>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">Session</label>
+                <select name="session_id" class="form-select rounded-3" id="sessionFilter">
+                    <option value="">Select Session</option>
+                    @if(isset($sessions))
+                        @foreach($sessions as $session)
+                            <option value="{{ $session->id }}" {{ request('session_id') == $session->id ? 'selected' : '' }}>
+                                {{ $session->name }}
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">Country</label>
+                <select name="country" class="form-select rounded-3" id="countryFilter" data-selected="{{ request('country') }}">
+                    <option value="">Select Country</option>
+                </select>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">State</label>
+                <select name="state" class="form-select rounded-3" id="stateFilter" data-selected="{{ request('state') }}">
+                    <option value="">Select State</option>
+                </select>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">City</label>
+                <select name="city" class="form-select rounded-3" id="cityFilter" data-selected="{{ request('city') }}">
+                    <option value="">Select City</option>
+                </select>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">Search Name</label>
+                <input type="text" name="filter_name" id="nameFilter" class="form-control rounded-3" placeholder="Search by Full Name" value="{{ request('filter_name') }}">
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">Search Phone</label>
+                <input type="text" name="filter_phone" id="phoneFilter" class="form-control rounded-3" placeholder="Search by Phone Number" value="{{ request('filter_phone') }}">
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <span class="d-block mb-2 text-muted small fw-bold">User Without Status</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="toggleUserWithoutStatus" name="user_with_out_status" value="1" {{ request('user_with_out_status') == 1 ? 'checked' : '' }}>
+                    <label class="form-check-label" for="toggleUserWithoutStatus">
+                        <span id="toggleLabel">{{ request('user_with_out_status') == 1 ? 'Yes' : 'No' }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group col-lg-3 mb-3">
+                <label class="d-block mb-2 text-muted small fw-bold">Sequence Calling</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="toggleSequence" name="sequence_mode" value="1" {{ request('sequence_mode') == 1 ? 'checked' : '' }}>
+                    <label class="form-check-label" for="toggleSequence">
+                        <span id="sequenceLabel">{{ request('sequence_mode') == 1 ? 'ON (Pending only)' : 'OFF (Normal)' }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-lg-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary rounded-pill px-4" id="submitSearchButton">Filter</button>
+                <a href="{{ route('admin.students-crm.calling-dashboard.index') }}" class="btn btn-light rounded-pill px-4 ms-2">Reset</a>
             </div>
         </div>
     </form>
@@ -1199,9 +1302,30 @@ id="message-editor" placeholder="Enter message"></textarea>
             }
         });
 
+                // Safe Group Radio
+        const dashRadios = document.querySelectorAll('input[type="radio"][name="group"]');
+        dashRadios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                $('#hiddenGroup').val(this.value);
+                $('#filterForm').submit();
+            });
+        });
+        
+        // Switches Labels
+        $('#toggleUserWithoutStatus').on('change', function() {
+            $('#toggleLabel').text(this.checked ? 'Yes' : 'No');
+        });
+        $('#toggleSequence').on('change', function() {
+            $('#sequenceLabel').text(this.checked ? 'ON (Pending only)' : 'OFF (Normal)');
+        });
+
         // Countries API
         const API_BASE = 'https://countriesnow.space/api/v0.1';
-        loadCountries();
+        const selectedCountry = $('#countryFilter').data('selected');
+        const selectedState = $('#stateFilter').data('selected');
+        const selectedCity = $('#cityFilter').data('selected');
+
+        loadCountries(selectedCountry);
 
         $('#countryFilter').on('change', function () {
             const country = $(this).val();
@@ -1217,42 +1341,48 @@ id="message-editor" placeholder="Enter message"></textarea>
             if (country && state) loadCities(country, state);
         });
 
-        function loadCountries() {
+        function loadCountries(selected = '') {
             $.get(API_BASE + '/countries', function(res){
                 let html = '<option value="">Select Country</option>';
                 res.data.forEach(c => {
-                    html += `<option value="${c.country}">${c.country}</option>`;
+                    html += `<option value="${c.country}" ${c.country === selected ? 'selected' : ''}>${c.country}</option>`;
                 });
                 $('#countryFilter').html(html);
-            });
-        }
-
-        function loadStates(country) {
-            $.ajax({
-                type: 'POST',
-                url: API_BASE + '/countries/states',
-                contentType: 'application/json',
-                data: JSON.stringify({ country }),
-                success: function(res){
-                    let html = '<option value="">Select State</option>';
-                    res.data.states.forEach(s => {
-                        html += `<option value="${s.name}">${s.name}</option>`;
-                    });
-                    $('#stateFilter').html(html);
+                if(selected) {
+                    loadStates(selected, selectedState);
                 }
             });
         }
 
-        function loadCities(country, state) {
+        function loadStates(country, selected = '') {
+            $.ajax({
+                type: 'POST',
+                url: API_BASE + '/countries/states',
+                contentType: 'application/json',
+                data: JSON.stringify({ country: country }),
+                success: function (res) {
+                    let html = '<option value="">Select State</option>';
+                    res.data.states.forEach(s => {
+                        html += `<option value="${s.name}" ${s.name === selected ? 'selected' : ''}>${s.name}</option>`;
+                    });
+                    $('#stateFilter').html(html);
+                    if(selected) {
+                        loadCities(country, selected, selectedCity);
+                    }
+                }
+            });
+        }
+
+        function loadCities(country, state, selected = '') {
             $.ajax({
                 type: 'POST',
                 url: API_BASE + '/countries/state/cities',
                 contentType: 'application/json',
-                data: JSON.stringify({ country, state }),
-                success: function(res){
+                data: JSON.stringify({ country: country, state: state }),
+                success: function (res) {
                     let html = '<option value="">Select City</option>';
-                    res.data.forEach(city => {
-                        html += `<option value="${city}">${city}</option>`;
+                    res.data.forEach(c => {
+                        html += `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`;
                     });
                     $('#cityFilter').html(html);
                 }

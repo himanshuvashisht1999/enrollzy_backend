@@ -84,10 +84,53 @@ class CallingController extends Controller
         $currentYear = \Carbon\Carbon::parse($startDate)->format('Y');
 
         // 1. Leads assigned in date range
-        $assignedToday = \App\Models\LeadAssignment::where('staff_id', $staff_id)
+                // Filters
+        $customerFilterQuery = \App\Models\Customer::select('id')->where('organization_id', $organization_id);
+        $hasCustomerFilter = false;
+
+        if ($request->filled('category')) {
+            $customerFilterQuery->where('category_id', $request->category);
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('country')) {
+            $customerFilterQuery->where('country', $request->country);
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('state')) {
+            $customerFilterQuery->where('state', $request->state);
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('city')) {
+            $customerFilterQuery->where('city', $request->city);
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('filter_name')) {
+            $customerFilterQuery->where('name', 'LIKE', '%' . $request->filter_name . '%');
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('filter_phone')) {
+            $customerFilterQuery->where('phone', 'LIKE', '%' . $request->filter_phone . '%');
+            $hasCustomerFilter = true;
+        }
+        if ($request->filled('session_id')) {
+            $customerFilterQuery->whereJsonContains('session_ids', (string)$request->session_id);
+            $hasCustomerFilter = true;
+        }
+
+        $filteredCustomerIds = [];
+        if ($hasCustomerFilter) {
+            $filteredCustomerIds = $customerFilterQuery->pluck('id')->toArray();
+        }
+        // 1. Leads assigned in date range
+        $assignedTodayQuery = \App\Models\LeadAssignment::where('staff_id', $staff_id)
             ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
-            ->pluck('customer_id')->toArray();
+            ->whereDate('created_at', '<=', $endDate);
+            
+        if ($hasCustomerFilter) {
+            $assignedTodayQuery->whereIn('customer_id', $filteredCustomerIds);
+        }
+
+        $assignedToday = $assignedTodayQuery->pluck('customer_id')->toArray();
         $leadsAssignedTodayCount = count($assignedToday);
 
         // 2. Leads pending in queue (assigned in date range but no calling history by this staff)
@@ -99,10 +142,15 @@ class CallingController extends Controller
 
         // 3. Follow-ups due in date range & Overdue
         // We need to find customers whose LATEST calling history by this staff has date_required = date range
-        $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
+                $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
             ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
-            ->where('updated_by', $staff_id)
-            ->groupBy('user_id');
+            ->where('updated_by', $staff_id);
+            
+        if ($hasCustomerFilter) {
+            $latestHistoriesSub->whereIn('user_id', $filteredCustomerIds);
+        }
+
+        $latestHistoriesSub = $latestHistoriesSub->groupBy('user_id');
 
         $latestHistoriesIds = $latestHistoriesSub->pluck('id')->toArray();
 
