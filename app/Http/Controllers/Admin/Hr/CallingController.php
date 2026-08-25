@@ -476,10 +476,10 @@ class CallingController extends Controller
                 $markerColors = ['#4f637c', '#c79d46', '#c79d46', '#4f637c'];
                 $markerColor = isset($markerColors[$loopIndex % 4]) ? $markerColors[$loopIndex % 4] : '#6c757d';
                 
-                $comment = $h->comment ? "<div class='p-2 bg-white border rounded text-dark mt-2' style='font-size: 0.85rem;'>{$h->comment}</div>" : "";
+                $comment = $h->comment ? "<div class='p-2 bg-light border rounded text-dark mt-2' style='font-size: 0.85rem;'>{$h->comment}</div>" : "";
                 
                 $html .= "<div class='position-relative mb-4'>
-                    <span class='position-absolute' style='left: calc(-1.5rem - 6px); top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background-color: #fff; border: 2px solid {$markerColor}; box-shadow: 0 0 0 2px #fff;'></span>
+                    <span class='position-absolute' style='left: calc(-1.5rem - 5px); top: 0.35rem; width: 12px; height: 12px; border-radius: 50%; background-color: {$markerColor}; box-shadow: 0 0 0 3px #f1f5f9, 0 0 0 4px #e2e8f0; z-index: 1;'></span>
                     <div class='d-flex justify-content-between align-items-center mb-1'>
                         <h6 class='mb-0 fw-bold text-dark' style='font-size: 0.9rem;'>{$status}</h6>
                         <small class='text-muted' style='font-size: 0.75rem;'>{$date}</small>

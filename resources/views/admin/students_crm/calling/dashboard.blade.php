@@ -464,14 +464,19 @@
 <!-- Update Calling Status Modal -->
   <div class="modal fade" id="callModal">
       <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 1250px;">
-          <div class="modal-content border-0 rounded-4 shadow-lg">
+          <div class="modal-content border-0 shadow-lg" style="background-color: #f3f4f6; border-radius: 12px;">
               <div class="modal-header border-0 pb-0">
                   <h5 class="fw-bold">Update Calling Status</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
-              <div class="modal-body pt-3 pb-4">
-        <div class="row h-100">
-            <div class="col-lg-7 pe-md-4">
+              <div class="modal-body p-4" style="padding-top: 1.5rem !important;">
+        <div class="row h-100 g-4">
+            <div class="col-lg-7">
+                <div class="bg-white rounded shadow-sm border p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                        <h6 class="fw-bold text-secondary text-uppercase mb-0" style="font-size: 0.85rem; letter-spacing: 0.5px;">Student Details</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Auto-filled from profile</small>
+                    </div>
                 <form id="callForm" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
@@ -751,11 +756,17 @@ id="message-editor" placeholder="Enter message"></textarea>
                         <button type="submit" class="btn btn-primary rounded-pill px-5" id="save-log-btn">Save Update</button>
                     </div>
                 </form>
+                </div>
             </div>
-            <div class="col-lg-5 bg-light border-start p-4 rounded-end overflow-auto" style="max-height: 80vh;">
-                <h6 class="fw-bold mb-4 text-secondary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Conversation History</h6>
+            <div class="col-lg-5">
+                <div class="bg-white rounded shadow-sm border p-4 h-100 overflow-auto" style="max-height: 80vh;">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                        <h6 class="fw-bold text-secondary text-uppercase mb-0" style="font-size: 0.85rem; letter-spacing: 0.5px;">Conversation History</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Previous calls</small>
+                    </div>
                 <div id="history-content">
                     <div class="text-center text-muted">Loading history...</div>
+                </div>
                 </div>
             </div>
         </div>
@@ -882,7 +893,11 @@ id="message-editor" placeholder="Enter message"></textarea>
                 success: function(res) {
                     $('#history-content').html(res.html);
                     if(res.headerHtml) {
-                        $('#callModal .modal-header').removeClass('pb-0').addClass('pb-3 border-bottom position-relative').html(res.headerHtml + '<button type="button" class="btn-close position-absolute" style="right: 1.5rem; top: 1.5rem;" data-bs-dismiss="modal"></button>');
+                        $('#callModal .modal-header')
+                            .removeClass('pb-0')
+                            .addClass('bg-white shadow-sm position-relative')
+                            .css({'border-top': '4px solid #2d68a8', 'padding': '1.25rem 1.5rem', 'border-radius': '10px', 'margin': '1.5rem 1.5rem 0', 'border-bottom': 'none'})
+                            .html(res.headerHtml + '<button type="button" class="btn-close position-absolute" style="right: 1.5rem; top: 1.5rem;" data-bs-dismiss="modal"></button>');
                     }
                 },
                 error: function() {
