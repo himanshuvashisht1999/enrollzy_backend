@@ -14,6 +14,17 @@
                     @csrf
                     
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Parent Menu (Optional)</label>
+                        <select name="parent_id" class="form-select">
+                            <option value="">No Parent (Main Category)</option>
+                            @foreach($parents as $parent)
+                                <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>{{ $parent->title }}</option>
+                            @endforeach
+                        </select>
+                        @error('parent_id') <span class="text-danger small">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Title <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
                         @error('title') <span class="text-danger small">{{ $message }}</span> @enderror

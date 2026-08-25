@@ -27,7 +27,12 @@
                         <tbody>
                             @forelse($items as $item)
                                 <tr>
-                                    <td class="fw-bold">{{ $item->title }}</td>
+                                    <td class="fw-bold">
+                                        @if($item->parent_id)
+                                            <span class="text-muted small"><i class="fas fa-level-up-alt fa-rotate-90 me-1"></i> {{ $item->parent->title ?? '' }} / </span>
+                                        @endif
+                                        {{ $item->title }}
+                                    </td>
                                     <td>{{ $item->url ?? '#' }}</td>
                                     <td class="text-center">
                                         @if($item->status)
