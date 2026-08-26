@@ -491,7 +491,7 @@
                           <div class="col-lg-6">
                               <label class="form-label small fw-bold">Call Status <span 
 class="text-danger">*</span></label>
-                              <select name="status_id" class="form-select rounded-3" id="status_id" required>
+                              <select name="status_id" class="form-select rounded-3 custom-select2" id="status_id" required>
                                   <option value="" selected disabled>Select</option>
                                   @foreach($statuses as $status)
                                       <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" 
@@ -502,215 +502,222 @@ data-more-details="{{ $status->is_more_details }}" data-current-academic-details
                           </div>
                           
                           <!-- Current Academic Details Container -->
-                          <div id="current-academic-details-container" class="col-12" style="display:none; margin-top: 10px;">
-                              <div class="row g-3">
-                                  <div class="col-lg-6">
-                                      <label class="form-label small fw-bold">Current Course/Programme</label>
-                                      <select name="current_course" id="current_course" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type Course</option>
-                                          @if(isset($courses))
-                                              @foreach($courses as $course)
-                                                  <option value="{{ $course->id }}">{{ $course->name }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-6">
-                                      <label class="form-label small fw-bold">Current Session</label>
-                                      <select name="current_session" id="current_session" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select Session</option>
-                                          @if(isset($sessions))
-                                              @foreach($sessions as $session)
-                                                  <option value="{{ $session->id }}">{{ $session->name }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-6">
-                                      <label class="form-label small fw-bold">Current University</label>
-                                      <select name="current_university" id="current_university" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type University</option>
-                                          @if(isset($universities))
-                                              @foreach($universities as $uni)
-                                                  <option value="{{ $uni->id }}">{{ $uni->name }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-6">
-                                      <label class="form-label small fw-bold">Current Program Mode</label>
-                                      <select name="current_program_mode" id="current_program_mode" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select Program Mode</option>
-                                          @if(isset($program_types))
-                                              @foreach($program_types as $pt)
-                                                  <option value="{{ $pt->title }}">{{ $pt->title }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
+                          <div id="current-academic-details-container" class="col-12" style="display:none; margin-top: 15px;">
+                              <div class="p-3 bg-light rounded-3 border">
+                                  <h6 class="text-secondary fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;"><i class="fas fa-id-card me-2"></i>CURRENT ACADEMIC DETAILS</h6>
+                                  <div class="row g-3">
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Current Course/Programme</label>
+                                          <select name="current_course" id="current_course" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type Course</option>
+                                              @if(isset($courses))
+                                                  @foreach($courses as $course)
+                                                      <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Current Session</label>
+                                          <select name="current_session" id="current_session" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select Session</option>
+                                              @if(isset($sessions))
+                                                  @foreach($sessions as $session)
+                                                      <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Current University</label>
+                                          <select name="current_university" id="current_university" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type University</option>
+                                              @if(isset($universities))
+                                                  @foreach($universities as $uni)
+                                                      <option value="{{ $uni->id }}">{{ $uni->name }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Current Program Mode</label>
+                                          <select name="current_program_mode" id="current_program_mode" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select Program Mode</option>
+                                              @if(isset($program_types))
+                                                  @foreach($program_types as $pt)
+                                                      <option value="{{ $pt->title }}">{{ $pt->title }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
                                   </div>
                               </div>
                           </div>
                           
                           <!-- More Details Container -->
-                          <div id="more-details-container" class="col-12" style="display:none; margin-top: 10px;">
-                              <div class="row g-3">
-                                  <div class="col-lg-4">
-                                      <label class="form-label small fw-bold">Program Level</label>
-                                      <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type Program Level</option>
-                                          <option value="Not decided yet">Not decided yet</option>
-                                          @if(isset($program_levels))
-                                              @foreach($program_levels as $pl)
-                                                  <option value="{{ $pl->id }}">{{ $pl->title }}</option>
+                          <div id="more-details-container" class="col-12" style="display:none; margin-top: 15px;">
+                              <div class="p-3 rounded-3" style="background-color: #f4f8fc; border: 1px solid #dbeafe;">
+                                  <h6 class="text-primary fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;"><i class="fas fa-graduation-cap me-2"></i>INTERESTED IN &middot; UPDATE FROM CALL</h6>
+                                  <div class="row g-3">
+                                      <div class="col-lg-4">
+                                          <label class="form-label small fw-bold">Program Level</label>
+                                          <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type Program Level</option>
+                                              <option value="Not decided yet">Not decided yet</option>
+                                              @if(isset($program_levels))
+                                                  @foreach($program_levels as $pl)
+                                                      <option value="{{ $pl->id }}">{{ $pl->title }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-4" id="school_type_container" style="display:none;">
+                                          <label class="form-label small fw-bold">School Type</label>
+                                          <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type School Type</option>
+                                              @if(isset($school_types))
+                                                  @foreach($school_types as $st)
+                                                      <option value="{{ $st->id }}">{{ $st->title }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-4" id="course_container">
+                                          <label class="form-label small fw-bold" id="course_label">Course</label>
+                                          <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type Course</option>
+                                              <option value="Not decided yet">Not decided yet</option>
+                                              @foreach($courses as $course)
+                                                  <option value="{{ $course->id }}">{{ $course->name }}</option>
                                               @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-4" id="school_type_container" style="display:none;">
-                                      <label class="form-label small fw-bold">School Type</label>
-                                      <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type School Type</option>
-                                          @if(isset($school_types))
-                                              @foreach($school_types as $st)
-                                                  <option value="{{ $st->id }}">{{ $st->title }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-4" id="course_container">
-                                      <label class="form-label small fw-bold" id="course_label">Course</label>
-                                      <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type Course</option>
-                                          <option value="Not decided yet">Not decided yet</option>
-                                          @foreach($courses as $course)
-                                              <option value="{{ $course->id }}">{{ $course->name }}</option>
-                                          @endforeach
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-4" id="course_type_container">
-                                      <label class="form-label small fw-bold">Program Mode</label>
-                                      <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type Program Mode</option>
-                                          <option value="Not decided yet">Not decided yet</option>
-                                          @if(isset($program_types))
-                                              @foreach($program_types as $pt)
-                                                  <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
-                                              @endforeach
-                                          @endif
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-6" id="university_container">
-                                      <label class="form-label small fw-bold" id="university_label">University / Organization</label>
-                                      <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select or Type University</option>
-                                          <option value="Not decided yet">Not decided yet</option>
-                                          @foreach($universities as $uni)
-                                              @php
-                                                  $types = [];
-                                                  $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
-                                                  if(is_array($orgType)) {
-                                                      $types = array_merge($types, $orgType);
-                                                  }
-                                                  if ($uni->campuses) {
-                                                      foreach($uni->campuses as $campus) {
-                                                          $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
-                                                          if(is_array($campType)) {
-                                                              $types = array_merge($types, $campType);
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-4" id="course_type_container">
+                                          <label class="form-label small fw-bold">Program Mode</label>
+                                          <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type Program Mode</option>
+                                              <option value="Not decided yet">Not decided yet</option>
+                                              @if(isset($program_types))
+                                                  @foreach($program_types as $pt)
+                                                      <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-6" id="university_container">
+                                          <label class="form-label small fw-bold" id="university_label">University / Organization</label>
+                                          <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select or Type University</option>
+                                              <option value="Not decided yet">Not decided yet</option>
+                                              @foreach($universities as $uni)
+                                                  @php
+                                                      $types = [];
+                                                      $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
+                                                      if(is_array($orgType)) {
+                                                          $types = array_merge($types, $orgType);
+                                                      }
+                                                      if ($uni->campuses) {
+                                                          foreach($uni->campuses as $campus) {
+                                                              $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
+                                                              if(is_array($campType)) {
+                                                                  $types = array_merge($types, $campType);
+                                                              }
                                                           }
                                                       }
-                                                  }
-                                                  // Clean up array
-                                                  $types = array_values(array_unique(array_filter($types)));
-                                              @endphp
-                                              <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
-                                          @endforeach
-                                      </select>
-                                  </div>
-                                  <div class="col-lg-6">
-                                      <label class="form-label small fw-bold">Session</label>
-                                      <select name="session" id="session_input" class="form-select rounded-3 custom-select2">
-                                          <option value="">Select Session</option>
-                                          @if(isset($sessions))
-                                              @foreach($sessions as $session)
-                                                  <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                      // Clean up array
+                                                      $types = array_values(array_unique(array_filter($types)));
+                                                  @endphp
+                                                  <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
                                               @endforeach
-                                          @endif
-                                      </select>
+                                          </select>
+                                      </div>
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Session</label>
+                                          <select name="session" id="session_input" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select Session</option>
+                                              @if(isset($sessions))
+                                                  @foreach($sessions as $session)
+                                                      <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
                                   </div>
                               </div>
                           </div>
 
-                          <div class="col-lg-6" id="date-field" style="display:none;">
-                              <label class="form-label small fw-bold">Reminder Date</label>
-                              <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
-                          </div>
-  
-                          <div class="col-lg-6">
-                              <label class="form-label small fw-bold">Action Taken</label>
-                              <select name="action_id" id="action_id" class="form-select rounded-3">
-                                  <option value="">Select Action</option>
-                                  @foreach($actions as $action)
-                                      <option value="{{ $action->id }}">{{ $action->name }}</option>
-                                  @endforeach
-                              </select>
-                          </div>
-                          
-                          <!-- Video Meeting Container -->
-                          <div id="video-meeting-container" class="col-12" style="display:none; margin-top: 0px;">
-                              <div class="row g-3">
-                                  <div class="col-lg-3">
-                                      <label class="form-label small fw-bold">Meeting Date</label>
-                                      <input type="date" name="meeting_date" id="meeting_date" class="form-control 
-rounded-3">
-                                  </div>
-                                  <div class="col-lg-3">
-                                      <label class="form-label small fw-bold">Time Slot</label>
-                                      <input type="time" name="time_slot" id="time_slot" class="form-control 
-rounded-3">
-                                  </div>
-                                  <div class="col-lg-3">
-                                      <label class="form-label small fw-bold">Google Meeting Link</label>
-                                      <input type="url" name="meeting_link" id="meeting_link" class="form-control 
-rounded-3" placeholder="https://meet.google.com/...">
-                                  </div>
-                                  <div class="col-lg-3">
-                                      <label class="form-label small fw-bold">Assign Lead to Staff</label>
-                                      <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select 
-rounded-3 custom-select2">
-                                          <option value="">Select Staff</option>
-                                          @foreach($staffs as $staff)
-                                              <option value="{{ $staff->id }}">{{ $staff->name }}</option>
-                                          @endforeach
-                                      </select>
-                                  </div>
-                              </div>
-                          </div>
-                          
-                          <div class="col-lg-6">
-                              <label class="form-label small fw-bold">Lead Quality</label>
-                              <select name="lead_quality_id" id="lead_quality_id" class="form-select rounded-3">
-                                  <option value="">Select Lead Quality</option>
-                                  @if(isset($lead_qualities))
-                                      @foreach($lead_qualities as $lq)
-                                          <option value="{{ $lq->id }}">{{ $lq->name }}</option>
-                                      @endforeach
-                                  @endif
-                              </select>
-                          </div>
-                          
-                          <div class="col-12">
-                              <label class="form-label small fw-bold">Comments</label>
-                              <textarea id="message" name="remark" class="form-control rounded-3" rows="3" 
-placeholder="Add Comments Here..."></textarea>
-                          </div>
-  
                           <div class="col-12 mt-3">
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="is_whatsapp_message" 
-name="is_whatsapp_message" value="1">
-                                  <label class="form-check-label fw-bold" for="is_whatsapp_message">
-                                      Want to send whatsapp message?
-                                  </label>
+                              <div class="p-3 bg-light rounded-3 border">
+                                  <h6 class="text-dark fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;"><i class="fas fa-tasks me-2"></i>ACTION & FOLLOW-UP</h6>
+                                  <div class="row g-3">
+                                      <div class="col-lg-6" id="date-field" style="display:none;">
+                                          <label class="form-label small fw-bold">Reminder Date</label>
+                                          <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
+                                      </div>
+              
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Action Taken</label>
+                                          <select name="action_id" id="action_id" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select Action</option>
+                                              @foreach($actions as $action)
+                                                  <option value="{{ $action->id }}">{{ $action->name }}</option>
+                                              @endforeach
+                                          </select>
+                                      </div>
+                                      
+                                      <!-- Video Meeting Container -->
+                                      <div id="video-meeting-container" class="col-12" style="display:none; margin-top: 15px;">
+                                          <div class="row g-3">
+                                              <div class="col-lg-3">
+                                                  <label class="form-label small fw-bold">Meeting Date</label>
+                                                  <input type="date" name="meeting_date" id="meeting_date" class="form-control rounded-3">
+                                              </div>
+                                              <div class="col-lg-3">
+                                                  <label class="form-label small fw-bold">Time Slot</label>
+                                                  <input type="time" name="time_slot" id="time_slot" class="form-control rounded-3">
+                                              </div>
+                                              <div class="col-lg-3">
+                                                  <label class="form-label small fw-bold">Google Meeting Link</label>
+                                                  <input type="url" name="meeting_link" id="meeting_link" class="form-control rounded-3" placeholder="https://meet.google.com/...">
+                                              </div>
+                                              <div class="col-lg-3">
+                                                  <label class="form-label small fw-bold">Assign Lead to Staff</label>
+                                                  <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select rounded-3 custom-select2">
+                                                      <option value="">Select Staff</option>
+                                                      @foreach($staffs as $staff)
+                                                          <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                                      @endforeach
+                                                  </select>
+                                              </div>
+                                          </div>
+                                      </div>
+                                      
+                                      <div class="col-lg-6">
+                                          <label class="form-label small fw-bold">Lead Quality</label>
+                                          <select name="lead_quality_id" id="lead_quality_id" class="form-select rounded-3 custom-select2">
+                                              <option value="">Select Lead Quality</option>
+                                              @if(isset($lead_qualities))
+                                                  @foreach($lead_qualities as $lq)
+                                                      <option value="{{ $lq->id }}">{{ $lq->name }}</option>
+                                                  @endforeach
+                                              @endif
+                                          </select>
+                                      </div>
+                                      
+                                      <div class="col-12">
+                                          <label class="form-label small fw-bold">Comments</label>
+                                          <textarea id="message" name="remark" class="form-control rounded-3" rows="3" placeholder="Add Comments Here..."></textarea>
+                                      </div>
+              
+                                      <div class="col-12 mt-2">
+                                          <div class="form-check">
+                                              <input class="form-check-input" type="checkbox" id="is_whatsapp_message" name="is_whatsapp_message" value="1">
+                                              <label class="form-check-label fw-bold text-success" for="is_whatsapp_message">
+                                                  <i class="fab fa-whatsapp"></i> Want to send whatsapp message?
+                                              </label>
+                                          </div>
+                                      </div>
+                                  </div>
                               </div>
                           </div>
   
@@ -718,12 +725,10 @@ name="is_whatsapp_message" value="1">
                               <div class="row g-3 mt-1">
                                   <div class="col-lg-3">
                                       <label class="form-label small fw-bold">Template</label>
-                                      <select name="whatsapp_template_id" class="form-select rounded-3" 
-id="whatsapp_template_id">
+                                      <select name="whatsapp_template_id" class="form-select rounded-3 custom-select2" id="whatsapp_template_id">
                                           <option value="">Select</option>
                                           @foreach($templates as $template)
-                                              <option value="{{ $template->id }}" data-caption="{{ $template->caption 
-}}" data-message="{{ $template->message }}">{{ $template->name }}</option>
+                                              <option value="{{ $template->id }}" data-caption="{{ $template->caption }}" data-message="{{ $template->message }}">{{ $template->name }}</option>
                                           @endforeach
                                       </select>
                                   </div>
@@ -1116,6 +1121,26 @@ id="message-editor" placeholder="Enter message"></textarea>
             dropdownParent: $('#callModal .modal-content'),
             placeholder: "Select Staff",
             allowClear: true,
+            width: '100%'
+        });
+
+        $('#action_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            width: '100%'
+        });
+
+        $('#lead_quality_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            width: '100%'
+        });
+
+        $('#status_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            width: '100%'
+        });
+
+        $('#whatsapp_template_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
             width: '100%'
         });
 
