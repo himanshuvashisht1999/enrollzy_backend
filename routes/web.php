@@ -559,6 +559,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('calling-history/history-update-status/{id}', [CallingController::class, 'updateStatus'])->name('calling-history.update-status')->middleware('can:calling-history-edit');
             
             Route::get('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'index'])->name('lead-assign.index')->middleware('can:lead-assign-browse');
+            Route::get('lead-assign/get-counts', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'getFilteredCounts'])->name('lead-assign.get-counts')->middleware('can:lead-assign-browse');
+            Route::get('lead-assign/batch-details', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'getBatchDetails'])->name('lead-assign.batch-details')->middleware('can:lead-assign-browse');
+            Route::post('lead-assign/revoke', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'revokeBatch'])->name('lead-assign.revoke')->middleware('can:lead-assign-browse');
             Route::post('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'store'])->name('lead-assign.store')->middleware('can:lead-assign-add');
             Route::get('lead-assign/{staff}', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'show'])->name('lead-assign.show')->middleware('can:lead-assign-browse');
             

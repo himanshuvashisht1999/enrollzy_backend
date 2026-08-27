@@ -36,6 +36,37 @@ class LeadAssignController extends Controller
                 ->get();
         }
         
+        $totalLeads = Customer::where('organization_id', $organization_id)->count();
+        
+        $totalAssigned = LeadAssignment::whereHas('staff', function($q) use ($organization_id) {
+            $q->where('organization_id', $organization_id);
+        })->distinct('customer_id')->count('customer_id');
+        
+        $totalPending = $totalLeads - $totalAssigned;
+
+        $staffStats = [];
+        foreach ($staffs as $s) {
+            $assignedIds = LeadAssignment::where('staff_id', $s->id)->pluck('customer_id')->toArray();
+            $assignedCount = count($assignedIds);
+            
+            $workedCount = 0;
+            if ($assignedCount > 0) {
+                $workedCount = \App\Models\CallingHistory::where('updated_by', $s->id)
+                    ->whereIn('user_id', $assignedIds)
+                    ->distinct('user_id')
+                    ->count('user_id');
+            }
+            
+            $pendingCount = $assignedCount - $workedCount;
+            
+            $staffStats[$s->id] = [
+                'staff' => $s,
+                'assigned' => $assignedCount,
+                'worked' => $workedCount,
+                'pending' => $pendingCount
+            ];
+        }
+
         $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
             ->whereHas('staff', function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);
@@ -45,7 +76,7 @@ class LeadAssignController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.students_crm.lead_assign.index', compact('categories', 'statuses', 'staffs', 'assignmentsSummary'));
+        return view('admin.students_crm.lead_assign.index', compact('categories', 'statuses', 'staffs', 'assignmentsSummary', 'totalLeads', 'totalAssigned', 'totalPending', 'staffStats'));
     }
 
     public function store(Request $request)
@@ -65,6 +96,13 @@ class LeadAssignController extends Controller
             $myAssignedCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id');
             $query->whereIn('id', $myAssignedCustomerIds);
         }
+
+        // Filter to select only from available (unassigned) leads
+        $query->whereNotExists(function($q) {
+            $q->select(DB::raw(1))
+              ->from('lead_assignments')
+              ->whereColumn('lead_assignments.customer_id', 'users.id');
+        });
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -159,5 +197,98 @@ class LeadAssignController extends Controller
         $assignments = $query->latest()->paginate(20);
 
         return view('admin.students_crm.lead_assign.show', compact('staff', 'assignments'));
+    }
+
+    public function getFilteredCounts(Request $request)
+    {
+        $user = auth()->user();
+        $organization_id = $user->organization_id;
+        
+        $query = Customer::where('organization_id', $organization_id);
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('call_status_id')) {
+            $customerIdsWithStatus = DB::table('calling_histories')
+                ->where('organization_id', $organization_id)
+                ->where('reason', $request->call_status_id)
+                ->pluck('user_id');
+            $query->whereIn('id', $customerIdsWithStatus);
+        }
+
+        $allLeadsIds = $query->pluck('id')->toArray();
+        $totalLeads = count($allLeadsIds);
+
+        $assignedLeads = LeadAssignment::whereIn('customer_id', $allLeadsIds)->pluck('customer_id')->toArray();
+        $totalAssigned = count(array_unique($assignedLeads));
+
+        $totalPending = $totalLeads - $totalAssigned;
+
+        return response()->json([
+            'total' => $totalLeads,
+            'assigned' => $totalAssigned,
+            'pending' => $totalPending
+        ]);
+    }
+
+    public function getBatchDetails(Request $request)
+    {
+        $request->validate([
+            'staff_id' => 'required',
+            'batch_date' => 'required'
+        ]);
+
+        $organization_id = auth()->user()->organization_id;
+
+        $assignments = LeadAssignment::with('customer')
+            ->where('staff_id', $request->staff_id)
+            ->where('created_at', $request->batch_date)
+            ->whereHas('staff', function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
+            ->get();
+
+        $leads = $assignments->map(function($a) {
+            return [
+                'id' => $a->customer->id ?? '',
+                'name' => $a->customer->name ?? 'Unknown',
+                'phone' => $a->customer->phone ?? 'N/A',
+                'city' => $a->customer->city ?? 'N/A',
+                'category' => $a->customer->category->name ?? 'N/A'
+            ];
+        });
+
+        return response()->json([
+            'status' => 1,
+            'leads' => $leads
+        ]);
+    }
+
+    public function revokeBatch(Request $request)
+    {
+        $request->validate([
+            'staff_id' => 'required',
+            'batch_date' => 'required'
+        ]);
+
+        $user = auth()->user();
+        $organization_id = $user->organization_id;
+
+        $assignments = LeadAssignment::where('staff_id', $request->staff_id)
+            ->where('created_at', $request->batch_date)
+            ->whereHas('staff', function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            });
+
+        $count = $assignments->count();
+        
+        if ($count > 0) {
+            $assignments->delete();
+            return response()->json(['status' => 1, 'message' => "Successfully revoked $count lead assignments."]);
+        }
+
+        return response()->json(['status' => 0, 'message' => "No matching assignments found to revoke."]);
     }
 }

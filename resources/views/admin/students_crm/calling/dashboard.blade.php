@@ -340,8 +340,14 @@
                     @endphp
                     
                     <div class="queue-item {{ $typeClass }} p-3 border-bottom d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3 w-50">
-                            <div style="width: 140px;">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="text-muted fw-bold" style="width: 35px; flex-shrink: 0;">
+                                #{{ $loop->iteration }}
+                            </div>
+                            <div class="fw-semibold text-secondary" style="width: 75px; font-size: 0.85rem; flex-shrink: 0;">
+                                {{ $customer->id }}
+                            </div>
+                            <div style="width: 140px; flex-shrink: 0;">
                                 {!! $typeLabel !!}
                             </div>
                             <div>
@@ -424,8 +430,14 @@
                     @endphp
                     @if($customer)
                     <div class="queue-item {{ $typeClass }} p-3 border-bottom d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3 w-50">
-                            <div style="width: 140px;">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="text-muted fw-bold" style="width: 35px; flex-shrink: 0;">
+                                #{{ $loop->iteration }}
+                            </div>
+                            <div class="fw-semibold text-secondary" style="width: 75px; font-size: 0.85rem; flex-shrink: 0;">
+                                {{ $customer->id }}
+                            </div>
+                            <div style="width: 140px; flex-shrink: 0;">
                                 {!! $typeLabel !!}
                             </div>
                             <div>
@@ -465,7 +477,15 @@
                     @endphp
                     @if($customer)
                     <div class="queue-item p-3 border-bottom d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3 w-50">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="text-muted fw-bold" style="width: 35px; flex-shrink: 0;">
+                                #{{ $loop->iteration }}
+                            </div>
+                            <div class="fw-semibold text-secondary" style="width: 75px; font-size: 0.85rem; flex-shrink: 0;">
+                                {{ $customer->id }}
+                            </div>
+                            <!-- Spacer to match status label alignment in other tabs -->
+                            <div style="width: 140px; flex-shrink: 0;" class="d-none d-md-block"></div>
                             <div>
                                 <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
                                 <div class="lead-info-small">
