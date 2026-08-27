@@ -49,6 +49,88 @@ class CallingController extends Controller
         return response()->json(['status' => 1, 'message' => 'Lead reassigned successfully!']);
     }
 
+    public function bulkAssign(Request $request)
+    {
+        $request->validate([
+            'staff_id' => 'required',
+            'queue_customer_ids' => 'required',
+        ]);
+
+        $customerIds = json_decode($request->queue_customer_ids, true);
+        if (!is_array($customerIds) || empty($customerIds)) {
+            return redirect()->back()->with('error', 'No leads found in the queue.');
+        }
+
+        if ($request->select_all != 1) {
+            $request->validate([
+                'start_number' => 'required|integer|min:1',
+                'end_number' => 'required|integer|gte:start_number'
+            ]);
+
+            $skip = $request->start_number - 1;
+            $take = $request->end_number - $request->start_number + 1;
+            $customerIds = array_slice($customerIds, $skip, $take);
+        }
+
+        if (empty($customerIds)) {
+            return redirect()->back()->with('error', 'No leads selected for assignment.');
+        }
+
+        $user = auth()->user();
+        $now = now();
+        $assignedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($customerIds as $customerId) {
+            $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $customerId)->first();
+
+            if ($existingAssignment) {
+                if ($existingAssignment->staff_id == $request->staff_id) {
+                    $skippedCount++;
+                } else {
+                    $oldStaffId = $existingAssignment->staff_id;
+                    $existingAssignment->staff_id = $request->staff_id;
+                    $existingAssignment->assigned_by = $user->id;
+                    $existingAssignment->updated_at = $now;
+                    $existingAssignment->save();
+
+                    \App\Models\LeadActivityLog::create([
+                        'customer_id' => $customerId,
+                        'admin_id' => $user->id,
+                        'action_type' => 'reassigned',
+                        'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                        'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                    ]);
+                    $assignedCount++;
+                }
+            } else {
+                \App\Models\LeadAssignment::create([
+                    'customer_id' => $customerId,
+                    'staff_id' => $request->staff_id,
+                    'assigned_by' => $user->id,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ]);
+
+                \App\Models\LeadActivityLog::create([
+                    'customer_id' => $customerId,
+                    'admin_id' => $user->id,
+                    'action_type' => 'assigned',
+                    'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                    'properties' => ['new_staff_id' => $request->staff_id]
+                ]);
+                $assignedCount++;
+            }
+        }
+
+        $msg = "Successfully assigned $assignedCount leads.";
+        if ($skippedCount > 0) {
+            $msg .= " ($skippedCount skipped because they were already assigned to this staff.)";
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
     public function unlockNumber(Request $request)
     {
         $customerId = $request->customer_id;
@@ -77,6 +159,40 @@ class CallingController extends Controller
         $organization_id = auth()->user()->organization_id;
         $staff_id = auth()->id();
         
+        $user = auth()->user();
+        if (isset($user->is_admin) && $user->is_admin) {
+            $staffs = \App\Models\Admin::where('organization_id', $organization_id)->where('status', 1)->get();
+        } else {
+            $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
+                $q->where('name', $user->role);
+            })->pluck('can_assign_to_role_id');
+            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
+
+            $staffs = \App\Models\Admin::where('organization_id', $organization_id)
+                ->where('status', 1)
+                ->whereIn('role', $allowedRoleNames)
+                ->where('manager_id', $user->id)
+                ->get();
+        }
+
+        $query_staff_id = $staff_id;
+        $is_filtering_subordinate = false;
+        if ($request->filled('staff_id')) {
+            $reqStaffId = $request->staff_id;
+            if ($reqStaffId == 'all') {
+                $query_staff_ids = array_merge([$staff_id], $staffs->pluck('id')->toArray());
+            } elseif ($reqStaffId == $staff_id || $staffs->contains('id', $reqStaffId)) {
+                $query_staff_id = $reqStaffId;
+                if ($reqStaffId != $staff_id) {
+                    $is_filtering_subordinate = true;
+                }
+            }
+        }
+
+        if (!isset($query_staff_ids)) {
+            $query_staff_ids = [$query_staff_id];
+        }
+
         $startDate = $request->input('start_date', now()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
         
@@ -121,10 +237,9 @@ class CallingController extends Controller
         if ($hasCustomerFilter) {
             $filteredCustomerIds = $customerFilterQuery->pluck('id')->toArray();
         }
-        // 1. Leads assigned in date range
-        $assignedTodayQuery = \App\Models\LeadAssignment::where('staff_id', $staff_id)
-            ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate);
+        $assignedTodayQuery = \App\Models\LeadAssignment::whereIn('staff_id', $query_staff_ids)
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate);
             
         if ($hasCustomerFilter) {
             $assignedTodayQuery->whereIn('customer_id', $filteredCustomerIds);
@@ -134,7 +249,7 @@ class CallingController extends Controller
         $leadsAssignedTodayCount = count($assignedToday);
 
         // 2. Leads pending in queue (assigned in date range but no calling history by this staff)
-        $workedOnCustomerIds = \App\Models\CallingHistory::where('updated_by', $staff_id)
+        $workedOnCustomerIds = \App\Models\CallingHistory::whereIn('updated_by', $query_staff_ids)
             ->whereIn('user_id', $assignedToday)
             ->pluck('user_id')->toArray();
         
@@ -144,7 +259,7 @@ class CallingController extends Controller
         // We need to find customers whose LATEST calling history by this staff has date_required = date range
                 $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
             ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
-            ->where('updated_by', $staff_id);
+            ->whereIn('updated_by', $query_staff_ids);
             
         if ($hasCustomerFilter) {
             $latestHistoriesSub->whereIn('user_id', $filteredCustomerIds);
@@ -174,7 +289,7 @@ class CallingController extends Controller
             
         $admissionsThisMonthCount = 0;
         if ($admissionStatus) {
-            $admissionsThisMonthCount = \App\Models\CallingHistory::where('updated_by', $staff_id)
+            $admissionsThisMonthCount = \App\Models\CallingHistory::whereIn('updated_by', $query_staff_ids)
                 ->where('reason', $admissionStatus->id)
                 ->whereDate('created_at', '>=', $startDate)
                 ->whereDate('created_at', '<=', $endDate)
@@ -182,13 +297,11 @@ class CallingController extends Controller
         }
 
         // Target for the start date's month
-        $targetRecord = \App\Models\TargetLead::where('staff_id', $staff_id)
+        $admissionsTarget = \App\Models\TargetLead::whereIn('staff_id', $query_staff_ids)
             ->where('year', $currentYear)
             ->where('month', $currentMonth)
-            ->first();
+            ->sum('month_target_admissions');
             
-        $admissionsTarget = $targetRecord ? $targetRecord->month_target_admissions : 0;
-        
         $targetProgress = 0;
         if ($admissionsTarget > 0) {
             $targetProgress = round(($admissionsThisMonthCount / $admissionsTarget) * 100);
@@ -196,7 +309,7 @@ class CallingController extends Controller
         }
 
         // --- TEAM METRICS ---
-        $subordinates = \App\Models\Admin::where('manager_id', $staff_id)->where('status', 1)->get();
+        $subordinates = \App\Models\Admin::where('manager_id', $query_staff_id)->where('status', 1)->get();
         $hasSubordinates = $subordinates->count() > 0;
         
         $teamLeadsDelegated = 0;
@@ -208,9 +321,9 @@ class CallingController extends Controller
             
             // Total leads delegated to them in this date range
             $teamLeadsDelegated = \App\Models\LeadAssignment::whereIn('staff_id', $subordinateIds)
-                ->where('assigned_by', $staff_id)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
+                ->where('assigned_by', $query_staff_id)
+                ->whereDate('updated_at', '>=', $startDate)
+                ->whereDate('updated_at', '<=', $endDate)
                 ->count();
                 
             if ($admissionStatus) {
@@ -232,9 +345,9 @@ class CallingController extends Controller
             foreach ($subordinates as $sub) {
                 // Get the exact customers assigned to this sub by me in this date range
                 $subAssignedCustomers = \App\Models\LeadAssignment::where('staff_id', $sub->id)
-                    ->where('assigned_by', $staff_id)
-                    ->whereDate('created_at', '>=', $startDate)
-                    ->whereDate('created_at', '<=', $endDate)
+                    ->where('assigned_by', $query_staff_id)
+                    ->whereDate('updated_at', '>=', $startDate)
+                    ->whereDate('updated_at', '<=', $endDate)
                     ->pluck('customer_id')->toArray();
                 
                 $subLeadsCount = count($subAssignedCustomers);
@@ -328,7 +441,7 @@ class CallingController extends Controller
         })->values();
 
         $customerIdsInQueue = $queue->pluck('customer.id')->toArray();
-        $assignmentsLookup = \App\Models\LeadAssignment::where('staff_id', $staff_id)
+        $assignmentsLookup = \App\Models\LeadAssignment::with('assigner')->whereIn('staff_id', $query_staff_ids)
             ->whereIn('customer_id', $customerIdsInQueue)
             ->orderBy('id', 'desc')
             ->get()
@@ -340,13 +453,81 @@ class CallingController extends Controller
             ->groupBy('customer_id')
             ->pluck('id')->toArray();
 
-        $delegatedLeads = \App\Models\LeadAssignment::with(['customer', 'staff'])
-            ->whereIn('id', $latestAssignmentsIds)
-            ->where('assigned_by', $staff_id)
-            ->where('staff_id', '!=', $staff_id)
+        if ($is_filtering_subordinate) {
+            $delegatedLeads = \App\Models\LeadAssignment::with(['customer', 'staff'])
+                ->whereIn('id', $latestAssignmentsIds)
+                ->where('assigned_by', $staff_id)
+                ->where('staff_id', $query_staff_id)
+                ->whereDate('updated_at', '>=', $startDate)
+                ->whereDate('updated_at', '<=', $endDate)
+                ->orderBy('updated_at', 'desc')
+                ->get();
+        } else {
+            $delegatedLeads = \App\Models\LeadAssignment::with(['customer', 'staff'])
+                ->whereIn('id', $latestAssignmentsIds)
+                ->where('assigned_by', $staff_id)
+                ->where('staff_id', '!=', $staff_id)
+                ->whereDate('updated_at', '>=', $startDate)
+                ->whereDate('updated_at', '<=', $endDate)
+                ->orderBy('updated_at', 'desc')
+                ->get();
+        }
+
+        // Filter out leads that the assigned staff member has already worked on since the latest assignment
+        $delegatedLeadsCustomerIds = $delegatedLeads->pluck('customer_id')->toArray();
+        $histories = \App\Models\CallingHistory::whereIn('user_id', $delegatedLeadsCustomerIds)
+            ->get()
+            ->groupBy('user_id');
+
+        $delegatedLeads = $delegatedLeads->filter(function($assignment) use ($histories) {
+            $customerHistories = $histories->get($assignment->customer_id);
+            if (!$customerHistories) {
+                return true;
+            }
+            foreach ($customerHistories as $h) {
+                if ($h->updated_by == $assignment->staff_id && $h->created_at > $assignment->updated_at) {
+                    return false;
+                }
+            }
+            return true;
+        })->values();
+
+        // 5. Worked Leads History Queue
+        $historyQuery = \App\Models\CallingHistory::with(['customer', 'calling_status', 'staff'])
             ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
-            ->get();
+            ->whereDate('created_at', '<=', $endDate);
+            
+        if ($hasCustomerFilter) {
+            $historyQuery->whereIn('user_id', $filteredCustomerIds);
+        }
+        
+        if ($is_filtering_subordinate) {
+            $customersAssignedToSByMe = \App\Models\LeadAssignment::where('assigned_by', $staff_id)
+                ->where('staff_id', $query_staff_id)
+                ->pluck('customer_id')
+                ->toArray();
+                
+            $historyQuery->where('updated_by', $query_staff_id)
+                ->whereIn('user_id', $customersAssignedToSByMe);
+        } else {
+            $customersAssignedByMe = \App\Models\LeadAssignment::where('assigned_by', $staff_id)->pluck('customer_id')->toArray();
+            
+            $historyQuery->where(function($q) use ($staff_id, $customersAssignedByMe) {
+                $q->where('updated_by', $staff_id);
+                if (!empty($customersAssignedByMe)) {
+                    $q->orWhereIn('user_id', $customersAssignedByMe);
+                }
+            });
+        }
+        
+        $workedHistory = $historyQuery->orderBy('created_at', 'desc')->get();
+
+        $historyCustomerIds = $workedHistory->pluck('user_id')->toArray();
+        $historyAssignmentsLookup = \App\Models\LeadAssignment::whereIn('customer_id', $historyCustomerIds)
+            ->orderBy('id', 'desc')
+            ->get()
+            ->unique('customer_id')
+            ->keyBy('customer_id');
 
         $statuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
         $actions = \App\Models\CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
@@ -354,21 +535,7 @@ class CallingController extends Controller
         $templates = \App\Models\WhatsappTemplate::where('organization_id', $organization_id)->get();
         $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
         $courses = \App\Models\Course::where('status', 1)->get();
-        $user = auth()->user();
-        if (isset($user->is_admin) && $user->is_admin) {
-            $staffs = \App\Models\Admin::where('organization_id', $organization_id)->where('status', 1)->get();
-        } else {
-            $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
-                $q->where('name', $user->role);
-            })->pluck('can_assign_to_role_id');
-            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
 
-            $staffs = \App\Models\Admin::where('organization_id', $organization_id)
-                ->where('status', 1)
-                ->whereIn('role', $allowedRoleNames)
-                ->where('manager_id', $user->id)
-                ->get();
-        }
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
         $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
@@ -395,6 +562,9 @@ class CallingController extends Controller
             'unlocked_lead_id',
             'assignmentsLookup',
             'delegatedLeads',
+            'workedHistory',
+            'historyAssignmentsLookup',
+            'query_staff_id',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types', 'lead_qualities'
         ));
     }

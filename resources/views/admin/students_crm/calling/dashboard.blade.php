@@ -108,40 +108,23 @@
                 </select>
             </div>
 
+            @if(count($staffs) > 0)
             <div class="form-group col-lg-3 mb-3">
-                <label class="form-label text-muted small fw-bold mb-1">Session</label>
-                <select name="session_id" class="form-select rounded-3" id="sessionFilter">
-                    <option value="">Select Session</option>
-                    @if(isset($sessions))
-                        @foreach($sessions as $session)
-                            <option value="{{ $session->id }}" {{ request('session_id') == $session->id ? 'selected' : '' }}>
-                                {{ $session->name }}
+                <label class="form-label text-muted small fw-bold mb-1">Staff</label>
+                <select name="staff_id" class="form-select rounded-3" id="staffFilter">
+                    <option value="{{ auth()->id() }}">Me ({{ auth()->user()->name }})</option>
+                    <option value="all" {{ request('staff_id') == 'all' ? 'selected' : '' }}>All Staff</option>
+                    @foreach($staffs as $staff)
+                        @if($staff->id != auth()->id())
+                            <option value="{{ $staff->id }}" {{ request('staff_id') == $staff->id ? 'selected' : '' }}>
+                                {{ $staff->name }}
                             </option>
-                        @endforeach
-                    @endif
+                        @endif
+                    @endforeach
                 </select>
             </div>
+            @endif
 
-            <div class="form-group col-lg-3 mb-3">
-                <label class="form-label text-muted small fw-bold mb-1">Country</label>
-                <select name="country" class="form-select rounded-3" id="countryFilter" data-selected="{{ request('country') }}">
-                    <option value="">Select Country</option>
-                </select>
-            </div>
-
-            <div class="form-group col-lg-3 mb-3">
-                <label class="form-label text-muted small fw-bold mb-1">State</label>
-                <select name="state" class="form-select rounded-3" id="stateFilter" data-selected="{{ request('state') }}">
-                    <option value="">Select State</option>
-                </select>
-            </div>
-
-            <div class="form-group col-lg-3 mb-3">
-                <label class="form-label text-muted small fw-bold mb-1">City</label>
-                <select name="city" class="form-select rounded-3" id="cityFilter" data-selected="{{ request('city') }}">
-                    <option value="">Select City</option>
-                </select>
-            </div>
 
             <div class="form-group col-lg-3 mb-3">
                 <label class="form-label text-muted small fw-bold mb-1">Search Name</label>
@@ -152,27 +135,6 @@
                 <label class="form-label text-muted small fw-bold mb-1">Search Phone</label>
                 <input type="text" name="filter_phone" id="phoneFilter" class="form-control rounded-3" placeholder="Search by Phone Number" value="{{ request('filter_phone') }}">
             </div>
-
-            <div class="form-group col-lg-3 mb-3">
-                <span class="d-block mb-2 text-muted small fw-bold">User Without Status</span>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="toggleUserWithoutStatus" name="user_with_out_status" value="1" {{ request('user_with_out_status') == 1 ? 'checked' : '' }}>
-                    <label class="form-check-label" for="toggleUserWithoutStatus">
-                        <span id="toggleLabel">{{ request('user_with_out_status') == 1 ? 'Yes' : 'No' }}</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group col-lg-3 mb-3">
-                <label class="d-block mb-2 text-muted small fw-bold">Sequence Calling</label>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="toggleSequence" name="sequence_mode" value="1" {{ request('sequence_mode') == 1 ? 'checked' : '' }}>
-                    <label class="form-check-label" for="toggleSequence">
-                        <span id="sequenceLabel">{{ request('sequence_mode') == 1 ? 'ON (Pending only)' : 'OFF (Normal)' }}</span>
-                    </label>
-                </div>
-            </div>
-
             <div class="col-lg-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary rounded-pill px-4" id="submitSearchButton">Filter</button>
                 <a href="{{ route('admin.students-crm.calling-dashboard.index') }}" class="btn btn-light rounded-pill px-4 ms-2">Reset</a>
@@ -295,19 +257,67 @@
         </div>
     </div>
 
+
+    @if(count($staffs) > 0)
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-body p-3">
+            <form action="{{ route('admin.students-crm.calling-dashboard.bulk-assign') }}" method="POST" id="bulkAssignForm">
+                @csrf
+                <input type="hidden" name="queue_customer_ids" value="{{ json_encode($queue->pluck('customer.id')->toArray()) }}">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-auto">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-tasks text-primary me-2"></i>Bulk Lead Assign</h6>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="staff_id" class="form-select form-select-sm rounded-3" required>
+                            <option value="">Select Staff</option>
+                            @foreach($staffs as $staff)
+                                @if($staff->id != auth()->id())
+                                    <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-center gap-2">
+                        <input type="number" name="start_number" id="bulk_start" class="form-control form-control-sm rounded-3" placeholder="Start Index" min="1" value="1" style="width: 100px;">
+                        <span class="text-muted">to</span>
+                        <input type="number" name="end_number" id="bulk_end" class="form-control form-control-sm rounded-3" placeholder="End Index" min="1" style="width: 100px;">
+                    </div>
+                    <div class="col-md-auto">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="select_all" id="bulk_select_all" value="1">
+                            <label class="form-check-label small fw-bold" for="bulk_select_all">Select All ({{ $queue->count() }} leads)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Assign Leads</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     <!-- Queue Tabs -->
     <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
         <li class="nav-item">
-            <a class="nav-link active" data-bs-toggle="tab" href="#my-queue-tab">Your Lead Queue</a>
+            <a class="nav-link {{ count($staffs) > 0 ? '' : 'active' }}" data-bs-toggle="tab" href="#my-queue-tab">Your Lead Queue</a>
         </li>
+        @if(count($staffs) > 0)
         <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#delegated-queue-tab">Assigned to Team</a>
+            <a class="nav-link active" data-bs-toggle="tab" href="#delegated-queue-tab">Assigned to Team</a>
         </li>
+        @endif
+        @if(count($staffs) > 0)
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#history-queue-tab">History</a>
+        </li>
+        @endif
     </ul>
 
     <div class="tab-content">
         <!-- My Queue Tab -->
-        <div class="tab-pane fade show active" id="my-queue-tab">
+        <div class="tab-pane fade {{ count($staffs) > 0 ? '' : 'show active' }}" id="my-queue-tab">
             <div class="queue-list shadow-sm border">
                 @forelse($queue as $item)
                     @php 
@@ -340,6 +350,9 @@
                                     {{ $customer->interested_in_course ?? 'N/A' }} - {{ $customer->city ?? 'Unknown' }}
                                     @if($history && $history->date_required)
                                         <br><i class="far fa-calendar-alt mt-1"></i> {{ \Carbon\Carbon::parse($history->date_required)->format('d M') }}
+                                    @endif
+                                    @if(isset($assignmentsLookup[$customer->id]) && $assignmentsLookup[$customer->id]->assigner)
+                                        <br><i class="fas fa-user-tag mt-1"></i> Assigned by: <strong>{{ $assignmentsLookup[$customer->id]->assigner->name }}</strong>
                                     @endif
                                 </div>
                             </div>
@@ -387,8 +400,9 @@
             </div>
         </div>
 
+        @if(count($staffs) > 0)
         <!-- Delegated Queue Tab -->
-        <div class="tab-pane fade" id="delegated-queue-tab">
+        <div class="tab-pane fade show active" id="delegated-queue-tab">
             <div class="queue-list shadow-sm border">
                 @forelse($delegatedLeads as $assignment)
                     @php 
@@ -401,7 +415,7 @@
                                 <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
                                 <div class="lead-info-small">
                                     Assigned to: <strong class="text-primary">{{ $assignment->staff->name ?? 'Unknown' }}</strong>
-                                    <br><i class="far fa-clock mt-1"></i> Assigned on: {{ \Carbon\Carbon::parse($assignment->created_at)->format('d M Y, h:i A') }}
+                                    <br><i class="far fa-clock mt-1"></i> Assigned on: {{ \Carbon\Carbon::parse($assignment->updated_at)->format('d M Y, h:i A') }}
                                 </div>
                             </div>
                         </div>
@@ -424,6 +438,58 @@
                 @endforelse
             </div>
         </div>
+
+        <!-- History Queue Tab -->
+        <div class="tab-pane fade" id="history-queue-tab">
+            <div class="queue-list shadow-sm border">
+                @forelse($workedHistory as $hItem)
+                    @php 
+                        $customer = $hItem->customer;
+                    @endphp
+                    @if($customer)
+                    <div class="queue-item p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3 w-50">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
+                                <div class="lead-info-small">
+                                    Worked by: <strong class="text-primary">{{ $hItem->staff->name ?? 'System' }}</strong>
+                                    @if(isset($historyAssignmentsLookup[$customer->id]))
+                                        &middot; Assigned by: <strong>{{ $historyAssignmentsLookup[$customer->id]->assigner->name ?? 'Unknown' }}</strong>
+                                    @endif
+                                    <br><i class="far fa-clock mt-1"></i> Called on: {{ \Carbon\Carbon::parse($hItem->created_at)->format('d M Y, h:i A') }}
+                                    <br><i class="fas fa-phone-alt mt-1"></i> Status: <span class="badge bg-light text-dark border">{{ $hItem->calling_status->name ?? 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-4">
+                            @php
+                                $maskedPhone = substr($customer->phone, 0, 2) . 'XXX XX' . substr($customer->phone, -3);
+                                $isUnlocked = (isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
+                            @endphp
+                            <div class="d-flex gap-2 mt-2 mt-md-0">
+                                @if(isset($historyAssignmentsLookup[$customer->id]) && $historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id())
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" style="font-weight: 500;">
+                                        Reassign
+                                    </button>
+                                @endif
+                                <button type="button" class="btn btn-dark rounded-pill px-4 open-calling-modal call-btn-{{ $customer->id }}" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" data-category="{{ $customer->category_id }}" data-lead-quality="{{ $customer->lead_quality_id }}" style="font-weight: 500;">
+                                    Call & Update
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                @empty
+                    <div class="p-5 text-center text-muted">
+                        <i class="fas fa-history fs-1 mb-3 text-secondary"></i>
+                        <h5>No history found</h5>
+                        <p>No leads were worked on in this date range.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 <!-- Reassign Lead Modal -->
@@ -788,6 +854,15 @@ id="message-editor" placeholder="Enter message"></textarea>
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
     $(document).ready(function() {
+        $('#bulk_select_all').on('change', function() {
+            if (this.checked) {
+                $('#bulk_start, #bulk_end').prop('disabled', true).val('');
+            } else {
+                $('#bulk_start').prop('disabled', false).val('1');
+                $('#bulk_end').prop('disabled', false);
+            }
+        });
+
         $('#restartBtn').on('click', function() {
             let cat = $('#categoryFilter').val();
             let group = '{{ request('group', 1) }}';
@@ -974,13 +1049,7 @@ id="message-editor" placeholder="Enter message"></textarea>
             });
         });
 
-        // Switches Labels
-        $('#toggleUserWithoutStatus').on('change', function() {
-            $('#toggleLabel').text(this.checked ? 'Yes' : 'No');
-        });
-        $('#toggleSequence').on('change', function() {
-            $('#sequenceLabel').text(this.checked ? 'ON (Pending only)' : 'OFF (Normal)');
-        });
+
 
         // Whatsapp Toggle
         $('#is_whatsapp_message').on('change', function() {
@@ -1345,83 +1414,7 @@ id="message-editor" placeholder="Enter message"></textarea>
             });
         });
         
-        // Switches Labels
-        $('#toggleUserWithoutStatus').on('change', function() {
-            $('#toggleLabel').text(this.checked ? 'Yes' : 'No');
-        });
-        $('#toggleSequence').on('change', function() {
-            $('#sequenceLabel').text(this.checked ? 'ON (Pending only)' : 'OFF (Normal)');
-        });
 
-        // Countries API
-        const API_BASE = 'https://countriesnow.space/api/v0.1';
-        const selectedCountry = $('#countryFilter').data('selected');
-        const selectedState = $('#stateFilter').data('selected');
-        const selectedCity = $('#cityFilter').data('selected');
-
-        loadCountries(selectedCountry);
-
-        $('#countryFilter').on('change', function () {
-            const country = $(this).val();
-            $('#stateFilter').html('<option value="">Select State</option>');
-            $('#cityFilter').html('<option value="">Select City</option>');
-            if (country) loadStates(country);
-        });
-
-        $('#stateFilter').on('change', function () {
-            const country = $('#countryFilter').val();
-            const state   = $(this).val();
-            $('#cityFilter').html('<option value="">Select City</option>');
-            if (country && state) loadCities(country, state);
-        });
-
-        function loadCountries(selected = '') {
-            $.get(API_BASE + '/countries', function(res){
-                let html = '<option value="">Select Country</option>';
-                res.data.forEach(c => {
-                    html += `<option value="${c.country}" ${c.country === selected ? 'selected' : ''}>${c.country}</option>`;
-                });
-                $('#countryFilter').html(html);
-                if(selected) {
-                    loadStates(selected, selectedState);
-                }
-            });
-        }
-
-        function loadStates(country, selected = '') {
-            $.ajax({
-                type: 'POST',
-                url: API_BASE + '/countries/states',
-                contentType: 'application/json',
-                data: JSON.stringify({ country: country }),
-                success: function (res) {
-                    let html = '<option value="">Select State</option>';
-                    res.data.states.forEach(s => {
-                        html += `<option value="${s.name}" ${s.name === selected ? 'selected' : ''}>${s.name}</option>`;
-                    });
-                    $('#stateFilter').html(html);
-                    if(selected) {
-                        loadCities(country, selected, selectedCity);
-                    }
-                }
-            });
-        }
-
-        function loadCities(country, state, selected = '') {
-            $.ajax({
-                type: 'POST',
-                url: API_BASE + '/countries/state/cities',
-                contentType: 'application/json',
-                data: JSON.stringify({ country: country, state: state }),
-                success: function (res) {
-                    let html = '<option value="">Select City</option>';
-                    res.data.forEach(c => {
-                        html += `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`;
-                    });
-                    $('#cityFilter').html(html);
-                }
-            });
-        }
         // Date Filter Restrictions
         $('#start_date').on('change', function() {
             var startDateVal = $(this).val();

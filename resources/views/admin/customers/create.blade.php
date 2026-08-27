@@ -108,15 +108,15 @@
                                             <label class="form-label">Pincode</label>
                                             <input type="text" name="pincode" id="pincode" class="form-control" placeholder="6-digit" value="{{ old('pincode') }}">
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-5">
                                             <label class="form-label">State</label>
                                             <input type="text" name="state" id="state" class="form-control" value="{{ old('state') }}">
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-5">
                                             <label class="form-label">City</label>
                                             <input type="text" name="city" id="city" class="form-control" value="{{ old('city') }}">
                                         </div>
-                                        <div class="col-md-4">
+                                        {{-- <div class="col-md-4">
                                             <label class="form-label">Institute</label>
                                             <select name="institute_id" class="form-select select2">
                                                 <option value="">Select Institute</option>
@@ -124,7 +124,7 @@
                                                     <option value="{{ $ins->id }}" {{ old('institute_id') == $ins->id ? 'selected' : '' }}>{{ $ins->name }}</option>
                                                 @endforeach
                                             </select>
-                                        </div>
+                                        </div> --}}
                                     </div>
                                 </div>
                             </div>

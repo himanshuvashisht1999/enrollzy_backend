@@ -542,6 +542,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::prefix('students-crm')->name('students-crm.')->group(function () {
             Route::post('calling-dashboard/unlock-number', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'unlockNumber'])->name('calling-dashboard.unlock');
             Route::post('calling-dashboard/reassign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'reassign'])->name('calling-dashboard.reassign');
+            Route::post('calling-dashboard/bulk-assign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'bulkAssign'])->name('calling-dashboard.bulk-assign');
             Route::get('calling-dashboard/customer-history/{id}', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'customerHistory'])->name('calling-dashboard.customer-history');
             Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
             Route::resource('calling-statuses', CallingStatusController::class)->middleware('can:calling-status-browse');
