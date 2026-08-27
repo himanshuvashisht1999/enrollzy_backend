@@ -193,7 +193,7 @@ class CallingController extends Controller
             $query_staff_ids = [$query_staff_id];
         }
 
-        $startDate = $request->input('start_date', now()->format('Y-m-d'));
+        $startDate = $request->input('start_date', now()->subDays(7)->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
         
         $currentMonth = \Carbon\Carbon::parse($startDate)->format('F');
@@ -529,6 +529,15 @@ class CallingController extends Controller
             ->unique('customer_id')
             ->keyBy('customer_id');
 
+        // Filter out history records where the customer has been reassigned to a different staff member
+        $workedHistory = $workedHistory->filter(function($history) use ($historyAssignmentsLookup) {
+            $assignment = $historyAssignmentsLookup->get($history->user_id);
+            if ($assignment) {
+                return $assignment->staff_id == $history->updated_by;
+            }
+            return true;
+        })->values();
+
         $statuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
         $actions = \App\Models\CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
         $categories = \App\Models\CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
@@ -669,9 +678,42 @@ class CallingController extends Controller
         
         $html .= '</div>';
         
+        $customerData = null;
+        if ($customer) {
+            $uniInput = null;
+            if (is_array($customer->interested_in_ids)) {
+                $uniInput = $customer->interested_in_ids[0] ?? null;
+            } elseif (is_string($customer->interested_in_ids)) {
+                $decoded = json_decode($customer->interested_in_ids, true);
+                $uniInput = is_array($decoded) ? ($decoded[0] ?? null) : $customer->interested_in_ids;
+            }
+
+            $sessId = null;
+            if (is_array($customer->session_ids)) {
+                $sessId = $customer->session_ids[0] ?? null;
+            } elseif (is_string($customer->session_ids)) {
+                $decoded = json_decode($customer->session_ids, true);
+                $sessId = is_array($decoded) ? ($decoded[0] ?? null) : $customer->session_ids;
+            }
+
+            $customerData = [
+                'current_course' => $customer->current_course_id ?? $customer->current_course_text,
+                'current_session' => $customer->current_session,
+                'current_university' => $customer->current_university_id ?? $customer->current_university_text,
+                'current_program_mode' => $customer->current_course_type,
+                'program_level_id' => $customer->program_level,
+                'school_type' => $customer->school_type,
+                'course_input' => $customer->interested_in_course,
+                'course_type' => $customer->mode,
+                'university_input' => $uniInput,
+                'session_id' => $sessId,
+            ];
+        }
+
         return response()->json([
             'html' => $html,
-            'headerHtml' => $headerHtml
+            'headerHtml' => $headerHtml,
+            'customer' => $customerData
         ]);
     }
 
@@ -976,8 +1018,57 @@ class CallingController extends Controller
 
             if ($request->filled('lead_quality_id')) {
                 $customer->lead_quality_id = $request->lead_quality_id;
-                $customer->save();
             }
+
+            // Sync with Customer's Current Academic Details
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $customer->current_university_id = $request->current_university;
+                    $customer->current_university_text = null;
+                } else {
+                    $customer->current_university_id = null;
+                    $customer->current_university_text = $request->current_university;
+                }
+            } else {
+                $customer->current_university_id = null;
+                $customer->current_university_text = null;
+            }
+
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $customer->current_course_id = $request->current_course;
+                    $customer->current_course_text = null;
+                } else {
+                    $customer->current_course_id = null;
+                    $customer->current_course_text = $request->current_course;
+                }
+            } else {
+                $customer->current_course_id = null;
+                $customer->current_course_text = null;
+            }
+
+            $customer->current_course_type = $request->current_program_mode;
+            $customer->current_session = $request->current_session;
+
+            // Sync with Customer's Program of Interest
+            $customer->program_level = $request->program_level_id;
+            $customer->school_type = $request->school_type;
+            $customer->interested_in_course = $request->course_input;
+            $customer->mode = $request->course_type;
+            
+            if ($request->filled('university_input')) {
+                $customer->interested_in_ids = [$request->university_input];
+            } else {
+                $customer->interested_in_ids = null;
+            }
+
+            if ($request->filled('session')) {
+                $customer->session_ids = [$request->session];
+            } else {
+                $customer->session_ids = null;
+            }
+
+            $customer->save();
             
             CallingHistory::create([
                 'user_type' => 'customer',

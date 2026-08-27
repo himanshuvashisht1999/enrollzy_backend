@@ -107,6 +107,54 @@ class CustomerController extends Controller
                 $data['sibling_age'] = null;
             }
 
+            // Process Current Academic Details
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $data['current_university_id'] = $request->current_university;
+                    $data['current_university_text'] = null;
+                } else {
+                    $data['current_university_id'] = null;
+                    $data['current_university_text'] = $request->current_university;
+                }
+            } else {
+                $data['current_university_id'] = null;
+                $data['current_university_text'] = null;
+            }
+
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $data['current_course_id'] = $request->current_course;
+                    $data['current_course_text'] = null;
+                } else {
+                    $data['current_course_id'] = null;
+                    $data['current_course_text'] = $request->current_course;
+                }
+            } else {
+                $data['current_course_id'] = null;
+                $data['current_course_text'] = null;
+            }
+
+            $data['current_course_type'] = $request->current_program_mode;
+            $data['current_session'] = $request->current_session;
+
+            // Process Program of Interest Mappings
+            $data['program_level'] = $request->program_level_id;
+            $data['school_type'] = $request->school_type;
+            $data['interested_in_course'] = $request->course_input;
+            $data['mode'] = $request->course_type;
+            
+            if ($request->filled('university_input')) {
+                $data['interested_in_ids'] = [$request->university_input];
+            } else {
+                $data['interested_in_ids'] = null;
+            }
+
+            if ($request->filled('session_id')) {
+                $data['session_ids'] = [$request->session_id];
+            } else {
+                $data['session_ids'] = null;
+            }
+
             // Handle Image
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
@@ -215,6 +263,54 @@ class CustomerController extends Controller
             if (($data['sibling_enrolled'] ?? '0') != '1') {
                 $data['sibling_name'] = null;
                 $data['sibling_age'] = null;
+            }
+
+            // Process Current Academic Details
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $data['current_university_id'] = $request->current_university;
+                    $data['current_university_text'] = null;
+                } else {
+                    $data['current_university_id'] = null;
+                    $data['current_university_text'] = $request->current_university;
+                }
+            } else {
+                $data['current_university_id'] = null;
+                $data['current_university_text'] = null;
+            }
+
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $data['current_course_id'] = $request->current_course;
+                    $data['current_course_text'] = null;
+                } else {
+                    $data['current_course_id'] = null;
+                    $data['current_course_text'] = $request->current_course;
+                }
+            } else {
+                $data['current_course_id'] = null;
+                $data['current_course_text'] = null;
+            }
+
+            $data['current_course_type'] = $request->current_program_mode;
+            $data['current_session'] = $request->current_session;
+
+            // Process Program of Interest Mappings
+            $data['program_level'] = $request->program_level_id;
+            $data['school_type'] = $request->school_type;
+            $data['interested_in_course'] = $request->course_input;
+            $data['mode'] = $request->course_type;
+            
+            if ($request->filled('university_input')) {
+                $data['interested_in_ids'] = [$request->university_input];
+            } else {
+                $data['interested_in_ids'] = null;
+            }
+
+            if ($request->filled('session_id')) {
+                $data['session_ids'] = [$request->session_id];
+            } else {
+                $data['session_ids'] = null;
             }
 
             // Handle Profile Image

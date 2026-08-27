@@ -139,59 +139,169 @@
                                 </div>
                             </div>
 
-                            <!-- 2. Academic Interest -->
-                            <div class="section-head">2. Program of Interest</div>
+                            <!-- 2. Current Academic Details -->
+                            <div class="section-head">2. Current Academic Details</div>
+                            <div class="mb-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Course/Programme</label>
+                                            @php
+                                                $selectedCourse = old('current_course', isset($customer) ? ($customer->current_course_id ?? $customer->current_course_text ?? '') : '');
+                                                $courseIsId = is_numeric($selectedCourse);
+                                            @endphp
+                                            <select name="current_course" id="current_course" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select or Type Course</option>
+                                                @if(isset($courses))
+                                                    @foreach($courses as $course)
+                                                        <option value="{{ $course->id }}" {{ $selectedCourse == $course->id ? 'selected' : '' }}>{{ $course->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedCourse) && !$courseIsId && (!isset($courses) || !$courses->contains('id', $selectedCourse)))
+                                                    <option value="{{ $selectedCourse }}" selected>{{ $selectedCourse }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Session</label>
+                                            @php
+                                                $selectedSession = old('current_session', isset($customer) ? ($customer->current_session ?? '') : '');
+                                            @endphp
+                                            <select name="current_session" id="current_session" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select Session</option>
+                                                @if(isset($sessions))
+                                                    @foreach($sessions as $session)
+                                                        <option value="{{ $session->id }}" {{ $selectedSession == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedSession) && (!isset($sessions) || !$sessions->contains('id', $selectedSession)))
+                                                    <option value="{{ $selectedSession }}" selected>{{ $selectedSession }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current University</label>
+                                            @php
+                                                $selectedUniversity = old('current_university', isset($customer) ? ($customer->current_university_id ?? $customer->current_university_text ?? '') : '');
+                                                $universityIsId = is_numeric($selectedUniversity);
+                                            @endphp
+                                            <select name="current_university" id="current_university" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select or Type University</option>
+                                                @if(isset($universities))
+                                                    @foreach($universities as $uni)
+                                                        <option value="{{ $uni->id }}" {{ $selectedUniversity == $uni->id ? 'selected' : '' }}>{{ $uni->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedUniversity) && !$universityIsId && (!isset($universities) || !$universities->contains('id', $selectedUniversity)))
+                                                    <option value="{{ $selectedUniversity }}" selected>{{ $selectedUniversity }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Program Mode</label>
+                                            @php
+                                                $selectedMode = old('current_program_mode', isset($customer) ? ($customer->current_course_type ?? '') : '');
+                                             @endphp
+                                            <select name="current_program_mode" id="current_program_mode" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select Program Mode</option>
+                                                @if(isset($program_types))
+                                                    @foreach($program_types as $pt)
+                                                        <option value="{{ $pt->title }}" {{ $selectedMode == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedMode) && (!isset($program_types) || !$program_types->contains('title', $selectedMode)))
+                                                    <option value="{{ $selectedMode }}" selected>{{ $selectedMode }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Program of Interest -->
+                            <div class="section-head">3. Program of Interest</div>
                             <div class="row g-3 mb-4">
                                 <div class="col-lg-4">
                                     <label class="form-label small fw-bold">Program Level</label>
+                                    @php
+                                        $selectedLevel = old('program_level_id', $customer->program_level_id ?? '');
+                                        $levelIsId = is_numeric($selectedLevel);
+                                    @endphp
                                     <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Program Level</option>
-                                        <option value="Not decided yet" {{ old('program_level_id', $customer->program_level_id ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        <option value="Not decided yet" {{ $selectedLevel == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
                                         @if(isset($program_levels))
                                             @foreach($program_levels as $pl)
-                                                <option value="{{ $pl->id }}" {{ old('program_level_id', $customer->program_level_id ?? '') == $pl->id ? 'selected' : '' }}>{{ $pl->title }}</option>
+                                                <option value="{{ $pl->id }}" {{ $selectedLevel == $pl->id ? 'selected' : '' }}>{{ $pl->title }}</option>
                                             @endforeach
+                                        @endif
+                                        @if(!empty($selectedLevel) && $selectedLevel != 'Not decided yet' && !$levelIsId && (!isset($program_levels) || !$program_levels->contains('id', $selectedLevel)))
+                                            <option value="{{ $selectedLevel }}" selected>{{ $selectedLevel }}</option>
                                         @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-4" id="school_type_container" style="display:none;">
                                     <label class="form-label small fw-bold">School Type</label>
+                                    @php
+                                        $selectedSchoolType = old('school_type', $customer->school_type ?? '');
+                                        $schoolTypeIsId = is_numeric($selectedSchoolType);
+                                    @endphp
                                     <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type School Type</option>
                                         @if(isset($school_types))
                                             @foreach($school_types as $st)
-                                                <option value="{{ $st->id }}" {{ old('school_type', $customer->school_type ?? '') == $st->id ? 'selected' : '' }}>{{ $st->title }}</option>
+                                                <option value="{{ $st->id }}" {{ $selectedSchoolType == $st->id ? 'selected' : '' }}>{{ $st->title }}</option>
                                             @endforeach
+                                        @endif
+                                        @if(!empty($selectedSchoolType) && !$schoolTypeIsId && (!isset($school_types) || !$school_types->contains('id', $selectedSchoolType)))
+                                            <option value="{{ $selectedSchoolType }}" selected>{{ $selectedSchoolType }}</option>
                                         @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-4" id="course_container">
                                     <label class="form-label small fw-bold" id="course_label">Course</label>
+                                    @php
+                                        $selectedCourseInput = old('course_input', $customer->course_input ?? '');
+                                        $courseInputIsId = is_numeric($selectedCourseInput);
+                                    @endphp
                                     <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Course</option>
-                                        <option value="Not decided yet" {{ old('course_input', $customer->course_input ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        <option value="Not decided yet" {{ $selectedCourseInput == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
                                         @foreach($courses as $course)
-                                            <option value="{{ $course->id }}" {{ old('course_input', $customer->course_input ?? '') == $course->id ? 'selected' : '' }}>{{ $course->name }}</option>
+                                            <option value="{{ $course->id }}" {{ $selectedCourseInput == $course->id ? 'selected' : '' }}>{{ $course->name }}</option>
                                         @endforeach
+                                        @if(!empty($selectedCourseInput) && $selectedCourseInput != 'Not decided yet' && !$courseInputIsId && (!isset($courses) || !$courses->contains('id', $selectedCourseInput)))
+                                            <option value="{{ $selectedCourseInput }}" selected>{{ $selectedCourseInput }}</option>
+                                        @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-4" id="course_type_container">
                                     <label class="form-label small fw-bold">Program Mode</label>
+                                    @php
+                                        $selectedCourseType = old('course_type', $customer->course_type ?? '');
+                                    @endphp
                                     <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type Program Mode</option>
-                                        <option value="Not decided yet" {{ old('course_type', $customer->course_type ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        <option value="Not decided yet" {{ $selectedCourseType == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
                                         @if(isset($program_types))
                                             @foreach($program_types as $pt)
-                                                <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}" {{ old('course_type', $customer->course_type ?? '') == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
+                                                <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}" {{ $selectedCourseType == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
                                             @endforeach
+                                        @endif
+                                        @if(!empty($selectedCourseType) && $selectedCourseType != 'Not decided yet' && (!isset($program_types) || !$program_types->contains('title', $selectedCourseType)))
+                                            <option value="{{ $selectedCourseType }}" selected>{{ $selectedCourseType }}</option>
                                         @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-6" id="university_container">
                                     <label class="form-label small fw-bold" id="university_label">University / Organization</label>
+                                    @php
+                                        $selectedUniInput = old('university_input', $customer->university_input ?? '');
+                                        $uniInputIsId = is_numeric($selectedUniInput);
+                                    @endphp
                                     <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select or Type University</option>
-                                        <option value="Not decided yet" {{ old('university_input', $customer->university_input ?? '') == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
+                                        <option value="Not decided yet" {{ $selectedUniInput == 'Not decided yet' ? 'selected' : '' }}>Not decided yet</option>
                                         @foreach($universities as $uni)
                                             @php
                                                 $types = [];
@@ -210,25 +320,35 @@
                                                 // Clean up array
                                                 $types = array_values(array_unique(array_filter($types)));
                                             @endphp
-                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}" {{ old('university_input', $customer->university_input ?? '') == $uni->id ? 'selected' : '' }}>{{ $uni->name }}</option>
+                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}" {{ $selectedUniInput == $uni->id ? 'selected' : '' }}>{{ $uni->name }}</option>
                                         @endforeach
+                                        @if(!empty($selectedUniInput) && $selectedUniInput != 'Not decided yet' && !$uniInputIsId && (!isset($universities) || !$universities->contains('id', $selectedUniInput)))
+                                            <option value="{{ $selectedUniInput }}" selected>{{ $selectedUniInput }}</option>
+                                        @endif
                                     </select>
                                 </div>
                                 <div class="col-lg-6">
                                     <label class="form-label small fw-bold">Session</label>
+                                    @php
+                                        $selectedSessionId = old('session_id', $customer->session_id ?? '');
+                                        $sessionIdIsId = is_numeric($selectedSessionId);
+                                    @endphp
                                     <select name="session_id" id="session_input" class="form-select rounded-3 custom-select2">
                                         <option value="">Select Session</option>
                                         @if(isset($sessions))
                                             @foreach($sessions as $session)
-                                                <option value="{{ $session->id }}" {{ old('session_id', $customer->session_id ?? '') == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
+                                                <option value="{{ $session->id }}" {{ $selectedSessionId == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
                                             @endforeach
+                                        @endif
+                                        @if(!empty($selectedSessionId) && !$sessionIdIsId && (!isset($sessions) || !$sessions->contains('id', $selectedSessionId)))
+                                            <option value="{{ $selectedSessionId }}" selected>{{ $selectedSessionId }}</option>
                                         @endif
                                     </select>
                                 </div>
                             </div>
 
-                            <!-- 3. Parent/Guardian Information -->
-                            <div class="section-head">3. Parent/Guardian Information</div>
+                            <!-- 4. Parent/Guardian Information -->
+                            <div class="section-head">4. Parent/Guardian Information</div>
                             <div class="row g-4 mb-4">
                                 <div class="col-md-6">
                                     <h6 class="small fw-bold text-muted border-bottom pb-2 mb-3">Father's Details</h6>
@@ -250,8 +370,8 @@
                                 </div>
                             </div>
 
-                            <!-- 4. Academic History -->
-                            <div class="section-head">4. Academic Records</div>
+                            <!-- 5. Academic History -->
+                            <div class="section-head">5. Academic Records</div>
                             <div class="table-responsive mb-4">
                                 <table class="table table-bordered academic-table text-center">
                                     <thead>
@@ -278,10 +398,10 @@
                                 </table>
                             </div>
 
-                            <!-- 5. Documents & Additional -->
+                            <!-- 6. Documents & Additional -->
                             <div class="row mb-4">
                                 <div class="col-md-7">
-                                    <div class="section-head">5. Documents Upload</div>
+                                    <div class="section-head">6. Documents Upload</div>
                                     <div class="row g-2">
                                         @php $documentData = $customer->documents->keyBy('document_type'); @endphp
                                         @foreach(['Aadhaar Card', '10th Marksheet', '12th Marksheet', 'Graduation', 'PG Marksheet', 'Passport Photo', 'Caste Cert.', 'Income Cert.', 'Other'] as $doc)
@@ -300,7 +420,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-5">
-                                    <div class="section-head">6. Referral & Source</div>
+                                    <div class="section-head">7. Referral & Source</div>
                                     <div class="card bg-light border-0 p-3">
                                         <div class="mb-3">
                                             <label class="form-label">Referred By</label>
@@ -344,8 +464,8 @@
                                 </div>
                             </div>
 
-                            <!-- 7. Office Section -->
-                            <div class="section-head">7. Office Use Only</div>
+                            <!-- 8. Office Section -->
+                            <div class="section-head">8. Office Use Only</div>
                             <div class="row g-3 p-3 bg-light rounded-3">
                                 <div class="col-md-3">
                                     <label class="form-label">Reg. Number</label>
@@ -400,6 +520,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function () {
+            let initialUniversity = $('#university_input').val();
             $('.select2').select2({ width: '100%' });
 
             $('#student_photo').on('change', function () {
@@ -475,6 +596,34 @@
 
             $('#session_input').select2({
                 placeholder: "Select Session",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_course').select2({
+                tags: true,
+                placeholder: "Select or Type Course",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_session').select2({
+                tags: true,
+                placeholder: "Select Session",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_university').select2({
+                tags: true,
+                placeholder: "Select or Type University",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_program_mode').select2({
+                tags: true,
+                placeholder: "Select Program Mode",
                 allowClear: true,
                 width: '100%'
             });
@@ -594,29 +743,32 @@
             });
 
             $('#school_type').on('change', function() {
-                let schoolTypeId = $(this).val();
-                let universitySelect = $('#university_input');
-                let currentVal = universitySelect.val();
-                universitySelect.empty();
-                
-                allUniversities.forEach(function(u) {
-                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
-                        if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
-                            let option = new Option(u.text, u.id, false, false);
-                            $(option).attr('data-type-id', u.typeId);
-                            universitySelect.append(option);
-                        } else {
-                            let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
-                            if (sTypes.includes(String(schoolTypeId))) {
-                                let option = new Option(u.text, u.id, false, false);
-                                $(option).attr('data-type-id', u.typeId);
-                                universitySelect.append(option);
-                            }
-                        }
-                    }
-                });
-                universitySelect.val(currentVal).trigger('change');
-            });
+                 let schoolTypeId = $(this).val();
+                 let universitySelect = $('#university_input');
+                 let currentVal = universitySelect.val();
+                 if (isInitialLoad && initialUniversity) {
+                     currentVal = initialUniversity;
+                 }
+                 universitySelect.empty();
+                 
+                 allUniversities.forEach(function(u) {
+                     if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                         if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
+                             let option = new Option(u.text, u.id, false, false);
+                             $(option).attr('data-type-id', u.typeId);
+                             universitySelect.append(option);
+                         } else {
+                             let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
+                             if (sTypes.includes(String(schoolTypeId))) {
+                                 let option = new Option(u.text, u.id, false, false);
+                                 $(option).attr('data-type-id', u.typeId);
+                                 universitySelect.append(option);
+                             }
+                         }
+                     }
+                 });
+                 universitySelect.val(currentVal).trigger('change');
+             });
 
             $('#course_input').on('change', function() {
                 let courseId = $(this).val();

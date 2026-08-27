@@ -18,11 +18,12 @@ class Customer extends Model
         'category_id', 'lead_quality_id', 'institute_id', 'status', 'organization_id', 
         'country', 'state', 'city', 'pincode', 'is_admin',
         'dob', 'gender', 'aadhaar_number', 'alternate_mobile',
-        'interested_in_ids', 'interested_in_course', 'program_level', 'mode', 'session_ids',
+        'interested_in_ids', 'interested_in_course', 'program_level', 'school_type', 'mode', 'session_ids',
         'father_name', 'father_mobile', 'father_email', 'father_occupation',
         'mother_name', 'mother_mobile', 'mother_email', 'mother_occupation',
         'sibling_enrolled', 'sibling_name', 'sibling_age', 'referred_by', 'source',
-        'registration_no', 'class_batch', 'counselor_name', 'registration_date', 'payment_status', 'remarks'
+        'registration_no', 'class_batch', 'counselor_name', 'registration_date', 'payment_status', 'remarks',
+        'current_university_id', 'current_university_text', 'current_course_id', 'current_course_text', 'current_course_type', 'current_session'
     ];
 
     protected $casts = [
@@ -69,5 +70,48 @@ class Customer extends Model
     public function leadQuality()
     {
         return $this->belongsTo(LeadQuality::class, 'lead_quality_id');
+    }
+
+    public function currentUniversity()
+    {
+        return $this->belongsTo(Organisation::class, 'current_university_id');
+    }
+
+    public function currentCourse()
+    {
+        return $this->belongsTo(Course::class, 'current_course_id');
+    }
+
+    public function currentSessionModel()
+    {
+        return $this->belongsTo(CustomerSession::class, 'current_session');
+    }
+
+    // Getters for Program of Interest fields mapping
+    public function getProgramLevelIdAttribute()
+    {
+        return $this->attributes['program_level'] ?? null;
+    }
+
+    public function getCourseInputAttribute()
+    {
+        return $this->attributes['interested_in_course'] ?? null;
+    }
+
+    public function getCourseTypeAttribute()
+    {
+        return $this->attributes['mode'] ?? null;
+    }
+
+    public function getUniversityInputAttribute()
+    {
+        $ids = $this->interested_in_ids;
+        return is_array($ids) ? ($ids[0] ?? null) : $ids;
+    }
+
+    public function getSessionIdAttribute()
+    {
+        $ids = $this->session_ids;
+        return is_array($ids) ? ($ids[0] ?? null) : $ids;
     }
 }

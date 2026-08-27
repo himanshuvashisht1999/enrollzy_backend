@@ -129,8 +129,87 @@
                                 </div>
                             </div>
 
-                            <!-- 2. Academic Interest -->
-                            <div class="section-head">2. Program of Interest</div>
+                            <!-- 2. Current Academic Details -->
+                            <div class="section-head">2. Current Academic Details</div>
+                            <div class="mb-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Course/Programme</label>
+                                            @php
+                                                $selectedCourse = old('current_course', isset($customer) ? ($customer->current_course_id ?? $customer->current_course_text ?? '') : '');
+                                                $courseIsId = is_numeric($selectedCourse);
+                                            @endphp
+                                            <select name="current_course" id="current_course" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select or Type Course</option>
+                                                @if(isset($courses))
+                                                    @foreach($courses as $course)
+                                                        <option value="{{ $course->id }}" {{ $selectedCourse == $course->id ? 'selected' : '' }}>{{ $course->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedCourse) && !$courseIsId && (!isset($courses) || !$courses->contains('id', $selectedCourse)))
+                                                    <option value="{{ $selectedCourse }}" selected>{{ $selectedCourse }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Session</label>
+                                            @php
+                                                $selectedSession = old('current_session', isset($customer) ? ($customer->current_session ?? '') : '');
+                                            @endphp
+                                            <select name="current_session" id="current_session" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select Session</option>
+                                                @if(isset($sessions))
+                                                    @foreach($sessions as $session)
+                                                        <option value="{{ $session->id }}" {{ $selectedSession == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedSession) && (!isset($sessions) || !$sessions->contains('id', $selectedSession)))
+                                                    <option value="{{ $selectedSession }}" selected>{{ $selectedSession }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current University</label>
+                                            @php
+                                                $selectedUniversity = old('current_university', isset($customer) ? ($customer->current_university_id ?? $customer->current_university_text ?? '') : '');
+                                                $universityIsId = is_numeric($selectedUniversity);
+                                            @endphp
+                                            <select name="current_university" id="current_university" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select or Type University</option>
+                                                @if(isset($universities))
+                                                    @foreach($universities as $uni)
+                                                        <option value="{{ $uni->id }}" {{ $selectedUniversity == $uni->id ? 'selected' : '' }}>{{ $uni->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedUniversity) && !$universityIsId && (!isset($universities) || !$universities->contains('id', $selectedUniversity)))
+                                                    <option value="{{ $selectedUniversity }}" selected>{{ $selectedUniversity }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label small fw-bold">Current Program Mode</label>
+                                            @php
+                                                $selectedMode = old('current_program_mode', isset($customer) ? ($customer->current_course_type ?? '') : '');
+                                             @endphp
+                                            <select name="current_program_mode" id="current_program_mode" class="form-select rounded-3 custom-select2">
+                                                <option value="">Select Program Mode</option>
+                                                @if(isset($program_types))
+                                                    @foreach($program_types as $pt)
+                                                        <option value="{{ $pt->title }}" {{ $selectedMode == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                                @if(!empty($selectedMode) && (!isset($program_types) || !$program_types->contains('title', $selectedMode)))
+                                                    <option value="{{ $selectedMode }}" selected>{{ $selectedMode }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Program of Interest -->
+                            <div class="section-head">3. Program of Interest</div>
                             <div class="row g-3 mb-4">
                                 <div class="col-lg-4">
                                     <label class="form-label small fw-bold">Program Level</label>
@@ -217,8 +296,8 @@
                                 </div>
                             </div>
 
-                            <!-- 3. Parent/Guardian Information -->
-                            <div class="section-head">3. Parent/Guardian Information</div>
+                            <!-- 4. Parent/Guardian Information -->
+                            <div class="section-head">4. Parent/Guardian Information</div>
                             <div class="row g-4 mb-4">
                                 <div class="col-md-6">
                                     <h6 class="small fw-bold text-muted border-bottom pb-2 mb-3">Father's Details</h6>
@@ -240,8 +319,8 @@
                                 </div>
                             </div>
 
-                            <!-- 4. Academic History -->
-                            <div class="section-head">4. Academic Records</div>
+                            <!-- 5. Academic History -->
+                            <div class="section-head">5. Academic Records</div>
                             <div class="table-responsive mb-4">
                                 <table class="table table-bordered academic-table text-center">
                                     <thead>
@@ -267,10 +346,10 @@
                                 </table>
                             </div>
 
-                            <!-- 5. Documents & Additional -->
+                            <!-- 6. Documents & Additional -->
                             <div class="row mb-4">
                                 <div class="col-md-7">
-                                    <div class="section-head">5. Documents Upload</div>
+                                    <div class="section-head">6. Documents Upload</div>
                                     <div class="row g-2">
                                         @foreach(['Aadhaar Card', '10th Marksheet', '12th Marksheet', 'Graduation', 'PG Marksheet', 'Passport Photo', 'Caste Cert.', 'Income Cert.', 'Other'] as $doc)
                                             <div class="col-md-6">
@@ -283,7 +362,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-5">
-                                    <div class="section-head">6. Referral & Source</div>
+                                    <div class="section-head">7. Referral & Source</div>
                                     <div class="card bg-light border-0 p-3">
                                         <div class="mb-3">
                                             <label class="form-label">Referred By</label>
@@ -327,8 +406,8 @@
                                 </div>
                             </div>
 
-                            <!-- 7. Office Section -->
-                            <div class="section-head">7. Office Use Only</div>
+                            <!-- 8. Office Section -->
+                            <div class="section-head">8. Office Use Only</div>
                             <div class="row g-3 p-3 bg-light rounded-3">
                                 <div class="col-md-3">
                                     <label class="form-label">Reg. Number</label>
@@ -383,6 +462,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function () {
+            let initialUniversity = $('#university_input').val();
             $('.select2').select2({ width: '100%' });
 
             $('#student_photo').on('change', function () {
@@ -458,6 +538,34 @@
 
             $('#session_input').select2({
                 placeholder: "Select Session",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_course').select2({
+                tags: true,
+                placeholder: "Select or Type Course",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_session').select2({
+                tags: true,
+                placeholder: "Select Session",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_university').select2({
+                tags: true,
+                placeholder: "Select or Type University",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#current_program_mode').select2({
+                tags: true,
+                placeholder: "Select Program Mode",
                 allowClear: true,
                 width: '100%'
             });
@@ -574,6 +682,9 @@
                 let schoolTypeId = $(this).val();
                 let universitySelect = $('#university_input');
                 let currentVal = universitySelect.val();
+                if (isInitialLoad && initialUniversity) {
+                    currentVal = initialUniversity;
+                }
                 universitySelect.empty();
                 
                 allUniversities.forEach(function(u) {

@@ -854,6 +854,21 @@ id="message-editor" placeholder="Enter message"></textarea>
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
     $(document).ready(function() {
+        function setSelect2Value(selectId, value) {
+            if (value === undefined || value === null || value === '') {
+                $('#' + selectId).val('').trigger('change');
+                return;
+            }
+            let exists = $('#' + selectId + " option[value='" + value + "']").length > 0;
+            if (!exists) {
+                let newOption = new Option(value, value, true, true);
+                $('#' + selectId).append(newOption).trigger('change');
+            } else {
+                $('#' + selectId).val(value).trigger('change');
+            }
+        }
+        window.pendingAutofill = null;
+
         $('#bulk_select_all').on('change', function() {
             if (this.checked) {
                 $('#bulk_start, #bulk_end').prop('disabled', true).val('');
@@ -950,6 +965,21 @@ id="message-editor" placeholder="Enter message"></textarea>
             let cat = $(this).data('category');
             let lq = $(this).data('lead-quality');
 
+            // Reset form fields and select2 dropdowns
+            $('#callForm')[0].reset();
+            $('#university_input').val(null).trigger('change');
+            $('#course_input').val(null).trigger('change');
+            $('#current_course').val(null).trigger('change');
+            $('#current_session').val(null).trigger('change');
+            $('#current_university').val(null).trigger('change');
+            $('#current_program_mode').val(null).trigger('change');
+            $('#program_level_id').val(null).trigger('change');
+            $('#school_type').val(null).trigger('change');
+            $('#course_type').val(null).trigger('change');
+            $('#session_input').val(null).trigger('change');
+            $('#more-details-container').hide();
+            $('#current-academic-details-container').hide();
+
             $('#customer_id').val(id);
             $('#user_name').val(name);
             $('#user_phone').val(phone);
@@ -978,6 +1008,40 @@ id="message-editor" placeholder="Enter message"></textarea>
                             .addClass('bg-white shadow-sm position-relative')
                             .css({'border-top': '4px solid #2d68a8', 'padding': '1.25rem 1.5rem', 'border-radius': '10px', 'margin': '1.5rem 1.5rem 0', 'border-bottom': 'none'})
                             .html(res.headerHtml + '<button type="button" class="btn-close position-absolute" style="right: 1.5rem; top: 1.5rem;" data-bs-dismiss="modal"></button>');
+                    }
+
+                    // Auto-fill Current Academic Details
+                    if (res.customer) {
+                        setSelect2Value('current_course', res.customer.current_course);
+                        setSelect2Value('current_session', res.customer.current_session);
+                        setSelect2Value('current_university', res.customer.current_university);
+                        setSelect2Value('current_program_mode', res.customer.current_program_mode);
+
+                        $('#current-academic-details-container').hide();
+
+                        // Auto-fill Program of Interest
+                        if (res.customer.program_level_id || res.customer.school_type || res.customer.course_input || res.customer.course_type || res.customer.university_input || res.customer.session_id) {
+                            $('#more-details-container').hide();
+                            
+                            window.pendingAutofill = {
+                                school_type: res.customer.school_type,
+                                course_input: res.customer.course_input,
+                                course_type: res.customer.course_type,
+                                university_input: res.customer.university_input
+                            };
+
+                            setSelect2Value('program_level_id', res.customer.program_level_id);
+                            setSelect2Value('session_input', res.customer.session_id);
+                        } else {
+                            $('#more-details-container').hide();
+                            window.pendingAutofill = null;
+                            setSelect2Value('program_level_id', '');
+                            setSelect2Value('session_input', '');
+                        }
+                    } else {
+                        $('#current-academic-details-container').hide();
+                        $('#more-details-container').hide();
+                        window.pendingAutofill = null;
                     }
                 },
                 error: function() {
@@ -1278,7 +1342,11 @@ id="message-editor" placeholder="Enter message"></textarea>
                 $('#course_type_container').hide();
                 $('#university_label').text('School Name');
                 
-                $('#school_type').val('');
+                if (window.pendingAutofill && window.pendingAutofill.school_type) {
+                    setSelect2Value('school_type', window.pendingAutofill.school_type);
+                } else {
+                    $('#school_type').val('');
+                }
                 // Let the school_type change event handle populating universitySelect
                 setTimeout(function() {
                     $('#school_type').trigger('change');
@@ -1296,6 +1364,10 @@ id="message-editor" placeholder="Enter message"></textarea>
                         universitySelect.append(option);
                     }
                 });
+                
+                if (window.pendingAutofill && window.pendingAutofill.university_input) {
+                    setSelect2Value('university_input', window.pendingAutofill.university_input);
+                }
             } else {
                 $('#school_type_container').hide();
                 $('#course_label').text('Course');
@@ -1309,6 +1381,10 @@ id="message-editor" placeholder="Enter message"></textarea>
                         universitySelect.append(option);
                     }
                 });
+                
+                if (window.pendingAutofill && window.pendingAutofill.university_input) {
+                    setSelect2Value('university_input', window.pendingAutofill.university_input);
+                }
             }
             universitySelect.trigger('change');
 
@@ -1333,10 +1409,18 @@ id="message-editor" placeholder="Enter message"></textarea>
                             }
                         });
                     }
-                    courseSelect.html(html).trigger('change');
+                    courseSelect.html(html);
+                    
+                    if (window.pendingAutofill && window.pendingAutofill.course_input) {
+                        setSelect2Value('course_input', window.pendingAutofill.course_input);
+                    } else {
+                        courseSelect.trigger('change');
+                    }
+                    window.pendingAutofill = null;
                 },
                 error: function() {
                     courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
+                    window.pendingAutofill = null;
                 }
             });
         });
@@ -1363,7 +1447,11 @@ id="message-editor" placeholder="Enter message"></textarea>
                     }
                 }
             });
-            universitySelect.val(currentVal).trigger('change');
+            if (window.pendingAutofill && window.pendingAutofill.university_input) {
+                setSelect2Value('university_input', window.pendingAutofill.university_input);
+            } else {
+                universitySelect.val(currentVal).trigger('change');
+            }
         });
 
         $('#course_input').on('change', function() {
@@ -1392,7 +1480,11 @@ id="message-editor" placeholder="Enter message"></textarea>
                         }
                     });
                 }
-                courseTypeSelect.trigger('change');
+                if (window.pendingAutofill && window.pendingAutofill.course_type) {
+                    setSelect2Value('course_type', window.pendingAutofill.course_type);
+                } else {
+                    courseTypeSelect.trigger('change');
+                }
             } else {
                 // Restore all course types if not coaching
                 courseTypeSelect.empty();
@@ -1401,7 +1493,11 @@ id="message-editor" placeholder="Enter message"></textarea>
                     if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
                     courseTypeSelect.append(option);
                 });
-                courseTypeSelect.trigger('change');
+                if (window.pendingAutofill && window.pendingAutofill.course_type) {
+                    setSelect2Value('course_type', window.pendingAutofill.course_type);
+                } else {
+                    courseTypeSelect.trigger('change');
+                }
             }
         });
 
