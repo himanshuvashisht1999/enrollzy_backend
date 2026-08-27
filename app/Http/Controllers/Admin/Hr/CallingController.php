@@ -492,6 +492,24 @@ class CallingController extends Controller
             return true;
         })->values();
 
+        foreach ($delegatedLeads as $assignment) {
+            $customerHistories = $histories->get($assignment->customer_id);
+            if (!$customerHistories || $customerHistories->isEmpty()) {
+                $assignment->lead_type = 'new';
+            } else {
+                $latestHistory = $customerHistories->sortByDesc('id')->first();
+                if ($latestHistory && $latestHistory->date_required) {
+                    if ($latestHistory->date_required < $startDate) {
+                        $assignment->lead_type = 'overdue';
+                    } else {
+                        $assignment->lead_type = 'due_today';
+                    }
+                } else {
+                    $assignment->lead_type = 'new';
+                }
+            }
+        }
+
         // 5. Worked Leads History Queue
         $historyQuery = \App\Models\CallingHistory::with(['customer', 'calling_status', 'staff'])
             ->whereDate('created_at', '>=', $startDate)
@@ -697,6 +715,7 @@ class CallingController extends Controller
             }
 
             $customerData = [
+                'email' => $customer->email,
                 'current_course' => $customer->current_course_id ?? $customer->current_course_text,
                 'current_session' => $customer->current_session,
                 'current_university' => $customer->current_university_id ?? $customer->current_university_text,
@@ -1066,6 +1085,10 @@ class CallingController extends Controller
                 $customer->session_ids = [$request->session];
             } else {
                 $customer->session_ids = null;
+            }
+
+            if ($request->has('email')) {
+                $customer->email = $request->email;
             }
 
             $customer->save();

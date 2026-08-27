@@ -407,10 +407,27 @@
                 @forelse($delegatedLeads as $assignment)
                     @php 
                         $customer = $assignment->customer;
+                        $leadType = $assignment->lead_type ?? 'new';
+                        
+                        $typeClass = '';
+                        $typeLabel = '';
+                        if ($leadType === 'overdue') {
+                            $typeClass = 'type-overdue';
+                            $typeLabel = '<span class="status-badge text-overdue bg-danger bg-opacity-10 px-2 py-1 rounded">OVERDUE FOLLOW-UP</span>';
+                        } elseif ($leadType === 'due_today') {
+                            $typeClass = 'type-due_today';
+                            $typeLabel = '<span class="status-badge text-due_today bg-warning bg-opacity-10 px-2 py-1 rounded">FOLLOW-UP DUE</span>';
+                        } else {
+                            $typeClass = 'type-new';
+                            $typeLabel = '<span class="status-badge text-new bg-primary bg-opacity-10 px-2 py-1 rounded">NEW UNATTEMPTED</span>';
+                        }
                     @endphp
                     @if($customer)
-                    <div class="queue-item p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="queue-item {{ $typeClass }} p-3 border-bottom d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3 w-50">
+                            <div style="width: 140px;">
+                                {!! $typeLabel !!}
+                            </div>
                             <div>
                                 <h6 class="fw-bold mb-1">{{ $customer->name }}</h6>
                                 <div class="lead-info-small">
@@ -551,21 +568,23 @@
                     <input type="hidden" id="category_val" name="category">
                               <div class="row g-3">
                                   <div class="col-lg-6">
-                              <label class="form-label small fw-bold">Name</label>
-                              <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
-                          </div>
-                          <div class="col-lg-6">
-                              <label class="form-label small fw-bold">Call Status <span 
-class="text-danger">*</span></label>
-                              <select name="status_id" class="form-select rounded-3 custom-select2" id="status_id" required>
-                                  <option value="" selected disabled>Select</option>
-                                  @foreach($statuses as $status)
-                                      <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" 
-data-more-details="{{ $status->is_more_details }}" data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" data-date-require="{{ $status->date_require }}" data-comment-require="{{ $status->comment_require ?? 'no' }}">{{ $status->name 
-}}</option>
-                                  @endforeach
-                              </select>
-                          </div>
+                                      <label class="form-label small fw-bold">Name</label>
+                                      <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
+                                  </div>
+                                  <div class="col-lg-6">
+                                      <label class="form-label small fw-bold">Email</label>
+                                      <input type="email" class="form-control rounded-3" name="email" id="user_email">
+                                  </div>
+                                  <div class="col-lg-12">
+                                      <label class="form-label small fw-bold">Call Status <span class="text-danger">*</span></label>
+                                      <select name="status_id" class="form-select rounded-3 custom-select2" id="status_id" required>
+                                          <option value="" selected disabled>Select</option>
+                                          @foreach($statuses as $status)
+                                              <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" 
+                                                  data-more-details="{{ $status->is_more_details }}" data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" data-date-require="{{ $status->date_require }}" data-comment-require="{{ $status->comment_require ?? 'no' }}">{{ $status->name }}</option>
+                                          @endforeach
+                                      </select>
+                                  </div>
                           
                           <!-- Current Academic Details Container -->
                           <div id="current-academic-details-container" class="col-12" style="display:none; margin-top: 15px;">
@@ -967,6 +986,7 @@ id="message-editor" placeholder="Enter message"></textarea>
 
             // Reset form fields and select2 dropdowns
             $('#callForm')[0].reset();
+            $('#user_email').val('');
             $('#university_input').val(null).trigger('change');
             $('#course_input').val(null).trigger('change');
             $('#current_course').val(null).trigger('change');
@@ -977,8 +997,8 @@ id="message-editor" placeholder="Enter message"></textarea>
             $('#school_type').val(null).trigger('change');
             $('#course_type').val(null).trigger('change');
             $('#session_input').val(null).trigger('change');
-            $('#more-details-container').hide();
-            $('#current-academic-details-container').hide();
+            $('#more-details-container').show();
+            $('#current-academic-details-container').show();
 
             $('#customer_id').val(id);
             $('#user_name').val(name);
@@ -1012,16 +1032,17 @@ id="message-editor" placeholder="Enter message"></textarea>
 
                     // Auto-fill Current Academic Details
                     if (res.customer) {
+                        $('#user_email').val(res.customer.email);
                         setSelect2Value('current_course', res.customer.current_course);
                         setSelect2Value('current_session', res.customer.current_session);
                         setSelect2Value('current_university', res.customer.current_university);
                         setSelect2Value('current_program_mode', res.customer.current_program_mode);
 
-                        $('#current-academic-details-container').hide();
+                        $('#current-academic-details-container').show();
 
                         // Auto-fill Program of Interest
                         if (res.customer.program_level_id || res.customer.school_type || res.customer.course_input || res.customer.course_type || res.customer.university_input || res.customer.session_id) {
-                            $('#more-details-container').hide();
+                            $('#more-details-container').show();
                             
                             window.pendingAutofill = {
                                 school_type: res.customer.school_type,
@@ -1033,14 +1054,14 @@ id="message-editor" placeholder="Enter message"></textarea>
                             setSelect2Value('program_level_id', res.customer.program_level_id);
                             setSelect2Value('session_input', res.customer.session_id);
                         } else {
-                            $('#more-details-container').hide();
+                            $('#more-details-container').show();
                             window.pendingAutofill = null;
                             setSelect2Value('program_level_id', '');
                             setSelect2Value('session_input', '');
                         }
                     } else {
-                        $('#current-academic-details-container').hide();
-                        $('#more-details-container').hide();
+                        $('#current-academic-details-container').show();
+                        $('#more-details-container').show();
                         window.pendingAutofill = null;
                     }
                 },
@@ -1081,6 +1102,7 @@ id="message-editor" placeholder="Enter message"></textarea>
                     if(res.status == 1) {
                         $('#callModal').modal('hide');
                         $('#callForm')[0].reset();
+                        $('#user_email').val('');
                         $('#university_input').val(null).trigger('change');
                         $('#course_input').val(null).trigger('change');
                         $('#assign_to_staff_id').val(null).trigger('change');
