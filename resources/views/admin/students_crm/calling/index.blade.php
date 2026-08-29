@@ -472,7 +472,10 @@
 
         // CKEditor Init
         if (typeof CKEDITOR !== 'undefined') {
-            CKEDITOR.replace('message-editor', {});
+            CKEDITOR.config.versionCheck = false;
+            CKEDITOR.replace('message-editor', {
+                versionCheck: false
+            });
         }
 
         $('#whatsapp_template_id').on('change', function() {

@@ -87,112 +87,105 @@ class LeadAssignController extends Controller
             'end_number' => 'required|integer|gte:start_number'
         ]);
 
-        if (!$request->filled('category_id') && !$request->filled('call_status_id')) {
-            return redirect()->back()->with('error', 'Please select a Category Pool or a Call Status Filter before assigning leads.');
-        }
-
         $user = auth()->user();
         $organization_id = $user->organization_id;
-        $query = Customer::where('organization_id', $organization_id);
 
-        // If not top level, they can only assign leads they currently own
-        if (!in_array($user->role, ['superadmin', 'admin', 'Admin'])) {
-            $myAssignedCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id');
-            $query->whereIn('id', $myAssignedCustomerIds);
-        }
+        return DB::transaction(function() use ($request, $user, $organization_id) {
+            $query = Customer::where('organization_id', $organization_id);
 
-        // Filter to select only from available (unassigned) leads
-        $query->whereNotExists(function($q) {
-            $q->select(DB::raw(1))
-              ->from('lead_assignments')
-              ->whereColumn('lead_assignments.customer_id', 'users.id');
-        });
-
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        if ($request->filled('call_status_id')) {
-            if ($request->call_status_id === 'all') {
-                $customerIdsWithStatus = DB::table('calling_histories')
-                    ->where('organization_id', $organization_id)
-                    ->whereNotNull('reason')
-                    ->where('reason', '<>', '')
-                    ->pluck('user_id');
-            } else {
-                $customerIdsWithStatus = DB::table('calling_histories')
-                    ->where('organization_id', $organization_id)
-                    ->where('reason', $request->call_status_id)
-                    ->pluck('user_id');
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
             }
-            $query->whereIn('id', $customerIdsWithStatus);
-        }
 
-        $skip = $request->start_number - 1;
-        $take = $request->end_number - $request->start_number + 1;
-
-        $customers = $query->orderBy('id', 'asc')->skip($skip)->take($take)->pluck('id');
-
-        if ($customers->isEmpty()) {
-            return redirect()->back()->with('error', 'No leads found for the given criteria (or you do not own them).');
-        }
-
-        $assignments = [];
-        $skipped = 0;
-        $now = now();
-        
-        foreach ($customers as $customerId) {
-            $existingAssignment = LeadAssignment::where('customer_id', $customerId)->first();
-            
-            if ($existingAssignment) {
-                if ($existingAssignment->staff_id == $request->staff_id) {
-                    $skipped++;
+            if ($request->filled('call_status_id')) {
+                if ($request->call_status_id === 'all') {
+                    $customerIdsWithStatus = DB::table('calling_histories')
+                        ->where('organization_id', $organization_id)
+                        ->whereNotNull('reason')
+                        ->where('reason', '<>', '')
+                        ->pluck('user_id');
                 } else {
-                    // Update current ownership (Delegation or Reassignment)
-                    $oldStaffId = $existingAssignment->staff_id;
-                    $existingAssignment->staff_id = $request->staff_id;
-                    $existingAssignment->assigned_by = $user->id;
-                    $existingAssignment->updated_at = $now;
-                    $existingAssignment->save();
+                    $customerIdsWithStatus = DB::table('calling_histories')
+                        ->where('organization_id', $organization_id)
+                        ->where('reason', $request->call_status_id)
+                        ->pluck('user_id');
+                }
+                $query->whereIn('id', $customerIdsWithStatus);
+            } else {
+                // Default unassigned pool: select only leads not yet assigned
+                $query->whereNotExists(function($q) {
+                    $q->select(DB::raw(1))
+                      ->from('lead_assignments')
+                      ->whereColumn('lead_assignments.customer_id', 'users.id');
+                });
+            }
+
+            $skip = $request->start_number - 1;
+            $take = $request->end_number - $request->start_number + 1;
+
+            $customers = $query->orderBy('id', 'asc')->skip($skip)->take($take)->lockForUpdate()->pluck('id');
+
+            if ($customers->isEmpty()) {
+                return redirect()->back()->with('error', 'No leads found for the given criteria in the available pool.');
+            }
+
+            $assignedCount = 0;
+            $skipped = 0;
+            $now = now();
+
+            foreach ($customers as $customerId) {
+                $existingAssignment = LeadAssignment::where('customer_id', $customerId)->first();
+
+                if ($existingAssignment) {
+                    if ($existingAssignment->staff_id == $request->staff_id) {
+                        $skipped++;
+                    } else {
+                        // Reassign lead to new staff
+                        $oldStaffId = $existingAssignment->staff_id;
+                        $existingAssignment->staff_id = $request->staff_id;
+                        $existingAssignment->assigned_by = $user->id;
+                        $existingAssignment->updated_at = $now;
+                        $existingAssignment->save();
+
+                        \App\Models\LeadActivityLog::create([
+                            'customer_id' => $customerId,
+                            'admin_id' => $user->id,
+                            'action_type' => 'reassigned',
+                            'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                            'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                        ]);
+                        $assignedCount++;
+                    }
+                } else {
+                    // Create new assignment - guaranteed unique per customer
+                    LeadAssignment::updateOrCreate(
+                        ['customer_id' => $customerId],
+                        [
+                            'staff_id' => $request->staff_id,
+                            'assigned_by' => $user->id,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]
+                    );
 
                     \App\Models\LeadActivityLog::create([
                         'customer_id' => $customerId,
                         'admin_id' => $user->id,
-                        'action_type' => 'reassigned',
-                        'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
-                        'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                        'action_type' => 'assigned',
+                        'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                        'properties' => ['new_staff_id' => $request->staff_id]
                     ]);
+                    $assignedCount++;
                 }
-            } else {
-                $assignments[] = [
-                    'customer_id' => $customerId,
-                    'staff_id' => $request->staff_id,
-                    'assigned_by' => $user->id,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-                
-                \App\Models\LeadActivityLog::create([
-                    'customer_id' => $customerId,
-                    'admin_id' => $user->id,
-                    'action_type' => 'assigned',
-                    'description' => 'Lead assigned to staff ID ' . $request->staff_id,
-                    'properties' => ['new_staff_id' => $request->staff_id]
-                ]);
             }
-        }
 
-        if (!empty($assignments)) {
-            LeadAssignment::insert($assignments);
-        }
+            $msg = "Successfully assigned {$assignedCount} leads to the selected staff.";
+            if ($skipped > 0) {
+                $msg .= " ({$skipped} skipped because they were already assigned to this staff.)";
+            }
 
-        $assignedCount = $customers->count() - $skipped;
-        $msg = "Successfully assigned $assignedCount leads to the selected staff.";
-        if ($skipped > 0) {
-            $msg .= " ($skipped skipped because they were already assigned to this staff.)";
-        }
-
-        return redirect()->back()->with('success', $msg);
+            return redirect()->back()->with('success', $msg);
+        });
     }
 
     public function show(Request $request, $staff_id)
@@ -244,7 +237,11 @@ class LeadAssignController extends Controller
         $assignedLeads = LeadAssignment::whereIn('customer_id', $allLeadsIds)->pluck('customer_id')->toArray();
         $totalAssigned = count(array_unique($assignedLeads));
 
-        $totalPending = $totalLeads - $totalAssigned;
+        if ($request->filled('call_status_id')) {
+            $totalPending = $totalLeads;
+        } else {
+            $totalPending = max(0, $totalLeads - $totalAssigned);
+        }
 
         return response()->json([
             'total' => $totalLeads,

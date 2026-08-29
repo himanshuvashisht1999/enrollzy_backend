@@ -544,6 +544,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('calling-dashboard/reassign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'reassign'])->name('calling-dashboard.reassign');
             Route::post('calling-dashboard/bulk-assign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'bulkAssign'])->name('calling-dashboard.bulk-assign');
             Route::get('calling-dashboard/customer-history/{id}', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'customerHistory'])->name('calling-dashboard.customer-history');
+            Route::get('calling-dashboard/get-locations', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'getLocations'])->name('calling-dashboard.get-locations');
             Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
             Route::resource('calling-statuses', CallingStatusController::class)->middleware('can:calling-status-browse');
             Route::post('lead-qualities/toggle-status', [\App\Http\Controllers\Admin\Hr\LeadQualityController::class, 'toggleStatus'])->name('lead-qualities.toggle-status');

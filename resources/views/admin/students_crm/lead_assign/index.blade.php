@@ -232,18 +232,20 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group">
-                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 me-2 view-batch-btn"
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 view-batch-btn"
                                                     data-staff-id="{{ $summary->staff_id }}" 
                                                     data-staff-name="{{ $summary->staff->name ?? 'Unknown' }}" 
                                                     data-batch-date="{{ $summary->batch_date }}"
                                                     data-formatted-date="{{ \Carbon\Carbon::parse($summary->batch_date)->format('d M Y, h:i A') }}">
                                                     <i class="fas fa-eye me-1"></i> View
                                                 </button>
+                                                {{-- 
                                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 revoke-batch-btn" 
                                                     data-staff-id="{{ $summary->staff_id }}" 
                                                     data-batch-date="{{ $summary->batch_date }}">
                                                     <i class="fas fa-undo-alt me-1"></i> Revoke
                                                 </button>
+                                                --}}
                                             </div>
                                         </td>
                                     </tr>
@@ -503,21 +505,42 @@ $(document).ready(function() {
         });
     });
 
-    // Form submit validation
+    // Form submit validation & double-submission prevention
     $('#leadAssignForm').on('submit', function(e) {
-        let catId = $('#filter_category_id').val();
-        let statusId = $('#filter_call_status_id').val();
-        
-        if (!catId && !statusId) {
+        let staffId = $('select[name="staff_id"]').val();
+        let startNum = parseInt($('#start_number').val()) || 0;
+        let endNum = parseInt($('#end_number').val()) || 0;
+
+        if (!staffId) {
             e.preventDefault();
             Swal.fire({
-                title: 'Filter Required',
-                text: 'Please select a Category Pool or a Call Status Filter before assigning leads.',
+                title: 'Staff Required',
+                text: 'Please select a staff member to assign the leads to.',
                 icon: 'warning',
                 confirmButtonColor: '#3085d6'
             });
             return false;
         }
+
+        if (startNum <= 0 || endNum < startNum) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Invalid Range',
+                text: 'Please ensure Start Index is at least 1 and End Index is greater than or equal to Start Index.',
+                icon: 'warning',
+                confirmButtonColor: '#3085d6'
+            });
+            return false;
+        }
+
+        let submitBtn = $('#submitAssignBtn');
+        if (submitBtn.data('submitting')) {
+            e.preventDefault();
+            return false;
+        }
+
+        submitBtn.data('submitting', true).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Assigning Leads...');
+        return true;
     });
 });
 </script>
