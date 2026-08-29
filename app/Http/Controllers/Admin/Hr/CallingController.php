@@ -32,12 +32,20 @@ class CallingController extends Controller
 
         $user = auth()->user();
 
-        $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $request->customer_id)->first();
+        $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $request->customer_id)
+            ->orderBy('id', 'desc')
+            ->first();
+
         if ($existingAssignment) {
             $existingAssignment->staff_id = $request->staff_id;
             $existingAssignment->assigned_by = $user->id;
             $existingAssignment->updated_at = now();
             $existingAssignment->save();
+
+            // Clean up any historical duplicate assignment records for this customer
+            \App\Models\LeadAssignment::where('customer_id', $request->customer_id)
+                ->where('id', '!=', $existingAssignment->id)
+                ->delete();
         } else {
             \App\Models\LeadAssignment::create([
                 'customer_id' => $request->customer_id,

@@ -898,12 +898,28 @@ id="message-editor" placeholder="Enter message"></textarea>
                 $('#' + selectId).val('').trigger('change');
                 return;
             }
-            let exists = $('#' + selectId + " option[value='" + value + "']").length > 0;
-            if (!exists) {
-                let newOption = new Option(value, value, true, true);
-                $('#' + selectId).append(newOption).trigger('change');
+            let selectEl = $('#' + selectId);
+            let optionByVal = selectEl.find("option[value='" + value + "']");
+            if (optionByVal.length > 0) {
+                selectEl.val(value).trigger('change');
+                return;
+            }
+
+            let matchedValue = null;
+            selectEl.find("option").each(function() {
+                let optText = $(this).text().trim().toLowerCase();
+                let searchVal = String(value).trim().toLowerCase();
+                if (optText === searchVal || optText === searchVal + ' (default)' || optText.indexOf(searchVal) === 0) {
+                    matchedValue = $(this).val();
+                    return false;
+                }
+            });
+
+            if (matchedValue !== null) {
+                selectEl.val(matchedValue).trigger('change');
             } else {
-                $('#' + selectId).val(value).trigger('change');
+                let newOption = new Option(value, value, true, true);
+                selectEl.append(newOption).trigger('change');
             }
         }
         window.pendingAutofill = null;
@@ -1458,11 +1474,9 @@ id="message-editor" placeholder="Enter message"></textarea>
                     } else {
                         courseSelect.trigger('change');
                     }
-                    window.pendingAutofill = null;
                 },
                 error: function() {
                     courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
-                    window.pendingAutofill = null;
                 }
             });
         });
@@ -1522,8 +1536,9 @@ id="message-editor" placeholder="Enter message"></textarea>
                         }
                     });
                 }
-                if (window.pendingAutofill && window.pendingAutofill.course_type) {
+                if (courseId && window.pendingAutofill && window.pendingAutofill.course_type) {
                     setSelect2Value('course_type', window.pendingAutofill.course_type);
+                    window.pendingAutofill = null;
                 } else {
                     courseTypeSelect.trigger('change');
                 }
@@ -1535,8 +1550,9 @@ id="message-editor" placeholder="Enter message"></textarea>
                     if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
                     courseTypeSelect.append(option);
                 });
-                if (window.pendingAutofill && window.pendingAutofill.course_type) {
+                if (courseId && window.pendingAutofill && window.pendingAutofill.course_type) {
                     setSelect2Value('course_type', window.pendingAutofill.course_type);
+                    window.pendingAutofill = null;
                 } else {
                     courseTypeSelect.trigger('change');
                 }
