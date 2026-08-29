@@ -140,7 +140,8 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">Call Status Filter</label>
                                 <select name="call_status_id" id="filter_call_status_id" class="form-select rounded-3">
-                                    <option value="">All Statuses (Default)</option>
+                                    <option value="">No Filter (Default)</option>
+                                    <option value="all">All Statuses</option>
                                     @foreach($statuses as $status)
                                         <option value="{{ $status->id }}">{{ $status->name }}</option>
                                     @endforeach
@@ -500,6 +501,23 @@ $(document).ready(function() {
                 });
             }
         });
+    });
+
+    // Form submit validation
+    $('#leadAssignForm').on('submit', function(e) {
+        let catId = $('#filter_category_id').val();
+        let statusId = $('#filter_call_status_id').val();
+        
+        if (!catId && !statusId) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Filter Required',
+                text: 'Please select a Category Pool or a Call Status Filter before assigning leads.',
+                icon: 'warning',
+                confirmButtonColor: '#3085d6'
+            });
+            return false;
+        }
     });
 });
 </script>

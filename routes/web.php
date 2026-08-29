@@ -555,8 +555,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::get('calling-module/get-courses', [CallingController::class, 'getCoursesByProgramLevel'])->name('calling-module.get-courses');
             Route::post('calling-history/import', [CallingController::class, 'importHistory'])->name('calling-history.import')->middleware('can:calling-history-add');
             Route::get('calling-history/sample', [CallingController::class, 'downloadSample'])->name('calling-history.sample')->middleware('can:calling-history-browse');
-            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index')->middleware('can:calling-history-browse');
-            Route::post('calling-history/history-update-status/{id}', [CallingController::class, 'updateStatus'])->name('calling-history.update-status')->middleware('can:calling-history-edit');
+            Route::get('calling-history', [CallingController::class, 'history'])->name('calling-history.index');
+            Route::post('calling-history/history-update-status/{id}', [CallingController::class, 'updateStatus'])->name('calling-history.update-status');
             
             Route::get('lead-assign', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'index'])->name('lead-assign.index')->middleware('can:lead-assign-browse');
             Route::get('lead-assign/get-counts', [\App\Http\Controllers\Admin\Hr\LeadAssignController::class, 'getFilteredCounts'])->name('lead-assign.get-counts')->middleware('can:lead-assign-browse');

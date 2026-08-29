@@ -692,12 +692,14 @@
                         <i class="fas fa-phone-alt me-2"></i> Calling Module
                     </a>
                 </li>
+                @if($user && method_exists($user, 'can') && ($user->can('calling-history-browse') || in_array($user->role, ['staff', 'Telle Caller'])))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-history.index') }}">
                         <i class="fas fa-history me-2"></i> Calling History
                     </a>
                 </li>
+                @endif
 
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
 

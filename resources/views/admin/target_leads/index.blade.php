@@ -1,10 +1,10 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Assign Target Leads')
+@section('title', 'Assign Admission Target')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold m-0">Assign Target Leads</h3>
+    <h3 class="fw-bold m-0">Assign Admission Target</h3>
     <a href="{{ route('admin.target-leads.create') }}" class="btn btn-primary shadow-sm">
         <i class="fas fa-plus me-1"></i> Assign New Target
     </a>

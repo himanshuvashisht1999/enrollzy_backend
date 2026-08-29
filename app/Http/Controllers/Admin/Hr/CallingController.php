@@ -256,24 +256,35 @@ class CallingController extends Controller
         $assignedToday = $assignedTodayQuery->pluck('customer_id')->toArray();
         $leadsAssignedTodayCount = count($assignedToday);
 
-        // 2. Leads pending in queue (assigned in date range but no calling history by this staff)
-        $workedOnCustomerIds = \App\Models\CallingHistory::whereIn('updated_by', $query_staff_ids)
-            ->whereIn('user_id', $assignedToday)
-            ->pluck('user_id')->toArray();
+        // 2. Leads pending in queue (assigned in date range but no calling history by this staff since assignment)
+        $workedOnCustomerIds = \App\Models\CallingHistory::join('lead_assignments', function($join) {
+                $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
+                     ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
+                     ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+            })
+            ->whereIn('calling_histories.updated_by', $query_staff_ids)
+            ->whereIn('calling_histories.user_id', $assignedToday)
+            ->pluck('calling_histories.user_id')
+            ->toArray();
         
         $pendingInQueueCount = $leadsAssignedTodayCount - count(array_unique($workedOnCustomerIds));
 
         // 3. Follow-ups due in date range & Overdue
-        // We need to find customers whose LATEST calling history by this staff has date_required = date range
-                $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
-            ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
-            ->whereIn('updated_by', $query_staff_ids);
+        // We need to find customers whose LATEST calling history by this staff has date_required = date range since assignment
+        $latestHistoriesSub = \Illuminate\Support\Facades\DB::table('calling_histories')
+            ->join('lead_assignments', function($join) {
+                $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
+                     ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
+                     ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+            })
+            ->select(\Illuminate\Support\Facades\DB::raw('MAX(calling_histories.id) as id'))
+            ->whereIn('calling_histories.updated_by', $query_staff_ids);
             
         if ($hasCustomerFilter) {
-            $latestHistoriesSub->whereIn('user_id', $filteredCustomerIds);
+            $latestHistoriesSub->whereIn('calling_histories.user_id', $filteredCustomerIds);
         }
 
-        $latestHistoriesSub = $latestHistoriesSub->groupBy('user_id');
+        $latestHistoriesSub = $latestHistoriesSub->groupBy('calling_histories.user_id');
 
         $latestHistoriesIds = $latestHistoriesSub->pluck('id')->toArray();
 
@@ -360,20 +371,30 @@ class CallingController extends Controller
                 
                 $subLeadsCount = count($subAssignedCustomers);
 
-                // How many of these has the sub worked on?
-                $subWorkedOnCustomers = \App\Models\CallingHistory::where('updated_by', $sub->id)
-                    ->whereIn('user_id', $subAssignedCustomers)
-                    ->pluck('user_id')->toArray();
+                // How many of these has the sub worked on since assignment?
+                $subWorkedOnCustomers = \App\Models\CallingHistory::join('lead_assignments', function($join) {
+                        $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
+                             ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
+                             ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                    })
+                    ->where('calling_histories.updated_by', $sub->id)
+                    ->whereIn('calling_histories.user_id', $subAssignedCustomers)
+                    ->pluck('calling_histories.user_id')->toArray();
                 $subWorkedOnCount = count(array_unique($subWorkedOnCustomers));
                 
                 // Pending means Assigned - Worked On
                 $subPendingCount = $subLeadsCount - $subWorkedOnCount;
 
-                // Follow ups due in this date range for this sub
+                // Follow ups due in this date range for this sub since assignment
                 $subLatestSub = \Illuminate\Support\Facades\DB::table('calling_histories')
-                    ->select(\Illuminate\Support\Facades\DB::raw('MAX(id) as id'))
-                    ->where('updated_by', $sub->id)
-                    ->groupBy('user_id');
+                    ->join('lead_assignments', function($join) {
+                        $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
+                             ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
+                             ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                    })
+                    ->select(\Illuminate\Support\Facades\DB::raw('MAX(calling_histories.id) as id'))
+                    ->where('calling_histories.updated_by', $sub->id)
+                    ->groupBy('calling_histories.user_id');
                 
                 $subLatestIds = $subLatestSub->pluck('id')->toArray();
                 
@@ -539,7 +560,14 @@ class CallingController extends Controller
             $customersAssignedByMe = \App\Models\LeadAssignment::where('assigned_by', $staff_id)->pluck('customer_id')->toArray();
             
             $historyQuery->where(function($q) use ($staff_id, $customersAssignedByMe) {
-                $q->where('updated_by', $staff_id);
+                if (in_array(auth()->user()->role, ['staff', 'Telle Caller'])) {
+                    $myAssignedCustomerIds = \App\Models\LeadAssignment::where('staff_id', $staff_id)->pluck('customer_id')->toArray();
+                    $q->where('updated_by', $staff_id)
+                      ->whereIn('user_id', $myAssignedCustomerIds);
+                } else {
+                    $q->where('updated_by', $staff_id);
+                }
+                
                 if (!empty($customersAssignedByMe)) {
                     $q->orWhereIn('user_id', $customersAssignedByMe);
                 }
@@ -826,16 +854,23 @@ class CallingController extends Controller
 
     public function history(Request $request)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, ['staff', 'Telle Caller']) && !$user->can('calling-history-browse')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         if ($request->ajax()) {
             $organization_id = auth()->user()->organization_id;
             $data = CallingHistory::with(['customer', 'calling_status', 'calling_action', 'staff', 'logs.calling_action', 'logs.user'])
                 ->where('organization_id', $organization_id);
                 
-            if (auth()->user()->role == 'staff') {
-                $data->where('updated_by', auth()->id());
+            if (in_array(auth()->user()->role, ['staff', 'Telle Caller'])) {
+                $assignedCustomerIds = \App\Models\LeadAssignment::where('staff_id', auth()->id())->pluck('customer_id')->toArray();
+                $data->whereIn('user_id', $assignedCustomerIds);
             } else {
                 if ($request->filled('staff_id')) {
-                    $data->where('updated_by', $request->staff_id);
+                    $assignedCustomerIds = \App\Models\LeadAssignment::where('staff_id', $request->staff_id)->pluck('customer_id')->toArray();
+                    $data->whereIn('user_id', $assignedCustomerIds);
                 }
             }
 
@@ -932,7 +967,7 @@ class CallingController extends Controller
         
         $staffs = [];
         $organization_id = auth()->user()->organization_id;
-        if (auth()->user()->role != 'staff') {
+        if (!in_array(auth()->user()->role, ['staff', 'Telle Caller'])) {
             $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
         }
         $statuses = CallingStatus::where('status', 1)->get();
@@ -944,6 +979,11 @@ class CallingController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, ['staff', 'Telle Caller']) && !$user->can('calling-history-edit')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $item = CallingHistory::find($id);
         if ($item) {
             $item->calling_action_id = $request->status;

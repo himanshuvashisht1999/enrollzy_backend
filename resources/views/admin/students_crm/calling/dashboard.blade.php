@@ -59,21 +59,7 @@
 
 @section('content')
 <div class="container-fluid py-4" style="background-color: #f4f6fb; min-height: 100vh;">
-        <!-- Date & Other Filters Form -->
-    <div class="form-group col-lg-3 mb-3">
-        <div class="radio-group" style="display: flex; align-items: center; gap: 20px;">
-            <div>
-                <input type="radio" id="option1" name="group" value="1" {{ request('group') != 2 ? 'checked' : '' }} style="transform: scale(1.3); margin-right: 5px;">
-                <label for="option1" style="font-size: 1rem; cursor: pointer;">Admin Data</label>
-            </div>
-            <div>
-                <input type="radio" id="option2" name="group" value="2" {{ request('group') == 2 ? 'checked' : '' }} style="transform: scale(1.3); margin-right: 5px;">
-                <label for="option2" style="font-size: 1rem; cursor: pointer;">Private Data</label>
-            </div>
-        </div>
-    </div>
     <form method="GET" action="{{ route('admin.students-crm.calling-dashboard.index') }}" class="mb-4 bg-white p-3 rounded-3 shadow-sm border-0" id="filterForm">
-        <input type="hidden" name="group" id="hiddenGroup" value="{{ request('group', 1) }}">
         <div class="row align-items-end g-3">
             <div class="col-md-3 mb-3">
                 <label class="form-label text-muted small fw-bold mb-1">Start Date</label>
@@ -308,11 +294,9 @@
             <a class="nav-link active" data-bs-toggle="tab" href="#delegated-queue-tab">Assigned to Team</a>
         </li>
         @endif
-        @if(count($staffs) > 0)
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#history-queue-tab">History</a>
         </li>
-        @endif
     </ul>
 
     <div class="tab-content">
@@ -467,6 +451,7 @@
                 @endforelse
             </div>
         </div>
+        @endif
 
         <!-- History Queue Tab -->
         <div class="tab-pane fade" id="history-queue-tab">
@@ -526,7 +511,6 @@
                 @endforelse
             </div>
         </div>
-        @endif
     </div>
 </div>
 <!-- Reassign Lead Modal -->
@@ -593,7 +577,7 @@
                                   </div>
                                   <div class="col-lg-6">
                                       <label class="form-label small fw-bold">Email</label>
-                                      <input type="email" class="form-control rounded-3" name="email" id="user_email">
+                                      <input type="text" class="form-control rounded-3" name="email" id="user_email">
                                   </div>
                                   <div class="col-lg-12">
                                       <label class="form-label small fw-bold">Call Status <span class="text-danger">*</span></label>
@@ -1559,15 +1543,6 @@ id="message-editor" placeholder="Enter message"></textarea>
             }
         });
 
-                // Safe Group Radio
-        const dashRadios = document.querySelectorAll('input[type="radio"][name="group"]');
-        dashRadios.forEach(radio => {
-            radio.addEventListener('change', function () {
-                $('#hiddenGroup').val(this.value);
-                $('#filterForm').submit();
-            });
-        });
-        
 
         // Date Filter Restrictions
         $('#start_date').on('change', function() {

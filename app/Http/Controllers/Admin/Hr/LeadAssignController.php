@@ -87,6 +87,10 @@ class LeadAssignController extends Controller
             'end_number' => 'required|integer|gte:start_number'
         ]);
 
+        if (!$request->filled('category_id') && !$request->filled('call_status_id')) {
+            return redirect()->back()->with('error', 'Please select a Category Pool or a Call Status Filter before assigning leads.');
+        }
+
         $user = auth()->user();
         $organization_id = $user->organization_id;
         $query = Customer::where('organization_id', $organization_id);
@@ -109,10 +113,18 @@ class LeadAssignController extends Controller
         }
 
         if ($request->filled('call_status_id')) {
-            $customerIdsWithStatus = DB::table('calling_histories')
-                ->where('organization_id', $organization_id)
-                ->where('reason', $request->call_status_id)
-                ->pluck('user_id');
+            if ($request->call_status_id === 'all') {
+                $customerIdsWithStatus = DB::table('calling_histories')
+                    ->where('organization_id', $organization_id)
+                    ->whereNotNull('reason')
+                    ->where('reason', '<>', '')
+                    ->pluck('user_id');
+            } else {
+                $customerIdsWithStatus = DB::table('calling_histories')
+                    ->where('organization_id', $organization_id)
+                    ->where('reason', $request->call_status_id)
+                    ->pluck('user_id');
+            }
             $query->whereIn('id', $customerIdsWithStatus);
         }
 
@@ -211,10 +223,18 @@ class LeadAssignController extends Controller
         }
 
         if ($request->filled('call_status_id')) {
-            $customerIdsWithStatus = DB::table('calling_histories')
-                ->where('organization_id', $organization_id)
-                ->where('reason', $request->call_status_id)
-                ->pluck('user_id');
+            if ($request->call_status_id === 'all') {
+                $customerIdsWithStatus = DB::table('calling_histories')
+                    ->where('organization_id', $organization_id)
+                    ->whereNotNull('reason')
+                    ->where('reason', '<>', '')
+                    ->pluck('user_id');
+            } else {
+                $customerIdsWithStatus = DB::table('calling_histories')
+                    ->where('organization_id', $organization_id)
+                    ->where('reason', $request->call_status_id)
+                    ->pluck('user_id');
+            }
             $query->whereIn('id', $customerIdsWithStatus);
         }
 

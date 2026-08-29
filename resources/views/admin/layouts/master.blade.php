@@ -926,7 +926,7 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.target-leads.*') ? 'active' : '' }}"
                         href="{{ route('admin.target-leads.index') }}">
-                        <i class="fas fa-bullseye me-2"></i> Assign Target Leads
+                        <i class="fas fa-bullseye me-2"></i> Assign Admission Target
                     </a>
                 </li>
                 @endif
@@ -949,7 +949,7 @@
                 </li>
 @endif
                 <!-- wrapped standalone calling-history -->
-@if($user && method_exists($user, 'can') && $user->can('calling-history-browse'))
+@if($user && method_exists($user, 'can') && ($user->can('calling-history-browse') || in_array($user->role, ['staff', 'Telle Caller'])))
 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}"
                         href="{{ route('admin.students-crm.calling-history.index') }}">

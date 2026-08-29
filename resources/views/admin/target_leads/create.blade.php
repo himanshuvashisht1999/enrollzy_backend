@@ -1,13 +1,13 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Assign Target Leads')
+@section('title', 'Assign Admission Target')
 
 @section('content')
 <div class="mb-4">
     <a href="{{ route('admin.target-leads.index') }}" class="text-decoration-none text-muted">
         <i class="fas fa-arrow-left me-1"></i> Back to List
     </a>
-    <h3 class="fw-bold mt-2">Assign Target Leads</h3>
+    <h3 class="fw-bold mt-2">Assign Admission Target</h3>
 </div>
 
 <div class="card border-0 shadow-sm">

@@ -13,26 +13,12 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="form-group col-lg-3 mb-3">
-        <div class="radio-group">
-            <div>
-                <input type="radio" id="option1" name="group" value="1" {{ request('group') != 2 ? 'checked' : '' }}>
-                <label for="option1">Admin Data</label>
-            </div>
-            <div>
-                <input type="radio" id="option2" name="group" value="2" {{ request('group') == 2 ? 'checked' : '' }}>
-                <label for="option2">Private Data</label>
-            </div>
-        </div>
-    </div>
-
     <div class="card shadow mb-4 border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between">
             <h6 class="m-0 fw-bold text-primary">Find Calling User</h6>
         </div>
         <div class="card-body">
             <form id="filterForm" class="row" action="{{ route('admin.students-crm.calling-module.index') }}" method="GET">
-                <input type="hidden" name="group" value="{{ request('group', 1) }}">
                 
                 <div class="form-group col-lg-3 mb-3">
                     <select name="category" class="form-select rounded-3" id="categoryFilter">
