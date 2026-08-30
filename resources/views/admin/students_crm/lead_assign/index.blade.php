@@ -14,7 +14,7 @@
                         <i class="fas fa-database fa-2x"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-1">Total CRM Leads</h6>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-1">{{ ($isTopLevel ?? false) ? 'Total CRM Leads' : 'Your Lead Pool' }}</h6>
                         <h3 class="fw-bold text-dark mb-0">{{ number_format($totalLeads) }}</h3>
                     </div>
                 </div>
@@ -23,7 +23,7 @@
                         <div class="progress-bar bg-primary" role="progressbar" style="width: 100%;"></div>
                     </div>
                     <div class="d-flex justify-content-between mt-2 text-muted small">
-                        <span>Total student database</span>
+                        <span>{{ ($isTopLevel ?? false) ? 'Total student database' : 'Total quota assigned to you' }}</span>
                         <span>100%</span>
                     </div>
                 </div>
@@ -37,7 +37,7 @@
                         <i class="fas fa-user-check fa-2x"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-1">Leads Assigned</h6>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-1">{{ ($isTopLevel ?? false) ? 'Leads Assigned' : 'Delegated to Team' }}</h6>
                         <h3 class="fw-bold text-dark mb-0">{{ number_format($totalAssigned) }}</h3>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                         <div class="progress-bar bg-success" role="progressbar" style="width: {{ $assignedPercent }}%;"></div>
                     </div>
                     <div class="d-flex justify-content-between mt-2 text-muted small">
-                        <span>Assigned to staff queue</span>
+                        <span>{{ ($isTopLevel ?? false) ? 'Assigned to staff queue' : 'Delegated to your subordinates' }}</span>
                         <span>{{ $assignedPercent }}%</span>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
                         <i class="fas fa-hourglass-half fa-2x"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-1">Unassigned / Pending</h6>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-1">{{ ($isTopLevel ?? false) ? 'Unassigned / Pending' : 'Available to Assign' }}</h6>
                         <h3 class="fw-bold text-dark mb-0">{{ number_format($totalPending) }}</h3>
                     </div>
                 </div>
@@ -75,7 +75,7 @@
                         <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $pendingPercent }}%;"></div>
                     </div>
                     <div class="d-flex justify-content-between mt-2 text-muted small">
-                        <span>Awaiting assignment</span>
+                        <span>{{ ($isTopLevel ?? false) ? 'Awaiting initial assignment' : 'Ready to distribute to team' }}</span>
                         <span>{{ $pendingPercent }}%</span>
                     </div>
                 </div>

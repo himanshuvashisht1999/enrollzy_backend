@@ -13,36 +13,93 @@ use Illuminate\Support\Facades\DB;
 
 class LeadAssignController extends Controller
 {
+    private function isTopLevelUser($user)
+    {
+        return in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']);
+    }
+
+    private function getAssignableStaffs($user, $organization_id)
+    {
+        $userRoleName = $user->role ?? '';
+        $userRole = \Spatie\Permission\Models\Role::where('name', $userRoleName)->first();
+
+        $allowedRoleNames = [];
+        if ($userRole) {
+            $allowedRoleIds = \App\Models\RoleAssignRule::where('role_id', $userRole->id)->pluck('can_assign_to_role_id');
+            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
+        }
+
+        if ($this->isTopLevelUser($user)) {
+            // Superadmin / Admin can assign to all staffs with allowed roles
+            $staffQuery = Admin::where('organization_id', $organization_id)
+                ->where('status', 1)
+                ->where('id', '!=', $user->id);
+
+            if (!empty($allowedRoleNames)) {
+                $staffQuery->whereIn('role', $allowedRoleNames);
+            }
+
+            return $staffQuery->get();
+        } else {
+            // Manager: only subordinates reporting to this manager matching allowed roles
+            if (empty($allowedRoleNames)) {
+                return collect();
+            }
+
+            return Admin::where('organization_id', $organization_id)
+                ->where('status', 1)
+                ->whereIn('role', $allowedRoleNames)
+                ->where('manager_id', $user->id)
+                ->get();
+        }
+    }
+
     public function index()
     {
         $user = auth()->user();
         $organization_id = $user->organization_id;
         $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
         $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
-        
-        // Filter Staff based on Role Assign Rules and Manager hierarchy
-        if (isset($user->is_admin) && $user->is_admin) {
-            $staffs = Admin::where('organization_id', $organization_id)->where('status', 1)->get();
-        } else {
-            $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
-                $q->where('name', $user->role);
-            })->pluck('can_assign_to_role_id');
-            $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
+        $staffs = $this->getAssignableStaffs($user, $organization_id);
 
-            $staffs = Admin::where('organization_id', $organization_id)
-                ->where('status', 1)
-                ->whereIn('role', $allowedRoleNames)
-                ->where('manager_id', $user->id)
+        $isTopLevel = $this->isTopLevelUser($user);
+
+        if ($isTopLevel) {
+            // Top Level: Global Pool Numbers
+            $totalLeads = Customer::where('organization_id', $organization_id)->count();
+            $totalAssigned = LeadAssignment::whereHas('staff', function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->distinct('customer_id')->count('customer_id');
+            $totalPending = max(0, $totalLeads - $totalAssigned);
+
+            $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
+                ->whereHas('staff', function($q) use ($organization_id) {
+                    $q->where('organization_id', $organization_id);
+                })
+                ->with('staff')
+                ->groupBy('staff_id', 'created_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
+            // Manager Level: Scoped to Manager's own quota / pool
+            $myAvailableLeadIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id')->toArray();
+            $myDelegatedLeadIds = LeadAssignment::where('assigned_by', $user->id)
+                ->where('staff_id', '!=', $user->id)
+                ->pluck('customer_id')
+                ->toArray();
+
+            $totalPending = count($myAvailableLeadIds);
+            $totalAssigned = count($myDelegatedLeadIds);
+            $totalLeads = $totalPending + $totalAssigned;
+
+            $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
+                ->where('assigned_by', $user->id)
+                ->where('staff_id', '!=', $user->id)
+                ->with('staff')
+                ->groupBy('staff_id', 'created_at')
+                ->orderBy('created_at', 'desc')
                 ->get();
         }
-        
-        $totalLeads = Customer::where('organization_id', $organization_id)->count();
-        
-        $totalAssigned = LeadAssignment::whereHas('staff', function($q) use ($organization_id) {
-            $q->where('organization_id', $organization_id);
-        })->distinct('customer_id')->count('customer_id');
-        
-        $totalPending = $totalLeads - $totalAssigned;
 
         $staffStats = [];
         foreach ($staffs as $s) {
@@ -57,7 +114,7 @@ class LeadAssignController extends Controller
                     ->count('user_id');
             }
             
-            $pendingCount = $assignedCount - $workedCount;
+            $pendingCount = max(0, $assignedCount - $workedCount);
             
             $staffStats[$s->id] = [
                 'staff' => $s,
@@ -67,30 +124,31 @@ class LeadAssignController extends Controller
             ];
         }
 
-        $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
-            ->whereHas('staff', function($q) use ($organization_id) {
-                $q->where('organization_id', $organization_id);
-            })
-            ->with('staff')
-            ->groupBy('staff_id', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('admin.students_crm.lead_assign.index', compact('categories', 'statuses', 'staffs', 'assignmentsSummary', 'totalLeads', 'totalAssigned', 'totalPending', 'staffStats'));
+        return view('admin.students_crm.lead_assign.index', compact(
+            'categories', 'statuses', 'staffs', 'assignmentsSummary', 
+            'totalLeads', 'totalAssigned', 'totalPending', 'staffStats', 'isTopLevel'
+        ));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'staff_id' => 'required',
+            'staff_id' => 'required|exists:admin,id',
             'start_number' => 'required|integer|min:1',
             'end_number' => 'required|integer|gte:start_number'
         ]);
 
         $user = auth()->user();
         $organization_id = $user->organization_id;
+        $isTopLevel = $this->isTopLevelUser($user);
 
-        return DB::transaction(function() use ($request, $user, $organization_id) {
+        // Verify target staff is allowed for this user based on role assign rules
+        $allowedStaffs = $this->getAssignableStaffs($user, $organization_id);
+        if (!$allowedStaffs->contains('id', $request->staff_id)) {
+            return redirect()->back()->with('error', 'You do not have permission to assign leads to the selected staff member based on Role Assignment Rules.');
+        }
+
+        return DB::transaction(function() use ($request, $user, $organization_id, $isTopLevel) {
             $query = Customer::where('organization_id', $organization_id);
 
             if ($request->filled('category_id')) {
@@ -111,13 +169,21 @@ class LeadAssignController extends Controller
                         ->pluck('user_id');
                 }
                 $query->whereIn('id', $customerIdsWithStatus);
+            }
+
+            if ($isTopLevel) {
+                // Top Level: pull from unassigned leads if no call status specified
+                if (!$request->filled('call_status_id')) {
+                    $query->whereNotExists(function($q) {
+                        $q->select(DB::raw(1))
+                          ->from('lead_assignments')
+                          ->whereColumn('lead_assignments.customer_id', 'users.id');
+                    });
+                }
             } else {
-                // Default unassigned pool: select only leads not yet assigned
-                $query->whereNotExists(function($q) {
-                    $q->select(DB::raw(1))
-                      ->from('lead_assignments')
-                      ->whereColumn('lead_assignments.customer_id', 'users.id');
-                });
+                // Manager: pull strictly from leads currently assigned to this manager
+                $myAvailableCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id')->toArray();
+                $query->whereIn('id', $myAvailableCustomerIds);
             }
 
             $skip = $request->start_number - 1;
@@ -126,7 +192,7 @@ class LeadAssignController extends Controller
             $customers = $query->orderBy('id', 'asc')->skip($skip)->take($take)->lockForUpdate()->pluck('id');
 
             if ($customers->isEmpty()) {
-                return redirect()->back()->with('error', 'No leads found for the given criteria in the available pool.');
+                return redirect()->back()->with('error', 'No leads found for the given criteria in your available pool.');
             }
 
             $assignedCount = 0;
@@ -140,7 +206,7 @@ class LeadAssignController extends Controller
                     if ($existingAssignment->staff_id == $request->staff_id) {
                         $skipped++;
                     } else {
-                        // Reassign lead to new staff
+                        // Reassign / Delegate lead
                         $oldStaffId = $existingAssignment->staff_id;
                         $existingAssignment->staff_id = $request->staff_id;
                         $existingAssignment->assigned_by = $user->id;
@@ -179,7 +245,7 @@ class LeadAssignController extends Controller
                 }
             }
 
-            $msg = "Successfully assigned {$assignedCount} leads to the selected staff.";
+            $msg = "Successfully assigned {$assignedCount} leads to the selected staff member.";
             if ($skipped > 0) {
                 $msg .= " ({$skipped} skipped because they were already assigned to this staff.)";
             }
@@ -208,6 +274,7 @@ class LeadAssignController extends Controller
     {
         $user = auth()->user();
         $organization_id = $user->organization_id;
+        $isTopLevel = $this->isTopLevelUser($user);
         
         $query = Customer::where('organization_id', $organization_id);
 
@@ -231,16 +298,29 @@ class LeadAssignController extends Controller
             $query->whereIn('id', $customerIdsWithStatus);
         }
 
-        $allLeadsIds = $query->pluck('id')->toArray();
-        $totalLeads = count($allLeadsIds);
+        if ($isTopLevel) {
+            $allLeadsIds = $query->pluck('id')->toArray();
+            $totalLeads = count($allLeadsIds);
 
-        $assignedLeads = LeadAssignment::whereIn('customer_id', $allLeadsIds)->pluck('customer_id')->toArray();
-        $totalAssigned = count(array_unique($assignedLeads));
+            $assignedLeads = LeadAssignment::whereIn('customer_id', $allLeadsIds)->pluck('customer_id')->toArray();
+            $totalAssigned = count(array_unique($assignedLeads));
 
-        if ($request->filled('call_status_id')) {
-            $totalPending = $totalLeads;
+            if ($request->filled('call_status_id')) {
+                $totalPending = $totalLeads;
+            } else {
+                $totalPending = max(0, $totalLeads - $totalAssigned);
+            }
         } else {
-            $totalPending = max(0, $totalLeads - $totalAssigned);
+            // Manager: count within manager's assigned leads
+            $myAvailableCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id')->toArray();
+            $myDelegatedCustomerIds = LeadAssignment::where('assigned_by', $user->id)
+                ->where('staff_id', '!=', $user->id)
+                ->pluck('customer_id')
+                ->toArray();
+
+            $totalPending = $query->clone()->whereIn('id', $myAvailableCustomerIds)->count();
+            $totalAssigned = $query->clone()->whereIn('id', $myDelegatedCustomerIds)->count();
+            $totalLeads = $totalPending + $totalAssigned;
         }
 
         return response()->json([
