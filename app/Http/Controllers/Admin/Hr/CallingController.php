@@ -991,12 +991,29 @@ class CallingController extends Controller
         
         $customerData = null;
         if ($customer) {
+            // Find latest available values across histories as fallbacks
+            $histWithCourse = $histories->first(function($h) { return !empty($h->course_id) || !empty($h->course_text); });
+            $courseInput = $customer->interested_in_course ?: ($histWithCourse ? ($histWithCourse->course_id ?: $histWithCourse->course_text) : null);
+
+            $histWithMode = $histories->first(function($h) { return !empty($h->course_type); });
+            $courseType = $customer->mode ?: ($histWithMode ? $histWithMode->course_type : null);
+
+            $histWithLevel = $histories->first(function($h) { return !empty($h->program_level_id) || !empty($h->program_level_text); });
+            $programLevelId = $customer->program_level ?: ($histWithLevel ? ($histWithLevel->program_level_id ?: $histWithLevel->program_level_text) : null);
+
+            $histWithSchoolType = $histories->first(function($h) { return !empty($h->school_type_id) || !empty($h->school_type_text); });
+            $schoolType = $customer->school_type ?: ($histWithSchoolType ? ($histWithSchoolType->school_type_id ?: $histWithSchoolType->school_type_text) : null);
+
             $uniInput = null;
             if (is_array($customer->interested_in_ids)) {
                 $uniInput = $customer->interested_in_ids[0] ?? null;
             } elseif (is_string($customer->interested_in_ids)) {
                 $decoded = json_decode($customer->interested_in_ids, true);
                 $uniInput = is_array($decoded) ? ($decoded[0] ?? null) : $customer->interested_in_ids;
+            }
+            if (empty($uniInput)) {
+                $histWithUni = $histories->first(function($h) { return !empty($h->university_id) || !empty($h->university_text); });
+                $uniInput = $histWithUni ? ($histWithUni->university_id ?: $histWithUni->university_text) : null;
             }
 
             $sessId = null;
@@ -1006,17 +1023,33 @@ class CallingController extends Controller
                 $decoded = json_decode($customer->session_ids, true);
                 $sessId = is_array($decoded) ? ($decoded[0] ?? null) : $customer->session_ids;
             }
+            if (empty($sessId)) {
+                $histWithSess = $histories->first(function($h) { return !empty($h->session); });
+                $sessId = $histWithSess ? $histWithSess->session : null;
+            }
+
+            $histWithCurCourse = $histories->first(function($h) { return !empty($h->current_course_id) || !empty($h->current_course_text); });
+            $curCourse = ($customer->current_course_id ?: $customer->current_course_text) ?: ($histWithCurCourse ? ($histWithCurCourse->current_course_id ?: $histWithCurCourse->current_course_text) : null);
+
+            $histWithCurUni = $histories->first(function($h) { return !empty($h->current_university_id) || !empty($h->current_university_text); });
+            $curUni = ($customer->current_university_id ?: $customer->current_university_text) ?: ($histWithCurUni ? ($histWithCurUni->current_university_id ?: $histWithCurUni->current_university_text) : null);
+
+            $histWithCurSess = $histories->first(function($h) { return !empty($h->current_session); });
+            $curSess = $customer->current_session ?: ($histWithCurSess ? $histWithCurSess->current_session : null);
+
+            $histWithCurMode = $histories->first(function($h) { return !empty($h->current_course_type); });
+            $curMode = $customer->current_course_type ?: ($histWithCurMode ? $histWithCurMode->current_course_type : null);
 
             $customerData = [
                 'email' => $customer->email,
-                'current_course' => $customer->current_course_id ?? $customer->current_course_text,
-                'current_session' => $customer->current_session,
-                'current_university' => $customer->current_university_id ?? $customer->current_university_text,
-                'current_program_mode' => $customer->current_course_type,
-                'program_level_id' => $customer->program_level,
-                'school_type' => $customer->school_type,
-                'course_input' => $customer->interested_in_course,
-                'course_type' => $customer->mode,
+                'current_course' => $curCourse,
+                'current_session' => $curSess,
+                'current_university' => $curUni,
+                'current_program_mode' => $curMode,
+                'program_level_id' => $programLevelId,
+                'school_type' => $schoolType,
+                'course_input' => $courseInput,
+                'course_type' => $courseType,
                 'university_input' => $uniInput,
                 'session_id' => $sessId,
             ];
@@ -1354,9 +1387,6 @@ class CallingController extends Controller
                     $customer->current_university_id = null;
                     $customer->current_university_text = $request->current_university;
                 }
-            } else {
-                $customer->current_university_id = null;
-                $customer->current_university_text = null;
             }
 
             if ($request->filled('current_course')) {
@@ -1367,38 +1397,66 @@ class CallingController extends Controller
                     $customer->current_course_id = null;
                     $customer->current_course_text = $request->current_course;
                 }
-            } else {
-                $customer->current_course_id = null;
-                $customer->current_course_text = null;
             }
 
-            $customer->current_course_type = $request->current_program_mode;
-            $customer->current_session = $request->current_session;
+            if ($request->filled('current_program_mode')) {
+                $customer->current_course_type = $request->current_program_mode;
+            }
+            if ($request->filled('current_session')) {
+                $customer->current_session = $request->current_session;
+            }
 
             // Sync with Customer's Program of Interest
-            $customer->program_level = $request->program_level_id;
-            $customer->school_type = $request->school_type;
-            $customer->interested_in_course = $request->course_input;
-            $customer->mode = $request->course_type;
+            if ($request->filled('program_level_id')) {
+                $customer->program_level = $request->program_level_id;
+            }
+            if ($request->filled('school_type')) {
+                $customer->school_type = $request->school_type;
+            }
+            if ($request->filled('course_input')) {
+                $customer->interested_in_course = $request->course_input;
+            }
+            if ($request->filled('course_type')) {
+                $customer->mode = $request->course_type;
+            }
             
             if ($request->filled('university_input')) {
                 $customer->interested_in_ids = [$request->university_input];
-            } else {
-                $customer->interested_in_ids = null;
             }
 
             if ($request->filled('session')) {
                 $customer->session_ids = [$request->session];
-            } else {
-                $customer->session_ids = null;
             }
 
-            if ($request->has('email')) {
+            if ($request->filled('email')) {
                 $customer->email = $request->email;
             }
 
             $customer->save();
-            
+
+            // Fallback history snapshot values from customer if not provided in this specific call request
+            if (empty($university_id) && empty($university_text) && !empty($customer->interested_in_ids)) {
+                $uVal = is_array($customer->interested_in_ids) ? ($customer->interested_in_ids[0] ?? null) : $customer->interested_in_ids;
+                if ($uVal) {
+                    if (is_numeric($uVal)) $university_id = $uVal;
+                    else $university_text = $uVal;
+                }
+            }
+            if (empty($program_level_id) && empty($program_level_text) && !empty($customer->program_level)) {
+                if (is_numeric($customer->program_level)) $program_level_id = $customer->program_level;
+                else $program_level_text = $customer->program_level;
+            }
+            if (empty($school_type_id) && empty($school_type_text) && !empty($customer->school_type)) {
+                if (is_numeric($customer->school_type)) $school_type_id = $customer->school_type;
+                else $school_type_text = $customer->school_type;
+            }
+            if (empty($course_id) && empty($course_text) && !empty($customer->interested_in_course)) {
+                if (is_numeric($customer->interested_in_course)) $course_id = $customer->interested_in_course;
+                else $course_text = $customer->interested_in_course;
+            }
+            $historyCourseType = $request->filled('course_type') ? $request->course_type : ($customer->mode ?? null);
+            $historySession = $request->filled('session') ? $request->session : (is_array($customer->session_ids) ? ($customer->session_ids[0] ?? null) : $customer->session_ids);
+
             CallingHistory::create([
                 'user_type' => 'customer',
                 'user_id' => $request->customer_id,
@@ -1418,14 +1476,14 @@ class CallingController extends Controller
                 'school_type_text' => $school_type_text,
                 'course_id' => $course_id,
                 'course_text' => $course_text,
-                'course_type' => $request->course_type,
-                'session' => $request->session,
+                'course_type' => $historyCourseType,
+                'session' => $historySession,
                 'current_university_id' => $current_university_id,
                 'current_university_text' => $current_university_text,
                 'current_course_id' => $current_course_id,
                 'current_course_text' => $current_course_text,
-                'current_course_type' => $request->current_program_mode,
-                'current_session' => $request->current_session,
+                'current_course_type' => $request->current_program_mode ?? $customer->current_course_type,
+                'current_session' => $request->current_session ?? $customer->current_session,
                 'meeting_date' => $request->meeting_date,
                 'time_slot' => $request->time_slot,
                 'meeting_link' => $request->meeting_link,

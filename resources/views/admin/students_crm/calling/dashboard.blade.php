@@ -1848,7 +1848,7 @@
 
                     // Auto-fill Current Academic Details
                     if (res.customer) {
-                        $('#user_email').val(res.customer.email);
+                        $('#user_email').val(res.customer.email || '');
                         setSelect2Value('current_course', res.customer.current_course);
                         setSelect2Value('current_session', res.customer.current_session);
                         setSelect2Value('current_university', res.customer.current_university);
@@ -1857,23 +1857,29 @@
                         $('#current-academic-details-container').show();
 
                         // Auto-fill Program of Interest
-                        if (res.customer.program_level_id || res.customer.school_type || res.customer.course_input || res.customer.course_type || res.customer.university_input || res.customer.session_id) {
-                            $('#more-details-container').show();
-                            
-                            window.pendingAutofill = {
-                                school_type: res.customer.school_type,
-                                course_input: res.customer.course_input,
-                                course_type: res.customer.course_type,
-                                university_input: res.customer.university_input
-                            };
+                        $('#more-details-container').show();
+                        
+                        window.pendingAutofill = {
+                            school_type: res.customer.school_type,
+                            course_input: res.customer.course_input,
+                            course_type: res.customer.course_type,
+                            university_input: res.customer.university_input,
+                            session_id: res.customer.session_id
+                        };
 
-                            setSelect2Value('program_level_id', res.customer.program_level_id);
-                            setSelect2Value('session_input', res.customer.session_id);
-                        } else {
-                            $('#more-details-container').show();
-                            window.pendingAutofill = null;
-                            setSelect2Value('program_level_id', '');
-                            setSelect2Value('session_input', '');
+                        setSelect2Value('session_input', res.customer.session_id);
+                        setSelect2Value('program_level_id', res.customer.program_level_id);
+
+                        if (!res.customer.program_level_id) {
+                            if (res.customer.university_input) {
+                                setSelect2Value('university_input', res.customer.university_input);
+                            }
+                            if (res.customer.course_input) {
+                                setSelect2Value('course_input', res.customer.course_input);
+                            }
+                            if (res.customer.course_type) {
+                                setSelect2Value('course_type', res.customer.course_type);
+                            }
                         }
                     } else {
                         $('#current-academic-details-container').show();
@@ -2215,7 +2221,7 @@
             universitySelect.trigger('change');
 
             let courseSelect = $('#course_input');
-            courseSelect.html('<option value="">Loading...</option>').trigger('change');
+            courseSelect.html('<option value="">Loading...</option>');
             
             $.ajax({
                 url: '{{ route("admin.students-crm.calling-module.get-courses") }}',
@@ -2241,6 +2247,10 @@
                         setSelect2Value('course_input', window.pendingAutofill.course_input);
                     } else {
                         courseSelect.trigger('change');
+                    }
+
+                    if (window.pendingAutofill && window.pendingAutofill.course_type) {
+                        setSelect2Value('course_type', window.pendingAutofill.course_type);
                     }
                 },
                 error: function() {
@@ -2281,8 +2291,8 @@
         $('#course_input').on('change', function() {
             let courseId = $(this).val();
             let programLevelText = $('#program_level_id').find('option:selected').text().trim().toLowerCase();
-            
             let courseTypeSelect = $('#course_type');
+            let currentModeVal = courseTypeSelect.val();
             
             if (programLevelText === 'competetive coaching' || programLevelText === 'competitive coaching') {
                 courseTypeSelect.empty();
@@ -2304,12 +2314,6 @@
                         }
                     });
                 }
-                if (courseId && window.pendingAutofill && window.pendingAutofill.course_type) {
-                    setSelect2Value('course_type', window.pendingAutofill.course_type);
-                    window.pendingAutofill = null;
-                } else {
-                    courseTypeSelect.trigger('change');
-                }
             } else {
                 courseTypeSelect.empty();
                 allCourseTypes.forEach(function(ct) {
@@ -2317,12 +2321,13 @@
                     if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
                     courseTypeSelect.append(option);
                 });
-                if (courseId && window.pendingAutofill && window.pendingAutofill.course_type) {
-                    setSelect2Value('course_type', window.pendingAutofill.course_type);
-                    window.pendingAutofill = null;
-                } else {
-                    courseTypeSelect.trigger('change');
-                }
+            }
+
+            let modeToSet = (window.pendingAutofill && window.pendingAutofill.course_type) ? window.pendingAutofill.course_type : currentModeVal;
+            if (modeToSet) {
+                setSelect2Value('course_type', modeToSet);
+            } else {
+                courseTypeSelect.trigger('change');
             }
         });
 
