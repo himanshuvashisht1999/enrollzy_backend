@@ -200,9 +200,14 @@
 
             <!-- Lead Assignment History List -->
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark mb-0">Leads Assignment Log</h5>
-                    <p class="text-muted small mb-0">View previous batch assignments, audit distributions, or revoke allocations.</p>
+                <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">Leads Assignment Log</h5>
+                        <p class="text-muted small mb-0">View previous batch assignments, audit distributions, or inspect allocations.</p>
+                    </div>
+                    <span class="badge bg-light text-muted border px-2.5 py-1.5 rounded-3">
+                        Total Batches: {{ $assignmentsSummary->total() }}
+                    </span>
                 </div>
                 <div class="card-body p-4">
                     <div class="table-responsive">
@@ -239,13 +244,6 @@
                                                     data-formatted-date="{{ \Carbon\Carbon::parse($summary->batch_date)->format('d M Y, h:i A') }}">
                                                     <i class="fas fa-eye me-1"></i> View
                                                 </button>
-                                                {{-- 
-                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 revoke-batch-btn" 
-                                                    data-staff-id="{{ $summary->staff_id }}" 
-                                                    data-batch-date="{{ $summary->batch_date }}">
-                                                    <i class="fas fa-undo-alt me-1"></i> Revoke
-                                                </button>
-                                                --}}
                                             </div>
                                         </td>
                                     </tr>
@@ -260,6 +258,17 @@
                             </tbody>
                         </table>
                     </div>
+
+                    @if($assignmentsSummary->hasPages())
+                        <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap pt-3 border-top">
+                            <div class="small text-muted mb-2 mb-md-0">
+                                Showing {{ $assignmentsSummary->firstItem() ?? 0 }} to {{ $assignmentsSummary->lastItem() ?? 0 }} of {{ $assignmentsSummary->total() }} batches
+                            </div>
+                            <div>
+                                {{ $assignmentsSummary->withQueryString()->links('pagination::bootstrap-5') }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -268,12 +277,25 @@
         <div class="col-lg-5">
             <!-- Staff Workload monitor -->
             <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark mb-0">Team Workload Monitor</h5>
-                    <p class="text-muted small mb-0">Overview of assigned queues and progress status across active staff.</p>
+                <div class="card-header bg-white border-0 pt-4 pb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">Team Workload Monitor</h5>
+                            <p class="text-muted small mb-0">Overview of assigned queues and progress status across active staff.</p>
+                        </div>
+                        <span class="badge bg-light text-muted border px-2.5 py-1.5 rounded-3">
+                            {{ count($staffStats) }} Staff
+                        </span>
+                    </div>
+                    <div class="mt-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="searchStaffWorkload" class="form-control bg-light border-start-0" placeholder="Filter staff by name or role...">
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="d-flex flex-column gap-4">
+                <div class="card-body p-4 pt-2">
+                    <div class="d-flex flex-column gap-3 staff-workload-scroll-container" style="max-height: 520px; overflow-y: auto; padding-right: 4px;">
                         @forelse($staffStats as $sId => $stats)
                             @php
                                 $s = $stats['staff'];
@@ -282,7 +304,7 @@
                                 $pending = $stats['pending'];
                                 $progress = $assigned > 0 ? round(($worked / $assigned) * 100) : 0;
                             @endphp
-                            <div class="border-bottom pb-3 last-border-none">
+                            <div class="border-bottom pb-3 last-border-none staff-workload-item" data-staff-name="{{ strtolower($s->name) }}" data-staff-role="{{ strtolower($s->role) }}">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div>
                                         <h6 class="fw-bold text-dark mb-0">{{ $s->name }}</h6>
@@ -346,11 +368,24 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Modal Pagination Controls -->
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                    <div class="small text-muted" id="modalPaginationInfo">Loading...</div>
+                    <div class="btn-group btn-group-sm" id="modalPaginationControls">
+                        <button type="button" class="btn btn-outline-secondary rounded-start-pill px-3" id="modalPrevPageBtn" disabled>
+                            <i class="fas fa-chevron-left me-1"></i> Prev
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-end-pill px-3" id="modalNextPageBtn" disabled>
+                            Next <i class="fas fa-chevron-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer border-top py-2">
                 <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Close</button>
             </div>
-</div>
+        </div>
     </div>
 </div>
 
@@ -365,13 +400,27 @@
         border-bottom: 0 !important;
         padding-bottom: 0 !important;
     }
+    .staff-workload-scroll-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    .staff-workload-scroll-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .staff-workload-scroll-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .staff-workload-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 </style>
 @endpush
 
 @push('js')
 <script>
 $(document).ready(function() {
-    // Fetch live counts on filters change
+    // Live filter counts on filters change
     function fetchLiveCounts() {
         let catId = $('#filter_category_id').val();
         let statusId = $('#filter_call_status_id').val();
@@ -413,25 +462,38 @@ $(document).ready(function() {
     fetchLiveCounts();
     $('#filter_category_id, #filter_call_status_id').on('change', fetchLiveCounts);
 
-    // View Batch Details Modal Trigger
-    $('.view-batch-btn').on('click', function() {
-        let staffId = $(this).data('staff-id');
-        let staffName = $(this).data('staff-name');
-        let batchDate = $(this).data('batch-date');
-        let formattedDate = $(this).data('formatted-date');
+    // Filter staff in Workload Monitor
+    $('#searchStaffWorkload').on('keyup input', function() {
+        let q = $(this).val().toLowerCase().trim();
+        $('.staff-workload-item').each(function() {
+            let name = $(this).data('staff-name') || '';
+            let role = $(this).data('staff-role') || '';
+            if (name.indexOf(q) !== -1 || role.indexOf(q) !== -1) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
 
-        $('#modalBatchStaffName').text('Leads Assigned to ' + staffName);
-        $('#modalBatchDate').text('Batch Allocated on: ' + formattedDate);
-        $('#batchLeadsTableBody').html('<tr><td colspan="5" class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted mb-2"></i><br>Loading details...</td></tr>');
-        
-        $('#batchDetailsModal').modal('show');
+    // Batch Details Modal Pagination State
+    let activeBatchStaffId = null;
+    let activeBatchDate = null;
+    let activeBatchCurrentPage = 1;
+    let activeBatchLastPage = 1;
+
+    function loadBatchDetailsPage(staffId, batchDate, page) {
+        $('#batchLeadsTableBody').html('<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted mb-2"></i><br>Loading leads...</td></tr>');
+        $('#modalPrevPageBtn').prop('disabled', true);
+        $('#modalNextPageBtn').prop('disabled', true);
 
         $.ajax({
             url: "{{ route('admin.students-crm.lead-assign.batch-details') }}",
             type: "GET",
             data: {
                 staff_id: staffId,
-                batch_date: batchDate
+                batch_date: batchDate,
+                page: page
             },
             success: function(res) {
                 if(res.status == 1 && res.leads.length > 0) {
@@ -446,63 +508,58 @@ $(document).ready(function() {
                         </tr>`;
                     });
                     $('#batchLeadsTableBody').html(html);
+
+                    let pag = res.pagination;
+                    activeBatchCurrentPage = pag.current_page;
+                    activeBatchLastPage = pag.last_page;
+
+                    let fromItem = ((pag.current_page - 1) * pag.per_page) + 1;
+                    let toItem = Math.min(pag.current_page * pag.per_page, pag.total);
+                    $('#modalPaginationInfo').text(`Showing ${fromItem}–${toItem} of ${pag.total} leads (Page ${pag.current_page} of ${pag.last_page})`);
+
+                    $('#modalPrevPageBtn').prop('disabled', pag.current_page <= 1);
+                    $('#modalNextPageBtn').prop('disabled', pag.current_page >= pag.last_page);
                 } else {
                     $('#batchLeadsTableBody').html('<tr><td colspan="5" class="text-center py-4 text-muted">No details found for this batch.</td></tr>');
+                    $('#modalPaginationInfo').text('0 leads');
+                    $('#modalPrevPageBtn').prop('disabled', true);
+                    $('#modalNextPageBtn').prop('disabled', true);
                 }
             },
             error: function() {
                 $('#batchLeadsTableBody').html('<tr><td colspan="5" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Failed to fetch batch details.</td></tr>');
+                $('#modalPaginationInfo').text('Error loading data');
             }
         });
+    }
+
+    // View Batch Details Modal Trigger
+    $('.view-batch-btn').on('click', function() {
+        activeBatchStaffId = $(this).data('staff-id');
+        activeBatchDate = $(this).data('batch-date');
+        activeBatchCurrentPage = 1;
+
+        let staffName = $(this).data('staff-name');
+        let formattedDate = $(this).data('formatted-date');
+
+        $('#modalBatchStaffName').text('Leads Assigned to ' + staffName);
+        $('#modalBatchDate').text('Batch Allocated on: ' + formattedDate);
+        $('#batchDetailsModal').modal('show');
+
+        loadBatchDetailsPage(activeBatchStaffId, activeBatchDate, 1);
     });
 
-    // Revoke Batch Allocation Trigger
-    $('.revoke-batch-btn').on('click', function() {
-        let staffId = $(this).data('staff-id');
-        let batchDate = $(this).data('batch-date');
-        let button = $(this);
+    // Modal Pagination Prev/Next Handlers
+    $('#modalPrevPageBtn').on('click', function() {
+        if (activeBatchCurrentPage > 1) {
+            loadBatchDetailsPage(activeBatchStaffId, activeBatchDate, activeBatchCurrentPage - 1);
+        }
+    });
 
-        Swal.fire({
-            title: 'Revoke Lead Allocation?',
-            text: "This will remove the assigned leads from this staff member's queue and return them to the unassigned pool.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, Revoke Batch',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Revoking...');
-                $.ajax({
-                    url: "{{ route('admin.students-crm.lead-assign.revoke') }}",
-                    type: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        staff_id: staffId,
-                        batch_date: batchDate
-                    },
-                    success: function(res) {
-                        if (res.status == 1) {
-                            Swal.fire(
-                                'Revoked!',
-                                res.message,
-                                'success'
-                            ).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            button.prop('disabled', false).html('<i class="fas fa-undo-alt me-1"></i> Revoke');
-                            Swal.fire('Error', res.message, 'error');
-                        }
-                    },
-                    error: function() {
-                        button.prop('disabled', false).html('<i class="fas fa-undo-alt me-1"></i> Revoke');
-                        Swal.fire('Error', 'Failed to revoke lead batch. Please try again.', 'error');
-                    }
-                });
-            }
-        });
+    $('#modalNextPageBtn').on('click', function() {
+        if (activeBatchCurrentPage < activeBatchLastPage) {
+            loadBatchDetailsPage(activeBatchStaffId, activeBatchDate, activeBatchCurrentPage + 1);
+        }
     });
 
     // Form submit validation & double-submission prevention

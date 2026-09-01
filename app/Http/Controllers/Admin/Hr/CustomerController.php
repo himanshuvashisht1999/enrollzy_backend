@@ -15,9 +15,22 @@ use App\Imports\CustomerImport;
 use App\Exports\CustomerSampleExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CustomerController extends Controller
+class CustomerController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('can:customer-browse', only: ['index']),
+            new Middleware('can:customer-read', only: ['show']),
+            new Middleware('can:customer-add', only: ['create', 'store', 'import', 'downloadSample']),
+            new Middleware('can:customer-edit', only: ['edit', 'update']),
+            new Middleware('can:customer-delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -249,8 +262,8 @@ class CustomerController extends Controller
         $customer = Customer::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'phone' => 'required',
+            'name' => $request->from === 'calling_dashboard' ? 'nullable|string|max:255' : 'required|string|max:255',
+            'phone' => $request->from === 'calling_dashboard' ? 'nullable' : 'required',
         ]);
 
         if ($validator->fails()) {
@@ -259,6 +272,12 @@ class CustomerController extends Controller
 
         try {
             $data = $request->all();
+
+            // When editing from calling dashboard, preserve original name and phone to prevent tampering
+            if ($request->from === 'calling_dashboard') {
+                $data['name'] = $customer->name;
+                $data['phone'] = $customer->phone;
+            }
 
             if (($data['sibling_enrolled'] ?? '0') != '1') {
                 $data['sibling_name'] = null;
@@ -372,6 +391,9 @@ class CustomerController extends Controller
                 }
             }
 
+            if ($request->from === 'calling_dashboard') {
+                return redirect()->route('admin.students-crm.calling-dashboard.index')->with('success', 'Student profile updated successfully');
+            }
             return redirect()->route('admin.customers.main.index.index')->with('success', 'Customer updated successfully');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());

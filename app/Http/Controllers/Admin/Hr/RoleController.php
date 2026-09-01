@@ -125,6 +125,10 @@ class RoleController extends Controller
 
         $permissionUpdate = array_map('intval', $request->permission);
         $role->syncPermissions($permissionUpdate);
+        
+        // Clear cached permissions so changes take effect immediately
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         return redirect(route('admin.hr.roles.index'))->with('success', 'Role updated successfully');
     }
 

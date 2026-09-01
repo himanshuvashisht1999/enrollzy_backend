@@ -772,9 +772,7 @@
 @if($user && method_exists($user, 'canAny') && $user->canAny(['customer-browse', 'customer-category-browse', 'customer-fields-browse', 'institutes-browse', 'interested-ins-browse', 'customer-sessions-browse']))
 <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
 @endif
-                <!-- wrapped toplevel missing -->
-@if($user && method_exists($user, 'can') && $user->can('customer-fields-browse'))
-<!-- wrapped standalone customer -->
+                <!-- wrapped standalone customer -->
 @if($user && method_exists($user, 'can') && $user->can('customer-browse'))
 <li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}"
@@ -800,7 +798,6 @@
                         <i class="fas fa-list-alt me-2"></i> Students Fields
                     </a>
                 </li>
-@endif
 @endif
 
 

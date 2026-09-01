@@ -21,7 +21,12 @@ class ScholarshipController extends Controller
             $query->where('title', 'like', '%' . $request->title . '%');
         }
         if ($request->filled('type')) {
-            $query->whereIn('scholarship_type', (array) $request->type);
+            $types = (array) $request->type;
+            $query->where(function($q) use ($types) {
+                foreach ($types as $t) {
+                    $q->orWhere('scholarship_type', 'like', '%' . $t . '%');
+                }
+            });
         }
         if ($request->filled('category')) {
             $query->whereIn('category', (array) $request->category);
@@ -29,7 +34,17 @@ class ScholarshipController extends Controller
 
         $scholarships = $query->orderBy('sort_order')->get();
         
-        $types = Scholarship::whereNotNull('scholarship_type')->where('scholarship_type', '!=', '')->distinct()->pluck('scholarship_type');
+        $rawTypes = Scholarship::whereNotNull('scholarship_type')->where('scholarship_type', '!=', '')->distinct()->pluck('scholarship_type');
+        $typesList = [];
+        foreach ($rawTypes as $rt) {
+            foreach (explode(',', $rt) as $piece) {
+                $p = trim($piece);
+                if ($p && !in_array($p, $typesList)) {
+                    $typesList[] = $p;
+                }
+            }
+        }
+        $types = collect($typesList);
         $categories = Scholarship::whereNotNull('category')->where('category', '!=', '')->distinct()->pluck('category');
 
         return view('admin.scholarships.index', compact('scholarships', 'types', 'categories'));
@@ -65,6 +80,10 @@ class ScholarshipController extends Controller
             $data = $request->except(['eligibility', 'benefits', 'highlights', 'courses', 'universities', 'dates', 'documents', 'faqs', 'gallery', 'seo']);
             $data['slug'] = $request->slug ?: Str::slug($request->title);
             $data['created_by'] = auth()->id();
+
+            if (isset($data['scholarship_type']) && is_array($data['scholarship_type'])) {
+                $data['scholarship_type'] = implode(', ', array_filter($data['scholarship_type']));
+            }
 
             // Handle uploads
             if ($request->hasFile('featured_image')) {
@@ -224,6 +243,16 @@ class ScholarshipController extends Controller
             $data = $request->except(['eligibility', 'benefits', 'highlights', 'courses', 'universities', 'dates', 'documents', 'faqs', 'gallery', 'seo', 'existing_gallery_delete']);
             $data['slug'] = $request->slug ?: Str::slug($request->title);
             $data['updated_by'] = auth()->id();
+
+            if ($request->has('scholarship_type')) {
+                if (is_array($request->scholarship_type)) {
+                    $data['scholarship_type'] = implode(', ', array_filter($request->scholarship_type));
+                } else {
+                    $data['scholarship_type'] = $request->scholarship_type;
+                }
+            } else {
+                $data['scholarship_type'] = null;
+            }
 
             // Handle uploads
             if ($request->hasFile('featured_image')) {
@@ -423,6 +452,10 @@ class ScholarshipController extends Controller
             $data['featured_on_homepage'] = $data['featured_on_homepage'] ?? 0;
             $data['sort_order'] = $data['sort_order'] ?? 0;
 
+            if (isset($data['scholarship_type']) && is_array($data['scholarship_type'])) {
+                $data['scholarship_type'] = implode(', ', array_filter($data['scholarship_type']));
+            }
+
 
             // File uploads
             foreach (['featured_image', 'banner_image', 'provider_logo'] as $img) {
@@ -526,6 +559,16 @@ class ScholarshipController extends Controller
                 $data['slug'] = \Illuminate\Support\Str::slug($data['title']);
             }
             $data['updated_by'] = auth()->id();
+
+            if ($request->has('scholarship_type')) {
+                if (is_array($request->scholarship_type)) {
+                    $data['scholarship_type'] = implode(', ', array_filter($request->scholarship_type));
+                } else {
+                    $data['scholarship_type'] = $request->scholarship_type;
+                }
+            } else {
+                $data['scholarship_type'] = null;
+            }
 
             // File uploads
             foreach (['featured_image', 'banner_image', 'provider_logo'] as $img) {

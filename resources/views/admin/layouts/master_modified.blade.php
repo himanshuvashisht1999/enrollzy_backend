@@ -570,20 +570,23 @@
                 </li>
 
                 <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
-                <!-- wrapped toplevel missing -->
-@can('customer-fields-browse')
+@can('customer-browse')
 <li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}"
                         href="{{ route('admin.customers.main.index.index') }}">
                         <i class="fas fa-users me-2"></i> Students list
                     </a>
                 </li>
+@endcan
+@can('customer-category-browse')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-categories.index') }}">
                         <i class="fas fa-tags me-2"></i> Students Category
                     </a>
                 </li>
+@endcan
+@can('customer-fields-browse')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}"
                         href="{{ route('admin.customer-fields.index') }}">

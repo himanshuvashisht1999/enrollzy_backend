@@ -27,8 +27,23 @@ class Scholarship extends Model
         'status' => 'integer',
         'featured' => 'integer',
         'featured_on_homepage' => 'integer',
-        'sort_order' => 'integer'
+        'sort_order' => 'integer',
     ];
+
+    public function getScholarshipTypesAttribute(): array
+    {
+        if (empty($this->scholarship_type)) {
+            return [];
+        }
+        if (is_array($this->scholarship_type)) {
+            return $this->scholarship_type;
+        }
+        $decoded = json_decode($this->scholarship_type, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $this->scholarship_type))));
+    }
 
     public function eligibility()
     {

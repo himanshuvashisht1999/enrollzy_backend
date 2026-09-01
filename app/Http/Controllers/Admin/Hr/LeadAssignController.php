@@ -79,17 +79,13 @@ class LeadAssignController extends Controller
                 ->with('staff')
                 ->groupBy('staff_id', 'created_at')
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate(10, ['*'], 'log_page');
         } else {
             // Manager Level: Scoped to Manager's own quota / pool
-            $myAvailableLeadIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id')->toArray();
-            $myDelegatedLeadIds = LeadAssignment::where('assigned_by', $user->id)
+            $totalPending = LeadAssignment::where('staff_id', $user->id)->count();
+            $totalAssigned = LeadAssignment::where('assigned_by', $user->id)
                 ->where('staff_id', '!=', $user->id)
-                ->pluck('customer_id')
-                ->toArray();
-
-            $totalPending = count($myAvailableLeadIds);
-            $totalAssigned = count($myDelegatedLeadIds);
+                ->count();
             $totalLeads = $totalPending + $totalAssigned;
 
             $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
@@ -98,20 +94,21 @@ class LeadAssignController extends Controller
                 ->with('staff')
                 ->groupBy('staff_id', 'created_at')
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate(10, ['*'], 'log_page');
         }
 
         $staffStats = [];
         foreach ($staffs as $s) {
-            $assignedIds = LeadAssignment::where('staff_id', $s->id)->pluck('customer_id')->toArray();
-            $assignedCount = count($assignedIds);
+            $assignedCount = LeadAssignment::where('staff_id', $s->id)->count();
             
             $workedCount = 0;
             if ($assignedCount > 0) {
-                $workedCount = \App\Models\CallingHistory::where('updated_by', $s->id)
-                    ->whereIn('user_id', $assignedIds)
-                    ->distinct('user_id')
-                    ->count('user_id');
+                $workedCount = DB::table('calling_histories')
+                    ->join('lead_assignments', 'lead_assignments.customer_id', '=', 'calling_histories.user_id')
+                    ->where('lead_assignments.staff_id', $s->id)
+                    ->where('calling_histories.updated_by', $s->id)
+                    ->distinct('calling_histories.user_id')
+                    ->count('calling_histories.user_id');
             }
             
             $pendingCount = max(0, $assignedCount - $workedCount);
@@ -210,6 +207,7 @@ class LeadAssignController extends Controller
                         $oldStaffId = $existingAssignment->staff_id;
                         $existingAssignment->staff_id = $request->staff_id;
                         $existingAssignment->assigned_by = $user->id;
+                        $existingAssignment->created_at = $now;
                         $existingAssignment->updated_at = $now;
                         $existingAssignment->save();
 
@@ -224,15 +222,13 @@ class LeadAssignController extends Controller
                     }
                 } else {
                     // Create new assignment - guaranteed unique per customer
-                    LeadAssignment::updateOrCreate(
-                        ['customer_id' => $customerId],
-                        [
-                            'staff_id' => $request->staff_id,
-                            'assigned_by' => $user->id,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]
-                    );
+                    LeadAssignment::create([
+                        'customer_id' => $customerId,
+                        'staff_id' => $request->staff_id,
+                        'assigned_by' => $user->id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
 
                     \App\Models\LeadActivityLog::create([
                         'customer_id' => $customerId,
@@ -284,26 +280,33 @@ class LeadAssignController extends Controller
 
         if ($request->filled('call_status_id')) {
             if ($request->call_status_id === 'all') {
-                $customerIdsWithStatus = DB::table('calling_histories')
-                    ->where('organization_id', $organization_id)
-                    ->whereNotNull('reason')
-                    ->where('reason', '<>', '')
-                    ->pluck('user_id');
+                $query->whereExists(function($q) use ($organization_id) {
+                    $q->select(DB::raw(1))
+                      ->from('calling_histories')
+                      ->whereColumn('calling_histories.user_id', 'users.id')
+                      ->where('calling_histories.organization_id', $organization_id)
+                      ->whereNotNull('reason')
+                      ->where('reason', '<>', '');
+                });
             } else {
-                $customerIdsWithStatus = DB::table('calling_histories')
-                    ->where('organization_id', $organization_id)
-                    ->where('reason', $request->call_status_id)
-                    ->pluck('user_id');
+                $query->whereExists(function($q) use ($organization_id, $request) {
+                    $q->select(DB::raw(1))
+                      ->from('calling_histories')
+                      ->whereColumn('calling_histories.user_id', 'users.id')
+                      ->where('calling_histories.organization_id', $organization_id)
+                      ->where('reason', $request->call_status_id);
+                });
             }
-            $query->whereIn('id', $customerIdsWithStatus);
         }
 
         if ($isTopLevel) {
-            $allLeadsIds = $query->pluck('id')->toArray();
-            $totalLeads = count($allLeadsIds);
+            $totalLeads = (clone $query)->count();
 
-            $assignedLeads = LeadAssignment::whereIn('customer_id', $allLeadsIds)->pluck('customer_id')->toArray();
-            $totalAssigned = count(array_unique($assignedLeads));
+            $totalAssigned = (clone $query)->whereExists(function($q) {
+                $q->select(DB::raw(1))
+                  ->from('lead_assignments')
+                  ->whereColumn('lead_assignments.customer_id', 'users.id');
+            })->count();
 
             if ($request->filled('call_status_id')) {
                 $totalPending = $totalLeads;
@@ -312,14 +315,21 @@ class LeadAssignController extends Controller
             }
         } else {
             // Manager: count within manager's assigned leads
-            $myAvailableCustomerIds = LeadAssignment::where('staff_id', $user->id)->pluck('customer_id')->toArray();
-            $myDelegatedCustomerIds = LeadAssignment::where('assigned_by', $user->id)
-                ->where('staff_id', '!=', $user->id)
-                ->pluck('customer_id')
-                ->toArray();
+            $totalPending = (clone $query)->whereExists(function($q) use ($user) {
+                $q->select(DB::raw(1))
+                  ->from('lead_assignments')
+                  ->whereColumn('lead_assignments.customer_id', 'users.id')
+                  ->where('lead_assignments.staff_id', $user->id);
+            })->count();
 
-            $totalPending = $query->clone()->whereIn('id', $myAvailableCustomerIds)->count();
-            $totalAssigned = $query->clone()->whereIn('id', $myDelegatedCustomerIds)->count();
+            $totalAssigned = (clone $query)->whereExists(function($q) use ($user) {
+                $q->select(DB::raw(1))
+                  ->from('lead_assignments')
+                  ->whereColumn('lead_assignments.customer_id', 'users.id')
+                  ->where('lead_assignments.assigned_by', $user->id)
+                  ->where('lead_assignments.staff_id', '!=', $user->id);
+            })->count();
+
             $totalLeads = $totalPending + $totalAssigned;
         }
 
@@ -334,20 +344,22 @@ class LeadAssignController extends Controller
     {
         $request->validate([
             'staff_id' => 'required',
-            'batch_date' => 'required'
+            'batch_date' => 'required',
+            'page' => 'nullable|integer|min:1'
         ]);
 
         $organization_id = auth()->user()->organization_id;
+        $perPage = 20;
 
-        $assignments = LeadAssignment::with('customer')
+        $paginatedAssignments = LeadAssignment::with(['customer.category'])
             ->where('staff_id', $request->staff_id)
             ->where('created_at', $request->batch_date)
             ->whereHas('staff', function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);
             })
-            ->get();
+            ->paginate($perPage);
 
-        $leads = $assignments->map(function($a) {
+        $leads = collect($paginatedAssignments->items())->map(function($a) {
             return [
                 'id' => $a->customer->id ?? '',
                 'name' => $a->customer->name ?? 'Unknown',
@@ -359,7 +371,14 @@ class LeadAssignController extends Controller
 
         return response()->json([
             'status' => 1,
-            'leads' => $leads
+            'leads' => $leads,
+            'pagination' => [
+                'current_page' => $paginatedAssignments->currentPage(),
+                'last_page' => $paginatedAssignments->lastPage(),
+                'total' => $paginatedAssignments->total(),
+                'per_page' => $paginatedAssignments->perPage(),
+                'has_more' => $paginatedAssignments->hasMorePages()
+            ]
         ]);
     }
 

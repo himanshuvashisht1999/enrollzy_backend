@@ -72,7 +72,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td><span class="badge bg-secondary">{{ $scholarship->scholarship_type ?: 'N/A' }}</span></td>
+                        <td>
+                            @forelse($scholarship->scholarship_types as $stype)
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1 mb-1">{{ $stype }}</span>
+                            @empty
+                                <span class="badge bg-light text-muted">N/A</span>
+                            @endforelse
+                        </td>
                         <td>{{ $scholarship->category ?: 'N/A' }}</td>
                         <td>
                             @if($scholarship->max_amount)

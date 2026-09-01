@@ -408,6 +408,261 @@
     .team-accordion-btn:hover {
         background: #f8fafc;
     }
+
+    /* ============================================================ */
+    /* ENTERPRISE CALLING COCKPIT MODAL (SPACIOUS & ELEGANT UI/UX) */
+    /* ============================================================ */
+    .cockpit-dialog {
+        max-width: 1400px !important;
+        width: 95vw !important;
+        height: calc(100vh - 24px) !important;
+        margin: 12px auto !important;
+    }
+    .cockpit-modal-content {
+        border-radius: 14px !important;
+        height: calc(100vh - 24px) !important;
+        max-height: calc(100vh - 24px) !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #f8fafc;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+    }
+    .cockpit-header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        min-height: 64px;
+        padding: 0.65rem 1.5rem !important;
+        flex-shrink: 0;
+    }
+    .cockpit-close-btn {
+        border-radius: 50%;
+        padding: 0.65rem;
+        transition: all 0.2s ease;
+        background-color: #f1f5f9;
+    }
+    .cockpit-close-btn:hover {
+        background-color: #e2e8f0;
+        transform: rotate(90deg);
+    }
+    .cockpit-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .cockpit-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        height: 100%;
+        min-height: 0;
+        gap: 1rem;
+        padding: 0.85rem 1.25rem;
+    }
+    @media (max-width: 1100px) {
+        .cockpit-grid {
+            grid-template-columns: 1fr;
+            overflow-y: auto;
+        }
+        .cockpit-modal-content {
+            height: auto;
+            max-height: none;
+        }
+    }
+    .cockpit-left-pane {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .cockpit-pane-header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9;
+        flex-shrink: 0;
+        padding: 0.65rem 1.25rem !important;
+    }
+    .cockpit-form-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1rem 1.25rem !important;
+    }
+    .cockpit-form-scroll::-webkit-scrollbar,
+    .cockpit-timeline-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    .cockpit-form-scroll::-webkit-scrollbar-track,
+    .cockpit-timeline-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .cockpit-form-scroll::-webkit-scrollbar-thumb,
+    .cockpit-timeline-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .cockpit-form-scroll::-webkit-scrollbar-thumb:hover,
+    .cockpit-timeline-body::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    
+    /* Clean Sub-Cards for Visual Spacing & Non-Crowded Flow */
+    .cockpit-subcard {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin-bottom: 1rem;
+    }
+    .cockpit-subcard-title {
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #334155;
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px dashed #cbd5e1;
+    }
+    .cockpit-label {
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #475569;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+    .cockpit-input-group {
+        position: relative;
+    }
+    .cockpit-input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 0.85rem;
+        z-index: 4;
+        pointer-events: none;
+    }
+    .cockpit-input-with-icon {
+        padding-left: 36px !important;
+    }
+    .cockpit-input,
+    .cockpit-select {
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 0.88rem !important;
+        padding: 0.5rem 0.75rem !important;
+        height: 42px;
+        color: #0f172a !important;
+        background-color: #ffffff;
+        transition: all 0.15s ease !important;
+    }
+    .cockpit-input:focus,
+    .cockpit-select:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        outline: none !important;
+    }
+    #callModal .select2-container {
+        width: 100% !important;
+    }
+    #callModal .select2-container--default .select2-selection--single {
+        height: 42px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 6px 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        background-color: #ffffff !important;
+    }
+    #callModal .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 30px !important;
+        font-size: 0.88rem !important;
+        color: #0f172a !important;
+        padding-left: 2px !important;
+    }
+    #callModal .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px !important;
+        right: 8px !important;
+    }
+    #callModal .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+    .cockpit-sticky-footer {
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff !important;
+        flex-shrink: 0;
+        padding: 0.75rem 1.5rem !important;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+    }
+    .cockpit-right-pane {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .cockpit-timeline-header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .cockpit-timeline-body {
+        background: #f8fafc;
+    }
+    .timeline-stepper {
+        position: relative;
+        padding-left: 6px;
+    }
+    .timeline-stepper::before {
+        content: '';
+        position: absolute;
+        top: 12px;
+        bottom: 12px;
+        left: 17px;
+        width: 2px;
+        background: #e2e8f0;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 38px;
+        margin-bottom: 1rem;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        color: #ffffff;
+        z-index: 2;
+    }
+    .timeline-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .timeline-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
 </style>
 @endpush
 
@@ -824,7 +1079,7 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($assignmentsLookup[$customer->id]) && $assignmentsLookup[$customer->id]->assigned_by == auth()->id())
+                                                @if(isset($assignmentsLookup[$customer->id]) && ($assignmentsLookup[$customer->id]->assigned_by == auth()->id() || auth()->user()->is_admin || auth()->user()->hasRole('superadmin')))
                                                     <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign Lead">
                                                         <i class="fas fa-user-edit"></i>
                                                     </button>
@@ -975,7 +1230,7 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($historyAssignmentsLookup[$customer->id]) && $historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id())
+                                                @if(isset($historyAssignmentsLookup[$customer->id]) && ($historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id() || auth()->user()->is_admin || auth()->user()->hasRole('superadmin')))
                                                     <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign">
                                                         <i class="fas fa-user-edit"></i>
                                                     </button>
@@ -1052,336 +1307,370 @@
 <!-- ========================================== -->
 <!-- MODAL: Calling Cockpit (Call & Update)    -->
 <!-- ========================================== -->
-<div class="modal fade" id="callModal">
-    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 1250px;">
-        <div class="modal-content border-0 rounded-4 shadow-2xl overflow-hidden">
+<div class="modal fade" id="callModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered cockpit-dialog">
+        <div class="modal-content cockpit-modal-content border-0 shadow-2xl">
             
-            <!-- Modal Header Bar -->
-            <div class="modal-header border-0 pb-0 bg-white">
-                <h5 class="fw-bold text-dark"><i class="fas fa-headset text-primary me-2"></i>Update Calling Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <!-- Modal Header Bar (Integrated Lead Identity Banner) -->
+            <div class="modal-header cockpit-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div id="callModalHeaderContent" class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center fw-bold rounded-4 text-white flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.15rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Update Calling Disposition</h5>
+                            <span class="text-muted small">Record student interactions and update CRM profile</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close cockpit-close-btn ms-3" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body p-4" style="background-color: #f8fafc;">
-                <div class="row g-4">
+            <!-- Modal Body: 2 Balanced Viewport Panes -->
+            <div class="modal-body cockpit-body p-0">
+                <div class="cockpit-grid">
                     
-                    <!-- LEFT COLUMN: Outreach & Update Form -->
-                    <div class="col-lg-7">
-                        <form id="callForm" enctype="multipart/form-data">
+                    <!-- LEFT PANE: Action Console Form -->
+                    <div class="cockpit-left-pane">
+                        <div class="cockpit-pane-header px-4 py-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-edit text-primary"></i>
+                                <span class="fw-bold text-dark fs-6">Lead Disposition Console</span>
+                            </div>
+                            <span class="badge bg-white text-secondary border px-2.5 py-1 small fw-semibold">Active Call</span>
+                        </div>
+
+                        <form id="callForm" enctype="multipart/form-data" class="d-flex flex-column flex-grow-1 overflow-hidden" style="min-height: 0;">
                             @csrf
                             <input type="hidden" name="group_id" value="{{ request('group', 1) }}">
                             <input type="hidden" id="customer_id" name="customer_id">
                             <input type="hidden" id="user_phone" name="user_phone">
                             <input type="hidden" id="category_val" name="category">
 
-                            <!-- Section 1: Lead Details & Call Status -->
-                            <div class="p-3.5 bg-white rounded-3 border mb-3 shadow-sm">
-                                <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                                    <i class="fas fa-phone-alt text-primary me-1"></i> Call Outcome & Status
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Student Name</label>
-                                        <input type="text" class="form-control filter-input bg-light fw-bold" name="name" id="user_name" readonly>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Student Email</label>
-                                        <input type="email" class="form-control filter-input" name="email" id="user_email" placeholder="student@example.com">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="filter-label">Call Status <span class="text-danger">*</span></label>
-                                        <select name="status_id" class="form-select filter-select custom-select2" id="status_id" required>
-                                            <option value="" selected disabled>Select Call Status</option>
-                                            @foreach($statuses as $status)
-                                                <option value="{{ $status->id }}" 
-                                                    data-action="{{ $status->calling_action_id }}" 
-                                                    data-more-details="{{ $status->is_more_details }}" 
-                                                    data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" 
-                                                    data-date-require="{{ $status->date_require }}" 
-                                                    data-comment-require="{{ $status->comment_require ?? 'no' }}">
-                                                    {{ $status->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                            <div class="cockpit-form-scroll flex-grow-1 p-3.5">
+                                
+                                <!-- Core Section: Contact & Status (Spacious 2-column + Full Width Status) -->
+                                <div class="mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Student Name</label>
+                                            <div class="cockpit-input-group">
+                                                <!-- <i class="far fa-user cockpit-input-icon"></i> -->
+                                                <input type="text" class="form-control cockpit-input cockpit-input-with-icon bg-light fw-bold text-dark" name="name" id="user_name" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Student Email</label>
+                                            <div class="cockpit-input-group">
+                                                <!-- <i class="far fa-envelope cockpit-input-icon"></i> -->
+                                                <input type="text" class="form-control cockpit-input cockpit-input-with-icon" name="email" id="user_email" placeholder="student@example.com">
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="cockpit-label text-primary"><i class="fas fa-phone-alt me-1"></i> Call Status <span class="text-danger">*</span></label>
+                                            <select name="status_id" class="form-select cockpit-select custom-select2 fw-bold" id="status_id" required>
+                                                <option value="" selected disabled>Select Call Status</option>
+                                                @foreach($statuses as $status)
+                                                    <option value="{{ $status->id }}" 
+                                                        data-action="{{ $status->calling_action_id }}" 
+                                                        data-more-details="{{ $status->is_more_details }}" 
+                                                        data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" 
+                                                        data-date-require="{{ $status->date_require }}" 
+                                                        data-comment-require="{{ $status->comment_require ?? 'no' }}">
+                                                        {{ $status->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Section 2: Current Academic Details (Dynamic) -->
-                            <div id="current-academic-details-container" class="p-3.5 bg-white rounded-3 border mb-3 shadow-sm" style="display:none;">
-                                <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                                    <i class="fas fa-id-card text-primary me-1"></i> Current Academic Details
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Current Course</label>
-                                        <select name="current_course" id="current_course" class="form-select filter-select custom-select2">
-                                            <option value="">Select or Type Course</option>
-                                            @if(isset($courses))
+                                <!-- Section 2: Current Academic Details (Dynamic Spacious Sub-Card) -->
+                                <div id="current-academic-details-container" class="cockpit-subcard" style="display:none;">
+                                    <div class="cockpit-subcard-title">
+                                        <i class="fas fa-graduation-cap text-info me-2"></i> Current Academic Background
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Current Course</label>
+                                            <select name="current_course" id="current_course" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select or Type Course</option>
+                                                @if(isset($courses))
+                                                    @foreach($courses as $course)
+                                                        <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Passing Year</label>
+                                            <select name="current_session" id="current_session" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Passing Year</option>
+                                                @if(isset($sessions))
+                                                    @foreach($sessions as $session)
+                                                        <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Current University</label>
+                                            <select name="current_university" id="current_university" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select or Type University</option>
+                                                @if(isset($universities))
+                                                    @foreach($universities as $uni)
+                                                        <option value="{{ $uni->id }}">{{ $uni->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Current Program Mode</label>
+                                            <select name="current_program_mode" id="current_program_mode" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Mode</option>
+                                                @if(isset($program_types))
+                                                    @foreach($program_types as $pt)
+                                                        <option value="{{ $pt->title }}">{{ $pt->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Interested Program / Academic Preferences (Dynamic Spacious Sub-Card) -->
+                                <div id="more-details-container" class="cockpit-subcard" style="display:none;">
+                                    <div class="cockpit-subcard-title">
+                                        <i class="fas fa-bullseye text-indigo me-2"></i> Target Program of Interest
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Program Level</label>
+                                            <select name="program_level_id" id="program_level_id" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Program Level</option>
+                                                <option value="Not decided yet">Not decided yet</option>
+                                                @if(isset($program_levels))
+                                                    @foreach($program_levels as $pl)
+                                                        <option value="{{ $pl->id }}">{{ $pl->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="course_container">
+                                            <label class="cockpit-label" id="course_label">Interested Course</label>
+                                            <select name="course_input" id="course_input" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Course</option>
+                                                <option value="Not decided yet">Not decided yet</option>
                                                 @foreach($courses as $course)
                                                     <option value="{{ $course->id }}">{{ $course->name }}</option>
                                                 @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Current Session</label>
-                                        <select name="current_session" id="current_session" class="form-select filter-select custom-select2">
-                                            <option value="">Select Session</option>
-                                            @if(isset($sessions))
-                                                @foreach($sessions as $session)
-                                                    <option value="{{ $session->id }}">{{ $session->name }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Current University</label>
-                                        <select name="current_university" id="current_university" class="form-select filter-select custom-select2">
-                                            <option value="">Select or Type University</option>
-                                            @if(isset($universities))
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="university_container">
+                                            <label class="cockpit-label" id="university_label">University / Institute</label>
+                                            <select name="university_input" id="university_input" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select University</option>
+                                                <option value="Not decided yet">Not decided yet</option>
                                                 @foreach($universities as $uni)
-                                                    <option value="{{ $uni->id }}">{{ $uni->name }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Current Program Mode</label>
-                                        <select name="current_program_mode" id="current_program_mode" class="form-select filter-select custom-select2">
-                                            <option value="">Select Mode</option>
-                                            @if(isset($program_types))
-                                                @foreach($program_types as $pt)
-                                                    <option value="{{ $pt->title }}">{{ $pt->title }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section 3: Interested Program / Academic Preferences -->
-                            <div id="more-details-container" class="p-3.5 bg-white rounded-3 border mb-3 shadow-sm" style="display:none; background: #f8fafc !important;">
-                                <h6 class="fw-bold text-uppercase text-primary mb-3" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                                    <i class="fas fa-graduation-cap text-primary me-1"></i> Program of Interest (Lead Update)
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="filter-label">Program Level</label>
-                                        <select name="program_level_id" id="program_level_id" class="form-select filter-select custom-select2">
-                                            <option value="">Select Program Level</option>
-                                            <option value="Not decided yet">Not decided yet</option>
-                                            @if(isset($program_levels))
-                                                @foreach($program_levels as $pl)
-                                                    <option value="{{ $pl->id }}">{{ $pl->title }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4" id="school_type_container" style="display:none;">
-                                        <label class="filter-label">School Type</label>
-                                        <select name="school_type" id="school_type" class="form-select filter-select custom-select2">
-                                            <option value="">Select School Type</option>
-                                            @if(isset($school_types))
-                                                @foreach($school_types as $st)
-                                                    <option value="{{ $st->id }}">{{ $st->title }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4" id="course_container">
-                                        <label class="filter-label" id="course_label">Interested Course</label>
-                                        <select name="course_input" id="course_input" class="form-select filter-select custom-select2">
-                                            <option value="">Select Course</option>
-                                            <option value="Not decided yet">Not decided yet</option>
-                                            @foreach($courses as $course)
-                                                <option value="{{ $course->id }}">{{ $course->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4" id="course_type_container">
-                                        <label class="filter-label">Program Mode</label>
-                                        <select name="course_type" id="course_type" class="form-select filter-select custom-select2">
-                                            <option value="">Select Mode</option>
-                                            <option value="Not decided yet">Not decided yet</option>
-                                            @if(isset($program_types))
-                                                @foreach($program_types as $pt)
-                                                    <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6" id="university_container">
-                                        <label class="filter-label" id="university_label">University / Institute</label>
-                                        <select name="university_input" id="university_input" class="form-select filter-select custom-select2">
-                                            <option value="">Select University</option>
-                                            <option value="Not decided yet">Not decided yet</option>
-                                            @foreach($universities as $uni)
-                                                @php
-                                                    $types = [];
-                                                    $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
-                                                    if(is_array($orgType)) {
-                                                        $types = array_merge($types, $orgType);
-                                                    }
-                                                    if ($uni->campuses) {
-                                                        foreach($uni->campuses as $campus) {
-                                                            $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
-                                                            if(is_array($campType)) {
-                                                                $types = array_merge($types, $campType);
+                                                    @php
+                                                        $types = [];
+                                                        $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
+                                                        if(is_array($orgType)) {
+                                                            $types = array_merge($types, $orgType);
+                                                        }
+                                                        if ($uni->campuses) {
+                                                            foreach($uni->campuses as $campus) {
+                                                                $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
+                                                                if(is_array($campType)) {
+                                                                    $types = array_merge($types, $campType);
+                                                                }
                                                             }
                                                         }
-                                                    }
-                                                    $types = array_values(array_unique(array_filter($types)));
-                                                @endphp
-                                                <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Session</label>
-                                        <select name="session" id="session_input" class="form-select filter-select custom-select2">
-                                            <option value="">Select Session</option>
-                                            @if(isset($sessions))
-                                                @foreach($sessions as $session)
-                                                    <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                        $types = array_values(array_unique(array_filter($types)));
+                                                    @endphp
+                                                    <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
                                                 @endforeach
-                                            @endif
-                                        </select>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Session</label>
+                                            <select name="session" id="session_input" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Session</option>
+                                                @if(isset($sessions))
+                                                    @foreach($sessions as $session)
+                                                        <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="course_type_container">
+                                            <label class="cockpit-label">Program Mode</label>
+                                            <select name="course_type" id="course_type" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Mode</option>
+                                                <option value="Not decided yet">Not decided yet</option>
+                                                @if(isset($program_types))
+                                                    @foreach($program_types as $pt)
+                                                        <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="school_type_container" style="display:none;">
+                                            <label class="cockpit-label">School Type</label>
+                                            <select name="school_type" id="school_type" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select School Type</option>
+                                                @if(isset($school_types))
+                                                    @foreach($school_types as $st)
+                                                        <option value="{{ $st->id }}">{{ $st->title }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Section 4: Action & Follow-up Plan -->
-                            <div class="p-3.5 bg-white rounded-3 border mb-3 shadow-sm">
-                                <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                                    <i class="fas fa-tasks text-primary me-1"></i> Action & Next Steps
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6" id="date-field" style="display:none;">
-                                        <label class="filter-label text-danger"><i class="far fa-calendar-alt me-1"></i> Reminder / Next Call Date <span class="text-danger">*</span></label>
-                                        <input type="date" name="next_call_date" class="form-control filter-input border-danger" id="call_date">
+                                <!-- Section 4: Action & Follow-up Plan (Spacious Sub-Card) -->
+                                <div class="cockpit-subcard">
+                                    <div class="cockpit-subcard-title">
+                                        <i class="fas fa-tasks text-warning me-2"></i> Next Action & Follow-up
                                     </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Action Taken</label>
+                                            <select name="action_id" id="action_id" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Action</option>
+                                                @foreach($actions as $action)
+                                                    <option value="{{ $action->id }}">{{ $action->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
 
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Action Taken</label>
-                                        <select name="action_id" id="action_id" class="form-select filter-select custom-select2">
-                                            <option value="">Select Action</option>
-                                            @foreach($actions as $action)
-                                                <option value="{{ $action->id }}">{{ $action->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Lead Quality</label>
+                                            <select name="lead_quality_id" id="lead_quality_id" class="form-select cockpit-select custom-select2">
+                                                <option value="">Select Lead Quality</option>
+                                                @if(isset($lead_qualities))
+                                                    @foreach($lead_qualities as $lq)
+                                                        <option value="{{ $lq->id }}">{{ $lq->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
 
-                                    <!-- Video Meeting Container -->
-                                    <div id="video-meeting-container" class="col-12" style="display:none;">
-                                        <div class="p-3 bg-light rounded-3 border border-primary border-opacity-25">
-                                            <h6 class="fw-bold text-primary mb-3" style="font-size: 0.8rem;"><i class="fas fa-video me-1"></i> Google Meet Scheduler</h6>
-                                            <div class="row g-3">
-                                                <div class="col-md-3">
-                                                    <label class="filter-label">Meeting Date</label>
-                                                    <input type="date" name="meeting_date" id="meeting_date" class="form-control filter-input">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="filter-label">Time Slot</label>
-                                                    <input type="time" name="time_slot" id="time_slot" class="form-control filter-input">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="filter-label">Meet Link</label>
-                                                    <input type="url" name="meeting_link" id="meeting_link" class="form-control filter-input" placeholder="https://meet.google.com/...">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="filter-label">Staff Host</label>
-                                                    <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select filter-select custom-select2">
-                                                        <option value="">Select Staff</option>
-                                                        @foreach($staffs as $staff)
-                                                            <option value="{{ $staff->id }}">{{ $staff->name }}</option>
-                                                        @endforeach
-                                                    </select>
+                                        <div class="col-12" id="date-field" style="display:none;">
+                                            <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3">
+                                                <label class="cockpit-label text-danger fw-bold"><i class="far fa-calendar-alt me-1"></i> Reminder / Next Call Date <span class="text-danger">*</span></label>
+                                                <input type="date" name="next_call_date" class="form-control cockpit-input border-danger" id="call_date">
+                                            </div>
+                                        </div>
+
+                                        <!-- Video Meeting Container -->
+                                        <div id="video-meeting-container" class="col-12" style="display:none;">
+                                            <div class="p-3 bg-light rounded-3 border border-primary border-opacity-25">
+                                                <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;"><i class="fas fa-video me-1"></i> Google Meet Scheduler</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="cockpit-label">Meeting Date</label>
+                                                        <input type="date" name="meeting_date" id="meeting_date" class="form-control cockpit-input">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="cockpit-label">Time Slot</label>
+                                                        <input type="time" name="time_slot" id="time_slot" class="form-control cockpit-input">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="cockpit-label">Meet Link</label>
+                                                        <input type="url" name="meeting_link" id="meeting_link" class="form-control cockpit-input" placeholder="https://meet.google.com/...">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="cockpit-label">Staff Host</label>
+                                                        <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select cockpit-select custom-select2">
+                                                            <option value="">Select Staff</option>
+                                                            @foreach($staffs as $staff)
+                                                                <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div class="col-md-6">
-                                        <label class="filter-label">Lead Quality</label>
-                                        <select name="lead_quality_id" id="lead_quality_id" class="form-select filter-select custom-select2">
-                                            <option value="">Select Lead Quality</option>
-                                            @if(isset($lead_qualities))
-                                                @foreach($lead_qualities as $lq)
-                                                    <option value="{{ $lq->id }}">{{ $lq->name }}</option>
+                                        <div class="col-12">
+                                            <label class="cockpit-label">Conversation Remarks & Notes</label>
+                                            <textarea id="message" name="remark" class="form-control cockpit-input" rows="3" placeholder="Enter notes from the call, student responses, details..."></textarea>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-check form-switch p-2.5 bg-white rounded-3 border d-flex align-items-center justify-content-between ps-3 pe-3">
+                                                <label class="form-check-label fw-bold text-success mb-0 d-flex align-items-center cursor-pointer" for="is_whatsapp_message">
+                                                    <i class="fab fa-whatsapp fs-5 me-2"></i> Send Instant WhatsApp Message
+                                                </label>
+                                                <input class="form-check-input ms-0 cursor-pointer" type="checkbox" id="is_whatsapp_message" name="is_whatsapp_message" value="1" style="width: 2.2em; height: 1.2em;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 5: WhatsApp Outreach -->
+                                <div id="whatsapp_fields" class="cockpit-subcard" style="display:none; background: #f0fdf4 !important; border-color: #bbf7d0 !important;">
+                                    <div class="cockpit-subcard-title text-success border-success border-opacity-25">
+                                        <i class="fab fa-whatsapp text-success me-2"></i> WhatsApp Message Composer
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Template</label>
+                                            <select name="whatsapp_template_id" class="form-select cockpit-select custom-select2" id="whatsapp_template_id">
+                                                <option value="">Select Template</option>
+                                                @foreach($templates as $template)
+                                                    <option value="{{ $template->id }}" data-caption="{{ $template->caption }}" data-message="{{ $template->message }}">{{ $template->name }}</option>
                                                 @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <label class="filter-label">Conversation Remarks & Notes</label>
-                                        <textarea id="message" name="remark" class="form-control filter-input" rows="3" placeholder="Enter notes from the call, student responses, details..."></textarea>
-                                    </div>
-
-                                    <div class="col-12 mt-2">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="is_whatsapp_message" name="is_whatsapp_message" value="1">
-                                            <label class="form-check-label fw-bold text-success" for="is_whatsapp_message">
-                                                <i class="fab fa-whatsapp me-1"></i> Send Instant WhatsApp Message
-                                            </label>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label">Caption</label>
+                                            <input type="text" class="form-control cockpit-input" name="caption" id="caption">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="cockpit-label">Attach Image</label>
+                                            <input type="file" class="form-control cockpit-input" name="image_whatsapp" accept=".jpg, .jpeg, .png">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="cockpit-label">Message Text</label>
+                                            <textarea name="whatsapp_message" class="form-control cockpit-input" id="message-editor" rows="3" placeholder="Enter message"></textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Section 5: WhatsApp Outreach -->
-                            <div id="whatsapp_fields" class="p-3.5 bg-white rounded-3 border mb-3 shadow-sm" style="display:none; background: #f0fdf4 !important; border-color: #bbf7d0 !important;">
-                                <h6 class="fw-bold text-success text-uppercase mb-3" style="font-size: 0.78rem;">
-                                    <i class="fab fa-whatsapp me-1"></i> WhatsApp Message Composer
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="filter-label">Template</label>
-                                        <select name="whatsapp_template_id" class="form-select filter-select custom-select2" id="whatsapp_template_id">
-                                            <option value="">Select Template</option>
-                                            @foreach($templates as $template)
-                                                <option value="{{ $template->id }}" data-caption="{{ $template->caption }}" data-message="{{ $template->message }}">{{ $template->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="filter-label">Caption</label>
-                                        <input type="text" class="form-control filter-input" name="caption" id="caption">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="filter-label">Attach Image</label>
-                                        <input type="file" class="form-control filter-input" name="image_whatsapp" accept=".jpg, .jpeg, .png">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="filter-label">Message Text</label>
-                                        <textarea name="whatsapp_message" class="form-control filter-input" id="message-editor" placeholder="Enter message"></textarea>
-                                    </div>
+                            <!-- DOCKED STICKY FOOTER -->
+                            <div class="cockpit-sticky-footer px-4 py-3 bg-white border-top d-flex justify-content-between align-items-center">
+                                <div class="text-muted small d-flex align-items-center gap-1.5">
+                                    <i class="fas fa-shield-alt text-primary"></i>
+                                    <span>Ready to save disposition</span>
                                 </div>
-                            </div>
-
-                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold border" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="save-log-btn">
-                                    <i class="fas fa-check-circle me-1"></i> Save Update
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold border text-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="save-log-btn">
+                                        <i class="fas fa-check-circle me-1.5"></i> Save & Update
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
 
-                    <!-- RIGHT COLUMN: Historical Outreach Timeline -->
-                    <div class="col-lg-5">
-                        <div class="p-3.5 bg-white rounded-3 border shadow-sm h-100 d-flex flex-column" style="max-height: 82vh;">
-                            <div class="border-bottom pb-2 mb-3">
-                                <h6 class="fw-bold text-uppercase text-secondary mb-0" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                                    <i class="fas fa-history text-primary me-1"></i> Previous Call Timeline
-                                </h6>
+                    <!-- RIGHT PANE: Timeline & History -->
+                    <div class="cockpit-right-pane bg-white border rounded-3 d-flex flex-column">
+                        <div class="cockpit-timeline-header px-3.5 py-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-history text-primary"></i>
+                                <span class="fw-bold text-dark fs-6">Interaction Timeline</span>
                             </div>
-                            <div id="history-content" class="flex-grow-1 overflow-auto pe-1">
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-spinner fa-spin fs-4 mb-2"></i>
-                                    <div>Loading timeline...</div>
-                                </div>
+                            <span class="badge bg-white text-secondary border px-2.5 py-1 small fw-semibold" id="history-badge">History</span>
+                        </div>
+                        <div id="history-content" class="cockpit-timeline-body flex-grow-1 p-3.5 overflow-auto">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-spinner fa-spin fs-4 mb-2 text-primary"></i>
+                                <div>Loading interaction timeline...</div>
                             </div>
                         </div>
                     </div>
@@ -1545,20 +1834,16 @@
             
             $('#save-log-btn').show();
             
-            // Fetch History
-            $('#history-content').html('<div class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin fs-4 mb-2"></i><div>Loading timeline history...</div></div>');
-            $('#callModal .modal-header').html('<div class="w-100 text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Loading student details...</div>');
+            // Fetch History & Header Details
+            $('#history-content').html('<div class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin fs-4 mb-2 text-primary"></i><div>Loading timeline history...</div></div>');
+            $('#callModalHeaderContent').html('<div class="d-flex align-items-center gap-2 text-muted py-1"><i class="fas fa-spinner fa-spin text-primary"></i> <span>Loading student profile...</span></div>');
             $.ajax({
                 url: "{{ url('admin/students-crm/calling-dashboard/customer-history') }}/" + id,
                 type: 'GET',
                 success: function(res) {
                     $('#history-content').html(res.html);
                     if(res.headerHtml) {
-                        $('#callModal .modal-header')
-                            .removeClass('pb-0')
-                            .addClass('bg-white shadow-sm position-relative')
-                            .css({'border-top': '4px solid #3b82f6', 'padding': '1.25rem 1.5rem', 'border-radius': '10px', 'margin': '1.5rem 1.5rem 0', 'border-bottom': 'none'})
-                            .html(res.headerHtml + '<button type="button" class="btn-close position-absolute" style="right: 1.5rem; top: 1.5rem;" data-bs-dismiss="modal"></button>');
+                        $('#callModalHeaderContent').html(res.headerHtml);
                     }
 
                     // Auto-fill Current Academic Details
@@ -1597,8 +1882,8 @@
                     }
                 },
                 error: function() {
-                    $('#history-content').html('<div class="text-center text-danger py-4">Failed to load history timeline</div>');
-                    $('#callModal .modal-header').html('<h5 class="fw-bold"><i class="fas fa-headset text-primary me-2"></i>Update Calling Status</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>');
+                    $('#history-content').html('<div class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fs-3 mb-2 d-block"></i>Failed to load interaction timeline</div>');
+                    $('#callModalHeaderContent').html('<div class="d-flex align-items-center gap-2"><i class="fas fa-headset text-primary me-1"></i><h5 class="fw-bold mb-0 text-dark">Update Calling Disposition</h5></div>');
                 }
             });
 

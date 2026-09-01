@@ -39,6 +39,7 @@ class CallingController extends Controller
         if ($existingAssignment) {
             $existingAssignment->staff_id = $request->staff_id;
             $existingAssignment->assigned_by = $user->id;
+            $existingAssignment->created_at = now();
             $existingAssignment->updated_at = now();
             $existingAssignment->save();
 
@@ -99,6 +100,7 @@ class CallingController extends Controller
                     $oldStaffId = $existingAssignment->staff_id;
                     $existingAssignment->staff_id = $request->staff_id;
                     $existingAssignment->assigned_by = $user->id;
+                    $existingAssignment->created_at = $now;
                     $existingAssignment->updated_at = $now;
                     $existingAssignment->save();
 
@@ -265,7 +267,7 @@ class CallingController extends Controller
         $workedOnCustomerIds = \App\Models\CallingHistory::join('lead_assignments', function($join) {
                 $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
                      ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
-                     ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                     ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at');
             })
             ->whereIn('calling_histories.updated_by', $query_staff_ids)
             ->whereIn('calling_histories.user_id', $assignedToday)
@@ -280,7 +282,7 @@ class CallingController extends Controller
             ->join('lead_assignments', function($join) {
                 $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
                      ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
-                     ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                     ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at');
             })
             ->select(\Illuminate\Support\Facades\DB::raw('MAX(calling_histories.id) as id'))
             ->whereIn('calling_histories.updated_by', $query_staff_ids);
@@ -402,7 +404,7 @@ class CallingController extends Controller
                 $subWorkedOnCustomers = \App\Models\CallingHistory::join('lead_assignments', function($join) {
                         $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
                              ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
-                             ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                             ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at');
                     })
                     ->where('calling_histories.updated_by', $sub->id)
                     ->whereIn('calling_histories.user_id', $subAssignedCustomers)
@@ -417,7 +419,7 @@ class CallingController extends Controller
                     ->join('lead_assignments', function($join) {
                         $join->on('calling_histories.user_id', '=', 'lead_assignments.customer_id')
                              ->on('calling_histories.updated_by', '=', 'lead_assignments.staff_id')
-                             ->whereColumn('calling_histories.created_at', '>', 'lead_assignments.updated_at');
+                             ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at');
                     })
                     ->select(\Illuminate\Support\Facades\DB::raw('MAX(calling_histories.id) as id'))
                     ->where('calling_histories.updated_by', $sub->id)
@@ -574,7 +576,7 @@ class CallingController extends Controller
                 return true;
             }
             foreach ($customerHistories as $h) {
-                if ($h->updated_by == $assignment->staff_id && $h->created_at > $assignment->updated_at) {
+                if ($h->updated_by == $assignment->staff_id && $h->created_at >= $assignment->updated_at) {
                     return false;
                 }
             }
@@ -641,39 +643,49 @@ class CallingController extends Controller
             ->keyBy('customer_id');
 
         if ($is_filtering_subordinate) {
-            $subordinateActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id, $query_staff_id) {
+            $subordinateActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id, $query_staff_id, $user) {
+                if (isset($user->is_admin) && $user->is_admin) {
+                    return $asgn->staff_id == $query_staff_id;
+                }
                 return $asgn->staff_id == $query_staff_id && $asgn->assigned_by == $staff_id;
             })->pluck('customer_id')->toArray();
 
             $historyQuery->where('updated_by', $query_staff_id)
                 ->whereIn('user_id', $subordinateActiveCustomerIds);
         } else {
-            $myActiveAssignedCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
-                return $asgn->staff_id == $staff_id;
-            })->pluck('customer_id')->toArray();
+            if (isset($user->is_admin) && $user->is_admin) {
+                $allOrgActiveCustomerIds = $latestAssignmentsLookup->pluck('customer_id')->toArray();
+                $historyQuery->whereIn('user_id', $allOrgActiveCustomerIds);
+            } else {
+                $myActiveAssignedCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
+                    return $asgn->staff_id == $staff_id;
+                })->pluck('customer_id')->toArray();
 
-            $delegatedActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
-                return $asgn->assigned_by == $staff_id;
-            })->pluck('customer_id')->toArray();
+                $delegatedActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
+                    return $asgn->assigned_by == $staff_id;
+                })->pluck('customer_id')->toArray();
 
-            $historyQuery->where(function($q) use ($staff_id, $myActiveAssignedCustomerIds, $delegatedActiveCustomerIds) {
-                $q->where(function($subQ) use ($staff_id, $myActiveAssignedCustomerIds) {
-                    $subQ->where('updated_by', $staff_id)
-                         ->whereIn('user_id', $myActiveAssignedCustomerIds);
+                $historyQuery->where(function($q) use ($staff_id, $myActiveAssignedCustomerIds, $delegatedActiveCustomerIds) {
+                    $q->where(function($subQ) use ($staff_id, $myActiveAssignedCustomerIds) {
+                        $subQ->where('updated_by', $staff_id)
+                             ->whereIn('user_id', $myActiveAssignedCustomerIds);
+                    });
+
+                    if (!empty($delegatedActiveCustomerIds)) {
+                        $q->orWhereIn('user_id', $delegatedActiveCustomerIds);
+                    }
                 });
-
-                if (!empty($delegatedActiveCustomerIds)) {
-                    $q->orWhereIn('user_id', $delegatedActiveCustomerIds);
-                }
-            });
+            }
         }
         
-        $workedHistory = $historyQuery->orderBy('created_at', 'desc')->get();
+        $workedHistory = $historyQuery->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
 
         // Strictly verify that for every history record:
         // 1. The customer's CURRENT active assignment is held by the staff member who made the call
         // 2. The call was logged after or on the latest assignment
-        $workedHistory = $workedHistory->filter(function($history) use ($latestAssignmentsLookup, $staff_id, $is_filtering_subordinate, $query_staff_id) {
+        // 3. Reassigned leads move out until worked on by the newly assigned staff
+        // 4. Multiple calls to the same lead show only the single latest attempt
+        $workedHistory = $workedHistory->filter(function($history) use ($latestAssignmentsLookup, $staff_id, $is_filtering_subordinate, $query_staff_id, $user) {
             $latestAssignment = $latestAssignmentsLookup->get($history->user_id);
             if (!$latestAssignment) {
                 return false;
@@ -689,13 +701,20 @@ class CallingController extends Controller
                 return false;
             }
 
+            if (isset($user->is_admin) && $user->is_admin) {
+                if ($is_filtering_subordinate) {
+                    return $latestAssignment->staff_id == $query_staff_id;
+                }
+                return true;
+            }
+
             if ($is_filtering_subordinate) {
                 return $latestAssignment->staff_id == $query_staff_id && $latestAssignment->assigned_by == $staff_id;
             }
 
             // Logged in user: either assigned to me or assigned by me
             return ($latestAssignment->staff_id == $staff_id) || ($latestAssignment->assigned_by == $staff_id);
-        })->values();
+        })->unique('user_id')->values();
 
         $historyAssignmentsLookup = $latestAssignmentsLookup;
 
@@ -828,39 +847,73 @@ class CallingController extends Controller
         }
         $displayPhone = "+91 " . $displayPhone;
         
-        $qualityBadgeHtml = $leadQualityName ? "<span class='badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary fw-medium px-3 py-1' style='font-size: 0.75rem;'>&bull; " . strtoupper($leadQualityName) . "</span>" : "";
+        $qualityBadgeHtml = '';
+        if ($leadQualityName) {
+            $lqUpper = strtoupper($leadQualityName);
+            $bg = 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
+            $icon = 'fa-fire';
+            if (stripos($leadQualityName, 'warm') !== false) {
+                $bg = 'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25';
+                $icon = 'fa-bolt';
+            } elseif (stripos($leadQualityName, 'cold') !== false) {
+                $bg = 'bg-info bg-opacity-10 text-info border border-info border-opacity-25';
+                $icon = 'fa-snowflake';
+            }
+            $qualityBadgeHtml = "<span class='badge rounded-pill {$bg} fw-bold px-3 py-1.5' style='font-size: 0.75rem;'><i class='fas {$icon} me-1'></i>{$lqUpper}</span>";
+        }
+        
+        $canEditStudent = false;
+        $currentUser = auth()->user();
+        if ($currentUser) {
+            if ($currentUser->is_admin || $currentUser->can('customer-edit') || $currentUser->can('customer-browse') || $currentUser->hasRole('superadmin')) {
+                $canEditStudent = true;
+            }
+        }
+        
+        $editBtnHtml = '';
+        $editUrl = '';
+        if ($canEditStudent && $customer) {
+            $editUrl = route('admin.customers.main.index.edit', ['index' => encrypt($customer->id), 'from' => 'calling_dashboard']);
+            $editBtnHtml = "
+            <a href='{$editUrl}' target='_blank' class='btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm' style='font-size: 0.8rem; transition: all 0.2s ease;' title='Edit Student Profile in Student Module'>
+                <i class='fas fa-user-edit text-primary'></i>
+                <span>Edit Profile</span>
+                <i class='fas fa-external-link-alt ms-1' style='font-size: 0.68rem; opacity: 0.75;'></i>
+            </a>";
+        }
         
         $headerHtml = "
-        <div class='d-flex align-items-center justify-content-between w-100 pe-4'>
+        <div class='d-flex align-items-center justify-content-between w-100 pe-2 flex-wrap gap-2'>
             <div class='d-flex align-items-center gap-3'>
-                <div class='d-flex align-items-center justify-content-center fw-bold bg-primary bg-opacity-10 text-primary rounded-circle' style='width: 48px; height: 48px; font-size: 1.1rem;'>
+                <div class='d-flex align-items-center justify-content-center fw-bold rounded-4 shadow-sm text-white flex-shrink-0' style='width: 48px; height: 48px; font-size: 1.15rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); letter-spacing: 0.5px;'>
                     {$initials}
                 </div>
                 <div>
-                    <h5 class='fw-bold mb-1 text-dark'>{$customer->name}</h5>
-                    <div class='d-flex align-items-center text-muted' style='font-size: 0.8rem;'>
-                        <span class='text-uppercase me-2 text-secondary' style='letter-spacing: 0.5px;'>LEAD #EZ-{$customer->id}</span> 
-                        <span class='mx-1'>&middot;</span> 
-                        <span class='me-2'>{$displayPhone}</span> 
-                        <span class='mx-1'>&middot;</span> 
-                        <span>{$statusName}</span>
+                    <div class='d-flex align-items-center gap-2 mb-1 flex-wrap'>
+                        <h5 class='fw-bold mb-0 text-dark' style='font-size: 1.2rem; letter-spacing: -0.2px;'>{$customer->name}</h5>
+                        {$qualityBadgeHtml}
+                    </div>
+                    <div class='d-flex align-items-center gap-2 text-muted flex-wrap' style='font-size: 0.82rem;'>
+                        <span class='badge bg-light text-secondary border px-2 py-1 font-monospace'>#EZ-{$customer->id}</span>
+                        <span class='fw-semibold text-dark'><i class='fas fa-phone-alt me-1 text-primary'></i>{$displayPhone}</span>
+                        <span class='text-muted opacity-50'>|</span>
+                        <span class='badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1'><i class='fas fa-tag me-1'></i>{$statusName}</span>
                     </div>
                 </div>
             </div>
-            <div>
-                {$qualityBadgeHtml}
+            <div class='d-flex align-items-center gap-2'>
+                {$editBtnHtml}
             </div>
         </div>
         ";
             
-        $html = '<div style="border-left: 2px solid #dee2e6; padding-left: 1.5rem; margin-left: 0.5rem;" class="pb-1 mt-3">';
+        $html = '<div class="timeline-stepper position-relative pb-1">';
             
         if($histories->count() > 0) {
-            $loopIndex = 0;
             foreach($histories as $h) {
                 $status = $h->calling_status ? $h->calling_status->name : 'Unknown';
                 $staff = $h->staff ? $h->staff->name : 'System';
-                $date = $h->created_at->format('d M Y, g:i A');
+                $date = $h->created_at->format('d M Y, h:i A');
                 
                 $staffInitials = 'S';
                 if($staff !== 'System') {
@@ -869,30 +922,69 @@ class CallingController extends Controller
                 }
 
                 $leadQualityName = $h->leadQuality ? $h->leadQuality->name : '';
-                $leadQualityStr = $leadQualityName ? " &middot; " . $leadQualityName : "";
+                $leadQualityHtml = '';
+                if ($leadQualityName) {
+                    $leadQualityHtml = "<span class='badge bg-light text-secondary border px-1.5 py-0.5 rounded-pill ms-1' style='font-size: 0.68rem;'>{$leadQualityName}</span>";
+                }
+
+                // Semantic color & icon mapping based on status
+                $statusLower = strtolower($status);
+                $statusColor = '#3b82f6';
+                $statusIcon = 'fa-phone-alt';
+                $statusBg = 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25';
+
+                if (str_contains($statusLower, 'hot') || str_contains($statusLower, 'interest') || str_contains($statusLower, 'admission') || str_contains($statusLower, 'token') || str_contains($statusLower, 'enroll')) {
+                    $statusColor = '#10b981';
+                    $statusIcon = 'fa-check-circle';
+                    $statusBg = 'bg-success bg-opacity-10 text-success border-success border-opacity-25';
+                } elseif (str_contains($statusLower, 'call back') || str_contains($statusLower, 'follow') || str_contains($statusLower, 'appoint') || str_contains($statusLower, 'schedul')) {
+                    $statusColor = '#6366f1';
+                    $statusIcon = 'fa-calendar-check';
+                    $statusBg = 'bg-indigo bg-opacity-10 text-indigo border-indigo border-opacity-25';
+                } elseif (str_contains($statusLower, 'warm') || str_contains($statusLower, 'ring') || str_contains($statusLower, 'busy') || str_contains($statusLower, 'no ans')) {
+                    $statusColor = '#f59e0b';
+                    $statusIcon = 'fa-hourglass-half';
+                    $statusBg = 'bg-warning bg-opacity-10 text-warning border-warning border-opacity-25';
+                } elseif (str_contains($statusLower, 'switch') || str_contains($statusLower, 'reach') || str_contains($statusLower, 'out of')) {
+                    $statusColor = '#64748b';
+                    $statusIcon = 'fa-phone-slash';
+                    $statusBg = 'bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25';
+                } elseif (str_contains($statusLower, 'not int') || str_contains($statusLower, 'wrong') || str_contains($statusLower, 'dnd') || str_contains($statusLower, 'lost')) {
+                    $statusColor = '#ef4444';
+                    $statusIcon = 'fa-times-circle';
+                    $statusBg = 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25';
+                }
                 
-                $markerColors = ['#4f637c', '#c79d46', '#c79d46', '#4f637c'];
-                $markerColor = isset($markerColors[$loopIndex % 4]) ? $markerColors[$loopIndex % 4] : '#6c757d';
+                $comment = '';
+                if ($h->comment) {
+                    $comment = "<div class='mt-2 p-2.5 rounded-3 border' style='background-color: #f8fafc; font-size: 0.83rem; color: #334155; border-left: 3px solid {$statusColor} !important;'>{$h->comment}</div>";
+                }
                 
-                $comment = $h->comment ? "<div class='p-2 bg-light border rounded text-dark mt-2' style='font-size: 0.85rem;'>{$h->comment}</div>" : "";
-                
-                $html .= "<div class='position-relative mb-4'>
-                    <span class='position-absolute' style='left: calc(-1.5rem - 5px); top: 0.35rem; width: 12px; height: 12px; border-radius: 50%; background-color: {$markerColor}; box-shadow: 0 0 0 3px #f1f5f9, 0 0 0 4px #e2e8f0; z-index: 1;'></span>
-                    <div class='d-flex justify-content-between align-items-center mb-1'>
-                        <h6 class='mb-0 fw-bold text-dark' style='font-size: 0.9rem;'>{$status}</h6>
-                        <small class='text-muted' style='font-size: 0.75rem;'>{$date}</small>
+                $html .= "
+                <div class='timeline-item position-relative mb-3'>
+                    <span class='timeline-dot position-absolute' style='background-color: {$statusColor}; box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px {$statusColor}33;'>
+                        <i class='fas {$statusIcon}'></i>
+                    </span>
+                    <div class='timeline-card p-3 bg-white rounded-3 border'>
+                        <div class='d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1'>
+                            <div class='d-flex align-items-center gap-1.5'>
+                                <span class='badge {$statusBg} border px-2 py-1 fw-bold rounded-pill' style='font-size: 0.78rem;'>{$status}</span>
+                                {$leadQualityHtml}
+                            </div>
+                            <span class='text-muted small fw-medium' style='font-size: 0.73rem;'>
+                                <i class='far fa-clock me-1 opacity-75'></i>{$date}
+                            </span>
+                        </div>
+                        <div class='d-flex align-items-center text-muted mt-1' style='font-size: 0.77rem;'>
+                            <span class='d-inline-flex align-items-center justify-content-center fw-bold rounded-circle me-1.5' style='width: 18px; height: 18px; font-size: 0.6rem; background-color: #e2e8f0; color: #334155;'>{$staffInitials}</span>
+                            <span>By <strong class='text-dark'>{$staff}</strong></span>
+                        </div>
+                        {$comment}
                     </div>
-                    <div class='d-flex align-items-center text-muted' style='font-size: 0.8rem;'>
-                        <span class='me-1 d-flex align-items-center justify-content-center fw-bold' style='width: 18px; height: 18px; border-radius: 3px; font-size: 0.6rem; background-color: #e9ecef; color: #4f637c;'>{$staffInitials}</span>
-                        <span>{$staff}{$leadQualityStr}</span>
-                    </div>
-                    {$comment}
                 </div>";
-                
-                $loopIndex++;
             }
         } else {
-            $html .= '<div class="text-center text-muted py-4">No previous history found</div>';
+            $html .= '<div class="text-center text-muted py-5"><i class="fas fa-history fs-2 opacity-25 mb-2 d-block"></i>No interaction history found yet</div>';
         }
         
         $html .= '</div>';
@@ -933,7 +1025,8 @@ class CallingController extends Controller
         return response()->json([
             'html' => $html,
             'headerHtml' => $headerHtml,
-            'customer' => $customerData
+            'customer' => $customerData,
+            'editUrl' => $editUrl
         ]);
     }
 

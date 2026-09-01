@@ -523,7 +523,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::prefix('customers')->name('customers.main.')->group(function () {
             Route::post('import', [CustomerController::class, 'import'])->name('import');
             Route::get('sample-download', [CustomerController::class, 'downloadSample'])->name('sample-download');
-            Route::resource('index', CustomerController::class)->middleware('can:department-browse');
+            Route::resource('index', CustomerController::class);
             Route::post('get-sub-categories', [CustomerController::class, 'getCategories'])->name('get-sub-categories');
         });
 
