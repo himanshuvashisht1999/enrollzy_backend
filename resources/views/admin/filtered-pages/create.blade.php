@@ -46,7 +46,7 @@
                     <div class="col-md-6 mb-3">
                         <label>Ownership Type</label>
                         <select name="ownership_type" class="form-control">
-                                                        <option value="">Select Ownership Type</option>
+                            <option value="">Select Ownership Type</option>
                             <option value="Government">Government</option>
                             <option value="Private">Private</option>
                             <option value="Trust / Society">Trust / Society</option>
@@ -73,6 +73,17 @@
                             <option value="IGCSE">IGCSE</option>
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Select Course (Optional)</label>
+                        <select name="course_id" class="form-control">
+                            <option value="">Select Course (Optional)</option>
+                            @if(isset($courses))
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -80,7 +91,7 @@
             <div id="universityFields" style="display: none; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
                 <h5>University Details</h5>
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-6 mb-3">
                         <label>University Type</label>
                         <select name="university_type" class="form-control">
                             <option value="">Select University Type</option>
@@ -91,7 +102,7 @@
                             <option value="International">International</option>
                         </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-6 mb-3">
                         <label>Browse by Degree</label>
                         <select name="degree" class="form-control">
                             <option value="">Select Degree</option>
@@ -101,13 +112,24 @@
                             <option value="Doctoral">Doctoral</option>
                         </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-6 mb-3">
                         <label>Browse by Stream</label>
                         <select name="stream_id" class="form-control">
                             <option value="">Select Stream</option>
                             @foreach($streams as $stream)
                                 <option value="{{ $stream->id }}">{{ $stream->title }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Select Course (Optional)</label>
+                        <select name="course_id" class="form-control">
+                            <option value="">Select Course (Optional)</option>
+                            @if(isset($courses))
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                @endforeach
+                            @endif
                         </select>
                     </div>
                 </div>
@@ -135,6 +157,17 @@
                             @if(isset($programTypes))
                                 @foreach($programTypes as $pt)
                                     <option value="{{ $pt->id }}">{{ $pt->title }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Select Course (Optional)</label>
+                        <select name="course_id" class="form-control">
+                            <option value="">Select Course (Optional)</option>
+                            @if(isset($courses))
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
                                 @endforeach
                             @endif
                         </select>
@@ -175,19 +208,32 @@ $(document).ready(function() {
         let cat = $('#categorySelect').val();
         
         $('#schoolFields').hide();
+        $('#schoolFields :input').prop('disabled', true);
+        
         $('#universityFields').hide();
+        $('#universityFields :input').prop('disabled', true);
+        
         $('#coachingFields').hide();
+        $('#coachingFields :input').prop('disabled', true);
+        
         $('#locationFields').hide();
+        $('#locationFields :input').prop('disabled', true);
         
         if (cat === 'School') {
             $('#schoolFields').show();
+            $('#schoolFields :input').prop('disabled', false);
             $('#locationFields').show();
+            $('#locationFields :input').prop('disabled', false);
         } else if (cat === 'University') {
             $('#universityFields').show();
+            $('#universityFields :input').prop('disabled', false);
             $('#locationFields').show();
+            $('#locationFields :input').prop('disabled', false);
         } else if (cat === 'Coaching') {
             $('#coachingFields').show();
+            $('#coachingFields :input').prop('disabled', false);
             $('#locationFields').show();
+            $('#locationFields :input').prop('disabled', false);
         }
     }
 

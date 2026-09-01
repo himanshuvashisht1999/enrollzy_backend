@@ -25,6 +25,7 @@ class FilteredPage extends Model
         'city',
         'coaching_category_id',
         'program_type_id',
+        'course_id',
     ];
 
     public function schoolType()
@@ -35,5 +36,10 @@ class FilteredPage extends Model
     public function stream()
     {
         return $this->belongsTo(StreamOffered::class, 'stream_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
     }
 }

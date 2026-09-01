@@ -22,7 +22,8 @@ class FilteredPageController extends Controller
         $streams = StreamOffered::where('status', 1)->get();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
         $programTypes = \App\Models\ProgramType::where('status', 1)->get();
-        return view('admin.filtered-pages.create', compact('schoolTypes', 'streams', 'coachingCategories', 'programTypes'));
+        $courses = \App\Models\Course::where('status', 1)->orderBy('name')->get();
+        return view('admin.filtered-pages.create', compact('schoolTypes', 'streams', 'coachingCategories', 'programTypes', 'courses'));
     }
 
     public function store(Request $request)
@@ -31,6 +32,7 @@ class FilteredPageController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug',
             'category' => 'required',
+            'course_id' => 'nullable|exists:courses,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
@@ -52,7 +54,8 @@ class FilteredPageController extends Controller
         $streams = StreamOffered::where('status', 1)->get();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
         $programTypes = \App\Models\ProgramType::where('status', 1)->get();
-        return view('admin.filtered-pages.edit', compact('filteredPage', 'schoolTypes', 'streams', 'coachingCategories', 'programTypes'));
+        $courses = \App\Models\Course::where('status', 1)->orderBy('name')->get();
+        return view('admin.filtered-pages.edit', compact('filteredPage', 'schoolTypes', 'streams', 'coachingCategories', 'programTypes', 'courses'));
     }
 
     public function update(Request $request, FilteredPage $filteredPage)
@@ -61,6 +64,7 @@ class FilteredPageController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'required|unique:filtered_pages,slug,' . $filteredPage->id,
             'category' => 'required',
+            'course_id' => 'nullable|exists:courses,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
