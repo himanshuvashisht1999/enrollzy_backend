@@ -43,4 +43,119 @@ class SeoOrganizationSetting extends Model
         'logo_schema' => 'boolean',
         'social_profile_schema' => 'boolean',
     ];
+
+    public function founders()
+    {
+        return $this->hasMany(OrganizationFounder::class, 'seo_organization_setting_id')->orderBy('sort_order', 'asc');
+    }
+
+    public function generateOrganizationSchema()
+    {
+        if (!$this->schema_enabled || !$this->organization_schema) {
+            return null;
+        }
+
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => $this->organization_type ?: 'Organization',
+            'name' => $this->organization_name ?: 'Enrollzy',
+            'url' => $this->website ?: config('app.url', 'https://enrollzy.com'),
+        ];
+
+        if ($this->legal_name) {
+            $schema['legalName'] = $this->legal_name;
+        }
+        if ($this->alternate_name) {
+            $schema['alternateName'] = $this->alternate_name;
+        }
+        if ($this->short_description || $this->long_description) {
+            $schema['description'] = $this->short_description ?: $this->long_description;
+        }
+        if ($this->logo) {
+            $schema['logo'] = asset($this->logo);
+        }
+        if ($this->email) {
+            $schema['email'] = $this->email;
+        }
+        if ($this->phone) {
+            $schema['telephone'] = $this->phone;
+        }
+        if ($this->founding_date) {
+            $schema['foundingDate'] = is_string($this->founding_date) ? $this->founding_date : $this->founding_date->format('Y-m-d');
+        }
+
+        // Founders list as Person schema array
+        $foundersList = [];
+        $activeFounders = $this->founders()->where('is_active', true)->orderBy('sort_order')->get();
+        
+        foreach ($activeFounders as $founder) {
+            $person = [
+                '@type' => 'Person',
+                'name' => $founder->name,
+            ];
+            if (!empty($founder->job_title)) {
+                $person['jobTitle'] = $founder->job_title;
+            }
+            if (!empty($founder->image)) {
+                $person['image'] = asset($founder->image);
+            }
+            if (!empty($founder->profile_url)) {
+                $person['url'] = $founder->profile_url;
+            }
+
+            $sameAs = [];
+            if (!empty($founder->linkedin_url)) {
+                $sameAs[] = $founder->linkedin_url;
+            }
+            if (!empty($founder->same_as)) {
+                $sameAsArray = is_array($founder->same_as) ? $founder->same_as : (json_decode($founder->same_as, true) ?: []);
+                $sameAs = array_merge($sameAs, $sameAsArray);
+            }
+            $sameAs = array_values(array_unique(array_filter($sameAs)));
+            if (!empty($sameAs)) {
+                $person['sameAs'] = count($sameAs) === 1 ? $sameAs[0] : $sameAs;
+            }
+
+            $foundersList[] = $person;
+        }
+
+        if (!empty($foundersList)) {
+            $schema['founder'] = count($foundersList) === 1 ? $foundersList[0] : $foundersList;
+        } elseif (!empty($this->founder_name)) {
+            $schema['founder'] = [
+                '@type' => 'Person',
+                'name' => $this->founder_name,
+            ];
+        }
+
+        // Address schema
+        if ($this->address_line_1 || $this->city || $this->state || $this->country) {
+            $schema['address'] = [
+                '@type' => 'PostalAddress',
+                'streetAddress' => trim($this->address_line_1 . ' ' . $this->address_line_2),
+                'addressLocality' => $this->city,
+                'addressRegion' => $this->state,
+                'postalCode' => $this->postal_code,
+                'addressCountry' => $this->country ?: 'IN',
+            ];
+        }
+
+        // SameAs social links
+        $sameAsLinks = array_filter([
+            $this->facebook_url,
+            $this->instagram_url,
+            $this->linkedin_url,
+            $this->twitter_url,
+            $this->youtube_url,
+        ]);
+        if (!empty($this->same_as) && is_array($this->same_as)) {
+            $sameAsLinks = array_merge($sameAsLinks, $this->same_as);
+        }
+        $sameAsLinks = array_values(array_unique(array_filter($sameAsLinks)));
+        if (!empty($sameAsLinks)) {
+            $schema['sameAs'] = $sameAsLinks;
+        }
+
+        return $schema;
+    }
 }
