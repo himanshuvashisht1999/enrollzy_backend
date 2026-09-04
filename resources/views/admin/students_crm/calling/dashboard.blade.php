@@ -338,6 +338,11 @@
         color: #2563eb;
         border: 1px solid #bfdbfe;
     }
+    .tag-reassigned {
+        background: #f5f3ff;
+        color: #7c3aed;
+        border: 1px solid #ddd6fe;
+    }
     .tag-completed {
         background: #f0fdf4;
         color: #16a34a;
@@ -848,7 +853,8 @@
                         <label class="filter-micro-label">Call Status</label>
                         <select name="call_status_id" class="form-select filter-select-pro" id="callStatusFilter">
                             <option value="">All Call Statuses</option>
-                            <option value="new" {{ request('call_status_id') == 'new' ? 'selected' : '' }}>New / Unattempted</option>
+                            <option value="new" {{ request('call_status_id') == 'new' ? 'selected' : '' }}>New Leads</option>
+                            <option value="reassigned" {{ request('call_status_id') == 'reassigned' ? 'selected' : '' }}>Reassigned Leads</option>
                             <option value="all" {{ request('call_status_id') == 'all' ? 'selected' : '' }}>All Attempted</option>
                             @foreach($statuses as $st)
                                 <option value="{{ $st->id }}" {{ request('call_status_id') == $st->id ? 'selected' : '' }}>
@@ -985,6 +991,7 @@
                     <span class="text-danger fw-bold"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> Overdue Call</span>
                     <span class="text-warning fw-bold"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> Due Today</span>
                     <span class="text-primary fw-bold"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> New Lead</span>
+                    <span class="fw-bold" style="color: #7c3aed;"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> Reassigned Lead</span>
                 </div>
             </div>
 
@@ -1018,6 +1025,8 @@
                                             $statusTag = '<span class="status-tag tag-overdue"><i class="fas fa-exclamation-circle"></i> Overdue Call</span>';
                                         } elseif ($type === 'due_today') {
                                             $statusTag = '<span class="status-tag tag-due"><i class="fas fa-clock"></i> Due Today</span>';
+                                        } elseif ($type === 'reassigned') {
+                                            $statusTag = '<span class="status-tag tag-reassigned"><i class="fas fa-random"></i> Reassigned Lead</span>';
                                         }
                                         
                                         $maskedPhone = substr($customer->phone, 0, 2) . 'XXXXX' . substr($customer->phone, -3);
@@ -1025,7 +1034,7 @@
                                     @endphp
                                     <tr>
                                         <td class="text-muted fw-bold small" style="width: 40px;">
-                                            #{{ $loop->iteration }}
+                                             #{{ $loop->iteration }}
                                         </td>
                                         <td>
                                             <div class="fw-bold text-dark fs-6">{{ $customer->name }} <span class="badge bg-light text-secondary border fw-normal ms-1" style="font-size: 0.7rem;">ID #{{ $customer->id }}</span></div>
@@ -1136,6 +1145,8 @@
                                             $statusTag = '<span class="status-tag tag-overdue"><i class="fas fa-exclamation-circle"></i> Overdue</span>';
                                         } elseif ($leadType === 'due_today') {
                                             $statusTag = '<span class="status-tag tag-due"><i class="fas fa-clock"></i> Due Today</span>';
+                                        } elseif ($leadType === 'reassigned') {
+                                            $statusTag = '<span class="status-tag tag-reassigned"><i class="fas fa-random"></i> Reassigned Lead</span>';
                                         }
                                     @endphp
                                     @if($customer)
@@ -2487,13 +2498,13 @@
                 
                 var lastDay = new Date(year, parseInt(month), 0).getDate();
                 var firstDayStr = year + "-" + month + "-01";
-                var lastDayStr = year + "-" + month + "-" + lastDay;
+                var lastDayStr = year + "-" + month + "-" + (lastDay < 10 ? '0' + lastDay : lastDay);
                 
-                $('#end_date').attr('min', firstDayStr);
+                $('#end_date').attr('min', startDateVal);
                 $('#end_date').attr('max', lastDayStr);
                 
                 var currentEndDate = $('#end_date').val();
-                if(currentEndDate < firstDayStr || currentEndDate > lastDayStr) {
+                if (currentEndDate && (currentEndDate < startDateVal || currentEndDate > lastDayStr)) {
                     $('#end_date').val(startDateVal);
                 }
             } else {

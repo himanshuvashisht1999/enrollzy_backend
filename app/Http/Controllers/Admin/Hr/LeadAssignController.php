@@ -205,19 +205,32 @@ class LeadAssignController extends Controller
                     } else {
                         // Reassign / Delegate lead
                         $oldStaffId = $existingAssignment->staff_id;
+                        $isReassigned = ($oldStaffId != $user->id);
+
                         $existingAssignment->staff_id = $request->staff_id;
                         $existingAssignment->assigned_by = $user->id;
+                        $existingAssignment->is_reassigned = $isReassigned ? 1 : 0;
                         $existingAssignment->created_at = $now;
                         $existingAssignment->updated_at = $now;
                         $existingAssignment->save();
 
-                        \App\Models\LeadActivityLog::create([
-                            'customer_id' => $customerId,
-                            'admin_id' => $user->id,
-                            'action_type' => 'reassigned',
-                            'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
-                            'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
-                        ]);
+                        if ($isReassigned) {
+                            \App\Models\LeadActivityLog::create([
+                                'customer_id' => $customerId,
+                                'admin_id' => $user->id,
+                                'action_type' => 'reassigned',
+                                'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                                'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                            ]);
+                        } else {
+                            \App\Models\LeadActivityLog::create([
+                                'customer_id' => $customerId,
+                                'admin_id' => $user->id,
+                                'action_type' => 'assigned',
+                                'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                                'properties' => ['new_staff_id' => $request->staff_id]
+                            ]);
+                        }
                         $assignedCount++;
                     }
                 } else {
@@ -226,6 +239,7 @@ class LeadAssignController extends Controller
                         'customer_id' => $customerId,
                         'staff_id' => $request->staff_id,
                         'assigned_by' => $user->id,
+                        'is_reassigned' => 0,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);

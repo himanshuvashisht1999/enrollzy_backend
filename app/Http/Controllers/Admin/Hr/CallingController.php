@@ -37,8 +37,12 @@ class CallingController extends Controller
             ->first();
 
         if ($existingAssignment) {
+            $oldStaffId = $existingAssignment->staff_id;
+            $isReassigned = ($oldStaffId != $user->id);
+
             $existingAssignment->staff_id = $request->staff_id;
             $existingAssignment->assigned_by = $user->id;
+            $existingAssignment->is_reassigned = $isReassigned ? 1 : 0;
             $existingAssignment->created_at = now();
             $existingAssignment->updated_at = now();
             $existingAssignment->save();
@@ -47,11 +51,38 @@ class CallingController extends Controller
             \App\Models\LeadAssignment::where('customer_id', $request->customer_id)
                 ->where('id', '!=', $existingAssignment->id)
                 ->delete();
+
+            if ($isReassigned) {
+                \App\Models\LeadActivityLog::create([
+                    'customer_id' => $request->customer_id,
+                    'admin_id' => $user->id,
+                    'action_type' => 'reassigned',
+                    'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                    'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                ]);
+            } else {
+                \App\Models\LeadActivityLog::create([
+                    'customer_id' => $request->customer_id,
+                    'admin_id' => $user->id,
+                    'action_type' => 'assigned',
+                    'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                    'properties' => ['new_staff_id' => $request->staff_id]
+                ]);
+            }
         } else {
             \App\Models\LeadAssignment::create([
                 'customer_id' => $request->customer_id,
                 'staff_id' => $request->staff_id,
-                'assigned_by' => $user->id
+                'assigned_by' => $user->id,
+                'is_reassigned' => 0
+            ]);
+
+            \App\Models\LeadActivityLog::create([
+                'customer_id' => $request->customer_id,
+                'admin_id' => $user->id,
+                'action_type' => 'assigned',
+                'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                'properties' => ['new_staff_id' => $request->staff_id]
             ]);
         }
 
@@ -98,19 +129,32 @@ class CallingController extends Controller
                     $skippedCount++;
                 } else {
                     $oldStaffId = $existingAssignment->staff_id;
+                    $isReassigned = ($oldStaffId != $user->id);
+
                     $existingAssignment->staff_id = $request->staff_id;
                     $existingAssignment->assigned_by = $user->id;
+                    $existingAssignment->is_reassigned = $isReassigned ? 1 : 0;
                     $existingAssignment->created_at = $now;
                     $existingAssignment->updated_at = $now;
                     $existingAssignment->save();
 
-                    \App\Models\LeadActivityLog::create([
-                        'customer_id' => $customerId,
-                        'admin_id' => $user->id,
-                        'action_type' => 'reassigned',
-                        'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
-                        'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
-                    ]);
+                    if ($isReassigned) {
+                        \App\Models\LeadActivityLog::create([
+                            'customer_id' => $customerId,
+                            'admin_id' => $user->id,
+                            'action_type' => 'reassigned',
+                            'description' => 'Lead reassigned to staff ID ' . $request->staff_id . ' from staff ID ' . $oldStaffId,
+                            'properties' => ['old_staff_id' => $oldStaffId, 'new_staff_id' => $request->staff_id]
+                        ]);
+                    } else {
+                        \App\Models\LeadActivityLog::create([
+                            'customer_id' => $customerId,
+                            'admin_id' => $user->id,
+                            'action_type' => 'assigned',
+                            'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                            'properties' => ['new_staff_id' => $request->staff_id]
+                        ]);
+                    }
                     $assignedCount++;
                 }
             } else {
@@ -118,6 +162,7 @@ class CallingController extends Controller
                     'customer_id' => $customerId,
                     'staff_id' => $request->staff_id,
                     'assigned_by' => $user->id,
+                    'is_reassigned' => 0,
                     'created_at' => $now,
                     'updated_at' => $now
                 ]);
@@ -203,8 +248,14 @@ class CallingController extends Controller
             $query_staff_ids = [$query_staff_id];
         }
 
-        $startDate = $request->input('start_date', now()->subDays(7)->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $defaultEndDate = now()->format('Y-m-d');
+        $sevenDaysAgo = now()->subDays(7);
+        $defaultStartDate = $sevenDaysAgo->isSameMonth(now())
+            ? $sevenDaysAgo->format('Y-m-d')
+            : now()->startOfMonth()->format('Y-m-d');
+
+        $startDate = $request->input('start_date', $defaultStartDate);
+        $endDate = $request->input('end_date', $defaultEndDate);
         
         $currentMonth = \Carbon\Carbon::parse($startDate)->format('F');
         $currentYear = \Carbon\Carbon::parse($startDate)->format('Y');
@@ -301,7 +352,7 @@ class CallingController extends Controller
         if ($request->filled('call_status_id')) {
             if ($request->call_status_id === 'all') {
                 $latestHistoriesQuery->whereNotNull('reason');
-            } elseif ($request->call_status_id === 'new' || $request->call_status_id === 'unattempted') {
+            } elseif (in_array($request->call_status_id, ['new', 'unattempted', 'reassigned'])) {
                 $latestHistoriesQuery->whereRaw('1 = 0');
             } else {
                 $latestHistoriesQuery->where('reason', $request->call_status_id);
@@ -480,7 +531,7 @@ class CallingController extends Controller
         }
         
         $unattemptedIds = array_diff($assignedToday, $workedOnCustomerIds);
-        if ($request->filled('call_status_id') && $request->call_status_id !== 'new' && $request->call_status_id !== 'unattempted') {
+        if ($request->filled('call_status_id') && !in_array($request->call_status_id, ['new', 'unattempted', 'reassigned'])) {
             $unattemptedIds = [];
         }
 
@@ -503,8 +554,19 @@ class CallingController extends Controller
             foreach ($unattemptedIds as $cid) {
                 if (isset($unattemptedCustomers[$cid])) {
                     $asgn = $assignmentsLookup->get($cid);
+                    $isReassigned = $asgn ? (bool)$asgn->is_reassigned : false;
+
+                    if ($request->filled('call_status_id')) {
+                        if ($request->call_status_id === 'new' && $isReassigned) {
+                            continue;
+                        }
+                        if ($request->call_status_id === 'reassigned' && !$isReassigned) {
+                            continue;
+                        }
+                    }
+
                     $queue->push([
-                        'type' => 'new',
+                        'type' => $isReassigned ? 'reassigned' : 'new',
                         'customer' => $unattemptedCustomers[$cid],
                         'history' => null,
                         'sort_date' => $asgn ? $asgn->updated_at : $startDate,
@@ -514,11 +576,11 @@ class CallingController extends Controller
             }
         }
         
-        // Sort queue: Priority (Overdue -> Due Today -> New Leads) and newest first within each category
+        // Sort queue: Priority (Overdue -> Due Today -> Reassigned Leads -> New Leads) and newest first within each category
         $queue = $queue->sort(function($a, $b) {
-            $typePriority = ['overdue' => 1, 'due_today' => 2, 'new' => 3];
-            $pA = $typePriority[$a['type']] ?? 4;
-            $pB = $typePriority[$b['type']] ?? 4;
+            $typePriority = ['overdue' => 1, 'due_today' => 2, 'reassigned' => 3, 'new' => 4];
+            $pA = $typePriority[$a['type']] ?? 5;
+            $pB = $typePriority[$b['type']] ?? 5;
 
             if ($pA !== $pB) {
                 return $pA <=> $pB;
@@ -585,8 +647,10 @@ class CallingController extends Controller
 
         foreach ($delegatedLeads as $assignment) {
             $customerHistories = $histories->get($assignment->customer_id);
+            $isReassigned = (bool)$assignment->is_reassigned;
+
             if (!$customerHistories || $customerHistories->isEmpty()) {
-                $assignment->lead_type = 'new';
+                $assignment->lead_type = $isReassigned ? 'reassigned' : 'new';
                 $assignment->latest_history = null;
             } else {
                 $latestHistory = $customerHistories->sortByDesc('id')->first();
@@ -598,7 +662,7 @@ class CallingController extends Controller
                         $assignment->lead_type = 'due_today';
                     }
                 } else {
-                    $assignment->lead_type = 'new';
+                    $assignment->lead_type = $isReassigned ? 'reassigned' : 'new';
                 }
             }
         }
@@ -606,12 +670,17 @@ class CallingController extends Controller
         if ($request->filled('call_status_id')) {
             $statusFilter = $request->call_status_id;
             $delegatedLeads = $delegatedLeads->filter(function($assignment) use ($statusFilter) {
-                $lh = $assignment->latest_history;
-                if ($statusFilter === 'new' || $statusFilter === 'unattempted') {
-                    return empty($lh);
+                if ($statusFilter === 'new') {
+                    return $assignment->lead_type === 'new';
+                } elseif ($statusFilter === 'reassigned') {
+                    return $assignment->lead_type === 'reassigned';
+                } elseif ($statusFilter === 'unattempted') {
+                    return in_array($assignment->lead_type, ['new', 'reassigned']);
                 } elseif ($statusFilter === 'all') {
+                    $lh = $assignment->latest_history;
                     return !empty($lh && $lh->reason);
                 } else {
+                    $lh = $assignment->latest_history;
                     return $lh && $lh->reason == $statusFilter;
                 }
             })->values();
@@ -629,7 +698,7 @@ class CallingController extends Controller
         if ($request->filled('call_status_id')) {
             if ($request->call_status_id === 'all') {
                 $historyQuery->whereNotNull('reason');
-            } elseif ($request->call_status_id === 'new' || $request->call_status_id === 'unattempted') {
+            } elseif (in_array($request->call_status_id, ['new', 'unattempted', 'reassigned'])) {
                 $historyQuery->whereRaw('1 = 0');
             } else {
                 $historyQuery->where('reason', $request->call_status_id);
@@ -831,7 +900,12 @@ class CallingController extends Controller
             ->get();
             
         $latestHistory = $histories->first();
-        $statusName = $latestHistory && $latestHistory->calling_status ? $latestHistory->calling_status->name : 'New Lead';
+        if ($latestHistory && $latestHistory->calling_status) {
+            $statusName = $latestHistory->calling_status->name;
+        } else {
+            $isReassignedLead = \App\Models\LeadAssignment::where('customer_id', $id)->where('is_reassigned', 1)->exists();
+            $statusName = $isReassignedLead ? 'Reassigned Lead' : 'New Lead';
+        }
         $leadQualityName = $customer && $customer->leadQuality ? $customer->leadQuality->name : '';
         
         $nameParts = explode(' ', $customer->name ?? 'User');
