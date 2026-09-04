@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\OrganisationController;
+use App\Http\Controllers\Admin\AcademicDirectoryController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HeroSliderController;
 use App\Http\Controllers\Admin\MegaMenuController;
@@ -137,6 +138,18 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'update' => 'testimonials.update',
         'destroy' => 'testimonials.destroy',
     ]);
+
+    // Academic Directory Cockpit & Reports
+    Route::prefix('/admin/academic-directory')->name('admin.academic-directory.')->group(function () {
+        Route::get('/', [AcademicDirectoryController::class, 'index'])->name('index');
+        Route::get('/data/organisations', [AcademicDirectoryController::class, 'getOrganisationsData'])->name('data.organisations');
+        Route::get('/data/campuses', [AcademicDirectoryController::class, 'getCampusesData'])->name('data.campuses');
+        Route::get('/data/departments', [AcademicDirectoryController::class, 'getDepartmentsData'])->name('data.departments');
+        Route::get('/data/courses', [AcademicDirectoryController::class, 'getCoursesData'])->name('data.courses');
+        Route::get('/cascading-options', [AcademicDirectoryController::class, 'getCascadingOptions'])->name('cascading-options');
+        Route::get('/quick-view/{type}/{id}', [AcademicDirectoryController::class, 'getQuickView'])->name('quick-view');
+        Route::get('/export', [AcademicDirectoryController::class, 'exportDirectory'])->name('export');
+    });
 
     // Organisations
     Route::resource('/admin/organisations', OrganisationController::class)->names([
