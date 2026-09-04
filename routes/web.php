@@ -375,6 +375,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::patch('/admin/community-replies/{reply}/toggle-active', [\App\Http\Controllers\Admin\CommunityReplyController::class, 'toggleActive'])->name('admin.community-replies.toggle-active');
 
     // Header Links
+    Route::patch('header-links/{headerLink}/toggle-status', [\App\Http\Controllers\Admin\HeaderLinkController::class, 'toggleStatus'])->name('admin.header-links.toggle-status');
+    Route::post('header-links/{headerLink}/toggle-status', [\App\Http\Controllers\Admin\HeaderLinkController::class, 'toggleStatus']);
     Route::resource('header-links', \App\Http\Controllers\Admin\HeaderLinkController::class)->names('admin.header-links')->middleware('can:header-links-browse');
 
     // Main Header Menus

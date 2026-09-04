@@ -125,6 +125,15 @@ class RoleController extends Controller
 
         $permissionUpdate = array_map('intval', $request->permission);
         $role->syncPermissions($permissionUpdate);
+
+        // Ensure users assigned to this role rely exclusively on role permissions
+        $assignedUsers = Admin::where('role', $role->name)->orWhereHas('roles', function($q) use ($role) {
+            $q->where('roles.id', $role->id);
+        })->get();
+
+        foreach ($assignedUsers as $u) {
+            $u->syncPermissions([]);
+        }
         
         // Clear cached permissions so changes take effect immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();

@@ -73,5 +73,22 @@ class HeaderLinkController extends Controller
         $headerLink->delete();
         return redirect()->route('admin.header-links.index')->with('success', 'Header Link deleted successfully.');
     }
+
+    public function toggleStatus(HeaderLink $headerLink)
+    {
+        $headerLink->status = !$headerLink->status;
+        $headerLink->save();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $headerLink->status,
+                'message' => $headerLink->status ? 'Header link published successfully.' : 'Header link unpublished successfully.'
+            ]);
+        }
+
+        $message = $headerLink->status ? 'Header link published successfully.' : 'Header link unpublished successfully.';
+        return back()->with('success', $message);
+    }
 }
 

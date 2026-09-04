@@ -23,6 +23,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
+            overflow-x: hidden;
         }
 
         #sidebar {
@@ -33,10 +34,16 @@
             top: 0;
             background-color: var(--admin-theme);
             color: #fff;
-            transition: all 0.3s;
-            z-index: 1000;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
             overflow-y: auto;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sidebar collapsed state (Desktop) */
+        html.sidebar-collapsed #sidebar,
+        body.sidebar-collapsed #sidebar {
+            margin-left: calc(-1 * var(--sidebar-width));
         }
 
         /* Sidebar Scrollbar */
@@ -133,7 +140,13 @@
         #content {
             margin-left: var(--sidebar-width);
             padding: 20px;
-            transition: all 0.3s;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh;
+        }
+
+        html.sidebar-collapsed #content,
+        body.sidebar-collapsed #content {
+            margin-left: 0 !important;
         }
 
         .admin-navbar {
@@ -141,6 +154,63 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             padding: 10px 20px;
             margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .sidebar-toggle-btn {
+            background-color: #f8f9fa;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            outline: none !important;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            border-color: #cbd5e1;
+            transform: scale(1.03);
+        }
+
+        .sidebar-toggle-btn:active {
+            transform: scale(0.97);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1030;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 991.98px) {
+            #sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            #content {
+                margin-left: 0 !important;
+            }
+            body.sidebar-mobile-open #sidebar {
+                margin-left: 0 !important;
+            }
+            body.sidebar-mobile-open .sidebar-overlay {
+                display: block;
+                opacity: 1;
+            }
         }
 
         .card {
@@ -154,6 +224,15 @@
             z-index: 9999999 !important;
         }
     </style>
+    <script>
+        (function() {
+            try {
+                if (window.innerWidth >= 992 && localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch(e) {}
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('css')
 </head>
@@ -866,6 +945,7 @@
 <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
 @endif
                 <!-- wrapped standalone customer -->
+{{--
 @if($user && method_exists($user, 'can') && $user->can('customer-browse'))
 <li class="nav-item">
                     <a class="nav-link {{ request()->is('admin/customers*') && request()->get('type') == 'class' ? 'active' : '' }}"
@@ -874,6 +954,7 @@
                     </a>
                 </li>
 @endif
+--}}
                 <!-- wrapped standalone calling-status -->
 @if($user && method_exists($user, 'can') && $user->can('calling-status-browse'))
 <li class="nav-item">
@@ -1108,30 +1189,34 @@
                 </li>
 @endif
 
-                <!-- Scholarships Top-Level Nav -->
-                <!-- wrapped toplevel missing -->
-@if($user && method_exists($user, 'can') && $user->can('settings-browse'))
-
-
+                <!-- wrapped heading -->
+                @if($user && method_exists($user, 'canAny') && $user->canAny(['lead-browse', 'settings-browse', 'seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse', 'commission-browse']))
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>
+                @endif
 
-                {{-- System Group --}}
+                {{-- Student Leads --}}
+                @if($user && method_exists($user, 'can') && $user->can('lead-browse'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('leads.index') ? 'active' : '' }}"
                         href="{{ route('leads.index') }}">
                         <i class="fas fa-envelope-open-text"></i> Student Leads
                     </a>
                 </li>
+                @endif
+
                 <!-- wrapped standalone settings -->
-@if($user && method_exists($user, 'can') && $user->can('settings-browse'))
-<li class="nav-item">
+                @if($user && method_exists($user, 'can') && $user->can('settings-browse'))
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"
                         href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-tools"></i> General Settings
                     </a>
+                </li>
+                @endif
 
-                    @if($user && method_exists($user, 'canAny') && $user->canAny(['seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse']))
-<!-- SEO Settings Dropdown -->
+                @if($user && method_exists($user, 'canAny') && $user->canAny(['seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse']))
+                <!-- SEO Settings Dropdown -->
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
                         data-bs-toggle="collapse" href="#seoSettingsMenu" role="button"
                         aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}"
@@ -1143,29 +1228,32 @@
                     <div class="collapse {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'show' : '' }}"
                         id="seoSettingsMenu">
                         <ul class="nav flex-column sub-menu">
+                            @if($user && method_exists($user, 'can') && $user->can('seo-organization-browse'))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
-@endif
-@endif
-
+                            @endif
+                            @if($user && method_exists($user, 'can') && $user->can('seo-homepage-browse'))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
+                            @endif
+                            @if($user && method_exists($user, 'can') && $user->can('seo-defaults-browse'))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_defaults.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
+                            @endif
                         </ul>
                     </div>
-@endif
                 </li>
+                @endif
 
                 <!-- wrapped standalone commission -->
-@if($user && method_exists($user, 'can') && $user->can('commission-browse'))
-<li class="nav-item">
+                @if($user && method_exists($user, 'can') && $user->can('commission-browse'))
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
                         href="{{ route('admin.commission.index') }}">
                         <i class="fas fa-percent"></i> Commission Rules
                     </a>
                 </li>
-@endif
+                @endif
             @endif
 
             @if($isExpert || $isAlumni)
@@ -1231,11 +1319,19 @@
         </ul>
     </nav>
 
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Main Content -->
     <div id="content">
         <div class="admin-navbar d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">@yield('title')</h5>
-            <div class="user-info">
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" id="sidebarToggle" class="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+                    <i class="fas fa-bars fs-5"></i>
+                </button>
+                <h5 class="mb-0 fw-semibold">@yield('title')</h5>
+            </div>
+            <div class="user-info d-flex align-items-center">
                 <span>Welcome, {{ $user->name ?? 'User' }}</span>
                 @if($isAdmin) <span class="badge bg-danger ms-2">Admin</span> @endif
                 @if($isExpert) <span class="badge bg-primary ms-2">Expert</span> @endif
@@ -1283,8 +1379,33 @@
     @stack('js')
     <script>
 
-        // Smoothly handle collapse arrows and active states
+        // Smoothly handle collapse arrows, active states, and sidebar toggle
         $(document).ready(function () {
+            // Restore body class on ready
+            if (window.innerWidth >= 992 && localStorage.getItem('sidebar_collapsed') === 'true') {
+                $('body').addClass('sidebar-collapsed');
+            }
+
+            // Sidebar toggle open / close
+            $('#sidebarToggle').on('click', function (e) {
+                e.preventDefault();
+                if (window.innerWidth < 992) {
+                    $('body').toggleClass('sidebar-mobile-open');
+                } else {
+                    $('body').toggleClass('sidebar-collapsed');
+                    $('html').toggleClass('sidebar-collapsed', $('body').hasClass('sidebar-collapsed'));
+                    localStorage.setItem('sidebar_collapsed', $('body').hasClass('sidebar-collapsed'));
+                }
+                setTimeout(function() {
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
+            });
+
+            // Close sidebar when clicking outside overlay on mobile
+            $('#sidebarOverlay').on('click', function () {
+                $('body').removeClass('sidebar-mobile-open');
+            });
+
             // Fix Bootstrap 5 Modal Select2 focus issue
             if ($.fn.modal && $.fn.modal.Constructor) {
                 $.fn.modal.Constructor.prototype.enforceFocus = function() {};

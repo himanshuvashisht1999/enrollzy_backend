@@ -118,27 +118,37 @@
                                                 @php renderCategoryOptions($categories, $customer->category_id); @endphp
                                             </select>
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label d-flex justify-content-between align-items-center">
-                                                <span>Mobile Number *</span>
-                                                @if($fromCallingDashboard)
-                                                    <span class="badge bg-light text-muted border px-1.5 py-0.5" style="font-size: 0.68rem;" title="Locked: Mobile number cannot be changed from calling dashboard"><i class="fas fa-lock text-warning me-1"></i>Locked</span>
-                                                @endif
-                                            </label>
-                                            <input type="text" name="phone" class="form-control" value="{{ old('phone', $customer->phone) }}" {{ $fromCallingDashboard ? 'readonly style=background-color:#f1f5f9;cursor:not-allowed; tabindex=-1' : 'required' }}>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Alternate Mobile</label>
-                                            <input type="text" name="alternate_mobile" class="form-control" value="{{ old('alternate_mobile', $customer->alternate_mobile) }}">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Email ID</label>
-                                            <input type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Aadhaar Number</label>
-                                            <input type="text" name="aadhaar_number" class="form-control" value="{{ old('aadhaar_number', $customer->aadhaar_number) }}">
-                                        </div>
+                                        @if($fromCallingDashboard)
+                                            <input type="hidden" name="phone" value="{{ $customer->phone }}">
+                                            <input type="hidden" name="email" value="{{ $customer->email }}">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Alternate Mobile</label>
+                                                <input type="text" name="alternate_mobile" class="form-control" value="{{ old('alternate_mobile', $customer->alternate_mobile) }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Aadhaar Number</label>
+                                                <input type="text" name="aadhaar_number" class="form-control" value="{{ old('aadhaar_number', $customer->aadhaar_number) }}">
+                                            </div>
+                                        @else
+                                            <div class="col-md-3">
+                                                <label class="form-label d-flex justify-content-between align-items-center">
+                                                    <span>Mobile Number *</span>
+                                                </label>
+                                                <input type="text" name="phone" class="form-control" value="{{ old('phone', $customer->phone) }}" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Alternate Mobile</label>
+                                                <input type="text" name="alternate_mobile" class="form-control" value="{{ old('alternate_mobile', $customer->alternate_mobile) }}">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Email ID</label>
+                                                <input type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Aadhaar Number</label>
+                                                <input type="text" name="aadhaar_number" class="form-control" value="{{ old('aadhaar_number', $customer->aadhaar_number) }}">
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-12 mt-2">

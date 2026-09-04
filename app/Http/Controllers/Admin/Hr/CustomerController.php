@@ -273,10 +273,11 @@ class CustomerController extends Controller implements HasMiddleware
         try {
             $data = $request->all();
 
-            // When editing from calling dashboard, preserve original name and phone to prevent tampering
+            // When editing from calling dashboard, preserve original name, phone and email to prevent tampering
             if ($request->from === 'calling_dashboard') {
                 $data['name'] = $customer->name;
                 $data['phone'] = $customer->phone;
+                $data['email'] = $customer->email;
             }
 
             if (($data['sibling_enrolled'] ?? '0') != '1') {

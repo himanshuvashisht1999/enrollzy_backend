@@ -267,6 +267,7 @@ class StaffController extends Controller
 
             if ($request->filled('rolename')) {
                 $staff->syncRoles([$request->rolename]);
+                $staff->syncPermissions([]);
                 $staff->role = $request->rolename;
                 $staff->save();
             }
@@ -286,6 +287,7 @@ class StaffController extends Controller
         }
         try {
             $user->syncRoles([$role->name]);
+            $user->syncPermissions([]);
             $user->role = $role->name;
             $user->save();
             return response()->json(['status' => 1, 'message' => $role->name . ' Role Assigned to ' . $user->name]);

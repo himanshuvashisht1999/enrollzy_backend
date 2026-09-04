@@ -19,7 +19,7 @@
                             <tr>
                                 <th>Title</th>
                                 <th>URL</th>
-                                <th class="text-center" width="150">Status</th>
+                                <th class="text-center" width="150">Publish</th>
                                 <th class="text-center" width="100">Order</th>
                                 <th class="text-center" width="150">Actions</th>
                             </tr>
@@ -35,23 +35,26 @@
                                     </td>
                                     <td>{{ $item->url ?? '#' }}</td>
                                     <td class="text-center">
-                                        @if($item->status)
-                                            <span class="badge bg-success">Active</span>
-                                        @else
-                                            <span class="badge bg-danger">Inactive</span>
-                                        @endif
+                                        <div class="form-check form-switch d-inline-flex justify-content-center align-items-center mb-0">
+                                            <input class="form-check-input toggle-publish-switch" 
+                                                   type="checkbox" 
+                                                   role="switch" 
+                                                   data-url="{{ route('admin.header-links.toggle-status', $item->id) }}"
+                                                   {{ $item->status ? 'checked' : '' }}
+                                                   style="cursor: pointer; width: 2.4em; height: 1.25em;">
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark border">{{ $item->sort_order }}</span>
                                     </td>
                                     <td class="text-center">
-                                        <a href="{{ route('admin.header-links.edit', $item->id) }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ route('admin.header-links.edit', $item->id) }}" class="btn btn-sm btn-outline-primary rounded-pill me-1" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <form action="{{ route('admin.header-links.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this link?');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -70,3 +73,43 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        $(document).on('change', '.toggle-publish-switch', function() {
+            let $switch = $(this);
+            let url = $switch.data('url');
+            let isChecked = $switch.is(':checked');
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'PATCH'
+                },
+                success: function(res) {
+                    if (res.success) {
+                        $switch.prop('checked', res.status);
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success(res.message);
+                        }
+                    } else {
+                        $switch.prop('checked', !isChecked);
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Failed to update status.');
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    $switch.prop('checked', !isChecked);
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Something went wrong while updating status.');
+                    }
+                }
+            });
+        });
+    });
+</script>
+@endpush
