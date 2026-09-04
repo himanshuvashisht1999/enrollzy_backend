@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/all.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    @if(isset($site_settings) && !empty($site_settings->favicon))
+        <link rel="icon" href="{{ asset($site_settings->favicon) }}">
+        <link rel="shortcut icon" href="{{ asset($site_settings->favicon) }}">
+    @endif
     <style>
         :root {
             --sidebar-width: 270px;
