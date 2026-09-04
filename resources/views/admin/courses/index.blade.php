@@ -32,6 +32,7 @@
                             <th>Slug</th>
                             <th>Discipline</th>
                             <th>Status</th>
+                            <th>Show on Website</th>
                             <th>Sort Order</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -49,6 +50,13 @@
                                         <span class="badge bg-success">Active</span>
                                     @else
                                         <span class="badge bg-danger">Inactive</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($course->is_show_on_website)
+                                        <span class="badge bg-info text-dark">Yes</span>
+                                    @else
+                                        <span class="badge bg-secondary">No</span>
                                     @endif
                                 </td>
                                 <td>{{ $course->sort_order }}</td>
@@ -74,7 +82,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">No courses found in the master list.</td>
+                                <td colspan="7" class="text-center py-5 text-muted">No courses found in the master list.</td>
                             </tr>
                         @endforelse
                     </tbody>

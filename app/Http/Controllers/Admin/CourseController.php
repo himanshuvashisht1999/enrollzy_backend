@@ -52,6 +52,7 @@ class CourseController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:courses,slug',
             'status' => 'required|boolean',
+            'is_show_on_website' => 'nullable|boolean',
             'sort_order' => 'required|integer',
             'program_level_id' => 'nullable|exists:program_levels,id',
             'stream_offered_id' => 'nullable|exists:stream_offereds,id',
@@ -100,6 +101,7 @@ class CourseController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:courses,slug,' . $course->id,
             'status' => 'required|boolean',
+            'is_show_on_website' => 'nullable|boolean',
             'sort_order' => 'required|integer',
             'program_level_id' => 'nullable|exists:program_levels,id',
             'stream_offered_id' => 'nullable|exists:stream_offereds,id',
@@ -135,6 +137,7 @@ class CourseController extends Controller
         $newCourse->slug = $course->slug . '-copy-' . time();
 
         $newCourse->status = 0; // inactive by default (safe)
+        $newCourse->is_show_on_website = $course->is_show_on_website ?? 1;
         $newCourse->save();
 
 

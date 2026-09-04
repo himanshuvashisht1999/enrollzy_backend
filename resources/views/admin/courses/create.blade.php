@@ -207,7 +207,7 @@
                             </div>
 
                             {{-- Sort Order --}}
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold">Sort Order</label>
                                 <input type="number" name="sort_order"
                                     class="form-control @error('sort_order') is-invalid @enderror"
@@ -218,13 +218,25 @@
                             </div>
 
                             {{-- Status --}}
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold">Status</label>
                                 <select name="status" class="form-select @error('status') is-invalid @enderror" required>
                                     <option value="1" {{ old('status', 1) == 1 ? 'selected' : '' }}>Active</option>
-                                    <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Inactive</option>
+                                    <option value="0" {{ old('status') === '0' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                                 @error('status')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            {{-- Is Show On Website --}}
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Is Show On website</label>
+                                <select name="is_show_on_website" class="form-select @error('is_show_on_website') is-invalid @enderror">
+                                    <option value="1" {{ old('is_show_on_website', 1) == 1 ? 'selected' : '' }}>Yes</option>
+                                    <option value="0" {{ old('is_show_on_website') === '0' || old('is_show_on_website') === 0 ? 'selected' : '' }}>No</option>
+                                </select>
+                                @error('is_show_on_website')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

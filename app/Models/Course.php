@@ -11,7 +11,7 @@ class Course extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'status', 'program_level_id', 'stream_offered_id', 
+        'name', 'slug', 'status', 'is_show_on_website', 'program_level_id', 'stream_offered_id', 
         'discipline_id', 'duration', 'sort_order',
         'full_form', 'course_type_id', 'available_modes', 'overview',
         'generic_eligibility', 'common_entrance_exams', 'core_curriculum',
@@ -25,6 +25,8 @@ class Course extends Model
         'common_entrance_exams' => 'array',
         'common_specializations' => 'array',
         'faqs' => 'array',
+        'status' => 'boolean',
+        'is_show_on_website' => 'boolean',
     ];
 
     /**
