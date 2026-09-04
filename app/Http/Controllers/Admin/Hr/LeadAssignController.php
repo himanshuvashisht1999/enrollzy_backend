@@ -169,12 +169,16 @@ class LeadAssignController extends Controller
             }
 
             if ($isTopLevel) {
-                // Top Level: pull from unassigned leads if no call status specified
+                // Top Level: pull from truly unassigned fresh leads if no call status specified
                 if (!$request->filled('call_status_id')) {
                     $query->whereNotExists(function($q) {
                         $q->select(DB::raw(1))
                           ->from('lead_assignments')
                           ->whereColumn('lead_assignments.customer_id', 'users.id');
+                    })->whereNotExists(function($q) {
+                        $q->select(DB::raw(1))
+                          ->from('calling_histories')
+                          ->whereColumn('calling_histories.user_id', 'users.id');
                     });
                 }
             } else {
@@ -198,6 +202,7 @@ class LeadAssignController extends Controller
 
             foreach ($customers as $customerId) {
                 $existingAssignment = LeadAssignment::where('customer_id', $customerId)->first();
+                $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $customerId)->exists();
 
                 if ($existingAssignment) {
                     if ($existingAssignment->staff_id == $request->staff_id) {
@@ -205,7 +210,7 @@ class LeadAssignController extends Controller
                     } else {
                         // Reassign / Delegate lead
                         $oldStaffId = $existingAssignment->staff_id;
-                        $isReassigned = ($oldStaffId != $user->id);
+                        $isReassigned = $hasPastCallingHistory || ($oldStaffId != $user->id) || ($existingAssignment->is_reassigned == 1);
 
                         $existingAssignment->staff_id = $request->staff_id;
                         $existingAssignment->assigned_by = $user->id;
@@ -235,11 +240,12 @@ class LeadAssignController extends Controller
                     }
                 } else {
                     // Create new assignment - guaranteed unique per customer
+                    $isReassigned = $hasPastCallingHistory ? 1 : 0;
                     LeadAssignment::create([
                         'customer_id' => $customerId,
                         'staff_id' => $request->staff_id,
                         'assigned_by' => $user->id,
-                        'is_reassigned' => 0,
+                        'is_reassigned' => $isReassigned,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);
@@ -247,8 +253,8 @@ class LeadAssignController extends Controller
                     \App\Models\LeadActivityLog::create([
                         'customer_id' => $customerId,
                         'admin_id' => $user->id,
-                        'action_type' => 'assigned',
-                        'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                        'action_type' => $isReassigned ? 'reassigned' : 'assigned',
+                        'description' => 'Lead assigned to staff ID ' . $request->staff_id . ($isReassigned ? ' (Reassigned / Previously Contacted)' : ' (Fresh Lead)'),
                         'properties' => ['new_staff_id' => $request->staff_id]
                     ]);
                     $assignedCount++;
@@ -325,7 +331,16 @@ class LeadAssignController extends Controller
             if ($request->filled('call_status_id')) {
                 $totalPending = $totalLeads;
             } else {
-                $totalPending = max(0, $totalLeads - $totalAssigned);
+                $totalFresh = (clone $query)->whereNotExists(function($q) {
+                    $q->select(DB::raw(1))
+                      ->from('lead_assignments')
+                      ->whereColumn('lead_assignments.customer_id', 'users.id');
+                })->whereNotExists(function($q) {
+                    $q->select(DB::raw(1))
+                      ->from('calling_histories')
+                      ->whereColumn('calling_histories.user_id', 'users.id');
+                })->count();
+                $totalPending = $totalFresh;
             }
         } else {
             // Manager: count within manager's assigned leads

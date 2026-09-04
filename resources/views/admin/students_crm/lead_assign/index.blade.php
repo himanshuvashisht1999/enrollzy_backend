@@ -138,13 +138,15 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">Call Status Filter</label>
+                                <label class="form-label small fw-bold text-muted">Lead Pool / Call Status Filter</label>
                                 <select name="call_status_id" id="filter_call_status_id" class="form-select rounded-3">
-                                    <option value="">No Filter (Default)</option>
-                                    <option value="all">All Statuses</option>
-                                    @foreach($statuses as $status)
-                                        <option value="{{ $status->id }}">{{ $status->name }}</option>
-                                    @endforeach
+                                    <option value="">🌟 Fresh Leads Only (Never Assigned &amp; Never Contacted)</option>
+                                    <optgroup label="♻️ Recycled / Previously Disposed Leads">
+                                        <option value="all">All Disposed Statuses</option>
+                                        @foreach($statuses as $status)
+                                            <option value="{{ $status->id }}">{{ $status->name }}</option>
+                                        @endforeach
+                                    </optgroup>
                                 </select>
                             </div>
 

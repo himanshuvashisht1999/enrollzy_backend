@@ -1065,7 +1065,11 @@
                                             {!! $statusTag !!}
                                             @if($history && $history->calling_status)
                                                 <div class="text-muted small mt-1 fw-medium">
-                                                    {{ $history->calling_status->name }}
+                                                    @if($type === 'reassigned')
+                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-history me-1 opacity-75"></i>Last: {{ $history->calling_status->name }}</span>
+                                                    @else
+                                                        {{ $history->calling_status->name }}
+                                                    @endif
                                                 </div>
                                             @endif
                                         </td>
@@ -1163,6 +1167,15 @@
                                         </td>
                                         <td>
                                             {!! $statusTag !!}
+                                            @if(isset($assignment->latest_history) && $assignment->latest_history && $assignment->latest_history->calling_status)
+                                                <div class="text-muted small mt-1 fw-medium">
+                                                    @if($leadType === 'reassigned')
+                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-history me-1 opacity-75"></i>Last: {{ $assignment->latest_history->calling_status->name }}</span>
+                                                    @else
+                                                        {{ $assignment->latest_history->calling_status->name }}
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="text-muted small">
                                             {{ \Carbon\Carbon::parse($assignment->updated_at)->format('d M Y, h:i A') }}

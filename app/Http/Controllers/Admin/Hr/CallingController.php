@@ -38,7 +38,8 @@ class CallingController extends Controller
 
         if ($existingAssignment) {
             $oldStaffId = $existingAssignment->staff_id;
-            $isReassigned = ($oldStaffId != $user->id);
+            $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $request->customer_id)->exists();
+            $isReassigned = $hasPastCallingHistory || ($oldStaffId != $user->id) || ($existingAssignment->is_reassigned == 1);
 
             $existingAssignment->staff_id = $request->staff_id;
             $existingAssignment->assigned_by = $user->id;
@@ -70,18 +71,21 @@ class CallingController extends Controller
                 ]);
             }
         } else {
+            $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $request->customer_id)->exists();
+            $isReassigned = $hasPastCallingHistory ? 1 : 0;
+
             \App\Models\LeadAssignment::create([
                 'customer_id' => $request->customer_id,
                 'staff_id' => $request->staff_id,
                 'assigned_by' => $user->id,
-                'is_reassigned' => 0
+                'is_reassigned' => $isReassigned
             ]);
 
             \App\Models\LeadActivityLog::create([
                 'customer_id' => $request->customer_id,
                 'admin_id' => $user->id,
-                'action_type' => 'assigned',
-                'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                'action_type' => $isReassigned ? 'reassigned' : 'assigned',
+                'description' => 'Lead assigned to staff ID ' . $request->staff_id . ($isReassigned ? ' (Reassigned / Previously Contacted)' : ''),
                 'properties' => ['new_staff_id' => $request->staff_id]
             ]);
         }
@@ -123,13 +127,14 @@ class CallingController extends Controller
 
         foreach ($customerIds as $customerId) {
             $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $customerId)->first();
+            $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $customerId)->exists();
 
             if ($existingAssignment) {
                 if ($existingAssignment->staff_id == $request->staff_id) {
                     $skippedCount++;
                 } else {
                     $oldStaffId = $existingAssignment->staff_id;
-                    $isReassigned = ($oldStaffId != $user->id);
+                    $isReassigned = $hasPastCallingHistory || ($oldStaffId != $user->id) || ($existingAssignment->is_reassigned == 1);
 
                     $existingAssignment->staff_id = $request->staff_id;
                     $existingAssignment->assigned_by = $user->id;
@@ -158,11 +163,12 @@ class CallingController extends Controller
                     $assignedCount++;
                 }
             } else {
+                $isReassigned = $hasPastCallingHistory ? 1 : 0;
                 \App\Models\LeadAssignment::create([
                     'customer_id' => $customerId,
                     'staff_id' => $request->staff_id,
                     'assigned_by' => $user->id,
-                    'is_reassigned' => 0,
+                    'is_reassigned' => $isReassigned,
                     'created_at' => $now,
                     'updated_at' => $now
                 ]);
@@ -170,8 +176,8 @@ class CallingController extends Controller
                 \App\Models\LeadActivityLog::create([
                     'customer_id' => $customerId,
                     'admin_id' => $user->id,
-                    'action_type' => 'assigned',
-                    'description' => 'Lead assigned to staff ID ' . $request->staff_id,
+                    'action_type' => $isReassigned ? 'reassigned' : 'assigned',
+                    'description' => 'Lead assigned to staff ID ' . $request->staff_id . ($isReassigned ? ' (Reassigned / Previously Contacted)' : ''),
                     'properties' => ['new_staff_id' => $request->staff_id]
                 ]);
                 $assignedCount++;
@@ -551,10 +557,20 @@ class CallingController extends Controller
 
         if (!empty($unattemptedIds)) {
             $unattemptedCustomers = \App\Models\Customer::whereIn('id', $unattemptedIds)->get()->keyBy('id');
+            $unattemptedPastHistories = \App\Models\CallingHistory::with(['calling_status', 'staff'])
+                ->whereIn('user_id', $unattemptedIds)
+                ->orderBy('id', 'desc')
+                ->get()
+                ->groupBy('user_id');
+
             foreach ($unattemptedIds as $cid) {
                 if (isset($unattemptedCustomers[$cid])) {
                     $asgn = $assignmentsLookup->get($cid);
-                    $isReassigned = $asgn ? (bool)$asgn->is_reassigned : false;
+                    $pastHistories = $unattemptedPastHistories->get($cid);
+                    $hasPastHistory = ($pastHistories && $pastHistories->isNotEmpty());
+                    $latestPastHistory = $hasPastHistory ? $pastHistories->first() : null;
+
+                    $isReassigned = ($asgn ? (bool)$asgn->is_reassigned : false) || $hasPastHistory;
 
                     if ($request->filled('call_status_id')) {
                         if ($request->call_status_id === 'new' && $isReassigned) {
@@ -568,7 +584,8 @@ class CallingController extends Controller
                     $queue->push([
                         'type' => $isReassigned ? 'reassigned' : 'new',
                         'customer' => $unattemptedCustomers[$cid],
-                        'history' => null,
+                        'history' => $latestPastHistory,
+                        'has_past_history' => $hasPastHistory,
                         'sort_date' => $asgn ? $asgn->updated_at : $startDate,
                         'assignment_id' => $asgn ? $asgn->id : $cid
                     ]);
@@ -629,6 +646,7 @@ class CallingController extends Controller
         // Filter out leads that the assigned staff member has already worked on since the latest assignment
         $delegatedLeadsCustomerIds = $delegatedLeads->pluck('customer_id')->toArray();
         $histories = \App\Models\CallingHistory::whereIn('user_id', $delegatedLeadsCustomerIds)
+            ->with(['calling_status', 'staff'])
             ->get()
             ->groupBy('user_id');
 
@@ -647,9 +665,10 @@ class CallingController extends Controller
 
         foreach ($delegatedLeads as $assignment) {
             $customerHistories = $histories->get($assignment->customer_id);
-            $isReassigned = (bool)$assignment->is_reassigned;
+            $hasAnyHistory = ($customerHistories && $customerHistories->isNotEmpty());
+            $isReassigned = (bool)$assignment->is_reassigned || $hasAnyHistory;
 
-            if (!$customerHistories || $customerHistories->isEmpty()) {
+            if (!$hasAnyHistory) {
                 $assignment->lead_type = $isReassigned ? 'reassigned' : 'new';
                 $assignment->latest_history = null;
             } else {
@@ -662,7 +681,7 @@ class CallingController extends Controller
                         $assignment->lead_type = 'due_today';
                     }
                 } else {
-                    $assignment->lead_type = $isReassigned ? 'reassigned' : 'new';
+                    $assignment->lead_type = 'reassigned';
                 }
             }
         }
@@ -900,11 +919,26 @@ class CallingController extends Controller
             ->get();
             
         $latestHistory = $histories->first();
-        if ($latestHistory && $latestHistory->calling_status) {
+        $hasHistory = $histories->count() > 0;
+        $isReassignedLead = \App\Models\LeadAssignment::where('customer_id', $id)->where('is_reassigned', 1)->exists() || $hasHistory;
+
+        $currentStaffId = auth()->id();
+        $workedByCurrentStaff = $histories->where('updated_by', $currentStaffId)->isNotEmpty();
+
+        if ($workedByCurrentStaff && $latestHistory && $latestHistory->calling_status) {
             $statusName = $latestHistory->calling_status->name;
+            $statusBadgeHtml = "<span class='badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1'><i class='fas fa-tag me-1'></i>{$statusName}</span>";
+        } elseif ($hasHistory) {
+            $prevStaffName = $latestHistory->staff ? $latestHistory->staff->name : 'Previous Caller';
+            $prevStatus = $latestHistory->calling_status ? $latestHistory->calling_status->name : 'Contacted';
+            $statusName = "Reassigned Lead (Last: {$prevStatus} by {$prevStaffName})";
+            $statusBadgeHtml = "<span class='badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1'><i class='fas fa-random me-1'></i>{$statusName}</span>";
+        } elseif ($isReassignedLead) {
+            $statusName = 'Reassigned Lead';
+            $statusBadgeHtml = "<span class='badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1'><i class='fas fa-random me-1'></i>{$statusName}</span>";
         } else {
-            $isReassignedLead = \App\Models\LeadAssignment::where('customer_id', $id)->where('is_reassigned', 1)->exists();
-            $statusName = $isReassignedLead ? 'Reassigned Lead' : 'New Lead';
+            $statusName = 'New Lead';
+            $statusBadgeHtml = "<span class='badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1'><i class='fas fa-sparkles me-1'></i>{$statusName}</span>";
         }
         $leadQualityName = $customer && $customer->leadQuality ? $customer->leadQuality->name : '';
         
@@ -971,7 +1005,7 @@ class CallingController extends Controller
                         <span class='badge bg-light text-secondary border px-2 py-1 font-monospace'>#EZ-{$customer->id}</span>
                         <span class='fw-semibold text-dark'><i class='fas fa-phone-alt me-1 text-primary'></i>{$displayPhone}</span>
                         <span class='text-muted opacity-50'>|</span>
-                        <span class='badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1'><i class='fas fa-tag me-1'></i>{$statusName}</span>
+                        {$statusBadgeHtml}
                     </div>
                 </div>
             </div>
