@@ -15,7 +15,7 @@ class DynamicExamController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DynamicExam::latest();
+        $query = DynamicExam::orderBy('sort_order', 'asc')->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -40,6 +40,7 @@ class DynamicExamController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer',
             'logo' => 'nullable|image|max:2048',
             'cover_image' => 'nullable|image|max:2048',
         ]);
@@ -70,6 +71,7 @@ class DynamicExamController extends Controller
 
         $exam = DynamicExam::create([
             'name' => $validated['name'],
+            'sort_order' => $request->filled('sort_order') ? (int) $request->sort_order : 1,
             'slug' => $slug,
             'status' => $request->status ?? 'Active',
             'visibility' => $request->visibility ?? 'Public',
@@ -107,12 +109,14 @@ class DynamicExamController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer',
             'logo' => 'nullable|image|max:2048',
             'cover_image' => 'nullable|image|max:2048',
         ]);
 
         $data = $request->only([
             'name',
+            'sort_order',
             'status',
             'visibility',
             'official_website',
@@ -126,6 +130,10 @@ class DynamicExamController extends Controller
             'owning_organisation_id',
             'about_exam'
         ]);
+
+        if ($request->filled('sort_order')) {
+            $data['sort_order'] = (int) $request->sort_order;
+        }
 
         if ($request->has('featured_exam'))
             $data['featured_exam'] = 1;
@@ -222,6 +230,7 @@ class DynamicExamController extends Controller
             // Only update allowed fields
             $dynamicExam->update(array_intersect_key($data, array_flip([
                 'name',
+                'sort_order',
                 'short_name',
                 'exam_type',
                 'exam_category',
@@ -331,6 +340,24 @@ class DynamicExamController extends Controller
         }
 
         return redirect()->back()->with('success', 'Exam data saved successfully!');
+    }
+
+    public function updateSortOrder(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer|exists:dynamic_exams,id',
+            'sort_order' => 'required|integer',
+        ]);
+
+        $sortOrder = (int) $request->sort_order;
+        $id = (int) $request->id;
+
+        DynamicExam::where('id', $id)->update(['sort_order' => $sortOrder]);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Sort order updated successfully.'
+        ]);
     }
 
     public function destroy(DynamicExam $dynamicExam)

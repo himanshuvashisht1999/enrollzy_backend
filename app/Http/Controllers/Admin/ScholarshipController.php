@@ -52,8 +52,8 @@ class ScholarshipController extends Controller
 
     public function create()
     {
-        $courses = Course::where('status', 1)->orderBy('name')->get();
-        $organisations = Organisation::where('status', 1)->orderBy('name')->get();
+        $courses = Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+        $organisations = Organisation::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         return view('admin.scholarships.create', compact('courses', 'organisations'));
     }
 
@@ -214,8 +214,8 @@ class ScholarshipController extends Controller
 
     public function edit(Scholarship $scholarship)
     {
-        $courses = Course::where('status', 1)->orderBy('name')->get();
-        $organisations = Organisation::where('status', 1)->orderBy('name')->get();
+        $courses = Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+        $organisations = Organisation::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $scholarship->load(['eligibility', 'benefits', 'highlights', 'courses', 'universities', 'documents', 'dates', 'faqs', 'gallery', 'seo']);
         return view('admin.scholarships.edit', compact('scholarship', 'courses', 'organisations'));
     }

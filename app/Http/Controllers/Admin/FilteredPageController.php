@@ -22,7 +22,7 @@ class FilteredPageController extends Controller
         $streams = StreamOffered::where('status', 1)->get();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
         $programTypes = \App\Models\ProgramType::where('status', 1)->get();
-        $courses = \App\Models\Course::where('status', 1)->orderBy('name')->get();
+        $courses = \App\Models\Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         return view('admin.filtered-pages.create', compact('schoolTypes', 'streams', 'coachingCategories', 'programTypes', 'courses'));
     }
 
@@ -54,7 +54,7 @@ class FilteredPageController extends Controller
         $streams = StreamOffered::where('status', 1)->get();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->get();
         $programTypes = \App\Models\ProgramType::where('status', 1)->get();
-        $courses = \App\Models\Course::where('status', 1)->orderBy('name')->get();
+        $courses = \App\Models\Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         return view('admin.filtered-pages.edit', compact('filteredPage', 'schoolTypes', 'streams', 'coachingCategories', 'programTypes', 'courses'));
     }
 

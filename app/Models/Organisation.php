@@ -8,6 +8,7 @@ class Organisation extends Model
 {
     protected $fillable = [
         'name',
+        'sort_order',
         'organisation_type_id',
         'campus_type_new_id',
         'organisation_id_number',
@@ -342,14 +343,24 @@ class Organisation extends Model
         });
     }
 
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
+    }
+
     public function departments()
     {
-        return $this->hasMany(Department::class);
+        return $this->hasMany(Department::class)->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
     }
 
     public function courses()
     {
-        return $this->hasMany(OrganisationCourse::class);
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function organisationCourses()
+    {
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
     }
 
     public function organisationType()
@@ -399,8 +410,6 @@ class Organisation extends Model
 
     public function campuses()
     {
-        return $this->hasMany(Campus::class);
+        return $this->hasMany(Campus::class)->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
     }
-
-
 }

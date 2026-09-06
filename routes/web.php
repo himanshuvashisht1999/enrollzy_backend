@@ -142,12 +142,14 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Academic Directory Cockpit & Reports
     Route::prefix('/admin/academic-directory')->name('admin.academic-directory.')->group(function () {
         Route::get('/', [AcademicDirectoryController::class, 'index'])->name('index');
+        Route::get('/filter-counts', [AcademicDirectoryController::class, 'getFilterCounts'])->name('filter-counts');
         Route::get('/data/organisations', [AcademicDirectoryController::class, 'getOrganisationsData'])->name('data.organisations');
         Route::get('/data/campuses', [AcademicDirectoryController::class, 'getCampusesData'])->name('data.campuses');
         Route::get('/data/departments', [AcademicDirectoryController::class, 'getDepartmentsData'])->name('data.departments');
         Route::get('/data/courses', [AcademicDirectoryController::class, 'getCoursesData'])->name('data.courses');
         Route::get('/cascading-options', [AcademicDirectoryController::class, 'getCascadingOptions'])->name('cascading-options');
         Route::get('/quick-view/{type}/{id}', [AcademicDirectoryController::class, 'getQuickView'])->name('quick-view');
+        Route::post('/update-sort-order', [AcademicDirectoryController::class, 'updateSortOrder'])->name('update-sort-order');
         Route::get('/export', [AcademicDirectoryController::class, 'exportDirectory'])->name('export');
     });
 
@@ -187,6 +189,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/exams', \App\Http\Controllers\Admin\ExamController::class)->names('admin.exams')->middleware('can:department-browse');
 
     // Dynamic Exams
+    Route::post('/admin/dynamic-exams/update-sort-order', [\App\Http\Controllers\Admin\DynamicExamController::class, 'updateSortOrder'])->name('admin.dynamic-exams.update-sort-order');
     Route::resource('/admin/dynamic-exams', \App\Http\Controllers\Admin\DynamicExamController::class)->names('admin.dynamic-exams')->middleware('can:department-browse');
     Route::get('/admin/dynamic-exams/{dynamicExam}/data', [\App\Http\Controllers\Admin\DynamicExamController::class, 'data'])->name('admin.dynamic-exams.data');
     Route::post('/admin/dynamic-exams/{dynamicExam}/data', [\App\Http\Controllers\Admin\DynamicExamController::class, 'saveData'])->name('admin.dynamic-exams.data.save');

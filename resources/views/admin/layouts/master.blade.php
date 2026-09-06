@@ -300,10 +300,12 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisations.*') || request()->routeIs('admin.organisation-courses.*') ? 'active' : '' }}"
                                     href="{{ route('admin.organisations.index') }}">Organisations</a></li>
                             <!-- wrapped sublink missing -->
+{{--
 @if($user && method_exists($user, 'can') && $user->can('exams-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}"
                                     href="{{ route('admin.exams.index') }}">Exams List</a></li>
 @endif
+--}}
 
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('dynamic-exams-browse'))

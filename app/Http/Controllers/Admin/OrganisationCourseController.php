@@ -21,7 +21,7 @@ class OrganisationCourseController extends Controller
 
         $organisation = Organisation::with('organisationType')->findOrFail($organisationId);
 
-        $query = $organisation->courses()->with(['course', 'campus', 'department', 'entranceExam']);
+        $query = $organisation->courses()->with(['course', 'campus', 'department', 'entranceExam'])->orderBy('sort_order', 'asc');
 
         if ($campusId) {
             $query->where('campus_id', $campusId);
@@ -31,7 +31,7 @@ class OrganisationCourseController extends Controller
             $query->where('department_id', $departmentId);
         }
 
-        $courses = $query->latest()->paginate(10);
+        $courses = $query->paginate(10);
         $organisationTypeId = $organisation->organisation_type_id;
 
         // Populate schoolCourses if it's a school to maintain view compatibility
@@ -52,7 +52,7 @@ class OrganisationCourseController extends Controller
 
         $organisation = Organisation::findOrFail($organisationId);
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('name')->get();
+        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();
@@ -169,7 +169,7 @@ class OrganisationCourseController extends Controller
     {
         $organisation = $organisationCourse->organisation;
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('name')->get();
+        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();

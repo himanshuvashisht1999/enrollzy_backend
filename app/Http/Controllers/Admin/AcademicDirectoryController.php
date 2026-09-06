@@ -21,39 +21,169 @@ class AcademicDirectoryController extends Controller
     public function index(Request $request)
     {
         $totalOrgs = Organisation::count();
-        $publishedOrgs = Organisation::where('status', 1)->count();
-        $draftOrgs = max(0, $totalOrgs - $publishedOrgs);
-        
         $totalCampuses = Campus::count();
-        $verifiedCampuses = Campus::where('verification_status', 1)->count();
-        
         $totalDepartments = Department::count();
         $totalCourses = OrganisationCourse::count();
-        
+
         $organisationTypes = OrganisationType::where('status', true)->get();
-        $organisationsList = Organisation::select('id', 'name', 'organisation_type_id')->orderBy('name')->get();
-        $disciplinesList = Department::whereNotNull('discipline_area')->where('discipline_area', '!=', '')->distinct()->pluck('discipline_area');
-
-        // Analytics state breakdown
-        $stateCampuses = Campus::whereNotNull('state')->where('state', '!=', '')
-            ->select('state', DB::raw('count(*) as total'))
-            ->groupBy('state')
-            ->orderByDesc('total')
-            ->take(6)
-            ->get();
-
-        $orgTypeBreakdown = Organisation::join('organisation_types', 'organisations.organisation_type_id', '=', 'organisation_types.id')
-            ->select('organisation_types.title', DB::raw('count(organisations.id) as total'))
-            ->groupBy('organisation_types.title')
-            ->get();
+        $organisationsList = Organisation::select('id', 'name', 'organisation_type_id')->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+        $campusesList = Campus::select('id', 'campus_name', 'city', 'organisation_id')->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc')->get();
+        $departmentsList = Department::select('id', 'department_name', 'department_code', 'campus_id', 'organisation_id')->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc')->get();
+        
+        // Distinct master courses offered in OrganisationCourse
+        $coursesList = Course::whereIn('id', OrganisationCourse::whereNotNull('course_id')->select('course_id'))
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name']);
 
         return view('admin.academic_directory.index', compact(
-            'totalOrgs', 'publishedOrgs', 'draftOrgs',
-            'totalCampuses', 'verifiedCampuses',
-            'totalDepartments', 'totalCourses',
-            'organisationTypes', 'organisationsList', 'disciplinesList',
-            'stateCampuses', 'orgTypeBreakdown'
+            'totalOrgs',
+            'totalCampuses',
+            'totalDepartments',
+            'totalCourses',
+            'organisationTypes',
+            'organisationsList',
+            'campusesList',
+            'departmentsList',
+            'coursesList'
         ));
+    }
+
+    /**
+     * AJAX Endpoint: Real-time dynamic counts for all 4 cards and cascading dropdown options.
+     */
+    public function getFilterCounts(Request $request)
+    {
+        // 1. Dynamic Organisation Count
+        $orgQuery = Organisation::query();
+        if ($request->filled('organisation_type_id')) {
+            $orgQuery->where('organisation_type_id', $request->organisation_type_id);
+        }
+        if ($request->filled('organisation_id')) {
+            $orgQuery->where('id', $request->organisation_id);
+        }
+        if ($request->filled('campus_id')) {
+            $orgQuery->whereHas('campuses', fn($q) => $q->where('id', $request->campus_id));
+        }
+        if ($request->filled('department_id')) {
+            $orgQuery->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+        }
+        if ($request->filled('course_id')) {
+            $orgQuery->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+        $orgsCount = $orgQuery->count();
+
+        // 2. Dynamic Campuses Count
+        $campusQuery = Campus::query();
+        if ($request->filled('organisation_type_id')) {
+            $campusQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        if ($request->filled('organisation_id')) {
+            $campusQuery->where('organisation_id', $request->organisation_id);
+        }
+        if ($request->filled('campus_id')) {
+            $campusQuery->where('id', $request->campus_id);
+        }
+        if ($request->filled('department_id')) {
+            $campusQuery->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+        }
+        if ($request->filled('course_id')) {
+            $campusQuery->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+        $campusesCount = $campusQuery->count();
+
+        // 3. Dynamic Departments Count
+        $deptQuery = Department::query();
+        if ($request->filled('organisation_type_id')) {
+            $deptQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        if ($request->filled('organisation_id')) {
+            $deptQuery->where('organisation_id', $request->organisation_id);
+        }
+        if ($request->filled('campus_id')) {
+            $deptQuery->where('campus_id', $request->campus_id);
+        }
+        if ($request->filled('department_id')) {
+            $deptQuery->where('id', $request->department_id);
+        }
+        if ($request->filled('course_id')) {
+            $deptQuery->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+        $departmentsCount = $deptQuery->count();
+
+        // 4. Dynamic Courses Count
+        $courseQuery = OrganisationCourse::query();
+        if ($request->filled('organisation_type_id')) {
+            $courseQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        if ($request->filled('organisation_id')) {
+            $courseQuery->where('organisation_id', $request->organisation_id);
+        }
+        if ($request->filled('campus_id')) {
+            $courseQuery->where('campus_id', $request->campus_id);
+        }
+        if ($request->filled('department_id')) {
+            $courseQuery->where('department_id', $request->department_id);
+        }
+        if ($request->filled('course_id')) {
+            $courseQuery->where('course_id', $request->course_id);
+        }
+        $coursesCount = $courseQuery->count();
+
+        // 5. Cascading Dropdown Options
+        $cascades = [];
+
+        // Cascading Organisations
+        $orgsQuery = Organisation::query()->select('id', 'name');
+        if ($request->filled('organisation_type_id')) {
+            $orgsQuery->where('organisation_type_id', $request->organisation_type_id);
+        }
+        $cascades['organisations'] = $orgsQuery->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+
+        // Cascading Campuses (if org or org type selected)
+        $cQuery = Campus::query()->select('id', 'campus_name', 'city');
+        if ($request->filled('organisation_id')) {
+            $cQuery->where('organisation_id', $request->organisation_id);
+        } elseif ($request->filled('organisation_type_id')) {
+            $cQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        $cascades['campuses'] = $cQuery->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc')->get();
+
+        // Cascading Departments (if campus or org selected)
+        $dQuery = Department::query()->select('id', 'department_name', 'department_code');
+        if ($request->filled('campus_id')) {
+            $dQuery->where('campus_id', $request->campus_id);
+        } elseif ($request->filled('organisation_id')) {
+            $dQuery->where('organisation_id', $request->organisation_id);
+        } elseif ($request->filled('organisation_type_id')) {
+            $dQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        $cascades['departments'] = $dQuery->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc')->get();
+
+        // Cascading Courses (distinct master courses in filtered scope)
+        $ocCourseQuery = OrganisationCourse::whereNotNull('course_id');
+        if ($request->filled('department_id')) {
+            $ocCourseQuery->where('department_id', $request->department_id);
+        } elseif ($request->filled('campus_id')) {
+            $ocCourseQuery->where('campus_id', $request->campus_id);
+        } elseif ($request->filled('organisation_id')) {
+            $ocCourseQuery->where('organisation_id', $request->organisation_id);
+        } elseif ($request->filled('organisation_type_id')) {
+            $ocCourseQuery->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+        $courseIds = $ocCourseQuery->distinct()->pluck('course_id');
+        $cascades['courses'] = Course::whereIn('id', $courseIds)->select('id', 'name')->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+
+        return response()->json([
+            'status' => 1,
+            'counts' => [
+                'organisations' => $orgsCount,
+                'campuses'      => $campusesCount,
+                'departments'   => $departmentsCount,
+                'courses'       => $coursesCount,
+            ],
+            'cascades' => $cascades
+        ]);
     }
 
     /**
@@ -67,18 +197,30 @@ class AcademicDirectoryController extends Controller
             $query->where('organisation_type_id', $request->organisation_type_id);
         }
 
-        if ($request->filled('status')) {
-            if ($request->status === 'published') {
-                $query->where('status', 1);
-            } elseif ($request->status === 'draft') {
-                $query->where('status', 0);
-            } elseif ($request->status === 'top') {
-                $query->where('is_top', 1);
-            }
+        if ($request->filled('organisation_id')) {
+            $query->where('id', $request->organisation_id);
         }
+
+        if ($request->filled('campus_id')) {
+            $query->whereHas('campuses', fn($q) => $q->where('id', $request->campus_id));
+        }
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+        }
+
+        if ($request->filled('course_id')) {
+            $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+
+        $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('sort_order_html', function ($row) {
+                $val = $row->sort_order ?? 1;
+                return "<input type='number' class='form-control form-control-sm dir-sort-input text-center' data-type='organisation' data-id='{$row->id}' value='{$val}' min='0' style='width: 60px; height: 28px; font-weight: 600; font-size: 0.82rem;'>";
+            })
             ->addColumn('name_html', function ($row) {
                 $name = e($row->name);
                 $topBadge = $row->is_top ? '<span class="badge-pill-gold"><i class="fas fa-star me-1"></i>Top</span>' : '';
@@ -86,7 +228,6 @@ class AcademicDirectoryController extends Controller
                 $code = $row->organisation_id_number ? '<span class="code-pill">#' . e($row->organisation_id_number) . '</span>' : '';
                 $type = $row->organisationType ? $row->organisationType->title : 'Organisation';
 
-                // Gradient palette based on ID
                 $gradients = [
                     'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
                     'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
@@ -151,31 +292,45 @@ class AcademicDirectoryController extends Controller
 
                 return "<div class='d-flex align-items-center justify-content-end' style='gap: 6px;'>{$quickViewBtn}{$campusesBtn}{$editBtn}</div>";
             })
-            ->rawColumns(['name_html', 'location_html', 'hierarchy_chips', 'status_html', 'action'])
+            ->rawColumns(['sort_order_html', 'name_html', 'location_html', 'hierarchy_chips', 'status_html', 'action'])
             ->make(true);
     }
 
     /**
-     * AJAX DataTables endpoint for Campuses (Global or filtered).
+     * AJAX DataTables endpoint for Campuses.
      */
     public function getCampusesData(Request $request)
     {
         $query = Campus::with(['organisation.organisationType', 'departments'])->withCount(['departments', 'courses']);
 
+        if ($request->filled('organisation_type_id')) {
+            $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+
         if ($request->filled('organisation_id')) {
             $query->where('organisation_id', $request->organisation_id);
         }
 
-        if ($request->filled('status')) {
-            if ($request->status === 'published') {
-                $query->where('status', 1);
-            } elseif ($request->status === 'draft') {
-                $query->where('status', 0);
-            }
+        if ($request->filled('campus_id')) {
+            $query->where('id', $request->campus_id);
         }
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+        }
+
+        if ($request->filled('course_id')) {
+            $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+
+        $query->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('sort_order_html', function ($row) {
+                $val = $row->sort_order ?? 1;
+                return "<input type='number' class='form-control form-control-sm dir-sort-input text-center' data-type='campus' data-id='{$row->id}' value='{$val}' min='0' style='width: 60px; height: 28px; font-weight: 600; font-size: 0.82rem;'>";
+            })
             ->addColumn('campus_name_html', function ($row) {
                 $name = e($row->campus_name);
                 $code = $row->campus_code ? '<span class="code-pill me-1">#' . e($row->campus_code) . '</span>' : '';
@@ -257,7 +412,7 @@ class AcademicDirectoryController extends Controller
 
                 return "<div class='d-flex align-items-center justify-content-end' style='gap: 6px;'>{$quickViewBtn}{$addDeptBtn}{$editBtn}</div>";
             })
-            ->rawColumns(['campus_name_html', 'organisation_html', 'location_html', 'facilities_badges', 'hierarchy_chips', 'verification_badge', 'action'])
+            ->rawColumns(['sort_order_html', 'campus_name_html', 'organisation_html', 'location_html', 'facilities_badges', 'hierarchy_chips', 'verification_badge', 'action'])
             ->make(true);
     }
 
@@ -268,6 +423,10 @@ class AcademicDirectoryController extends Controller
     {
         $query = Department::with(['organisation.organisationType', 'campus'])->withCount('courses');
 
+        if ($request->filled('organisation_type_id')) {
+            $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
+
         if ($request->filled('organisation_id')) {
             $query->where('organisation_id', $request->organisation_id);
         }
@@ -276,12 +435,22 @@ class AcademicDirectoryController extends Controller
             $query->where('campus_id', $request->campus_id);
         }
 
-        if ($request->filled('discipline_area')) {
-            $query->where('discipline_area', $request->discipline_area);
+        if ($request->filled('department_id')) {
+            $query->where('id', $request->department_id);
         }
+
+        if ($request->filled('course_id')) {
+            $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+        }
+
+        $query->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('sort_order_html', function ($row) {
+                $val = $row->sort_order ?? 1;
+                return "<input type='number' class='form-control form-control-sm dir-sort-input text-center' data-type='department' data-id='{$row->id}' value='{$val}' min='0' style='width: 60px; height: 28px; font-weight: 600; font-size: 0.82rem;'>";
+            })
             ->addColumn('department_name_html', function ($row) {
                 $name = e($row->department_name);
                 $code = $row->department_code ? '<span class="code-pill">#' . e($row->department_code) . '</span>' : '';
@@ -337,7 +506,7 @@ class AcademicDirectoryController extends Controller
 
                 return "<div class='d-flex align-items-center justify-content-end' style='gap: 6px;'>{$quickViewBtn}{$addCourseBtn}{$editBtn}</div>";
             })
-            ->rawColumns(['department_name_html', 'hierarchy_html', 'discipline_badge', 'hod_info', 'faculty_labs', 'courses_count', 'action'])
+            ->rawColumns(['sort_order_html', 'department_name_html', 'hierarchy_html', 'discipline_badge', 'hod_info', 'faculty_labs', 'courses_count', 'action'])
             ->make(true);
     }
 
@@ -347,6 +516,10 @@ class AcademicDirectoryController extends Controller
     public function getCoursesData(Request $request)
     {
         $query = OrganisationCourse::with(['course.programLevel', 'organisation.organisationType', 'campus', 'department']);
+
+        if ($request->filled('organisation_type_id')) {
+            $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
+        }
 
         if ($request->filled('organisation_id')) {
             $query->where('organisation_id', $request->organisation_id);
@@ -360,16 +533,18 @@ class AcademicDirectoryController extends Controller
             $query->where('department_id', $request->department_id);
         }
 
-        if ($request->filled('status')) {
-            if ($request->status === 'published') {
-                $query->where('status', 1);
-            } elseif ($request->status === 'draft') {
-                $query->where('status', 0);
-            }
+        if ($request->filled('course_id')) {
+            $query->where('course_id', $request->course_id);
         }
+
+        $query->orderBy('sort_order', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('sort_order_html', function ($row) {
+                $val = $row->sort_order ?? 1;
+                return "<input type='number' class='form-control form-control-sm dir-sort-input text-center' data-type='course' data-id='{$row->id}' value='{$val}' min='0' style='width: 60px; height: 28px; font-weight: 600; font-size: 0.82rem;'>";
+            })
             ->addColumn('course_name_html', function ($row) {
                 $name = $row->course ? e($row->course->name) : 'Offered Program';
                 $level = ($row->course && $row->course->programLevel) ? $row->course->programLevel->name : 'General';
@@ -431,42 +606,47 @@ class AcademicDirectoryController extends Controller
 
                 return "<div class='d-flex align-items-center justify-content-end' style='gap: 6px;'>{$quickViewBtn}{$editBtn}</div>";
             })
-            ->rawColumns(['course_name_html', 'hierarchy_html', 'mode_duration', 'fees_html', 'status_html', 'action'])
+            ->rawColumns(['sort_order_html', 'course_name_html', 'hierarchy_html', 'mode_duration', 'fees_html', 'status_html', 'action'])
             ->make(true);
     }
 
     /**
-     * Fetch cascading options for filters (campuses & departments for a selected organisation).
+     * AJAX endpoint to update sort_order inline.
      */
-    public function getCascadingOptions(Request $request)
+    public function updateSortOrder(Request $request)
     {
-        $campuses = collect();
-        $departments = collect();
+        $request->validate([
+            'type' => 'required|in:organisation,campus,department,course',
+            'id' => 'required',
+            'sort_order' => 'required|integer',
+        ]);
 
-        if ($request->filled('organisation_id')) {
-            $campuses = Campus::where('organisation_id', $request->organisation_id)
-                ->select('id', 'campus_name', 'city')
-                ->orderBy('campus_name')
-                ->get();
-        }
+        $type = $request->type;
+        $id = $request->id;
+        $sortOrder = (int) $request->sort_order;
 
-        if ($request->filled('campus_id')) {
-            $departments = Department::where('campus_id', $request->campus_id)
-                ->select('id', 'department_name', 'department_code')
-                ->orderBy('department_name')
-                ->get();
-        } elseif ($request->filled('organisation_id')) {
-            $departments = Department::where('organisation_id', $request->organisation_id)
-                ->select('id', 'department_name', 'department_code')
-                ->orderBy('department_name')
-                ->get();
+        if ($type === 'organisation') {
+            Organisation::where('id', $id)->update(['sort_order' => $sortOrder]);
+        } elseif ($type === 'campus') {
+            Campus::where('id', $id)->update(['sort_order' => $sortOrder]);
+        } elseif ($type === 'department') {
+            Department::where('id', $id)->update(['sort_order' => $sortOrder]);
+        } elseif ($type === 'course') {
+            OrganisationCourse::where('id', $id)->update(['sort_order' => $sortOrder]);
         }
 
         return response()->json([
             'status' => 1,
-            'campuses' => $campuses,
-            'departments' => $departments
+            'message' => 'Sort order updated successfully.'
         ]);
+    }
+
+    /**
+     * Fetch cascading options for filters.
+     */
+    public function getCascadingOptions(Request $request)
+    {
+        return $this->getFilterCounts($request);
     }
 
     /**
@@ -513,10 +693,11 @@ class AcademicDirectoryController extends Controller
                 fputcsv($file, ['ID', 'Organisation Name', 'Type', 'Brand Type', 'Central Authority', 'Head Office', 'Campuses Count', 'Status']);
                 $query = Organisation::with('organisationType')->withCount('campuses');
                 if ($request->filled('organisation_type_id')) $query->where('organisation_type_id', $request->organisation_type_id);
-                if ($request->filled('status')) {
-                    if ($request->status === 'published') $query->where('status', 1);
-                    if ($request->status === 'draft') $query->where('status', 0);
-                }
+                if ($request->filled('organisation_id')) $query->where('id', $request->organisation_id);
+                if ($request->filled('campus_id')) $query->whereHas('campuses', fn($q) => $q->where('id', $request->campus_id));
+                if ($request->filled('department_id')) $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+                if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+                
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [
@@ -534,7 +715,12 @@ class AcademicDirectoryController extends Controller
             } elseif ($tab === 'campuses') {
                 fputcsv($file, ['ID', 'Campus Name', 'Campus Code', 'Parent Organisation', 'City', 'State', 'Verified', 'Status']);
                 $query = Campus::with('organisation');
+                if ($request->filled('organisation_type_id')) $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
                 if ($request->filled('organisation_id')) $query->where('organisation_id', $request->organisation_id);
+                if ($request->filled('campus_id')) $query->where('id', $request->campus_id);
+                if ($request->filled('department_id')) $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
+                if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [
@@ -552,8 +738,12 @@ class AcademicDirectoryController extends Controller
             } elseif ($tab === 'departments') {
                 fputcsv($file, ['ID', 'Department Name', 'Code', 'Organisation', 'Campus', 'Discipline', 'HOD Name', 'Faculty Count', 'Labs Count']);
                 $query = Department::with(['organisation', 'campus']);
+                if ($request->filled('organisation_type_id')) $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
                 if ($request->filled('organisation_id')) $query->where('organisation_id', $request->organisation_id);
                 if ($request->filled('campus_id')) $query->where('campus_id', $request->campus_id);
+                if ($request->filled('department_id')) $query->where('id', $request->department_id);
+                if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [
@@ -572,9 +762,12 @@ class AcademicDirectoryController extends Controller
             } elseif ($tab === 'courses') {
                 fputcsv($file, ['ID', 'Program Name', 'Organisation', 'Campus', 'Department', 'Program Type', 'Duration', 'Total Fees', 'Status']);
                 $query = OrganisationCourse::with(['course', 'organisation', 'campus', 'department']);
+                if ($request->filled('organisation_type_id')) $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
                 if ($request->filled('organisation_id')) $query->where('organisation_id', $request->organisation_id);
                 if ($request->filled('campus_id')) $query->where('campus_id', $request->campus_id);
                 if ($request->filled('department_id')) $query->where('department_id', $request->department_id);
+                if ($request->filled('course_id')) $query->where('course_id', $request->course_id);
+
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [

@@ -123,6 +123,11 @@ class OrganisationCourse extends Model
         'meta_description',
     ];
 
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc');
+    }
+
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);
