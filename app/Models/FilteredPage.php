@@ -42,4 +42,14 @@ class FilteredPage extends Model
     {
         return $this->belongsTo(Course::class, 'course_id');
     }
+
+    public function coachingCategory()
+    {
+        return $this->belongsTo(CoachingCategory::class, 'coaching_category_id');
+    }
+
+    public function programType()
+    {
+        return $this->belongsTo(ProgramType::class, 'program_type_id');
+    }
 }
