@@ -34,8 +34,7 @@ class CustomerController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $organization_id = auth()->user()->organization_id;
-            $data = Customer::where('organization_id', $organization_id)->with('category');
+            $data = Customer::with('category');
 
             if (!$request->filled('filter_name') && !$request->filled('filter_phone')) {
                 $data->whereRaw('1 = 0');
@@ -73,17 +72,16 @@ class CustomerController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $organization_id = auth()->user()->organization_id;
-        $institutes = Institute::where('organization_id', $organization_id)->get();
+        $institutes = Institute::all();
         $categories = CustomerCategory::where('parent_id', 0)
-            ->where('organization_id', $organization_id)
             ->with('childrenRecursive')
             ->get();
-        $interested_ins = \App\Models\InterestedIn::where('organization_id', $organization_id)->where('status', 'active')->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
+        $interested_ins = \App\Models\InterestedIn::where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where(function($q) {
+            $q->where('status', 1)->orWhere('status', 'active');
+        })->get();
         
         $fields = CustomerField::where('status', 'active')
-            ->where('organization_id', $organization_id)
             ->orderBy('sequence', 'asc')
             ->get();
 
@@ -231,20 +229,20 @@ class CustomerController extends Controller implements HasMiddleware
     public function edit($id)
     {
         $id = decrypt($id);
-        $customer = Customer::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
-        $institutes = Institute::where('organization_id', auth()->user()->organization_id)->get();
+        $customer = Customer::findOrFail($id);
+        $institutes = Institute::all();
         $categories = CustomerCategory::where('parent_id', 0)
-            ->where('organization_id', auth()->user()->organization_id)
             ->with('childrenRecursive')
             ->get();
         $fields = CustomerField::where('status', 'active')
-            ->where('organization_id', auth()->user()->organization_id)
             ->orderBy('sequence', 'asc')
             ->get();
         
         $fieldValues = UserCustomerField::where('user_id', $id)->pluck('value', 'customer_field_id')->toArray();
-        $interested_ins = \App\Models\InterestedIn::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', auth()->user()->organization_id)->where('status', 1)->get();
+        $interested_ins = \App\Models\InterestedIn::where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where(function($q) {
+            $q->where('status', 1)->orWhere('status', 'active');
+        })->get();
 
         $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
         $courses = \App\Models\Course::where('status', 1)->get();
@@ -259,7 +257,7 @@ class CustomerController extends Controller implements HasMiddleware
     public function update(Request $request, $id)
     {
         $id = decrypt($id);
-        $customer = Customer::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
+        $customer = Customer::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
             'name' => $request->from === 'calling_dashboard' ? 'nullable|string|max:255' : 'required|string|max:255',
@@ -405,7 +403,6 @@ class CustomerController extends Controller implements HasMiddleware
     {
         $parentId = $request->parent_id;
         $categories = CustomerCategory::where('parent_id', $parentId)
-            ->where('organization_id', auth()->user()->organization_id)
             ->where('status', 'active')
             ->get(['id', 'name']);
 
@@ -431,10 +428,21 @@ class CustomerController extends Controller implements HasMiddleware
             ignore_user_abort(true);
             \Illuminate\Support\Facades\DB::disableQueryLog();
 
-            Excel::import(new CustomerImport(auth()->user()->organization_id), $request->file('file'));
-            return response()->json(['status' => 1, 'message' => 'Students imported successfully']);
+            $organization_id = auth()->user()->organization_id;
+            $import = new CustomerImport($organization_id);
+            Excel::import($import, $request->file('file'));
+
+            $imported = $import->getImportedCount();
+            $skipped = $import->getSkippedCount();
+
+            $msg = "Successfully imported {$imported} student(s).";
+            if ($skipped > 0) {
+                $msg .= " ({$skipped} duplicate or invalid phone number records skipped)";
+            }
+
+            return response()->json(['status' => 1, 'message' => $msg]);
         } catch (\Exception $e) {
-            return response()->json(['status' => 0, 'message' => $e->getMessage()]);
+            return response()->json(['status' => 0, 'message' => 'Import error: ' . $e->getMessage()]);
         }
     }
 

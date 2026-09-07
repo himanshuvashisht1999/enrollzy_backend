@@ -76,8 +76,8 @@
                         <input type="file" name="file" id="file" class="form-control rounded-3" accept=".xlsx,.xls,.csv" required>
                     </div>
                     <div class="alert alert-info small rounded-3 mt-3">
-                        <i class="fas fa-info-circle me-1"></i> The Excel file must contain these columns: <b>name, phone, email, category_id</b>.<br>
-                        If a phone number already exists in the database, the record will be updated.
+                        <i class="fas fa-info-circle me-1"></i> Excel Columns: <b>S.No, NAME, Student Email, Current Course, Current University, Phone Number, Passing Year, Current Program Mode</b>.<br>
+                        <span class="text-muted small">Duplicate phone numbers already in the system will be skipped automatically.</span>
                     </div>
                 </div>
                 <div class="modal-footer border-0">

@@ -18,7 +18,7 @@ class LeadAssignController extends Controller
         return in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']);
     }
 
-    private function getAssignableStaffs($user, $organization_id)
+    private function getAssignableStaffs($user)
     {
         $userRoleName = $user->role ?? '';
         $userRole = \Spatie\Permission\Models\Role::where('name', $userRoleName)->first();
@@ -31,9 +31,7 @@ class LeadAssignController extends Controller
 
         if ($this->isTopLevelUser($user)) {
             // Superadmin / Admin can assign to all staffs with allowed roles
-            $staffQuery = Admin::where('organization_id', $organization_id)
-                ->where('status', 1)
-                ->where('id', '!=', $user->id);
+            $staffQuery = Admin::where('status', 1)->where('id', '!=', $user->id);
 
             if (!empty($allowedRoleNames)) {
                 $staffQuery->whereIn('role', $allowedRoleNames);
@@ -46,8 +44,7 @@ class LeadAssignController extends Controller
                 return collect();
             }
 
-            return Admin::where('organization_id', $organization_id)
-                ->where('status', 1)
+            return Admin::where('status', 1)
                 ->whereIn('role', $allowedRoleNames)
                 ->where('manager_id', $user->id)
                 ->get();
@@ -57,25 +54,19 @@ class LeadAssignController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $organization_id = $user->organization_id;
-        $categories = CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
-        $statuses = CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
-        $staffs = $this->getAssignableStaffs($user, $organization_id);
+        $categories = CustomerCategory::where('parent_id', 0)->with('childrenRecursive')->get();
+        $statuses = CallingStatus::where('status', 1)->get();
+        $staffs = $this->getAssignableStaffs($user);
 
         $isTopLevel = $this->isTopLevelUser($user);
 
         if ($isTopLevel) {
             // Top Level: Global Pool Numbers
-            $totalLeads = Customer::where('organization_id', $organization_id)->count();
-            $totalAssigned = LeadAssignment::whereHas('staff', function($q) use ($organization_id) {
-                $q->where('organization_id', $organization_id);
-            })->distinct('customer_id')->count('customer_id');
+            $totalLeads = Customer::count();
+            $totalAssigned = LeadAssignment::distinct('customer_id')->count('customer_id');
             $totalPending = max(0, $totalLeads - $totalAssigned);
 
             $assignmentsSummary = LeadAssignment::select('staff_id', 'created_at as batch_date', DB::raw('count(*) as total_leads'))
-                ->whereHas('staff', function($q) use ($organization_id) {
-                    $q->where('organization_id', $organization_id);
-                })
                 ->with('staff')
                 ->groupBy('staff_id', 'created_at')
                 ->orderBy('created_at', 'desc')
@@ -136,17 +127,16 @@ class LeadAssignController extends Controller
         ]);
 
         $user = auth()->user();
-        $organization_id = $user->organization_id;
         $isTopLevel = $this->isTopLevelUser($user);
 
         // Verify target staff is allowed for this user based on role assign rules
-        $allowedStaffs = $this->getAssignableStaffs($user, $organization_id);
+        $allowedStaffs = $this->getAssignableStaffs($user);
         if (!$allowedStaffs->contains('id', $request->staff_id)) {
             return redirect()->back()->with('error', 'You do not have permission to assign leads to the selected staff member based on Role Assignment Rules.');
         }
 
-        return DB::transaction(function() use ($request, $user, $organization_id, $isTopLevel) {
-            $query = Customer::where('organization_id', $organization_id);
+        return DB::transaction(function() use ($request, $user, $isTopLevel) {
+            $query = Customer::query();
 
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
@@ -155,13 +145,11 @@ class LeadAssignController extends Controller
             if ($request->filled('call_status_id')) {
                 if ($request->call_status_id === 'all') {
                     $customerIdsWithStatus = DB::table('calling_histories')
-                        ->where('organization_id', $organization_id)
                         ->whereNotNull('reason')
                         ->where('reason', '<>', '')
                         ->pluck('user_id');
                 } else {
                     $customerIdsWithStatus = DB::table('calling_histories')
-                        ->where('organization_id', $organization_id)
                         ->where('reason', $request->call_status_id)
                         ->pluck('user_id');
                 }
@@ -272,8 +260,7 @@ class LeadAssignController extends Controller
 
     public function show(Request $request, $staff_id)
     {
-        $organization_id = auth()->user()->organization_id;
-        $staff = Admin::where('organization_id', $organization_id)->findOrFail($staff_id);
+        $staff = Admin::findOrFail($staff_id);
         
         $query = LeadAssignment::with('customer')->where('staff_id', $staff_id);
 
@@ -289,10 +276,9 @@ class LeadAssignController extends Controller
     public function getFilteredCounts(Request $request)
     {
         $user = auth()->user();
-        $organization_id = $user->organization_id;
         $isTopLevel = $this->isTopLevelUser($user);
         
-        $query = Customer::where('organization_id', $organization_id);
+        $query = Customer::query();
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -300,20 +286,18 @@ class LeadAssignController extends Controller
 
         if ($request->filled('call_status_id')) {
             if ($request->call_status_id === 'all') {
-                $query->whereExists(function($q) use ($organization_id) {
+                $query->whereExists(function($q) {
                     $q->select(DB::raw(1))
                       ->from('calling_histories')
                       ->whereColumn('calling_histories.user_id', 'users.id')
-                      ->where('calling_histories.organization_id', $organization_id)
                       ->whereNotNull('reason')
                       ->where('reason', '<>', '');
                 });
             } else {
-                $query->whereExists(function($q) use ($organization_id, $request) {
+                $query->whereExists(function($q) use ($request) {
                     $q->select(DB::raw(1))
                       ->from('calling_histories')
                       ->whereColumn('calling_histories.user_id', 'users.id')
-                      ->where('calling_histories.organization_id', $organization_id)
                       ->where('reason', $request->call_status_id);
                 });
             }
@@ -377,15 +361,11 @@ class LeadAssignController extends Controller
             'page' => 'nullable|integer|min:1'
         ]);
 
-        $organization_id = auth()->user()->organization_id;
         $perPage = 20;
 
         $paginatedAssignments = LeadAssignment::with(['customer.category'])
             ->where('staff_id', $request->staff_id)
             ->where('created_at', $request->batch_date)
-            ->whereHas('staff', function($q) use ($organization_id) {
-                $q->where('organization_id', $organization_id);
-            })
             ->paginate($perPage);
 
         $leads = collect($paginatedAssignments->items())->map(function($a) {
@@ -418,14 +398,8 @@ class LeadAssignController extends Controller
             'batch_date' => 'required'
         ]);
 
-        $user = auth()->user();
-        $organization_id = $user->organization_id;
-
         $assignments = LeadAssignment::where('staff_id', $request->staff_id)
-            ->where('created_at', $request->batch_date)
-            ->whereHas('staff', function($q) use ($organization_id) {
-                $q->where('organization_id', $organization_id);
-            });
+            ->where('created_at', $request->batch_date);
 
         $count = $assignments->count();
         
