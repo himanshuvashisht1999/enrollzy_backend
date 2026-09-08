@@ -10,17 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('exams', function (Blueprint $table) {
-            $table->dropColumn([
-                'application_mode',
-                'application_steps',
-                'documents_required',
-                'application_fee',
-                'fee_currency',
-                'payment_modes',
-                'application_helpdesk_details'
-            ]);
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**
@@ -29,13 +19,13 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('exams', function (Blueprint $table) {
-            $table->string('application_mode')->nullable();
-            $table->json('application_steps')->nullable();
-            $table->json('documents_required')->nullable();
-            $table->decimal('application_fee', 10, 2)->nullable();
-            $table->string('fee_currency')->default('INR');
-            $table->json('payment_modes')->nullable();
-            $table->text('application_helpdesk_details')->nullable();
+            if (!Schema::hasColumn('exams', 'application_mode')) $table->string('application_mode')->nullable();
+            if (!Schema::hasColumn('exams', 'application_steps')) $table->json('application_steps')->nullable();
+            if (!Schema::hasColumn('exams', 'documents_required')) $table->json('documents_required')->nullable();
+            if (!Schema::hasColumn('exams', 'application_fee')) $table->decimal('application_fee', 10, 2)->nullable();
+            if (!Schema::hasColumn('exams', 'fee_currency')) $table->string('fee_currency')->default('INR');
+            if (!Schema::hasColumn('exams', 'payment_modes')) $table->json('payment_modes')->nullable();
+            if (!Schema::hasColumn('exams', 'application_helpdesk_details')) $table->text('application_helpdesk_details')->nullable();
         });
     }
 };

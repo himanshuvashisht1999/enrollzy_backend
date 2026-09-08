@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('header_links', function (Blueprint $table) {
-            $table->foreignId('parent_id')->nullable()->after('id')->constrained('header_links')->nullOnDelete();
-        });
+        Schema::table('header_links', function (Blueprint $table) {});
     }
 
     /**

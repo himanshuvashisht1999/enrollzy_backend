@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_categories')) {
         Schema::create('exam_categories', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->boolean('status')->default(1);
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('organisations', function (Blueprint $table) {
-            $table->string('mode')->nullable()->change();
-            $table->string('approvals')->nullable()->change();
-            $table->string('fees')->nullable()->change();
-            $table->string('placement')->nullable()->change();
-            $table->decimal('rating', 3, 1)->nullable()->change();
-        });
+        Schema::table('organisations', function (Blueprint $table) {});
     }
 
     /**

@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_homepage_sections')) {
         Schema::create('seo_homepage_sections', function (Blueprint $table) {
             $table->id();
             $table->string('section_name')->nullable();
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

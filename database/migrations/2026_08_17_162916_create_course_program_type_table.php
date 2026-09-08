@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('course_program_type')) {
         Schema::create('course_program_type', function (Blueprint $table) {
             $table->id();
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->foreignId('program_type_id')->constrained('program_types')->onDelete('cascade');
             $table->timestamps();
         });
+        }
     }
 
     /**

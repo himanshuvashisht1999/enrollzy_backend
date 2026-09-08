@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('university_awards')) {
         Schema::create('university_awards', function (Blueprint $table) {
             $table->id();
             $table->foreignId('university_id')->constrained()->cascadeOnDelete();
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->json('images')->nullable(); // Stores array of image paths
             $table->timestamps();
         });
+        }
     }
 
     /**

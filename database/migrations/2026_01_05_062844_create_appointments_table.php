@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('appointments')) {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Student
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, confirmed, completed, cancelled
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('campus_type_news')) {
         Schema::create('campus_type_news', function (Blueprint $table) {
             $table->id();
             $table->string('title')->nullable();
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

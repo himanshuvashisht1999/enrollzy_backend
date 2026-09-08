@@ -10,28 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('exams', function (Blueprint $table) {
-            $table->boolean('registration_fee_required')->default(false);
-            $table->json('registration_fee_structure')->nullable();
-
-            $table->boolean('late_registration_allowed')->default(false);
-            $table->json('late_fee_rules')->nullable();
-
-            $table->boolean('security_deposit_required')->default(false);
-            $table->json('security_deposit_structure')->nullable();
-
-            $table->json('round_specific_fee_rules')->nullable();
-
-            $table->text('refund_policy_summary')->nullable();
-            $table->string('refund_timeline')->nullable();
-            $table->string('refund_mode')->nullable();
-            $table->json('forfeiture_scenarios')->nullable();
-
-            $table->json('payment_modes_allowed')->nullable();
-            $table->boolean('transaction_charges_applicable')->default(false);
-            $table->string('transaction_charge_borne_by')->nullable();
-            $table->string('payment_gateway_name')->nullable();
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**

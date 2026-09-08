@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            $table->json('coaching_category_ids')->nullable();
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

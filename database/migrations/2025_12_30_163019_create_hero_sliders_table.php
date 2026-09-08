@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('hero_sliders')) {
         Schema::create('hero_sliders', function (Blueprint $table) {
             $table->id();
             $table->string('image_path');
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

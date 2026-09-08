@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('admin', function (Blueprint $table) {
-            $table->unsignedBigInteger('staff_type_id')->nullable()->after('id');
-            $table->foreign('staff_type_id')->references('id')->on('staff_types')->nullOnDelete();
-        });
+        Schema::table('admin', function (Blueprint $table) {});
     }
 
     /**

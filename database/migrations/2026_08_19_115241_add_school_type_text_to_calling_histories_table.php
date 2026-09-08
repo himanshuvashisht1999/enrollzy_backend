@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            $table->string('program_level_text')->nullable()->after('program_level_id');
-            $table->string('school_type_text')->nullable()->after('school_type_id');
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_status', function (Blueprint $table) {
-            $table->enum('is_more_details', ['yes', 'no'])->default('no')->after('date_require');
-        });
+        Schema::table('calling_status', function (Blueprint $table) {});
     }
 
     /**

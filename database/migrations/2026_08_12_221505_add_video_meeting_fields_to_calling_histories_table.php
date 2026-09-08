@@ -11,12 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            $table->date('meeting_date')->nullable();
-            $table->time('time_slot')->nullable();
-            $table->text('meeting_link')->nullable();
-            $table->unsignedBigInteger('assign_to_staff_id')->nullable();
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

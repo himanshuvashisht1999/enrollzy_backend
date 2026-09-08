@@ -10,12 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('exams', function (Blueprint $table) {
-            $table->text('name')->change();
-            $table->text('short_name')->nullable()->change();
-            $table->text('syllabus_source')->nullable()->change();
-            $table->text('official_website')->nullable()->change();
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**
@@ -24,10 +19,10 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('exams', function (Blueprint $table) {
-            $table->string('name')->change();
-            $table->string('short_name')->nullable()->change();
-            $table->string('syllabus_source')->nullable()->change();
-            $table->string('official_website')->nullable()->change();
+            if (!Schema::hasColumn('exams', 'name')) $table->string('name')->change();
+            if (!Schema::hasColumn('exams', 'short_name')) $table->string('short_name')->nullable()->change();
+            if (!Schema::hasColumn('exams', 'syllabus_source')) $table->string('syllabus_source')->nullable()->change();
+            if (!Schema::hasColumn('exams', 'official_website')) $table->string('official_website')->nullable()->change();
         });
     }
 };

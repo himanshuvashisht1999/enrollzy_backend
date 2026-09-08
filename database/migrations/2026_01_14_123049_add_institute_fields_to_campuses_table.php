@@ -11,19 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            // Modify campus_type to supports string instead of strict enum to allow Centre/Branch
-            // Or just add a new column if modification is complex in SQLite/MySQL strict mode.
-            // Using change() usually requires doctrine/dbal. 
-            // For simplicity/robustness, we can modify the column to string(50) to allow any type.
-            $table->string('campus_type', 50)->change();
-
-            // New Fields for Type 3
-            $table->enum('ownership_model', ['Owned', 'Franchise', 'Partner'])->nullable();
-            $table->string('franchise_partner_name')->nullable();
-            $table->year('franchise_start_year')->nullable();
-            $table->boolean('brand_compliance_verified')->default(false);
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

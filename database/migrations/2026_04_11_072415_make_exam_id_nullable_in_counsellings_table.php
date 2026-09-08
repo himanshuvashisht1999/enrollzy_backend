@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('counsellings', function (Blueprint $table) {
-            $table->unsignedBigInteger('exam_id')->nullable()->change();
-        });
+        Schema::table('counsellings', function (Blueprint $table) {});
     }
 
     /**
@@ -22,7 +20,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('counsellings', function (Blueprint $table) {
-            $table->unsignedBigInteger('exam_id')->nullable(false)->change();
+            if (!Schema::hasColumn('counsellings', 'exam_id')) $table->unsignedBigInteger('exam_id')->nullable(false)->change();
         });
     }
 };

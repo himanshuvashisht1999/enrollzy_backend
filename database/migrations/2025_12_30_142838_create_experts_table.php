@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('experts')) {
         Schema::create('experts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->string('img')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

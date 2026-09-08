@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultants', function (Blueprint $table) {
-            $table->string('status')->default('active')->change();
-            $table->string('access_level')->nullable()->change();
-            $table->string('lead_visibility')->nullable()->change();
-        });
+        Schema::table('consultants', function (Blueprint $table) {});
     }
 
     /**

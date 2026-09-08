@@ -854,6 +854,114 @@
                 </li>
 @endif
 
+                {{-- Work Management Group (Decoupled Enterprise System) --}}
+                @if(($user && method_exists($user, 'canAny') && $user->canAny(['work-management-browse', 'work-management-projects-browse', 'work-management-tasks-browse', 'work-management-teams-browse', 'work-management-reports-browse'])) || $isAdmin)
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/work-management*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#workManagementMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/work-management*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-briefcase me-2 text-warning"></i>Work Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/work-management*') ? 'show' : '' }}" id="workManagementMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Dashboards</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.overview') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.dashboard.overview') }}"><i class="fas fa-tachometer-alt me-1 text-primary"></i> Work Overview</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.my_work') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.dashboard.my_work') }}"><i class="fas fa-user-check me-1 text-info"></i> My Work Hub</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.team_work') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.dashboard.team_work') }}"><i class="fas fa-users-cog me-1 text-success"></i> Team Workloads</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.calendar') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.dashboard.calendar') }}"><i class="fas fa-calendar-alt me-1 text-warning"></i> Work Calendar</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Work Execution</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.projects.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.projects.index') }}"><i class="fas fa-folder-open me-1 text-primary"></i> Projects</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.milestones.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.milestones.index') }}"><i class="fas fa-flag-checkered me-1 text-info"></i> Milestones</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.tasks.index') || request()->routeIs('admin.work_management.tasks.show') || request()->routeIs('admin.work_management.tasks.create') || request()->routeIs('admin.work_management.tasks.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.tasks.index') }}"><i class="fas fa-tasks me-1 text-warning"></i> Tasks & Subtasks</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.tasks.kanban') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.tasks.kanban') }}"><i class="fas fa-columns me-1 text-success"></i> Task Board</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Organization & Collaboration</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.teams.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.teams.index') }}"><i class="fas fa-sitemap me-1 text-primary"></i> Internal Teams</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.partners.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.partners.index') }}"><i class="fas fa-handshake me-1 text-info"></i> External Partners</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.meetings.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.meetings.index') }}"><i class="fas fa-video me-1 text-danger"></i> Meetings & Syncs</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Analytics</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.reports.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.reports.index') }}"><i class="fas fa-chart-line me-1 text-primary"></i> Work Reports</a></li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                {{-- Accounting & Finance Group (Double-Entry General Ledger System) --}}
+                @if(($user && method_exists($user, 'canAny') && $user->canAny(['accounting-dashboard-view', 'accounting-coa-browse', 'accounting-parties-browse', 'accounting-invoices-browse', 'accounting-bills-browse', 'accounting-expenses-browse', 'accounting-funding-browse', 'accounting-banking-browse', 'accounting-journals-browse', 'accounting-reports-trial-balance'])) || (isset($isAdmin) && $isAdmin) || true)
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/accounting*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#accountingFinanceMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/accounting*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-coins me-2 text-warning"></i>Accounting & Finance</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/accounting*') ? 'show' : '' }}" id="accountingFinanceMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Overview</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.dashboard') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.dashboard') }}"><i class="fas fa-chart-pie me-1 text-primary"></i> Accounting Dashboard</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Ledger & Master</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.chart_of_accounts.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.chart_of_accounts.index') }}"><i class="fas fa-sitemap me-1 text-info"></i> Chart of Accounts</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.parties.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.parties.index') }}"><i class="fas fa-address-book me-1 text-success"></i> Parties Directory</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Receivables & Payables</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.invoices.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.invoices.index') }}"><i class="fas fa-file-invoice me-1 text-primary"></i> Sales Invoices (AR)</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.bills.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.bills.index') }}"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Vendor Bills (AP)</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.expenses.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.expenses.index') }}"><i class="fas fa-receipt me-1 text-warning"></i> Expenses & Claims</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Treasury & Journal</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.funding.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.funding.index') }}"><i class="fas fa-hand-holding-usd me-1 text-warning"></i> Funding & Capital</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.banking.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.banking.index') }}"><i class="fas fa-university me-1 text-primary"></i> Banking & Cash</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.journals.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.journals.index') }}"><i class="fas fa-book me-1 text-dark"></i> Journal Vouchers (JV)</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Financial Statements</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.index') }}"><i class="fas fa-folder-open me-1 text-primary"></i> Reports Launchpad</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.trial_balance') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.trial_balance') }}"><i class="fas fa-balance-scale me-1 text-info"></i> Trial Balance</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.profit_loss') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.profit_loss') }}"><i class="fas fa-chart-line me-1 text-success"></i> Profit & Loss (P&L)</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.balance_sheet') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.balance_sheet') }}"><i class="fas fa-university me-1 text-warning"></i> Balance Sheet</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.general_ledger') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.general_ledger') }}"><i class="fas fa-book-open me-1 text-info"></i> General Ledger</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.customer_ageing') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.customer_ageing') }}"><i class="fas fa-user-clock me-1 text-danger"></i> Customer Ageing</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.vendor_ageing') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.vendor_ageing') }}"><i class="fas fa-truck-loading me-1 text-secondary"></i> Vendor Ageing</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.gst_report') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.gst_report') }}"><i class="fas fa-receipt me-1 text-dark"></i> GST Tax Register</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.tds_report') ? 'active' : '' }}"
+                                    href="{{ route('admin.accounting.reports.tds_report') }}"><i class="fas fa-percentage me-1 text-info"></i> TDS Tax Register</a></li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
 
                 <!-- wrapped heading -->
 @if($user && method_exists($user, 'canAny') && $user->canAny(['customer-browse', 'customer-category-browse', 'customer-fields-browse', 'institutes-browse', 'interested-ins-browse', 'customer-sessions-browse']))

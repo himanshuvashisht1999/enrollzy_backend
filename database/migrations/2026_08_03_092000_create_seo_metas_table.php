@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_metas')) {
         Schema::create('seo_metas', function (Blueprint $table) {
             $table->id();
             $table->morphs('seoable'); // seoable_type + seoable_id
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->tinyInteger('no_follow')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultant_masters', function (Blueprint $table) {
-            //
-        });
+        Schema::table('consultant_masters', function (Blueprint $table) {});
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('consultant_masters', function (Blueprint $table) {
-            //
-        });
+        Schema::table('consultant_masters', function (Blueprint $table) {});
     }
 };

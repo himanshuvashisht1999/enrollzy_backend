@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('noteworthy_categories')) {
         Schema::create('noteworthy_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -19,7 +20,9 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
 
+        if (!Schema::hasTable('noteworthy_mentions')) {
         Schema::create('noteworthy_mentions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('noteworthy_category_id')->constrained()->onDelete('cascade');
@@ -32,6 +35,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('lead_assignments')) {
         Schema::create('lead_assignments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('customer_id');
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('assigned_by');
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

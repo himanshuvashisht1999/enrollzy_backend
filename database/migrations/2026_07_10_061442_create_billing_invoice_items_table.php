@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('billing_invoice_items')) {
         Schema::create('billing_invoice_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invoice_id')->constrained('billing_invoices')->onDelete('cascade');
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->decimal('total', 12, 2)->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

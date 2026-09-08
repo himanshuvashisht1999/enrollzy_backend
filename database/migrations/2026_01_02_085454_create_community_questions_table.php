@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('community_questions')) {
         Schema::create('community_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->integer('views')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

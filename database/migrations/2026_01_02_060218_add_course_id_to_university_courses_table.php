@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('university_courses', function (Blueprint $table) {
-            $table->foreignId('course_id')->nullable()->after('university_id')->constrained()->onDelete('cascade');
-            $table->dropColumn('name');
-        });
+        Schema::table('university_courses', function (Blueprint $table) {});
     }
 
     /**
@@ -23,7 +20,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('university_courses', function (Blueprint $table) {
-            $table->string('name')->after('university_id');
+            if (!Schema::hasColumn('university_courses', 'name')) $table->string('name')->after('university_id');
             $table->dropConstrainedForeignId('course_id');
         });
     }

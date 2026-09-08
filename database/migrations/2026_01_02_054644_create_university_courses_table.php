@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('university_courses')) {
         Schema::create('university_courses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('university_id')->constrained()->onDelete('cascade');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

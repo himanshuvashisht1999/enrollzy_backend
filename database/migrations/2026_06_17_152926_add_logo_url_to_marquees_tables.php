@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('school_marquees', function (Blueprint $table) {
-            $table->string('logo_url')->nullable();
-        });
+        Schema::table('school_marquees', function (Blueprint $table) {});
 
-        Schema::table('institute_marquees', function (Blueprint $table) {
-            $table->string('logo_url')->nullable();
-        });
+        Schema::table('institute_marquees', function (Blueprint $table) {});
     }
 
     /**

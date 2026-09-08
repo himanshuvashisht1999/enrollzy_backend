@@ -13,9 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         if (!Schema::hasColumn('lead_assignments', 'is_reassigned')) {
-            Schema::table('lead_assignments', function (Blueprint $table) {
-                $table->boolean('is_reassigned')->default(false)->after('assigned_by')->index();
-            });
+            Schema::table('lead_assignments', function (Blueprint $table) {});
         }
 
         // Backfill existing genuine reassigned leads from lead_activity_logs (where old_staff_id != admin_id)

@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('filtered_pages', function (Blueprint $table) {
-            $table->string('title')->nullable()->after('slug');
-        });
+        Schema::table('filtered_pages', function (Blueprint $table) {});
     }
 
     /**

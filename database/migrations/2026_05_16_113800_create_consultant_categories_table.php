@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('consultant_category_pivots')) {
         Schema::create('consultant_category_pivots', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('consultant_id');
@@ -21,19 +22,22 @@ return new class extends Migration
 
             $table->foreign('consultant_id')->references('id')->on('consultants')->onDelete('cascade');
         });
+        }
 
         // Migrate existing data if any
-        $consultants = DB::table('consultants')->get();
-        foreach ($consultants as $consultant) {
-            if ($consultant->category_id) {
-                DB::table('consultant_category_pivots')->insert([
-                    'consultant_id' => $consultant->id,
-                    'category_id' => $consultant->category_id,
-                    'sub_category_id' => $consultant->sub_category_id,
-                    'sub_sub_category_id' => $consultant->sub_sub_category_id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+        if (Schema::hasColumn('consultant_category_pivots', 'sub_category_id')) {
+            $consultants = DB::table('consultants')->get();
+            foreach ($consultants as $consultant) {
+                if ($consultant->category_id) {
+                    DB::table('consultant_category_pivots')->insert([
+                        'consultant_id' => $consultant->id,
+                        'category_id' => $consultant->category_id,
+                        'sub_category_id' => $consultant->sub_category_id ?? null,
+                        'sub_sub_category_id' => $consultant->sub_sub_category_id ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
         }
     }

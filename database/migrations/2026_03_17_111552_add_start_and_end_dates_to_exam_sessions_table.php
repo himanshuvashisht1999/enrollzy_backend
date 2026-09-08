@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('exam_sessions', function (Blueprint $table) {
-            $table->date('exam_start_date')->nullable()->after('admit_card_url');
-            $table->date('exam_end_date')->nullable()->after('exam_start_date');
-        });
+        Schema::table('exam_sessions', function (Blueprint $table) {});
     }
 
     /**

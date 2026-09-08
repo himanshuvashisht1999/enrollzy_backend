@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_homepage')) {
         Schema::create('seo_homepage', function (Blueprint $table) {
             $table->id();
             
@@ -51,6 +52,7 @@ return new class extends Migration
             
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

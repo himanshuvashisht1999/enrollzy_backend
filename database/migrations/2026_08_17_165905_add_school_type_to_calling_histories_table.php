@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            $table->unsignedBigInteger('school_type_id')->nullable();
-            $table->string('school_type_text')->nullable();
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

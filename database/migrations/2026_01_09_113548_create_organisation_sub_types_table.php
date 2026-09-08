@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('organisation_sub_types')) {
         Schema::create('organisation_sub_types', function (Blueprint $table) {
             $table->id();
             $table->foreignId('organisation_type_id')->constrained()->onDelete('cascade');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

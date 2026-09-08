@@ -12,9 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings', function (Blueprint $table) {
-            $table->string('gst_number')->nullable()->after('address');
-        });
+        Schema::table('settings', function (Blueprint $table) {});
 
         // Use raw SQL to alter ENUM values
         DB::statement("ALTER TABLE billing_payments MODIFY COLUMN payment_mode ENUM('Bank Transfer', 'UPI', 'Cash', 'Cheque', 'TDS') NOT NULL DEFAULT 'Bank Transfer'");

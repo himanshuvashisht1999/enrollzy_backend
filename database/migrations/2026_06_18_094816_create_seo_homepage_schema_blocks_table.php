@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_homepage_schema_blocks')) {
         Schema::create('seo_homepage_schema_blocks', function (Blueprint $table) {
             $table->id();
             $table->string('schema_type')->nullable(); // FAQPage, Organization, WebSite, SearchAction
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

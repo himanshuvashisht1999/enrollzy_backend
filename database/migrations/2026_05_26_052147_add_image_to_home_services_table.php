@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('home_services', function (Blueprint $table) {
-            $table->string('image')->nullable()->after('description');
-        });
+        Schema::table('home_services', function (Blueprint $table) {});
     }
 
     /**

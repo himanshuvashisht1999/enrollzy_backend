@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('availability_slots')) {
         Schema::create('availability_slots', function (Blueprint $table) {
             $table->id();
             $table->morphs('provider'); // provider_id and provider_type (Expert/Alumni)
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->string('status')->default('open'); // open, closed, booked
             $table->timestamps();
         });
+        }
     }
 
     /**

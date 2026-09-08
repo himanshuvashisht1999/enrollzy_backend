@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('customer_academic_details')) {
         Schema::create('customer_academic_details', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
@@ -23,6 +24,7 @@ return new class extends Migration
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+        }
     }
 
     /**

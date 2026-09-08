@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('company_marquees', function (Blueprint $table) {
-            $table->string('direction')->default('rtl')->after('status');
-        });
+        Schema::table('company_marquees', function (Blueprint $table) {});
     }
 
     /**

@@ -97,7 +97,7 @@ class LeadAssignController extends Controller
                 $workedCount = DB::table('calling_histories')
                     ->join('lead_assignments', 'lead_assignments.customer_id', '=', 'calling_histories.user_id')
                     ->where('lead_assignments.staff_id', $s->id)
-                    ->where('calling_histories.updated_by', $s->id)
+                    ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at')
                     ->distinct('calling_histories.user_id')
                     ->count('calling_histories.user_id');
             }

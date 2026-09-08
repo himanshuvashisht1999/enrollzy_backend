@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('about_us_pages', function (Blueprint $table) {
-            $table->text('founder_1_message')->nullable()->after('founder_1_twitter');
-            $table->text('founder_2_message')->nullable()->after('founder_2_twitter');
-        });
+        Schema::table('about_us_pages', function (Blueprint $table) {});
     }
 
     /**

@@ -8,11 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('filtered_pages', function (Blueprint $table) {
-            $table->string('university_type')->nullable()->after('curriculum');
-            $table->string('degree')->nullable()->after('university_type');
-            $table->unsignedBigInteger('stream_id')->nullable()->after('degree');
-        });
+        Schema::table('filtered_pages', function (Blueprint $table) {});
     }
 
     public function down(): void

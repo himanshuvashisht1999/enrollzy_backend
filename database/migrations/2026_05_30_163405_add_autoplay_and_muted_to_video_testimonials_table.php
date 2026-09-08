@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('video_testimonials', function (Blueprint $table) {
-            $table->boolean('autoplay')->default(false)->after('video_url');
-            $table->boolean('muted')->default(false)->after('autoplay');
-        });
+        Schema::table('video_testimonials', function (Blueprint $table) {});
     }
 
     /**

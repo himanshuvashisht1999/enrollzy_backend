@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('calling_history_logs')) {
         Schema::create('calling_history_logs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('history_id')->nullable();
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->string('status')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            $table->unsignedBigInteger('university_id')->nullable()->after('calling_action_id');
-            $table->string('university_text')->nullable()->after('university_id');
-            $table->unsignedBigInteger('course_id')->nullable()->after('university_text');
-            $table->string('course_text')->nullable()->after('course_id');
-            $table->enum('course_type', ['online', 'offline'])->nullable()->after('course_text');
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

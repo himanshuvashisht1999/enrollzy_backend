@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_status', function (Blueprint $table) {
-            $table->integer('calling_action_id')->nullable()->after('name');
-        });
+        Schema::table('calling_status', function (Blueprint $table) {});
     }
 
     /**

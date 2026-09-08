@@ -8,11 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('filtered_pages', function (Blueprint $table) {
-            if (!Schema::hasColumn('filtered_pages', 'course_id')) {
-                $table->unsignedBigInteger('course_id')->nullable()->after('program_type_id');
-            }
-        });
+        Schema::table('filtered_pages', function (Blueprint $table) {});
     }
 
     public function down(): void

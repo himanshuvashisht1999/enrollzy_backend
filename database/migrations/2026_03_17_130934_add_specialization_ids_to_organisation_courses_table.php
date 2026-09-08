@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->json('specialization_ids')->nullable()->after('specialization_id');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     /**

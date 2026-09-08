@@ -12,6 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_stages')) {
         Schema::create('exam_stages', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
 
         // Seed default stages
         DB::table('exam_stages')->insert([

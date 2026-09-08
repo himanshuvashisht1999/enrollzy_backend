@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->index('phone');
-            $table->index('mobile');
-            $table->index('role');
-            $table->index('organization_id');
-            $table->index('category_id');
-        });
+        Schema::table('users', function (Blueprint $table) {});
     }
 
     /**

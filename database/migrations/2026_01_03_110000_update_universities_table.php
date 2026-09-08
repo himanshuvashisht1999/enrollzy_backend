@@ -11,28 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('universities', function (Blueprint $table) {
-            $table->foreignId('organisation_type_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('campus_type_id')->nullable()->constrained()->nullOnDelete();
-            
-            $table->text('address')->nullable();
-            $table->boolean('scholarship_available')->default(false);
-            $table->longText('international_collaboration')->nullable();
-            $table->longText('review')->nullable();
-            $table->longText('living_cost')->nullable();
-            $table->longText('hostel_fees')->nullable();
-            $table->boolean('ncc')->default(false);
-            $table->boolean('nss')->default(false);
-            $table->string('global_ranking')->nullable();
-            $table->boolean('alumni_network')->default(false);
-            $table->boolean('mental_health_support')->default(false);
-            $table->longText('incubation_center')->nullable();
-            $table->integer('total_students')->nullable();
-            $table->integer('international_students')->nullable();
-            $table->integer('male_students')->nullable();
-            $table->integer('female_students')->nullable();
-            $table->boolean('lgbtq_friendly')->default(false);
-        });
+        Schema::table('universities', function (Blueprint $table) {});
     }
 
     /**

@@ -12,9 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('experts') && !Schema::hasColumn('experts', 'price_per_min')) {
-            Schema::table('experts', function (Blueprint $table) {
-                $table->decimal('price_per_min', 10, 2)->default(10.00)->after('email');
-            });
+            Schema::table('experts', function (Blueprint $table) {});
         }
     }
 

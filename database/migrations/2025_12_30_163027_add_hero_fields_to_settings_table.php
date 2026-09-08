@@ -11,15 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings', function (Blueprint $table) {
-            $table->string('hero_title')->nullable();
-            $table->text('hero_description')->nullable();
-            $table->text('hero_features')->nullable();
-            $table->string('hero_cta_1_text')->nullable();
-            $table->string('hero_cta_1_link')->nullable();
-            $table->string('hero_cta_2_text')->nullable();
-            $table->string('hero_cta_2_link')->nullable();
-        });
+        Schema::table('settings', function (Blueprint $table) {});
     }
 
     /**

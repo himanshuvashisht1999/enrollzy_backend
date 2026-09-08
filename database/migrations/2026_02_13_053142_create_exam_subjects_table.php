@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_subjects')) {
         Schema::create('exam_subjects', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('exam_id')->constrained()->onDelete('cascade');
@@ -83,6 +84,7 @@ return new class extends Migration {
             // Indexes
             $table->index(['exam_id', 'exam_stage_id']);
         });
+        }
     }
 
     /**

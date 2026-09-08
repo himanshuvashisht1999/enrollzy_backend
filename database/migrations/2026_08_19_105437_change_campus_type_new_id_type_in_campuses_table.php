@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            $table->json('campus_type_new_id')->nullable()->change();
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**
@@ -22,7 +20,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('campuses', function (Blueprint $table) {
-            $table->unsignedBigInteger('campus_type_new_id')->nullable()->change();
+            if (!Schema::hasColumn('campuses', 'campus_type_new_id')) $table->unsignedBigInteger('campus_type_new_id')->nullable()->change();
         });
     }
 };

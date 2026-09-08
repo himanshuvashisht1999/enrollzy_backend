@@ -9,9 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('experts') && !Schema::hasColumn('experts', 'is_featured')) {
-            Schema::table('experts', function (Blueprint $table) {
-                $table->boolean('is_featured')->default(1)->after('status');
-            });
+            Schema::table('experts', function (Blueprint $table) {});
         }
     }
 

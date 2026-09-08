@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('institute_marquees')) {
         Schema::create('institute_marquees', function (Blueprint $table) {
             $table->id();
             $table->string('logo');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->string('direction')->default('rtl'); // 'rtl' or 'ltr'
             $table->timestamps();
         });
+        }
     }
 
     /**

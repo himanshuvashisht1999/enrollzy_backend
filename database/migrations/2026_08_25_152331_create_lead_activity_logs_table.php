@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('lead_activity_logs')) {
         Schema::create('lead_activity_logs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('customer_id')->nullable();
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->json('properties')->nullable(); // Old/new data
             $table->timestamps();
         });
+        }
     }
 
     /**

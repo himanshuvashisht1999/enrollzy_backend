@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->foreignUuid('campus_id')->nullable()->after('organisation_id')->constrained('campuses')->onDelete('cascade');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     /**

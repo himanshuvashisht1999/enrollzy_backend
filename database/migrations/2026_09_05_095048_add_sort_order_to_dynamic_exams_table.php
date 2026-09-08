@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('dynamic_exams', function (Blueprint $table) {
-            if (!Schema::hasColumn('dynamic_exams', 'sort_order')) {
-                $table->integer('sort_order')->default(1)->after('name');
-            }
-        });
+        Schema::table('dynamic_exams', function (Blueprint $table) {});
     }
 
     /**

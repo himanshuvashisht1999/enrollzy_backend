@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('universities', function (Blueprint $table) {
-            $table->boolean('status')->default(true)->after('rating');
-        });
+        Schema::table('universities', function (Blueprint $table) {});
     }
 
     /**

@@ -13,23 +13,17 @@ return new class extends Migration
     public function up(): void
     {
         if (!Schema::hasColumn('organisations', 'sort_order')) {
-            Schema::table('organisations', function (Blueprint $table) {
-                $table->integer('sort_order')->default(1)->after('id');
-            });
+            Schema::table('organisations', function (Blueprint $table) {});
             DB::table('organisations')->whereNull('sort_order')->orWhere('sort_order', 0)->update(['sort_order' => 1]);
         }
 
         if (!Schema::hasColumn('campuses', 'sort_order')) {
-            Schema::table('campuses', function (Blueprint $table) {
-                $table->integer('sort_order')->default(1)->after('id');
-            });
+            Schema::table('campuses', function (Blueprint $table) {});
             DB::table('campuses')->whereNull('sort_order')->orWhere('sort_order', 0)->update(['sort_order' => 1]);
         }
 
         if (!Schema::hasColumn('departments', 'sort_order')) {
-            Schema::table('departments', function (Blueprint $table) {
-                $table->integer('sort_order')->default(1)->after('id');
-            });
+            Schema::table('departments', function (Blueprint $table) {});
             DB::table('departments')->whereNull('sort_order')->orWhere('sort_order', 0)->update(['sort_order' => 1]);
         }
 

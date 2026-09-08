@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('about_us_pages', function (Blueprint $table) {
-            $table->string('mission_image')->nullable()->after('mission_text');
-            $table->string('vision_image')->nullable()->after('vision_text');
-            $table->string('philosophy_image')->nullable()->after('philosophy_text');
-        });
+        Schema::table('about_us_pages', function (Blueprint $table) {});
     }
 
     /**

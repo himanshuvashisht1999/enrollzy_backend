@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('departments', function (Blueprint $table) {
-            $table->json('placement_statistics')->nullable();
-        });
+        Schema::table('departments', function (Blueprint $table) {});
     }
 
     /**

@@ -10,9 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->json('entrance_exam_ids')->nullable()->after('entrance_exam_id');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     /**

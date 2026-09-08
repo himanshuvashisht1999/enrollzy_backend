@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('consultant_categories')) {
         Schema::create('consultant_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
+        }
     }
 
     /**

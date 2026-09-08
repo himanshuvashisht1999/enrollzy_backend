@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('lead_assignments', function (Blueprint $table) {
-            $table->index(['staff_id', 'created_at']);
-            $table->index('customer_id');
-            $table->index('assigned_by');
-        });
+        Schema::table('lead_assignments', function (Blueprint $table) {});
     }
 
     /**

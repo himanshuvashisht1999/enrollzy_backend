@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('staff_types')) {
         Schema::create('staff_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->tinyInteger('status')->default(1)->comment('1: Active, 0: Inactive');
             $table->timestamps();
         });
+        }
     }
 
     /**

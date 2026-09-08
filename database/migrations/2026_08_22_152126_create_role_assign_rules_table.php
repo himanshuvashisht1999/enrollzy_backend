@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('role_assign_rules')) {
         Schema::create('role_assign_rules', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('role_id');
             $table->unsignedBigInteger('can_assign_to_role_id');
             $table->timestamps();
         });
+        }
     }
 
     /**

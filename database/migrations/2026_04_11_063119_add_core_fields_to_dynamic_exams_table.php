@@ -11,21 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('dynamic_exams', function (Blueprint $table) {
-            $table->string('short_name')->nullable()->after('name');
-            $table->string('exam_type')->nullable()->after('short_name');
-            $table->json('exam_category')->nullable()->after('exam_type');
-            $table->string('conducting_body_type')->nullable()->after('exam_category');
-            $table->string('exam_frequency')->nullable()->after('conducting_body_type');
-            $table->string('conducting_authority_name')->nullable()->after('exam_frequency');
-            $table->string('logo')->nullable()->after('conducting_authority_name');
-            $table->string('cover_image')->nullable()->after('logo');
-            
-            $table->string('exam_source_type')->default('External')->after('cover_image');
-            $table->foreignId('owning_organisation_id')->nullable()->after('exam_source_type')->constrained('organisations')->nullOnDelete();
-            
-            $table->longText('about_exam')->nullable()->after('owning_organisation_id');
-        });
+        Schema::table('dynamic_exams', function (Blueprint $table) {});
     }
 
     /**

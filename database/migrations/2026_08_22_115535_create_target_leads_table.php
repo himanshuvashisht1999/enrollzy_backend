@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('target_leads')) {
         Schema::create('target_leads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('staff_id');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->integer('month_target_admissions')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

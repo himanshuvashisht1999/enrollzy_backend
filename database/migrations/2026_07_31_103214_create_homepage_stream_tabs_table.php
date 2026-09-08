@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('homepage_stream_tabs')) {
         Schema::create('homepage_stream_tabs', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

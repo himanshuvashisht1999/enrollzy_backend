@@ -10,9 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->foreignUuid('department_id')->nullable()->after('campus_id')->constrained('departments')->onDelete('cascade');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     /**

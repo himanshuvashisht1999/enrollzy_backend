@@ -20,9 +20,7 @@ return new class extends Migration
             }
         });
 
-        Schema::table('exams', function (Blueprint $table) {
-            $table->json('exam_category')->nullable()->change();
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**
@@ -31,7 +29,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('exams', function (Blueprint $table) {
-            $table->string('exam_category')->nullable()->change();
+            if (!Schema::hasColumn('exams', 'exam_category')) $table->string('exam_category')->nullable()->change();
         });
     }
 };

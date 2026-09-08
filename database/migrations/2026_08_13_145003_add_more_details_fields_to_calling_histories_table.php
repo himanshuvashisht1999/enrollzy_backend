@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            $table->unsignedBigInteger('program_level_id')->nullable()->after('category_id');
-            $table->string('session')->nullable()->after('course_type');
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

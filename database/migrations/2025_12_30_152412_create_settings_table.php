@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('settings')) {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
             $table->string('site_name')->nullable();
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->string('footer_text')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

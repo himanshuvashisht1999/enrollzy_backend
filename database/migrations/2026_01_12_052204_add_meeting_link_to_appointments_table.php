@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('appointments', function (Blueprint $table) {
-            $table->string('meeting_link')->nullable()->after('status');
-        });
+        Schema::table('appointments', function (Blueprint $table) {});
     }
 
     /**

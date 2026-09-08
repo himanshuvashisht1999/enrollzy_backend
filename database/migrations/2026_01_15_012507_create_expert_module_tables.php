@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Expert Slots
+        if (!Schema::hasTable('expert_slots')) {
         Schema::create('expert_slots', function (Blueprint $table) {
             $table->id();
             $table->foreignId('expert_id')->constrained('experts')->onDelete('cascade');
@@ -25,8 +26,10 @@ return new class extends Migration
             $table->decimal('cost', 10, 2)->default(0);
             $table->timestamps();
         });
+        }
 
         // Bookings
+        if (!Schema::hasTable('bookings')) {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->string('booking_id')->unique(); // distinct from id, for public reference
@@ -43,8 +46,10 @@ return new class extends Migration
             $table->text('notes')->nullable(); // Session purpose
             $table->timestamps();
         });
+        }
 
         // Payments
+        if (!Schema::hasTable('payments')) {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->string('transaction_id')->nullable();
@@ -57,8 +62,10 @@ return new class extends Migration
             $table->text('response_log')->nullable();
             $table->timestamps();
         });
+        }
 
         // Payouts
+        if (!Schema::hasTable('payouts')) {
         Schema::create('payouts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('expert_id')->constrained('experts')->onDelete('cascade');
@@ -70,8 +77,10 @@ return new class extends Migration
             $table->date('period_end')->nullable();
             $table->timestamps();
         });
+        }
 
         // Reviews
+        if (!Schema::hasTable('reviews')) {
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained('bookings')->onDelete('cascade');
@@ -82,6 +91,7 @@ return new class extends Migration
             $table->boolean('is_verified')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

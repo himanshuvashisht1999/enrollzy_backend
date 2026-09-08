@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('facilities')) {
         Schema::create('facilities', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->boolean('status')->default(1);
             $table->timestamps();
         });
+        }
     }
 
     /**

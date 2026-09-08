@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings', function (Blueprint $table) {
-            $table->string('footer_general_title')->nullable()->default('General');
-        });
+        Schema::table('settings', function (Blueprint $table) {});
     }
 
     /**

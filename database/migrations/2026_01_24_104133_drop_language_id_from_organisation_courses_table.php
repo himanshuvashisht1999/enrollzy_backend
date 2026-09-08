@@ -10,10 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->dropForeign('organisation_courses_language_id_foreign');
-            $table->dropColumn('language_id');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     /**
@@ -22,7 +19,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->unsignedBigInteger('language_id')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'language_id')) $table->unsignedBigInteger('language_id')->nullable();
         });
     }
 };

@@ -12,9 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         \Illuminate\Support\Facades\DB::table('users')->whereNull('role')->update(['role' => 0]);
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('user')->change();
-        });
+        Schema::table('users', function (Blueprint $table) {});
     }
 
     /**
@@ -23,7 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->integer('role')->nullable()->change();
+            if (!Schema::hasColumn('users', 'role')) $table->integer('role')->nullable()->change();
         });
     }
 };

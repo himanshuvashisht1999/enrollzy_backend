@@ -537,6 +537,62 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
         });
 
+        // ==========================================
+        // WORK MANAGEMENT ENTERPRISE MODULE
+        // ==========================================
+        Route::prefix('work-management')->name('work_management.')->group(function () {
+            // Dashboards
+            Route::get('dashboard', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'overview'])->name('dashboard');
+            Route::get('dashboard/overview', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'overview'])->name('dashboard.overview');
+            Route::get('dashboard/my-work', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'myWork'])->name('dashboard.my_work');
+            Route::get('dashboard/team-work', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'teamWork'])->name('dashboard.team_work');
+            Route::get('dashboard/calendar', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'calendar'])->name('dashboard.calendar');
+            Route::get('dashboard/calendar-events', [\App\Http\Controllers\Admin\WorkManagement\WorkDashboardController::class, 'calendarEvents'])->name('dashboard.calendar_events');
+
+            // Projects
+            Route::resource('projects', \App\Http\Controllers\Admin\WorkManagement\ProjectController::class);
+            Route::post('projects/{projectId}/upload-document', [\App\Http\Controllers\Admin\WorkManagement\ProjectController::class, 'uploadDocument'])->name('projects.upload_document');
+
+            // Milestones
+            Route::resource('milestones', \App\Http\Controllers\Admin\WorkManagement\MilestoneController::class);
+            Route::post('milestones/change-status', [\App\Http\Controllers\Admin\WorkManagement\MilestoneController::class, 'changeStatus'])->name('milestones.change_status');
+
+            // Tasks & Subtasks
+            Route::get('tasks/kanban', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'kanban'])->name('tasks.kanban');
+            Route::get('task-board', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'kanban'])->name('tasks.task_board');
+            Route::resource('tasks', \App\Http\Controllers\Admin\WorkManagement\TaskController::class);
+            Route::post('tasks/change-status', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'changeStatus'])->name('tasks.change_status');
+            Route::post('tasks/reassign', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'reassign'])->name('tasks.reassign');
+            Route::post('tasks/delegate', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'delegate'])->name('tasks.delegate');
+            Route::post('tasks/add-checklist', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addChecklist'])->name('tasks.add_checklist');
+            Route::post('tasks/toggle-checklist', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'toggleChecklist'])->name('tasks.toggle_checklist');
+            Route::delete('tasks/delete-checklist/{id}', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'deleteChecklist'])->name('tasks.delete_checklist');
+            Route::post('tasks/add-time-entry', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addTimeEntry'])->name('tasks.add_time_entry');
+            Route::post('tasks/add-attachment', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addAttachment'])->name('tasks.add_attachment');
+            Route::match(['get', 'post'], 'tasks/get-project-data', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'getProjectData'])->name('tasks.ajax_project_data');
+
+            // Comments
+            Route::post('comments/store', [\App\Http\Controllers\Admin\WorkManagement\TaskCommentController::class, 'store'])->name('comments.store');
+
+            // Teams
+            Route::resource('teams', \App\Http\Controllers\Admin\WorkManagement\TeamController::class);
+            Route::post('teams/{teamId}/add-member', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'addMember'])->name('teams.add_member');
+            Route::post('teams/{teamId}/remove-member', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'removeMember'])->name('teams.remove_member');
+            Route::post('teams/get-members', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'getMembersByTeam'])->name('teams.get_members');
+
+            // External Partners & Agencies
+            Route::resource('partners', \App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class);
+            Route::post('partners/{orgId}/add-contact', [\App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class, 'addContact'])->name('partners.add_contact');
+            Route::post('partners/{orgId}/add-team', [\App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class, 'addTeam'])->name('partners.add_team');
+
+            // Meetings
+            Route::resource('meetings', \App\Http\Controllers\Admin\WorkManagement\MeetingController::class);
+            Route::post('meetings/decision-to-task', [\App\Http\Controllers\Admin\WorkManagement\MeetingController::class, 'convertDecisionToTask'])->name('meetings.decision_to_task');
+
+            // Reports
+            Route::get('reports', [\App\Http\Controllers\Admin\WorkManagement\WorkReportController::class, 'index'])->name('reports.index');
+        });
+
         // Customer Management Module Routes
         Route::prefix('customers')->name('customers.main.')->group(function () {
             Route::post('import', [CustomerController::class, 'import'])->name('import');
@@ -629,6 +685,63 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\BillingInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
             Route::resource('invoices', \App\Http\Controllers\Admin\Billing\BillingInvoiceController::class)->middleware('can:billing-invoices-browse');
             Route::resource('payments', \App\Http\Controllers\Admin\Billing\BillingPaymentController::class)->middleware('can:billing-payments-browse');
+        });
+
+        // ==========================================
+        // ✅ ACCOUNTING & FINANCE MODULE ROUTES
+        // ==========================================
+        Route::prefix('accounting')->name('accounting.')->group(function () {
+            // Dashboard
+            Route::get('/', [\App\Http\Controllers\Admin\Accounting\AccountingDashboardController::class, 'index'])->name('dashboard');
+
+            // Chart of Accounts
+            Route::resource('chart-of-accounts', \App\Http\Controllers\Admin\Accounting\ChartOfAccountController::class)->names('chart_of_accounts');
+
+            // Parties (Customers, Vendors, Founders, Investors)
+            Route::resource('parties', \App\Http\Controllers\Admin\Accounting\PartyController::class);
+
+            // Sales Invoices & Receivables
+            Route::post('invoices/{id}/post', [\App\Http\Controllers\Admin\Accounting\SalesInvoiceController::class, 'post'])->name('invoices.post');
+            Route::post('invoices/{id}/record-payment', [\App\Http\Controllers\Admin\Accounting\SalesInvoiceController::class, 'recordPayment'])->name('invoices.record_payment');
+            Route::get('invoices/{id}/print', [\App\Http\Controllers\Admin\Accounting\SalesInvoiceController::class, 'print'])->name('invoices.print');
+            Route::resource('invoices', \App\Http\Controllers\Admin\Accounting\SalesInvoiceController::class);
+
+            // Vendor Bills & Payables
+            Route::post('bills/{id}/post', [\App\Http\Controllers\Admin\Accounting\VendorBillController::class, 'post'])->name('bills.post');
+            Route::post('bills/{id}/record-payment', [\App\Http\Controllers\Admin\Accounting\VendorBillController::class, 'recordPayment'])->name('bills.record_payment');
+            Route::resource('bills', \App\Http\Controllers\Admin\Accounting\VendorBillController::class);
+
+            // Expenses & Approvals
+            Route::post('expenses/{id}/submit', [\App\Http\Controllers\Admin\Accounting\ExpenseController::class, 'submit'])->name('expenses.submit');
+            Route::post('expenses/{id}/approve', [\App\Http\Controllers\Admin\Accounting\ExpenseController::class, 'approve'])->name('expenses.approve');
+            Route::post('expenses/{id}/reject', [\App\Http\Controllers\Admin\Accounting\ExpenseController::class, 'reject'])->name('expenses.reject');
+            Route::post('expenses/{id}/pay', [\App\Http\Controllers\Admin\Accounting\ExpenseController::class, 'pay'])->name('expenses.pay');
+            Route::resource('expenses', \App\Http\Controllers\Admin\Accounting\ExpenseController::class);
+
+            // Funding & Capital
+            Route::post('funding/{id}/post', [\App\Http\Controllers\Admin\Accounting\FundingController::class, 'post'])->name('funding.post');
+            Route::resource('funding', \App\Http\Controllers\Admin\Accounting\FundingController::class);
+
+            // Banking & Cash
+            Route::post('banking/transfer', [\App\Http\Controllers\Admin\Accounting\BankingController::class, 'transfer'])->name('banking.transfer');
+            Route::resource('banking', \App\Http\Controllers\Admin\Accounting\BankingController::class);
+
+            // Manual Journal Vouchers
+            Route::post('journals/{id}/reverse', [\App\Http\Controllers\Admin\Accounting\JournalController::class, 'reverse'])->name('journals.reverse');
+            Route::resource('journals', \App\Http\Controllers\Admin\Accounting\JournalController::class);
+
+            // Financial Reports & Tax Registers
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'index'])->name('index');
+                Route::get('trial-balance', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
+                Route::get('profit-loss', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'profitAndLoss'])->name('profit_loss');
+                Route::get('balance-sheet', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'balanceSheet'])->name('balance_sheet');
+                Route::get('general-ledger', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'generalLedger'])->name('general_ledger');
+                Route::get('customer-ageing', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'customerAgeing'])->name('customer_ageing');
+                Route::get('vendor-ageing', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'vendorAgeing'])->name('vendor_ageing');
+                Route::get('gst', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'gstReport'])->name('gst_report');
+                Route::get('tds', [\App\Http\Controllers\Admin\Accounting\AccountingReportController::class, 'tdsReport'])->name('tds_report');
+            });
         });
     });
 });

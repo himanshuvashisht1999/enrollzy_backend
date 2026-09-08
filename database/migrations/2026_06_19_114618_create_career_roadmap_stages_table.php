@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('career_roadmap_stages')) {
         Schema::create('career_roadmap_stages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained('career_roadmap_categories')->onDelete('cascade');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

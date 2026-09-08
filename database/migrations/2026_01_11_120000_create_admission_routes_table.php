@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('admission_routes')) {
         Schema::create('admission_routes', function (Blueprint $table) {
             $table->id();
             
@@ -49,6 +50,7 @@ return new class extends Migration
             // Indexes for faster lookup
             $table->index(['organisation_id', 'course_id']);
         });
+        }
     }
 
     /**

@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('courses', function (Blueprint $table) {
-            $table->boolean('is_show_on_website')->default(true)->after('status');
-        });
+        Schema::table('courses', function (Blueprint $table) {});
     }
 
     /**

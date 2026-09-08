@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('sibling_name')->nullable()->after('sibling_enrolled');
-            $table->string('sibling_age')->nullable()->after('sibling_name');
-        });
+        Schema::table('users', function (Blueprint $table) {});
     }
 
     /**

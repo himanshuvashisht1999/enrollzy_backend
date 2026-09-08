@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('homepage_stream_tabs', function (Blueprint $table) {
-            $table->json('feature_colleges')->nullable()->after('default_courses');
-        });
+        Schema::table('homepage_stream_tabs', function (Blueprint $table) {});
     }
 
     /**

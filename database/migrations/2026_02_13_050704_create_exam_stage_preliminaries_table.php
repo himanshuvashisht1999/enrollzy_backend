@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_stage_preliminaries')) {
         Schema::create('exam_stage_preliminaries', function (Blueprint $table) {
             $table->id();
             $table->uuid('preliminary_stage_id')->unique();
@@ -66,6 +67,7 @@ return new class extends Migration {
             $table->timestamp('last_updated_on')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

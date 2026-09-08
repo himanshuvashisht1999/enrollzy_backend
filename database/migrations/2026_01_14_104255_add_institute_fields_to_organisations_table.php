@@ -11,21 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('organisations', function (Blueprint $table) {
-            // Institute Specific Fields (Type 3)
-            
-            // Core Identity (distinct from University)
-            $table->uuid('institute_id')->nullable();
-            $table->text('about_organisation')->nullable(); 
-
-            // Ownership & Legal Structure
-            $table->string('registered_entity_name')->nullable();
-            $table->string('registration_number')->nullable();
-            $table->boolean('gst_registered')->nullable();
-            $table->string('gst_number')->nullable();
-            $table->string('pan_number')->nullable();
-            $table->json('legal_documents_urls')->nullable();
-        });
+        Schema::table('organisations', function (Blueprint $table) {});
     }
 
     /**

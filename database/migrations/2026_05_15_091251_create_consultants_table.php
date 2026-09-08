@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('consultants')) {
         Schema::create('consultants', function (Blueprint $table) {
             $table->id();
             
@@ -92,6 +93,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
+        }
     }
 
     /**

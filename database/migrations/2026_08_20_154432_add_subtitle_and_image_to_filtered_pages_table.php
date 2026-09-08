@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('filtered_pages', function (Blueprint $table) {
-            $table->string('sub_title')->nullable()->after('title');
-            $table->string('image')->nullable()->after('sub_title');
-        });
+        Schema::table('filtered_pages', function (Blueprint $table) {});
     }
 
     /**

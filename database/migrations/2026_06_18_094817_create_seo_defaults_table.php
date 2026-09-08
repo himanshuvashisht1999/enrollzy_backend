@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_defaults')) {
         Schema::create('seo_defaults', function (Blueprint $table) {
             $table->id();
             
@@ -26,6 +27,7 @@ return new class extends Migration
             
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

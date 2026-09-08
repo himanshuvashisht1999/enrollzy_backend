@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('filtered_pages')) {
         Schema::create('filtered_pages', function (Blueprint $table) {
             $table->id();
             $table->string('slug')->unique();
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**
