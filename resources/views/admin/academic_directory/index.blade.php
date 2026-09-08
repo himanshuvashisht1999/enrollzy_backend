@@ -964,7 +964,7 @@
         });
 
         // Live Search Input with 300ms Debounce
-        $('#dir-search-input').on('keyup input', function() {
+        $('#dir-search-input').on('keyup input search', function() {
             clearTimeout(searchTimeout);
             const val = $(this).val();
             searchTimeout = setTimeout(function() {
@@ -1117,13 +1117,15 @@
             const campusId = $('#filter_campus_id').val() || '';
             const deptId = $('#filter_department_id').val() || '';
             const courseId = $('#filter_course_id').val() || '';
+            const searchVal = $('#dir-search-input').val() || '';
 
             const exportUrl = "{{ route('admin.academic-directory.export') }}?tab=" + activeTab +
                 "&organisation_type_id=" + encodeURIComponent(orgTypeId) +
                 "&organisation_id=" + encodeURIComponent(orgId) +
                 "&campus_id=" + encodeURIComponent(campusId) +
                 "&department_id=" + encodeURIComponent(deptId) +
-                "&course_id=" + encodeURIComponent(courseId);
+                "&course_id=" + encodeURIComponent(courseId) +
+                "&search=" + encodeURIComponent(searchVal);
 
             window.location.href = exportUrl;
         });

@@ -153,12 +153,12 @@
                                             </select>
                                         </div>
                                         <div class="col-lg-6">
-                                            <label class="form-label small fw-bold">Current Session</label>
+                                            <label class="form-label small fw-bold">Passing Year</label>
                                             @php
                                                 $selectedSession = old('current_session', isset($customer) ? ($customer->current_session ?? '') : '');
                                             @endphp
                                             <select name="current_session" id="current_session" class="form-select rounded-3 custom-select2">
-                                                <option value="">Select Session</option>
+                                                <option value="">Select Passing Year</option>
                                                 @if(isset($sessions))
                                                     @foreach($sessions as $session)
                                                         <option value="{{ $session->id }}" {{ $selectedSession == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
@@ -196,10 +196,10 @@
                                                 <option value="">Select Program Mode</option>
                                                 @if(isset($program_types))
                                                     @foreach($program_types as $pt)
-                                                        <option value="{{ $pt->title }}" {{ $selectedMode == $pt->title ? 'selected' : '' }}>{{ $pt->title }}</option>
+                                                        <option value="{{ $pt->title }}" {{ ($selectedMode == $pt->title || $selectedMode == $pt->id) ? 'selected' : '' }}>{{ $pt->title }}</option>
                                                     @endforeach
                                                 @endif
-                                                @if(!empty($selectedMode) && (!isset($program_types) || !$program_types->contains('title', $selectedMode)))
+                                                @if(!empty($selectedMode) && (!isset($program_types) || (!$program_types->contains('title', $selectedMode) && !$program_types->contains('id', $selectedMode))))
                                                     <option value="{{ $selectedMode }}" selected>{{ $selectedMode }}</option>
                                                 @endif
                                             </select>

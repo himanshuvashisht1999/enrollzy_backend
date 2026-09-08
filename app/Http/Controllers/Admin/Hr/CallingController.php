@@ -1146,6 +1146,12 @@ class CallingController extends Controller
 
             $histWithCurMode = $histories->first(function($h) { return !empty($h->current_course_type); });
             $curMode = $customer->current_course_type ?: ($histWithCurMode ? $histWithCurMode->current_course_type : null);
+            if (!empty($curMode) && is_numeric($curMode)) {
+                $ptObj = \App\Models\ProgramType::find($curMode);
+                if ($ptObj) {
+                    $curMode = $ptObj->title;
+                }
+            }
 
             $customerData = [
                 'email' => $customer->email,

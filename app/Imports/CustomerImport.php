@@ -227,7 +227,7 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
         });
 
         if ($matched) {
-            return (string)$matched->id;
+            return (string)$matched->title;
         }
 
         // Check CourseType as fallback
@@ -236,10 +236,10 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
         });
 
         if ($matchedCourseType) {
-            return (string)$matchedCourseType->id;
+            return (string)$matchedCourseType->title;
         }
 
-        return null;
+        return $rawProgramMode;
     }
 
     protected function cleanPhoneNumber($phone)

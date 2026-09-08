@@ -213,6 +213,8 @@ class AcademicDirectoryController extends Controller
             $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
         }
 
+        $this->applyOrganisationSearch($query, $this->getSearchTerm($request));
+
         $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
 
         return DataTables::of($query)
@@ -322,6 +324,8 @@ class AcademicDirectoryController extends Controller
         if ($request->filled('course_id')) {
             $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
         }
+
+        $this->applyCampusSearch($query, $this->getSearchTerm($request));
 
         $query->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
 
@@ -443,6 +447,8 @@ class AcademicDirectoryController extends Controller
             $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
         }
 
+        $this->applyDepartmentSearch($query, $this->getSearchTerm($request));
+
         $query->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
 
         return DataTables::of($query)
@@ -536,6 +542,8 @@ class AcademicDirectoryController extends Controller
         if ($request->filled('course_id')) {
             $query->where('course_id', $request->course_id);
         }
+
+        $this->applyCourseSearch($query, $this->getSearchTerm($request));
 
         $query->orderBy('sort_order', 'asc');
 
@@ -686,7 +694,9 @@ class AcademicDirectoryController extends Controller
             "Expires"             => "0"
         ];
 
-        $callback = function() use ($tab, $request) {
+        $searchTerm = $this->getSearchTerm($request);
+
+        $callback = function() use ($tab, $request, $searchTerm) {
             $file = fopen('php://output', 'w');
 
             if ($tab === 'organisations') {
@@ -697,6 +707,8 @@ class AcademicDirectoryController extends Controller
                 if ($request->filled('campus_id')) $query->whereHas('campuses', fn($q) => $q->where('id', $request->campus_id));
                 if ($request->filled('department_id')) $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
                 if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+                
+                $this->applyOrganisationSearch($query, $searchTerm);
                 
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
@@ -713,7 +725,7 @@ class AcademicDirectoryController extends Controller
                     }
                 });
             } elseif ($tab === 'campuses') {
-                fputcsv($file, ['ID', 'Campus Name', 'Campus Code', 'Parent Organisation', 'City', 'State', 'Verified', 'Status']);
+                fputcsv($file, ['ID', 'Campus Name', 'Parent Organisation', 'City', 'State', 'Verified', 'Status']);
                 $query = Campus::with('organisation');
                 if ($request->filled('organisation_type_id')) $query->whereHas('organisation', fn($q) => $q->where('organisation_type_id', $request->organisation_type_id));
                 if ($request->filled('organisation_id')) $query->where('organisation_id', $request->organisation_id);
@@ -721,12 +733,13 @@ class AcademicDirectoryController extends Controller
                 if ($request->filled('department_id')) $query->whereHas('departments', fn($q) => $q->where('id', $request->department_id));
                 if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
 
+                $this->applyCampusSearch($query, $searchTerm);
+
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [
                             $row->id,
                             $row->campus_name,
-                            $row->campus_code ?? 'N/A',
                             $row->organisation ? $row->organisation->name : 'N/A',
                             $row->city ?? 'N/A',
                             $row->state ?? 'N/A',
@@ -743,6 +756,8 @@ class AcademicDirectoryController extends Controller
                 if ($request->filled('campus_id')) $query->where('campus_id', $request->campus_id);
                 if ($request->filled('department_id')) $query->where('id', $request->department_id);
                 if ($request->filled('course_id')) $query->whereHas('courses', fn($q) => $q->where('course_id', $request->course_id));
+
+                $this->applyDepartmentSearch($query, $searchTerm);
 
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
@@ -768,6 +783,8 @@ class AcademicDirectoryController extends Controller
                 if ($request->filled('department_id')) $query->where('department_id', $request->department_id);
                 if ($request->filled('course_id')) $query->where('course_id', $request->course_id);
 
+                $this->applyCourseSearch($query, $searchTerm);
+
                 $query->chunk(100, function($rows) use ($file) {
                     foreach ($rows as $row) {
                         fputcsv($file, [
@@ -789,5 +806,116 @@ class AcademicDirectoryController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Helper to extract clean search term from request.
+     */
+    protected function getSearchTerm(Request $request): string
+    {
+        $search = $request->input('search.value') ?? $request->input('search') ?? $request->input('search_value');
+        if (is_array($search)) {
+            $search = $search['value'] ?? '';
+        }
+        return trim((string) $search);
+    }
+
+    /**
+     * Apply search conditions to Organisations query.
+     */
+    protected function applyOrganisationSearch($query, ?string $search)
+    {
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('organisations.name', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.organisation_id_number', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.brand_name', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.short_name', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.central_authority', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.head_office_location', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.brand_type', 'LIKE', "%{$search}%")
+                  ->orWhere('organisations.registered_entity_name', 'LIKE', "%{$search}%")
+                  ->orWhereHas('organisationType', function ($typeQ) use ($search) {
+                      $typeQ->where('title', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        return $query;
+    }
+
+    /**
+     * Apply search conditions to Campuses query.
+     */
+    protected function applyCampusSearch($query, ?string $search)
+    {
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('campuses.campus_name', 'LIKE', "%{$search}%")
+                  ->orWhere('campuses.city', 'LIKE', "%{$search}%")
+                  ->orWhere('campuses.state', 'LIKE', "%{$search}%")
+                  ->orWhere('campuses.full_address', 'LIKE', "%{$search}%")
+                  ->orWhere('campuses.campus_type', 'LIKE', "%{$search}%")
+                  ->orWhereHas('organisation', function ($orgQ) use ($search) {
+                      $orgQ->where('name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        return $query;
+    }
+
+    /**
+     * Apply search conditions to Departments query.
+     */
+    protected function applyDepartmentSearch($query, ?string $search)
+    {
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('departments.department_name', 'LIKE', "%{$search}%")
+                  ->orWhere('departments.department_code', 'LIKE', "%{$search}%")
+                  ->orWhere('departments.discipline_area', 'LIKE', "%{$search}%")
+                  ->orWhere('departments.head_of_department_name', 'LIKE', "%{$search}%")
+                  ->orWhere('departments.hod_email', 'LIKE', "%{$search}%")
+                  ->orWhere('departments.department_type', 'LIKE', "%{$search}%")
+                  ->orWhereHas('organisation', function ($orgQ) use ($search) {
+                      $orgQ->where('name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('campus', function ($campQ) use ($search) {
+                      $campQ->where('campus_name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        return $query;
+    }
+
+    /**
+     * Apply search conditions to Courses query.
+     */
+    protected function applyCourseSearch($query, ?string $search)
+    {
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('organisation_courses.academic_unit_name', 'LIKE', "%{$search}%")
+                  ->orWhere('organisation_courses.mode', 'LIKE', "%{$search}%")
+                  ->orWhere('organisation_courses.duration', 'LIKE', "%{$search}%")
+                  ->orWhere('organisation_courses.education_board', 'LIKE', "%{$search}%")
+                  ->orWhereHas('course', function ($crsQ) use ($search) {
+                      $crsQ->where('name', 'LIKE', "%{$search}%")
+                           ->orWhere('full_form', 'LIKE', "%{$search}%")
+                           ->orWhereHas('programLevel', function ($lvlQ) use ($search) {
+                               $lvlQ->where('name', 'LIKE', "%{$search}%");
+                           });
+                  })
+                  ->orWhereHas('organisation', function ($orgQ) use ($search) {
+                      $orgQ->where('name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('campus', function ($campQ) use ($search) {
+                      $campQ->where('campus_name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('department', function ($deptQ) use ($search) {
+                      $deptQ->where('department_name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        return $query;
     }
 }
