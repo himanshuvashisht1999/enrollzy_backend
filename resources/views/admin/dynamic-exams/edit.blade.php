@@ -413,7 +413,19 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
+                                <label class="label-base">Results</label>
+                                <input type="text" name="result_status" class="input-base"
+                                    placeholder="e.g. Declared / TBA" value="{{ $dynamicExam->result_status }}"
+                                    onchange="builder.save()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="label-base">Registration</label>
+                                <input type="text" name="registration_status" class="input-base"
+                                    placeholder="e.g. Open" value="{{ $dynamicExam->registration_status }}"
+                                    onchange="builder.save()">
+                            </div>
+                            <div class="col-md-3">
                                 <label class="label-base">Conducting Authority Name</label>
                                 <input type="text" name="conducting_authority_name" class="input-base"
                                     value="{{ $dynamicExam->conducting_authority_name }}" onchange="builder.save()">

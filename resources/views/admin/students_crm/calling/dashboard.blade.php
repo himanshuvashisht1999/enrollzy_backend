@@ -1374,7 +1374,7 @@
 
                             <div class="cockpit-form-scroll flex-grow-1 p-3.5">
                                 
-                                <!-- Core Section: Contact & Status (Spacious 2-column + Full Width Status) -->
+                                <!-- Core Section: Contact (Spacious 2-column) -->
                                 <div class="mb-3">
                                     <div class="row g-3">
                                         <div class="col-md-6">
@@ -1390,22 +1390,6 @@
                                                 <!-- <i class="far fa-envelope cockpit-input-icon"></i> -->
                                                 <input type="text" class="form-control cockpit-input cockpit-input-with-icon" name="email" id="user_email" placeholder="student@example.com">
                                             </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="cockpit-label text-primary"><i class="fas fa-phone-alt me-1"></i> Call Status <span class="text-danger">*</span></label>
-                                            <select name="status_id" class="form-select cockpit-select custom-select2 fw-bold" id="status_id" required>
-                                                <option value="" selected disabled>Select Call Status</option>
-                                                @foreach($statuses as $status)
-                                                    <option value="{{ $status->id }}" 
-                                                        data-action="{{ $status->calling_action_id }}" 
-                                                        data-more-details="{{ $status->is_more_details }}" 
-                                                        data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" 
-                                                        data-date-require="{{ $status->date_require }}" 
-                                                        data-comment-require="{{ $status->comment_require ?? 'no' }}">
-                                                        {{ $status->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -1560,6 +1544,23 @@
                                         <i class="fas fa-tasks text-warning me-2"></i> Next Action & Follow-up
                                     </div>
                                     <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="cockpit-label text-primary"><i class="fas fa-phone-alt me-1"></i> Call Status <span class="text-danger">*</span></label>
+                                            <select name="status_id" class="form-select cockpit-select custom-select2 fw-bold" id="status_id" required>
+                                                <option value="" selected disabled>Select Call Status</option>
+                                                @foreach($statuses as $status)
+                                                    <option value="{{ $status->id }}" 
+                                                        data-action="{{ $status->calling_action_id }}" 
+                                                        data-more-details="{{ $status->is_more_details }}" 
+                                                        data-current-academic-details="{{ $status->current_academic_details ?? 'no' }}" 
+                                                        data-date-require="{{ $status->date_require }}" 
+                                                        data-comment-require="{{ $status->comment_require ?? 'no' }}">
+                                                        {{ $status->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
                                         <div class="col-md-6">
                                             <label class="cockpit-label">Action Taken</label>
                                             <select name="action_id" id="action_id" class="form-select cockpit-select custom-select2">

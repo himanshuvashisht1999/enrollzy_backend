@@ -9,7 +9,7 @@ class DynamicExam extends Model
     protected $fillable = [
         'name', 'sort_order', 'slug', 'status', 'visibility',
         'short_name', 'exam_type', 'exam_category', 'conducting_body_type',
-        'exam_frequency', 'conducting_authority_name', 'logo', 'cover_image',
+        'exam_frequency', 'conducting_authority_name', 'result_status', 'registration_status', 'logo', 'cover_image',
         'exam_source_type', 'owning_organisation_id', 'about_exam',
         'official_website', 'featured_exam', 'has_stages', 'selected_stages'
     ];
