@@ -1092,7 +1092,7 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($assignmentsLookup[$customer->id]) && ($assignmentsLookup[$customer->id]->assigned_by == auth()->id() || auth()->user()->is_admin || auth()->user()->hasRole('superadmin')))
+                                                @if(isset($assignmentsLookup[$customer->id]) && ($assignmentsLookup[$customer->id]->assigned_by == auth()->id() || ($isTopLevel ?? false) || auth()->user()->is_admin || auth()->user()->hasRole('superadmin') || auth()->user()->can('customer-edit')))
                                                     <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign Lead">
                                                         <i class="fas fa-user-edit"></i>
                                                     </button>
@@ -1254,7 +1254,7 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($historyAssignmentsLookup[$customer->id]) && ($historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id() || auth()->user()->is_admin || auth()->user()->hasRole('superadmin')))
+                                                @if(isset($historyAssignmentsLookup[$customer->id]) && ($historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id() || ($isTopLevel ?? false) || auth()->user()->is_admin || auth()->user()->hasRole('superadmin') || auth()->user()->can('customer-edit')))
                                                     <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign">
                                                         <i class="fas fa-user-edit"></i>
                                                     </button>

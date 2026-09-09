@@ -15,7 +15,11 @@ class LeadAssignController extends Controller
 {
     private function isTopLevelUser($user)
     {
-        return in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']);
+        if (!$user) return false;
+        return in_array(strtolower($user->role ?? ''), ['superadmin', 'admin'])
+            || ($user->is_admin ?? false)
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('superadmin') || $user->hasRole('admin')));
     }
 
     private function getAssignableStaffs($user)

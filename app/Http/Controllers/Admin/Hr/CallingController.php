@@ -215,43 +215,98 @@ class CallingController extends Controller
         ]);
     }
 
+    private function isTopLevelUser($user)
+    {
+        if (!$user) return false;
+        return in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']) 
+            || ($user->is_admin ?? false) 
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('superadmin') || $user->hasRole('admin')));
+    }
+
+    private function getSubordinateStaffIds($staffId, $organization_id = null)
+    {
+        $allSubIds = [];
+        $directSubIds = \App\Models\Admin::where('manager_id', $staffId)
+            ->when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
+            ->where('status', 1)
+            ->pluck('id')
+            ->toArray();
+
+        foreach ($directSubIds as $subId) {
+            $allSubIds[] = $subId;
+            $allSubIds = array_merge($allSubIds, $this->getSubordinateStaffIds($subId, $organization_id));
+        }
+
+        return array_values(array_unique($allSubIds));
+    }
+
     public function dashboard(Request $request)
     {
-        $organization_id = auth()->user()->organization_id;
-        $staff_id = auth()->id();
-        
         $user = auth()->user();
-        if (isset($user->is_admin) && $user->is_admin) {
-            $staffs = \App\Models\Admin::where('organization_id', $organization_id)->where('status', 1)->get();
+        $organization_id = $user->organization_id;
+        $staff_id = $user->id;
+        $isTopLevel = $this->isTopLevelUser($user);
+
+        if ($isTopLevel) {
+            $staffs = \App\Models\Admin::where('status', 1)
+                ->when($organization_id, function($q) use ($organization_id) {
+                    $q->where('organization_id', $organization_id);
+                })
+                ->get();
         } else {
             $allowedRoleIds = \App\Models\RoleAssignRule::whereHas('role', function($q) use ($user) {
                 $q->where('name', $user->role);
             })->pluck('can_assign_to_role_id');
             $allowedRoleNames = \Spatie\Permission\Models\Role::whereIn('id', $allowedRoleIds)->pluck('name')->toArray();
 
-            $staffs = \App\Models\Admin::where('organization_id', $organization_id)
-                ->where('status', 1)
-                ->whereIn('role', $allowedRoleNames)
-                ->where('manager_id', $user->id)
+            $subordinateIds = $this->getSubordinateStaffIds($staff_id, $organization_id);
+
+            $staffs = \App\Models\Admin::where('status', 1)
+                ->when($organization_id, function($q) use ($organization_id) {
+                    $q->where('organization_id', $organization_id);
+                })
+                ->where(function($q) use ($allowedRoleNames, $subordinateIds, $user) {
+                    $q->whereIn('id', $subordinateIds)
+                      ->orWhere(function($subQ) use ($allowedRoleNames, $user) {
+                          if (!empty($allowedRoleNames)) {
+                              $subQ->whereIn('role', $allowedRoleNames)->where('manager_id', $user->id);
+                          } else {
+                              $subQ->where('manager_id', $user->id);
+                          }
+                      });
+                })
                 ->get();
         }
 
         $query_staff_id = $staff_id;
         $is_filtering_subordinate = false;
+        $is_viewing_all = false;
+        $target_staff_ids = [];
+
         if ($request->filled('staff_id')) {
             $reqStaffId = $request->staff_id;
             if ($reqStaffId == 'all') {
+                $is_viewing_all = true;
                 $query_staff_ids = array_merge([$staff_id], $staffs->pluck('id')->toArray());
             } elseif ($reqStaffId == $staff_id || $staffs->contains('id', $reqStaffId)) {
                 $query_staff_id = $reqStaffId;
                 if ($reqStaffId != $staff_id) {
                     $is_filtering_subordinate = true;
+                    $subOfTarget = $this->getSubordinateStaffIds($query_staff_id, $organization_id);
+                    $target_staff_ids = array_merge([$query_staff_id], $subOfTarget);
+                    $query_staff_ids = [$query_staff_id];
                 }
             }
         }
 
         if (!isset($query_staff_ids)) {
             $query_staff_ids = [$query_staff_id];
+        }
+        if (empty($target_staff_ids)) {
+            $target_staff_ids = $query_staff_ids;
         }
 
         $defaultEndDate = now()->format('Y-m-d');
@@ -266,9 +321,11 @@ class CallingController extends Controller
         $currentMonth = \Carbon\Carbon::parse($startDate)->format('F');
         $currentYear = \Carbon\Carbon::parse($startDate)->format('Y');
 
-        // 1. Leads assigned in date range
-                // Filters
-        $customerFilterQuery = \App\Models\Customer::select('id')->where('organization_id', $organization_id);
+        // Filters
+        $customerFilterQuery = \App\Models\Customer::select('id')
+            ->when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            });
         $hasCustomerFilter = false;
 
         if ($request->filled('category')) {
@@ -309,6 +366,8 @@ class CallingController extends Controller
         if ($hasCustomerFilter) {
             $filteredCustomerIds = $customerFilterQuery->pluck('id')->toArray();
         }
+
+        // 1. Leads assigned in date range
         $assignedTodayQuery = \App\Models\LeadAssignment::whereIn('staff_id', $query_staff_ids)
             ->whereDate('updated_at', '>=', $startDate)
             ->whereDate('updated_at', '<=', $endDate);
@@ -375,7 +434,9 @@ class CallingController extends Controller
         });
 
         // 4. Admissions in date range
-        $admissionStatus = \App\Models\CallingStatus::where('organization_id', $organization_id)
+        $admissionStatus = \App\Models\CallingStatus::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
             ->where('name', 'like', '%Admission%')
             ->first();
             
@@ -405,7 +466,23 @@ class CallingController extends Controller
         }
 
         // --- TEAM METRICS ---
-        $subordinates = \App\Models\Admin::where('manager_id', $query_staff_id)->where('status', 1)->get();
+        if ($isTopLevel) {
+            if ($is_filtering_subordinate) {
+                $subordinates = \App\Models\Admin::where('manager_id', $query_staff_id)->where('status', 1)->get();
+                if ($subordinates->isEmpty()) {
+                    $subordinates = \App\Models\Admin::where('id', $query_staff_id)->where('status', 1)->get();
+                }
+            } else {
+                $subordinates = $staffs->where('id', '!=', $staff_id)->values();
+            }
+        } else {
+            $subordinates = \App\Models\Admin::where('manager_id', $query_staff_id)->where('status', 1)->get();
+            if ($subordinates->isEmpty() && !$is_filtering_subordinate) {
+                $mySubIds = $this->getSubordinateStaffIds($staff_id, $organization_id);
+                $subordinates = \App\Models\Admin::whereIn('id', $mySubIds)->where('status', 1)->get();
+            }
+        }
+
         $hasSubordinates = $subordinates->count() > 0;
         
         $teamLeadsDelegated = 0;
@@ -415,9 +492,8 @@ class CallingController extends Controller
         if ($hasSubordinates) {
             $subordinateIds = $subordinates->pluck('id')->toArray();
             
-            // Total leads delegated to them in this date range
+            // Total leads assigned to these team members in this date range
             $teamLeadsDelegatedQuery = \App\Models\LeadAssignment::whereIn('staff_id', $subordinateIds)
-                ->where('assigned_by', $query_staff_id)
                 ->whereDate('updated_at', '>=', $startDate)
                 ->whereDate('updated_at', '<=', $endDate);
                 
@@ -432,7 +508,6 @@ class CallingController extends Controller
                              ->whereColumn('calling_histories.created_at', '>=', 'lead_assignments.updated_at');
                     })
                     ->whereIn('lead_assignments.staff_id', $subordinateIds)
-                    ->where('lead_assignments.assigned_by', $query_staff_id)
                     ->where('calling_histories.reason', $admissionStatus->id)
                     ->whereDate('calling_histories.created_at', '>=', $startDate)
                     ->whereDate('calling_histories.created_at', '<=', $endDate);
@@ -442,18 +517,18 @@ class CallingController extends Controller
                 $teamAdmissionsCount = $teamAdmQuery->count();
             }
             
-            // Roll up team admissions into personal target progress! (User request)
-            $admissionsThisMonthCount += $teamAdmissionsCount; // include team admissions
-            if ($admissionsTarget > 0) {
-                $targetProgress = round(($admissionsThisMonthCount / $admissionsTarget) * 100);
-                if ($targetProgress > 100) $targetProgress = 100;
+            // Roll up team admissions into target progress when viewing own/manager dashboard
+            if (!$is_viewing_all && !$is_filtering_subordinate) {
+                $admissionsThisMonthCount += $teamAdmissionsCount;
+                if ($admissionsTarget > 0) {
+                    $targetProgress = round(($admissionsThisMonthCount / $admissionsTarget) * 100);
+                    if ($targetProgress > 100) $targetProgress = 100;
+                }
             }
             
             // Build subordinate leaderboard
             foreach ($subordinates as $sub) {
-                // Get the exact customers assigned to this sub by me in this date range
                 $subAssignedQuery = \App\Models\LeadAssignment::where('staff_id', $sub->id)
-                    ->where('assigned_by', $query_staff_id)
                     ->whereDate('updated_at', '>=', $startDate)
                     ->whereDate('updated_at', '<=', $endDate);
 
@@ -475,7 +550,7 @@ class CallingController extends Controller
                 $subWorkedOnCount = count(array_unique($subWorkedOnCustomers));
                 
                 // Pending means Assigned - Worked On
-                $subPendingCount = $subLeadsCount - $subWorkedOnCount;
+                $subPendingCount = max(0, $subLeadsCount - $subWorkedOnCount);
 
                 // Follow ups due in this date range for this sub since assignment
                 $subLatestSub = \Illuminate\Support\Facades\DB::table('calling_histories')
@@ -627,19 +702,29 @@ class CallingController extends Controller
             ->groupBy('customer_id')
             ->pluck('id')->toArray();
 
-        $delegatedQuery = \App\Models\LeadAssignment::with(['customer', 'staff'])
+        $delegatedQuery = \App\Models\LeadAssignment::with(['customer', 'staff', 'assigner'])
             ->whereIn('id', $latestAssignmentsIds)
             ->whereDate('updated_at', '>=', $startDate)
             ->whereDate('updated_at', '<=', $endDate)
             ->orderBy('updated_at', 'desc')
             ->orderBy('id', 'desc');
 
-        if ($is_filtering_subordinate) {
-            $delegatedQuery->where('assigned_by', $staff_id)
-                ->where('staff_id', $query_staff_id);
+        if ($isTopLevel) {
+            if ($is_filtering_subordinate) {
+                $delegatedQuery->whereIn('staff_id', $target_staff_ids);
+            } else {
+                $delegatedQuery->where('staff_id', '!=', $staff_id);
+            }
         } else {
-            $delegatedQuery->where('assigned_by', $staff_id)
-                ->where('staff_id', '!=', $staff_id);
+            $mySubIds = $this->getSubordinateStaffIds($staff_id, $organization_id);
+            if ($is_filtering_subordinate) {
+                $delegatedQuery->whereIn('staff_id', $target_staff_ids);
+            } else {
+                $delegatedQuery->where(function($q) use ($staff_id, $mySubIds) {
+                    $q->where('assigned_by', $staff_id)
+                      ->orWhereIn('staff_id', $mySubIds);
+                })->where('staff_id', '!=', $staff_id);
+            }
         }
 
         if ($hasCustomerFilter) {
@@ -735,37 +820,25 @@ class CallingController extends Controller
             ->get()
             ->keyBy('customer_id');
 
-        if ($is_filtering_subordinate) {
-            $subordinateActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id, $query_staff_id, $user) {
-                if (isset($user->is_admin) && $user->is_admin) {
-                    return $asgn->staff_id == $query_staff_id;
-                }
-                return $asgn->staff_id == $query_staff_id && $asgn->assigned_by == $staff_id;
-            })->pluck('customer_id')->toArray();
-
-            $historyQuery->whereIn('user_id', $subordinateActiveCustomerIds);
+        if ($isTopLevel) {
+            if ($is_filtering_subordinate) {
+                $historyQuery->whereIn('updated_by', $target_staff_ids);
+            }
         } else {
-            if (isset($user->is_admin) && $user->is_admin) {
-                $allOrgActiveCustomerIds = $latestAssignmentsLookup->pluck('customer_id')->toArray();
-                $historyQuery->whereIn('user_id', $allOrgActiveCustomerIds);
+            $mySubIds = $this->getSubordinateStaffIds($staff_id, $organization_id);
+            if ($is_filtering_subordinate) {
+                $historyQuery->whereIn('updated_by', $target_staff_ids);
             } else {
-                $myActiveAssignedCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
-                    return $asgn->staff_id == $staff_id;
-                })->pluck('customer_id')->toArray();
+                $allowedCallerIds = array_merge([$staff_id], $mySubIds);
+                $historyQuery->where(function($q) use ($staff_id, $allowedCallerIds, $latestAssignmentsLookup) {
+                    $q->whereIn('updated_by', $allowedCallerIds);
+                    
+                    $delegatedCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
+                        return $asgn->assigned_by == $staff_id;
+                    })->pluck('customer_id')->toArray();
 
-                $delegatedActiveCustomerIds = $latestAssignmentsLookup->filter(function($asgn) use ($staff_id) {
-                    return $asgn->assigned_by == $staff_id;
-                })->pluck('customer_id')->toArray();
-
-                $historyQuery->where(function($q) use ($staff_id, $myActiveAssignedCustomerIds, $delegatedActiveCustomerIds) {
-                    if (!empty($myActiveAssignedCustomerIds)) {
-                        $q->whereIn('user_id', $myActiveAssignedCustomerIds);
-                    } else {
-                        $q->whereRaw('1 = 0');
-                    }
-
-                    if (!empty($delegatedActiveCustomerIds)) {
-                        $q->orWhereIn('user_id', $delegatedActiveCustomerIds);
+                    if (!empty($delegatedCustomerIds)) {
+                        $q->orWhereIn('user_id', $delegatedCustomerIds);
                     }
                 });
             }
@@ -777,7 +850,7 @@ class CallingController extends Controller
         // 1. The call was logged after or on the latest assignment
         // 2. Reassigned leads move out until worked on by the newly assigned staff
         // 3. Multiple calls to the same lead show only the single latest attempt
-        $workedHistory = $workedHistory->filter(function($history) use ($latestAssignmentsLookup, $staff_id, $is_filtering_subordinate, $query_staff_id, $user) {
+        $workedHistory = $workedHistory->filter(function($history) use ($latestAssignmentsLookup, $staff_id, $is_filtering_subordinate, $target_staff_ids, $isTopLevel) {
             $latestAssignment = $latestAssignmentsLookup->get($history->user_id);
             if (!$latestAssignment) {
                 return false;
@@ -788,54 +861,72 @@ class CallingController extends Controller
                 return false;
             }
 
-            if (isset($user->is_admin) && $user->is_admin) {
+            if ($isTopLevel) {
                 if ($is_filtering_subordinate) {
-                    return $latestAssignment->staff_id == $query_staff_id;
+                    return in_array($latestAssignment->staff_id, $target_staff_ids) || in_array($history->updated_by, $target_staff_ids);
                 }
                 return true;
             }
 
             if ($is_filtering_subordinate) {
-                return $latestAssignment->staff_id == $query_staff_id && $latestAssignment->assigned_by == $staff_id;
+                return in_array($latestAssignment->staff_id, $target_staff_ids) || in_array($history->updated_by, $target_staff_ids);
             }
 
-            // Logged in user: either assigned to me or assigned by me
-            return ($latestAssignment->staff_id == $staff_id) || ($latestAssignment->assigned_by == $staff_id);
+            // Logged in user: either assigned to me, assigned by me, or called by my subordinate
+            return ($latestAssignment->staff_id == $staff_id) || ($latestAssignment->assigned_by == $staff_id) || in_array($latestAssignment->staff_id, $target_staff_ids) || in_array($history->updated_by, $target_staff_ids);
         })->unique('user_id')->values();
 
         $historyAssignmentsLookup = $latestAssignmentsLookup;
 
-        $statuses = \App\Models\CallingStatus::where('organization_id', $organization_id)->where('status', 1)->get();
-        $actions = \App\Models\CallingAction::where('organization_id', $organization_id)->where('status', 1)->get();
-        $categories = \App\Models\CustomerCategory::where('organization_id', $organization_id)->where('parent_id', 0)->with('childrenRecursive')->get();
-        $templates = \App\Models\WhatsappTemplate::where('organization_id', $organization_id)->get();
+        $statuses = \App\Models\CallingStatus::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->where('status', 1)->get();
+        $actions = \App\Models\CallingAction::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->where('status', 1)->get();
+        $categories = \App\Models\CustomerCategory::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->where('parent_id', 0)->with('childrenRecursive')->get();
+        $templates = \App\Models\WhatsappTemplate::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->get();
         $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
         $courses = \App\Models\Course::where('status', 1)->get();
 
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 1)->get();
+        $sessions = \App\Models\CustomerSession::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->where('status', 1)->get();
         $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
         $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
-        $lead_qualities = \App\Models\LeadQuality::where('organization_id', $organization_id)->where('status', 1)->get();
+        $lead_qualities = \App\Models\LeadQuality::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })->where('status', 1)->get();
 
         $unlocked_lead_id = auth()->user()->unlocked_lead_id;
 
-        $dbCountries = \App\Models\Customer::where('organization_id', $organization_id)
+        $dbCountries = \App\Models\Customer::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
             ->whereNotNull('country')
             ->where('country', '!=', '')
             ->distinct()
             ->pluck('country')
             ->toArray();
 
-        $dbStates = \App\Models\Customer::where('organization_id', $organization_id)
+        $dbStates = \App\Models\Customer::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
             ->whereNotNull('state')
             ->where('state', '!=', '')
             ->distinct()
             ->pluck('state')
             ->toArray();
 
-        $dbCities = \App\Models\Customer::where('organization_id', $organization_id)
+        $dbCities = \App\Models\Customer::when($organization_id, function($q) use ($organization_id) {
+                $q->where('organization_id', $organization_id);
+            })
             ->whereNotNull('city')
             ->where('city', '!=', '')
             ->distinct()
@@ -862,6 +953,7 @@ class CallingController extends Controller
             'workedHistory',
             'historyAssignmentsLookup',
             'query_staff_id',
+            'isTopLevel',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types', 'lead_qualities',
             'dbCountries', 'dbStates', 'dbCities'
         ));
@@ -972,7 +1064,7 @@ class CallingController extends Controller
         $canEditStudent = false;
         $currentUser = auth()->user();
         if ($currentUser) {
-            if ($currentUser->is_admin || $currentUser->can('customer-edit') || $currentUser->can('customer-browse') || $currentUser->hasRole('superadmin')) {
+            if ($this->isTopLevelUser($currentUser) || $currentUser->can('customer-edit') || $currentUser->can('customer-browse') || $currentUser->hasRole('superadmin')) {
                 $canEditStudent = true;
             }
         }
