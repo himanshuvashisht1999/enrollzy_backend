@@ -9,6 +9,10 @@
     .timeline-item { position: relative; margin-bottom: 24px; }
     .timeline-dot { position: absolute; left: -28px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 3px solid #3b82f6; }
     .checklist-item.completed span { text-decoration: line-through; color: #94a3b8; }
+    .photo-thumb-card { transition: all 0.2s ease-in-out; cursor: pointer; }
+    .photo-thumb-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; }
+    .img-preview-trigger { cursor: pointer; transition: opacity 0.2s; }
+    .img-preview-trigger:hover { opacity: 0.88; }
 </style>
 @endpush
 
@@ -235,68 +239,159 @@
 
                         <!-- Attachments Tab -->
                         <div class="tab-pane fade" id="attachmentsTab" role="tabpanel">
-                            <div class="mb-3">
-                                <form id="uploadAttachmentForm" enctype="multipart/form-data" class="d-flex gap-2">
-                                    <input type="file" id="attachmentFileInput" class="form-control form-control-sm rounded-pill" required>
-                                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 text-nowrap">
-                                        <i class="fas fa-upload me-1"></i> Upload
-                                    </button>
+                            <div class="card border rounded-3 p-3 bg-light mb-4">
+                                <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-cloud-upload-alt text-primary me-2"></i> Upload Files & Photos</h6>
+                                <p class="small text-muted mb-2">Upload multiple photos, screenshots, or documents. Uploaded files will be immediately accessible to all assigned members.</p>
+                                <form id="uploadAttachmentForm" enctype="multipart/form-data">
+                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <div class="flex-grow-1">
+                                            <input type="file" id="attachmentFileInput" class="form-control form-control-sm rounded-pill" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" required>
+                                        </div>
+                                        <button type="submit" id="uploadAttachmentBtn" class="btn btn-sm btn-primary rounded-pill px-4 text-nowrap shadow-sm">
+                                            <i class="fas fa-upload me-1"></i> Upload Selected Files
+                                        </button>
+                                    </div>
+                                    <div id="attachments_preview_box" class="d-flex flex-wrap gap-2 mt-2"></div>
                                 </form>
                             </div>
 
-                            <div class="list-group" id="attachmentsContainer">
-                                @forelse($task->attachments as $att)
-                                    <div class="list-group-item d-flex justify-content-between align-items-center border rounded-3 mb-2 p-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="fas fa-file-alt text-primary fa-lg"></i>
-                                            <div>
-                                                <div class="fw-bold text-dark small">{{ $att->file_name }}</div>
-                                                <small class="text-muted">{{ round($att->file_size / 1024, 1) }} KB &bull; Uploaded by {{ $att->uploader->name ?? 'Staff' }}</small>
+                            @php
+                                $photoAttachments = $task->attachments->filter(function($a) { return $a->isImage(); });
+                                $docAttachments = $task->attachments->filter(function($a) { return !$a->isImage(); });
+                            @endphp
+
+                            <!-- Photos & Screenshots Gallery -->
+                            @if($photoAttachments->isNotEmpty())
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-dark mb-3"><i class="fas fa-images text-primary me-2"></i> Photos & Screenshots ({{ $photoAttachments->count() }})</h6>
+                                <div class="row g-3" id="photosContainer">
+                                    @foreach($photoAttachments as $att)
+                                    <div class="col-md-3 col-sm-6" id="att-card-{{ $att->id }}">
+                                        <div class="card border rounded-3 shadow-sm h-100 photo-thumb-card overflow-hidden">
+                                            <div class="position-relative" style="height: 140px; background: #f8fafc;">
+                                                <img src="{{ asset($att->file_path) }}" class="w-100 h-100 img-preview-trigger" style="object-fit: cover;" data-img-src="{{ asset($att->file_path) }}" data-img-title="{{ $att->file_name }}" alt="{{ $att->file_name }}">
+                                            </div>
+                                            <div class="p-2 bg-white">
+                                                <div class="fw-bold small text-truncate" title="{{ $att->file_name }}">{{ $att->file_name }}</div>
+                                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                                    <small class="text-muted" style="font-size: 11px;">{{ $att->formatted_size }} &bull; {{ $att->uploader->name ?? 'Staff' }}</small>
+                                                    <div class="btn-group">
+                                                        <a href="{{ asset($att->file_path) }}" target="_blank" class="btn btn-sm btn-light p-1 text-primary" title="Open Full Size"><i class="fas fa-external-link-alt"></i></a>
+                                                        <button type="button" class="btn btn-sm btn-light p-1 text-danger delete-attachment-btn" data-id="{{ $att->id }}" title="Delete"><i class="fas fa-trash"></i></button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <a href="{{ asset($att->file_path) }}" target="_blank" class="btn btn-sm btn-soft-primary rounded-pill px-3">
-                                            <i class="fas fa-download me-1"></i> View / Download
-                                        </a>
                                     </div>
-                                @empty
-                                    <p class="text-muted small text-center py-3" id="noAttachmentsMsg">No attachments uploaded yet.</p>
-                                @endforelse
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+                            <!-- Documents & Files List -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-file-alt text-primary me-2"></i> Documents & Files ({{ $docAttachments->count() }})</h6>
+                                <div class="list-group" id="attachmentsContainer">
+                                    @forelse($docAttachments as $att)
+                                        <div class="list-group-item d-flex justify-content-between align-items-center border rounded-3 mb-2 p-2" id="att-card-{{ $att->id }}">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-file-alt text-primary fa-lg"></i>
+                                                <div>
+                                                    <div class="fw-bold text-dark small">{{ $att->file_name }}</div>
+                                                    <small class="text-muted">{{ $att->formatted_size }} &bull; Uploaded by {{ $att->uploader->name ?? 'Staff' }} &bull; {{ $att->created_at->format('M d, Y') }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-1">
+                                                <a href="{{ asset($att->file_path) }}" target="_blank" class="btn btn-sm btn-soft-primary rounded-pill px-3">
+                                                    <i class="fas fa-download me-1"></i> Download
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-soft-danger rounded-pill px-2 delete-attachment-btn" data-id="{{ $att->id }}" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        @if($photoAttachments->isEmpty())
+                                            <p class="text-muted small text-center py-3" id="noAttachmentsMsg">No attachments uploaded yet.</p>
+                                        @else
+                                            <p class="text-muted small py-2">No standalone documents. Photos are shown above.</p>
+                                        @endif
+                                    @endforelse
+                                </div>
                             </div>
                         </div>
 
                         <!-- Comments Tab -->
                         <div class="tab-pane fade" id="commentsTab" role="tabpanel">
-                            <form action="{{ route('admin.work_management.comments.store') }}" method="POST" class="mb-4">
+                            <!-- Comment / Photo Exchange Form -->
+                            <form action="{{ route('admin.work_management.comments.store') }}" method="POST" enctype="multipart/form-data" class="card border-0 rounded-4 shadow-sm p-3 mb-4 bg-light">
                                 @csrf
                                 <input type="hidden" name="task_id" value="{{ $task->id }}">
                                 <div class="mb-2">
-                                    <textarea name="comment" class="form-control rounded-3" rows="3" placeholder="Write a comment or note..." required></textarea>
+                                    <label class="form-label small fw-bold text-dark"><i class="fas fa-comment-dots text-primary me-1"></i> Post Update, Feedback or Handover Notes</label>
+                                    <textarea name="comment" class="form-control rounded-3" rows="3" placeholder="Write update message, progress notes, or ask questions..." required></textarea>
                                 </div>
-                                <div class="d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4">
-                                        <i class="fas fa-paper-plane me-1"></i> Post Comment
-                                    </button>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-semibold mb-1 text-muted"><i class="fas fa-camera text-secondary me-1"></i> Attach Photos / Documents <small>(Multiple files allowed)</small></label>
+                                        <input type="file" name="photos[]" id="commentPhotosInput" class="form-control form-control-sm rounded-pill" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+                                        <div id="commentPhotosPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                                    </div>
+                                    <div class="col-md-4 text-md-end mt-md-3">
+                                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                            <i class="fas fa-paper-plane me-1"></i> Send Update & Photos
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
 
+                            <!-- Comments Stream -->
                             <div class="comments-list">
                                 @forelse($task->comments as $c)
-                                    <div class="card border rounded-3 p-3 mb-3 bg-light">
+                                    <div class="card border rounded-3 p-3 mb-3 bg-white shadow-sm">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="avatar-xs rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px;">
+                                                <div class="avatar-xs rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 34px; height: 34px;">
                                                     {{ strtoupper(substr($c->user->name ?? 'U', 0, 1)) }}
                                                 </div>
                                                 <div>
-                                                    <div class="fw-bold small">{{ $c->user->name ?? 'User' }}</div>
-                                                    <small class="text-muted">{{ $c->created_at->diffForHumans() }}</small>
+                                                    <div class="fw-bold small text-dark">
+                                                        {{ $c->user->name ?? 'User' }}
+                                                        @if($task->created_by == $c->user_id)
+                                                            <span class="badge bg-soft-info text-info ms-1" style="font-size: 10px;">Assigner / Creator</span>
+                                                        @elseif($task->assigned_to == $c->user_id || ($task->activePrimaryAssignee && $task->activePrimaryAssignee->user_id == $c->user_id))
+                                                            <span class="badge bg-soft-success text-success ms-1" style="font-size: 10px;">Assignee</span>
+                                                        @endif
+                                                    </div>
+                                                    <small class="text-muted">{{ $c->created_at->diffForHumans() }} &bull; {{ $c->created_at->format('M d, Y h:i A') }}</small>
                                                 </div>
                                             </div>
                                         </div>
-                                        <p class="mb-0 small text-dark">{{ $c->comment }}</p>
+
+                                        <p class="mb-2 text-dark small" style="white-space: pre-line;">{{ $c->comment }}</p>
+
+                                        @if(!empty($c->documents_list) && count($c->documents_list) > 0)
+                                            <div class="mt-2 pt-2 border-top">
+                                                <small class="text-muted fw-semibold d-block mb-1"><i class="fas fa-paperclip me-1"></i> Attached Photos & Files ({{ count($c->documents_list) }}):</small>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    @foreach($c->documents_list as $doc)
+                                                        @if($doc['is_image'])
+                                                            <div class="position-relative border rounded-3 overflow-hidden shadow-none photo-thumb-card" style="width: 110px; height: 90px; cursor: pointer;">
+                                                                <img src="{{ $doc['url'] }}" class="w-100 h-100 img-preview-trigger" style="object-fit: cover;" data-img-src="{{ $doc['url'] }}" data-img-title="{{ $doc['name'] }}" alt="{{ $doc['name'] }}">
+                                                            </div>
+                                                        @else
+                                                            <a href="{{ $doc['url'] }}" target="_blank" class="badge bg-light text-dark border p-2 text-decoration-none d-flex align-items-center gap-1">
+                                                                <i class="fas fa-file-download text-primary"></i>
+                                                                <span class="text-truncate" style="max-width: 140px;">{{ $doc['name'] }}</span>
+                                                            </a>
+                                                        @endif
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 @empty
-                                    <p class="text-muted small text-center py-3">No comments yet. Start the conversation!</p>
+                                    <p class="text-muted small text-center py-3">No updates or comments yet. Start the conversation!</p>
                                 @endforelse
                             </div>
                         </div>
@@ -529,11 +624,104 @@
         </div>
     </div>
 </div>
+<!-- Modal: Image Preview / Lightbox -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow overflow-hidden bg-dark">
+            <div class="modal-header border-0 pb-0 text-white bg-dark">
+                <h6 class="modal-title fw-bold text-truncate" id="imagePreviewTitle">Photo Preview</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 text-center bg-dark">
+                <img id="imagePreviewImg" src="" class="img-fluid rounded" style="max-height: 75vh; object-fit: contain;">
+            </div>
+            <div class="modal-footer border-0 pt-0 bg-dark justify-content-between">
+                <small class="text-white-50" id="imagePreviewFooter"></small>
+                <a id="imagePreviewDownloadBtn" href="" target="_blank" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                    <i class="fas fa-download me-1"></i> Open Original
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
 <script>
     const taskId = {{ $task->id }};
+
+    // Image lightbox preview trigger
+    $(document).on('click', '.img-preview-trigger', function() {
+        var src = $(this).data('img-src') || $(this).attr('src');
+        var title = $(this).data('img-title') || 'Photo Preview';
+        $('#imagePreviewImg').attr('src', src);
+        $('#imagePreviewTitle').text(title);
+        $('#imagePreviewDownloadBtn').attr('href', src);
+        var myModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        myModal.show();
+    });
+
+    // Attachments selection live preview
+    $('#attachmentFileInput').on('change', function() {
+        var $preview = $('#attachments_preview_box');
+        $preview.empty();
+        var files = this.files;
+        if (files && files.length > 0) {
+            Array.from(files).forEach(function(file) {
+                var sizeKB = (file.size / 1024).toFixed(1) + ' KB';
+                if (file.type.startsWith('image/')) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var imgCard = $('<div class="card p-1 shadow-none border text-center bg-white" style="width: 90px;">' +
+                            '<img src="' + e.target.result + '" class="rounded" style="height: 55px; object-fit: cover; width: 100%;">' +
+                            '<small class="text-truncate d-block mt-1" style="font-size: 10px;" title="' + file.name + '">' + file.name + '</small>' +
+                            '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                        '</div>');
+                        $preview.append(imgCard);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    var docCard = $('<div class="card p-2 shadow-none border text-center d-flex flex-column align-items-center justify-content-center bg-white" style="width: 90px; min-height: 80px;">' +
+                        '<i class="fas fa-file-alt fa-2x text-primary mb-1"></i>' +
+                        '<small class="text-truncate d-block" style="font-size: 10px; max-width: 80px;" title="' + file.name + '">' + file.name + '</small>' +
+                        '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                    '</div>');
+                    $preview.append(docCard);
+                }
+            });
+        }
+    });
+
+    // Comments photos selection live preview
+    $('#commentPhotosInput').on('change', function() {
+        var $preview = $('#commentPhotosPreview');
+        $preview.empty();
+        var files = this.files;
+        if (files && files.length > 0) {
+            Array.from(files).forEach(function(file) {
+                var sizeKB = (file.size / 1024).toFixed(1) + ' KB';
+                if (file.type.startsWith('image/')) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var imgCard = $('<div class="card p-1 shadow-none border text-center bg-white" style="width: 90px;">' +
+                            '<img src="' + e.target.result + '" class="rounded" style="height: 55px; object-fit: cover; width: 100%;">' +
+                            '<small class="text-truncate d-block mt-1" style="font-size: 10px;" title="' + file.name + '">' + file.name + '</small>' +
+                            '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                        '</div>');
+                        $preview.append(imgCard);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    var docCard = $('<div class="card p-2 shadow-none border text-center d-flex flex-column align-items-center justify-content-center bg-white" style="width: 90px; min-height: 80px;">' +
+                        '<i class="fas fa-file-alt fa-2x text-primary mb-1"></i>' +
+                        '<small class="text-truncate d-block" style="font-size: 10px; max-width: 80px;" title="' + file.name + '">' + file.name + '</small>' +
+                        '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                    '</div>');
+                    $preview.append(docCard);
+                }
+            });
+        }
+    });
 
     // Status Change
     $('.status-change-btn').on('click', function() {
@@ -619,13 +807,25 @@
         });
     });
 
-    // Attachments AJAX
+    // Attachments Multiple Upload AJAX
     $('#uploadAttachmentForm').on('submit', function(e) {
         e.preventDefault();
+        var filesInput = $('#attachmentFileInput')[0];
+        if (!filesInput.files || filesInput.files.length === 0) {
+            alert('Please select at least one file to upload.');
+            return;
+        }
+
         var formData = new FormData();
         formData.append('_token', "{{ csrf_token() }}");
         formData.append('task_id', taskId);
-        formData.append('file', $('#attachmentFileInput')[0].files[0]);
+
+        for (var i = 0; i < filesInput.files.length; i++) {
+            formData.append('files[]', filesInput.files[i]);
+        }
+
+        var $btn = $('#uploadAttachmentBtn');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Uploading...');
 
         $.ajax({
             url: "{{ route('admin.work_management.tasks.add_attachment') }}",
@@ -634,9 +834,34 @@
             processData: false,
             contentType: false,
             success: function(res) {
+                $btn.prop('disabled', false).html('<i class="fas fa-upload me-1"></i> Upload Selected Files');
                 if (res.status === 1) {
-                    alert('Attachment uploaded successfully');
+                    alert(res.message || 'Attachments uploaded successfully');
                     location.reload();
+                } else {
+                    alert(res.message || 'Error uploading files');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).html('<i class="fas fa-upload me-1"></i> Upload Selected Files');
+                alert(xhr.responseJSON ? xhr.responseJSON.message : 'Upload failed');
+            }
+        });
+    });
+
+    // Delete Attachment AJAX
+    $(document).on('click', '.delete-attachment-btn', function() {
+        var attId = $(this).data('id');
+        if (!confirm('Are you sure you want to delete this file?')) return;
+        $.ajax({
+            url: "/admin/work-management/tasks/delete-attachment/" + attId,
+            type: 'DELETE',
+            data: { _token: "{{ csrf_token() }}" },
+            success: function(res) {
+                if (res.status === 1) {
+                    $('#att-card-' + attId).fadeOut(function() { $(this).remove(); });
+                } else {
+                    alert(res.message || 'Error deleting file');
                 }
             }
         });

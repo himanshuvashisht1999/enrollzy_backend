@@ -560,7 +560,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             // Tasks & Subtasks
             Route::get('tasks/kanban', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'kanban'])->name('tasks.kanban');
             Route::get('task-board', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'kanban'])->name('tasks.task_board');
-            Route::resource('tasks', \App\Http\Controllers\Admin\WorkManagement\TaskController::class);
+            Route::match(['get', 'post'], 'tasks/get-project-data', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'getProjectData'])->name('tasks.ajax_project_data');
             Route::post('tasks/change-status', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'changeStatus'])->name('tasks.change_status');
             Route::post('tasks/reassign', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'reassign'])->name('tasks.reassign');
             Route::post('tasks/delegate', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'delegate'])->name('tasks.delegate');
@@ -569,25 +569,26 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::delete('tasks/delete-checklist/{id}', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'deleteChecklist'])->name('tasks.delete_checklist');
             Route::post('tasks/add-time-entry', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addTimeEntry'])->name('tasks.add_time_entry');
             Route::post('tasks/add-attachment', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addAttachment'])->name('tasks.add_attachment');
-            Route::match(['get', 'post'], 'tasks/get-project-data', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'getProjectData'])->name('tasks.ajax_project_data');
+            Route::delete('tasks/delete-attachment/{id}', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'deleteAttachment'])->name('tasks.delete_attachment');
+            Route::resource('tasks', \App\Http\Controllers\Admin\WorkManagement\TaskController::class);
 
             // Comments
             Route::post('comments/store', [\App\Http\Controllers\Admin\WorkManagement\TaskCommentController::class, 'store'])->name('comments.store');
 
             // Teams
-            Route::resource('teams', \App\Http\Controllers\Admin\WorkManagement\TeamController::class);
+            Route::post('teams/get-members', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'getMembersByTeam'])->name('teams.get_members');
             Route::post('teams/{teamId}/add-member', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'addMember'])->name('teams.add_member');
             Route::post('teams/{teamId}/remove-member', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'removeMember'])->name('teams.remove_member');
-            Route::post('teams/get-members', [\App\Http\Controllers\Admin\WorkManagement\TeamController::class, 'getMembersByTeam'])->name('teams.get_members');
+            Route::resource('teams', \App\Http\Controllers\Admin\WorkManagement\TeamController::class);
 
             // External Partners & Agencies
-            Route::resource('partners', \App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class);
             Route::post('partners/{orgId}/add-contact', [\App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class, 'addContact'])->name('partners.add_contact');
             Route::post('partners/{orgId}/add-team', [\App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class, 'addTeam'])->name('partners.add_team');
+            Route::resource('partners', \App\Http\Controllers\Admin\WorkManagement\ExternalPartnerController::class);
 
             // Meetings
-            Route::resource('meetings', \App\Http\Controllers\Admin\WorkManagement\MeetingController::class);
             Route::post('meetings/decision-to-task', [\App\Http\Controllers\Admin\WorkManagement\MeetingController::class, 'convertDecisionToTask'])->name('meetings.decision_to_task');
+            Route::resource('meetings', \App\Http\Controllers\Admin\WorkManagement\MeetingController::class);
 
             // Reports
             Route::get('reports', [\App\Http\Controllers\Admin\WorkManagement\WorkReportController::class, 'index'])->name('reports.index');

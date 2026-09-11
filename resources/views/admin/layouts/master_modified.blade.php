@@ -630,6 +630,7 @@
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.report') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.whatsapp_template.report') }}">Whatsapp Report</a></li>
 
+                            {{--
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Project & Tasks
                             </div>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.lead-sources.*') ? 'active' : '' }}"
@@ -645,6 +646,7 @@
                                     href="{{ route('admin.hr.projects.milestones.index') }}">All Milestones</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
+                            --}}
 
                         </ul>
                     </div>

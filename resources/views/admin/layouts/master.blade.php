@@ -809,6 +809,7 @@
 @endif
 
 
+                            {{--
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Project & Tasks
                             </div>
                             <!-- wrapped project -->
@@ -847,6 +848,7 @@
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
                                     href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
 @endif
+                            --}}
 
 
                         </ul>

@@ -1078,6 +1078,11 @@
                                                 <div class="fw-bold {{ $type === 'overdue' ? 'text-danger' : 'text-dark' }}">
                                                     <i class="far fa-calendar-alt me-1"></i> {{ \Carbon\Carbon::parse($history->date_required)->format('d M, Y') }}
                                                 </div>
+                                                @if(!empty($item['called_today']) && !empty($item['last_called_at']))
+                                                    <div class="text-muted small mt-0.5" style="font-size: 0.72rem;">
+                                                        <i class="fas fa-redo-alt text-warning me-0.5"></i> Call again (Last: {{ \Carbon\Carbon::parse($item['last_called_at'])->format('h:i A') }})
+                                                    </div>
+                                                @endif
                                             @else
                                                 <span class="text-muted">—</span>
                                             @endif

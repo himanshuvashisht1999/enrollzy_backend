@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dynamic_exams', function (Blueprint $table) {
-            $table->string('result_status')->nullable()->after('exam_frequency');
-            $table->string('registration_status')->nullable()->after('result_status');
+            if (!Schema::hasColumn('dynamic_exams', 'result_status')) {
+                $table->string('result_status')->nullable()->after('exam_frequency');
+            }
+            if (!Schema::hasColumn('dynamic_exams', 'registration_status')) {
+                $table->string('registration_status')->nullable()->after('result_status');
+            }
         });
     }
 

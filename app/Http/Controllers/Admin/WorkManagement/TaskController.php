@@ -158,8 +158,11 @@ class TaskController extends Controller
         $externalTeams = ExternalTeam::where('status', 'active')->get();
         $externalContacts = ExternalContact::where('status', 'active')->get();
 
+        $initialProjectId = old('project_id', $selectedProjectId);
+        $milestones = $initialProjectId ? Milestone::where('project_id', $initialProjectId)->get() : collect();
+
         return view('admin.work_management.tasks.create', compact(
-            'projects', 'teams', 'staff', 'externalOrgs', 'externalTeams', 'externalContacts', 'selectedProjectId', 'parentTask'
+            'projects', 'teams', 'staff', 'externalOrgs', 'externalTeams', 'externalContacts', 'selectedProjectId', 'parentTask', 'milestones'
         ));
     }
 
@@ -179,7 +182,7 @@ class TaskController extends Controller
         }
 
         try {
-            $data = $request->except(['_token', 'assignee_type', 'assignee_id']);
+            $data = $request->except(['_token', 'assignee_type', 'assignee_id', 'attachments']);
             $data['organization_id'] = auth()->user()->organization_id ?? null;
             $data['created_by'] = auth()->id();
             $data['staff_id'] = auth()->id();
@@ -206,11 +209,45 @@ class TaskController extends Controller
                 );
             }
 
+            // Handle multiple uploaded files / photos
+            $uploadedCount = 0;
+            if ($request->hasFile('attachments')) {
+                $files = $request->file('attachments');
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+                $destinationPath = public_path('uploads/tasks/attachments');
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0777, true);
+                }
+
+                foreach ($files as $file) {
+                    if ($file && $file->isValid()) {
+                        $originalName = $file->getClientOriginalName();
+                        $ext = $file->getClientOriginalExtension();
+                        $size = $file->getSize();
+                        $safeName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+                        $file->move($destinationPath, $safeName);
+
+                        TaskAttachment::create([
+                            'task_id' => $task->id,
+                            'uploaded_by' => auth()->id(),
+                            'file_name' => $originalName,
+                            'file_path' => 'uploads/tasks/attachments/' . $safeName,
+                            'file_type' => $ext,
+                            'file_size' => $size,
+                        ]);
+                        $uploadedCount++;
+                    }
+                }
+            }
+
             ProjectMetricsService::updateProjectMetrics($task->project_id);
 
+            $attachNote = $uploadedCount > 0 ? " with {$uploadedCount} attachment(s)" : "";
             TaskActivityLog::log(
                 'created',
-                ($task->isSubtask() ? "Subtask '{$task->title}'" : "Task '{$task->title}'") . " created by " . auth()->user()->name,
+                ($task->isSubtask() ? "Subtask '{$task->title}'" : "Task '{$task->title}'") . " created{$attachNote} by " . auth()->user()->name,
                 $task->id,
                 $task->project_id,
                 $task->milestone
@@ -228,7 +265,7 @@ class TaskController extends Controller
 
     public function show($id)
     {
-        $id = decrypt($id);
+        $id = is_numeric($id) ? $id : decrypt($id);
         $task = Tasks::with([
             'project.department', 'project.team', 'milestone_assigned', 'team.leader', 'parentTask',
             'subtasks.activePrimaryAssignee.user', 'subtasks.team',
@@ -247,8 +284,8 @@ class TaskController extends Controller
 
     public function edit($id)
     {
-        $id = decrypt($id);
-        $task = Tasks::findOrFail($id);
+        $id = is_numeric($id) ? $id : decrypt($id);
+        $task = Tasks::with('attachments.uploader')->findOrFail($id);
         $projects = Project::all();
         $teams = Team::where('status', 'active')->get();
         $staff = Admin::where('status', 'active')->get();
@@ -259,7 +296,7 @@ class TaskController extends Controller
 
     public function update(Request $request, $id)
     {
-        $id = decrypt($id);
+        $id = is_numeric($id) ? $id : decrypt($id);
         $task = Tasks::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -275,9 +312,42 @@ class TaskController extends Controller
         }
 
         try {
-            $data = $request->except(['_token', '_method']);
+            $data = $request->except(['_token', '_method', 'attachments']);
             $oldStatus = $task->status;
             $task->update($data);
+
+            // Handle multiple uploaded files / photos on update
+            $uploadedCount = 0;
+            if ($request->hasFile('attachments')) {
+                $files = $request->file('attachments');
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+                $destinationPath = public_path('uploads/tasks/attachments');
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0777, true);
+                }
+
+                foreach ($files as $file) {
+                    if ($file && $file->isValid()) {
+                        $originalName = $file->getClientOriginalName();
+                        $ext = $file->getClientOriginalExtension();
+                        $size = $file->getSize();
+                        $safeName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+                        $file->move($destinationPath, $safeName);
+
+                        TaskAttachment::create([
+                            'task_id' => $task->id,
+                            'uploaded_by' => auth()->id(),
+                            'file_name' => $originalName,
+                            'file_path' => 'uploads/tasks/attachments/' . $safeName,
+                            'file_type' => $ext,
+                            'file_size' => $size,
+                        ]);
+                        $uploadedCount++;
+                    }
+                }
+            }
 
             if ($oldStatus != $task->status) {
                 if ($task->status == 'completed') $task->completed_at = now();
@@ -288,9 +358,10 @@ class TaskController extends Controller
 
             ProjectMetricsService::updateProjectMetrics($task->project_id);
 
+            $attachNote = $uploadedCount > 0 ? " with {$uploadedCount} new attachment(s)" : "";
             TaskActivityLog::log(
                 'updated',
-                "Task '{$task->title}' details updated by " . auth()->user()->name,
+                "Task '{$task->title}' details updated{$attachNote} by " . auth()->user()->name,
                 $task->id,
                 $task->project_id,
                 $task->milestone
@@ -304,7 +375,7 @@ class TaskController extends Controller
 
     public function destroy($id)
     {
-        $id = decrypt($id);
+        $id = is_numeric($id) ? $id : decrypt($id);
         $task = Tasks::findOrFail($id);
         $projectId = $task->project_id;
         $parentId = $task->parent_task_id;
@@ -526,23 +597,104 @@ class TaskController extends Controller
     {
         $request->validate([
             'task_id' => 'required',
-            'file' => 'required|file|max:20480',
         ]);
 
-        $file = $request->file('file');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $path = $file->storeAs('task_attachments', $fileName, 'public');
+        $task = Tasks::findOrFail($request->task_id);
+        $destinationPath = public_path('uploads/tasks/attachments');
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0777, true);
+        }
 
-        $attachment = TaskAttachment::create([
-            'task_id' => $request->task_id,
-            'uploaded_by' => auth()->id(),
-            'file_name' => $file->getClientOriginalName(),
-            'file_path' => 'storage/' . $path,
-            'file_type' => $file->getClientOriginalExtension(),
-            'file_size' => $file->getSize(),
+        $files = [];
+        if ($request->hasFile('files')) {
+            $files = $request->file('files');
+        } elseif ($request->hasFile('file')) {
+            $files = [$request->file('file')];
+        } elseif ($request->hasFile('attachments')) {
+            $files = $request->file('attachments');
+        }
+
+        if (empty($files)) {
+            return response()->json(['status' => 0, 'message' => 'No files provided.'], 422);
+        }
+
+        if (!is_array($files)) {
+            $files = [$files];
+        }
+
+        $createdAttachments = [];
+        foreach ($files as $file) {
+            if ($file && $file->isValid()) {
+                $originalName = $file->getClientOriginalName();
+                $ext = $file->getClientOriginalExtension();
+                $size = $file->getSize();
+                $safeName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+                $file->move($destinationPath, $safeName);
+
+                $att = TaskAttachment::create([
+                    'task_id' => $task->id,
+                    'uploaded_by' => auth()->id(),
+                    'file_name' => $originalName,
+                    'file_path' => 'uploads/tasks/attachments/' . $safeName,
+                    'file_type' => $ext,
+                    'file_size' => $size,
+                ]);
+
+                $att->load('uploader');
+                $createdAttachments[] = $att;
+            }
+        }
+
+        TaskActivityLog::log(
+            'file_uploaded',
+            count($createdAttachments) . " attachment(s) uploaded by " . auth()->user()->name,
+            $task->id,
+            $task->project_id,
+            $task->milestone
+        );
+
+        return response()->json([
+            'status' => 1,
+            'message' => count($createdAttachments) . ' file(s) uploaded successfully.',
+            'attachment' => $createdAttachments[0] ?? null,
+            'attachments' => $createdAttachments
         ]);
+    }
 
-        return response()->json(['status' => 1, 'attachment' => $attachment]);
+    public function deleteAttachment($id)
+    {
+        $attachment = TaskAttachment::findOrFail($id);
+        $task = $attachment->task;
+
+        $user = auth()->user();
+        $isAuthorized = ($attachment->uploaded_by == auth()->id())
+            || ($user->is_admin ?? false)
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']));
+
+        if (!$isAuthorized) {
+            return response()->json(['status' => 0, 'message' => 'Unauthorized to delete this file.'], 403);
+        }
+
+        $fullPath = public_path($attachment->file_path);
+        if (file_exists($fullPath) && is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+
+        $fileName = $attachment->file_name;
+        $attachment->delete();
+
+        if ($task) {
+            TaskActivityLog::log(
+                'file_deleted',
+                "Attachment '{$fileName}' removed by " . auth()->user()->name,
+                $task->id,
+                $task->project_id,
+                $task->milestone
+            );
+        }
+
+        return response()->json(['status' => 1, 'message' => 'Attachment deleted successfully.']);
     }
 
     // Dynamic Cascader AJAX

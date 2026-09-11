@@ -39,7 +39,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.work_management.tasks.store') }}" method="POST" id="taskForm">
+                    <form action="{{ route('admin.work_management.tasks.store') }}" method="POST" id="taskForm" enctype="multipart/form-data">
                         @csrf
                         @if(isset($parentTask))
                             <input type="hidden" name="parent_task_id" value="{{ $parentTask->id }}">
@@ -75,6 +75,13 @@
                                 <label class="form-label fw-semibold">Milestone</label>
                                 <select name="milestone" id="milestone_select" class="form-select rounded-3">
                                     <option value="">Select Milestone (Optional)</option>
+                                    @if(isset($milestones))
+                                        @foreach($milestones as $m)
+                                            <option value="{{ $m->id }}" {{ old('milestone') == $m->id ? 'selected' : '' }}>
+                                                {{ $m->title }}
+                                            </option>
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
                             @endif
@@ -158,6 +165,19 @@
                                 <label class="form-label fw-semibold">Description & Acceptance Criteria</label>
                                 <textarea name="description" class="form-control rounded-3" rows="4" placeholder="Detailed scope, technical requirements or acceptance criteria...">{{ old('description') }}</textarea>
                             </div>
+
+                            <!-- Attachments & Photos Section -->
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-paperclip text-primary me-1"></i> Attachments & Photos <small class="text-muted">(Multiple files allowed)</small></span>
+                                    <small class="text-muted">Images, PDF, Documents, ZIP (Max 20MB per file)</small>
+                                </label>
+                                <div class="border rounded-3 p-3 bg-light">
+                                    <input type="file" name="attachments[]" id="create_attachments_input" class="form-control rounded-3" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+                                    <div id="create_attachments_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                                    <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i> You can select multiple images/documents at once. When assigned, the assignee will also be able to view and download all files.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -185,15 +205,23 @@
     const externalContactsList = @json($externalContacts);
     const externalTeamsList = @json($externalTeams);
 
-    function loadProjectData(projectId) {
-        if (!projectId) return;
+    function loadProjectData(projectId, selectedMilestoneId) {
+        var $milestone = $('#milestone_select');
+        if (!projectId) {
+            $milestone.empty().append('<option value="">Select Milestone (Optional)</option>').trigger('change');
+            return;
+        }
         $.get("{{ route('admin.work_management.tasks.ajax_project_data') }}", { project_id: projectId }, function(res) {
             if (res.status === 1) {
-                var $milestone = $('#milestone_select');
+                var currentVal = selectedMilestoneId || $milestone.val() || "{{ old('milestone') }}";
                 $milestone.empty().append('<option value="">Select Milestone (Optional)</option>');
-                res.milestones.forEach(function(m) {
-                    $milestone.append('<option value="' + m.id + '">' + m.title + '</option>');
-                });
+                if (res.milestones && res.milestones.length > 0) {
+                    res.milestones.forEach(function(m) {
+                        var isSelected = (currentVal && currentVal == m.id) ? ' selected' : '';
+                        $milestone.append('<option value="' + m.id + '"' + isSelected + '>' + m.title + '</option>');
+                    });
+                }
+                $milestone.trigger('change');
             }
         });
     }
@@ -204,7 +232,7 @@
         });
 
         if ($('#project_select').val()) {
-            loadProjectData($('#project_select').val());
+            loadProjectData($('#project_select').val(), "{{ old('milestone') }}");
         }
 
         $('#assignee_type_select').on('change', function() {
@@ -238,6 +266,37 @@
                 $select.append('<option value="">-- Select External Team --</option>');
                 externalTeamsList.forEach(function(et) {
                     $select.append('<option value="' + et.id + '">' + et.name + '</option>');
+                });
+            }
+        });
+
+        // Live preview for attachments
+        $('#create_attachments_input').on('change', function() {
+            var $preview = $('#create_attachments_preview');
+            $preview.empty();
+            var files = this.files;
+            if (files && files.length > 0) {
+                Array.from(files).forEach(function(file) {
+                    var sizeKB = (file.size / 1024).toFixed(1) + ' KB';
+                    if (file.type.startsWith('image/')) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var imgCard = $('<div class="card p-1 shadow-none border text-center" style="width: 100px;">' +
+                                '<img src="' + e.target.result + '" class="rounded" style="height: 60px; object-fit: cover; width: 100%;">' +
+                                '<small class="text-truncate d-block mt-1" style="font-size: 10px;" title="' + file.name + '">' + file.name + '</small>' +
+                                '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                            '</div>');
+                            $preview.append(imgCard);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        var docCard = $('<div class="card p-2 shadow-none border text-center d-flex flex-column align-items-center justify-content-center" style="width: 100px; min-height: 85px;">' +
+                            '<i class="fas fa-file-alt fa-2x text-primary mb-1"></i>' +
+                            '<small class="text-truncate d-block" style="font-size: 10px; max-width: 90px;" title="' + file.name + '">' + file.name + '</small>' +
+                            '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                        '</div>');
+                        $preview.append(docCard);
+                    }
                 });
             }
         });

@@ -17,33 +17,63 @@ class TaskCommentController extends Controller
             'comment' => 'required|string',
         ]);
 
-        $docPath = null;
+        $uploadedPaths = [];
+        $destinationPath = public_path('uploads/tasks/comments');
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0777, true);
+        }
+
+        // Collect all uploaded photos/documents
+        $allFiles = [];
+        if ($request->hasFile('photos')) {
+            $photoFiles = $request->file('photos');
+            $allFiles = array_merge($allFiles, is_array($photoFiles) ? $photoFiles : [$photoFiles]);
+        }
         if ($request->hasFile('documents')) {
-            $file = $request->file('documents');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('task_comment_docs', $fileName, 'public');
-            $docPath = 'storage/' . $path;
+            $docFiles = $request->file('documents');
+            $allFiles = array_merge($allFiles, is_array($docFiles) ? $docFiles : [$docFiles]);
+        }
+        if ($request->hasFile('attachments')) {
+            $attFiles = $request->file('attachments');
+            $allFiles = array_merge($allFiles, is_array($attFiles) ? $attFiles : [$attFiles]);
+        }
+
+        foreach ($allFiles as $file) {
+            if ($file && $file->isValid()) {
+                $originalName = $file->getClientOriginalName();
+                $safeName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+                $file->move($destinationPath, $safeName);
+                $uploadedPaths[] = 'uploads/tasks/comments/' . $safeName;
+            }
+        }
+
+        $docsValue = null;
+        if (count($uploadedPaths) === 1) {
+            $docsValue = $uploadedPaths[0];
+        } elseif (count($uploadedPaths) > 1) {
+            $docsValue = json_encode($uploadedPaths);
         }
 
         $comment = TaskComment::create([
             'task_id' => $request->task_id,
             'user_id' => auth()->id(),
             'comment' => $request->comment,
-            'documents' => $docPath,
+            'documents' => $docsValue,
             'parent_comment_id' => $request->parent_comment_id ?? null,
         ]);
 
         $task = Tasks::find($request->task_id);
         if ($task) {
+            $fileNote = count($uploadedPaths) > 0 ? " with " . count($uploadedPaths) . " photo(s)/file(s)" : "";
             TaskActivityLog::log(
                 'comment_added',
-                "Comment posted on task by " . auth()->user()->name,
+                "Update/Comment posted on task{$fileNote} by " . auth()->user()->name,
                 $task->id,
                 $task->project_id,
                 $task->milestone
             );
         }
 
-        return redirect()->back()->with('success', 'Comment posted successfully');
+        return redirect()->back()->with('success', 'Update / Comment posted successfully');
     }
 }

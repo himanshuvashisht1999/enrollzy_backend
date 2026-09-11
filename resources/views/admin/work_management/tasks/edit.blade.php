@@ -20,7 +20,7 @@
                 </div>
 
                 <div class="card-body p-4">
-                    <form action="{{ route('admin.work_management.tasks.update', encrypt($task->id)) }}" method="POST">
+                    <form action="{{ route('admin.work_management.tasks.update', encrypt($task->id)) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -115,6 +115,53 @@
                                 <label class="form-label fw-semibold">Description</label>
                                 <textarea name="description" class="form-control rounded-3" rows="4">{{ old('description', $task->description) }}</textarea>
                             </div>
+
+                            <!-- Existing Attachments -->
+                            @if($task->attachments && $task->attachments->count() > 0)
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-semibold"><i class="fas fa-paperclip text-primary me-1"></i> Existing Attachments & Photos ({{ $task->attachments->count() }})</label>
+                                <div class="row g-2">
+                                    @foreach($task->attachments as $att)
+                                    <div class="col-md-3 col-sm-6" id="edit_att_{{ $att->id }}">
+                                        <div class="card p-2 border rounded-3 h-100 shadow-none bg-light position-relative">
+                                            @if($att->isImage())
+                                                <a href="{{ asset($att->file_path) }}" target="_blank">
+                                                    <img src="{{ asset($att->file_path) }}" class="rounded mb-2 w-100" style="height: 100px; object-fit: cover;">
+                                                </a>
+                                            @else
+                                                <div class="text-center py-3">
+                                                    <i class="fas fa-file-alt fa-3x text-primary mb-1"></i>
+                                                </div>
+                                            @endif
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="text-truncate me-1" style="max-width: 140px;">
+                                                    <small class="fw-bold d-block text-truncate" title="{{ $att->file_name }}">{{ $att->file_name }}</small>
+                                                    <small class="text-muted" style="font-size: 11px;">{{ $att->formatted_size }}</small>
+                                                </div>
+                                                <div class="btn-group">
+                                                    <a href="{{ asset($att->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-1" title="Download"><i class="fas fa-download"></i></a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 delete-edit-attachment" data-id="{{ $att->id }}" title="Delete"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+                            <!-- Add More Attachments / Photos -->
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-plus-circle text-primary me-1"></i> Upload More Attachments & Photos <small class="text-muted">(Multiple files allowed)</small></span>
+                                    <small class="text-muted">Images, PDF, Documents, ZIP (Max 20MB per file)</small>
+                                </label>
+                                <div class="border rounded-3 p-3 bg-light">
+                                    <input type="file" name="attachments[]" id="edit_attachments_input" class="form-control rounded-3" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+                                    <div id="edit_attachments_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                                    <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i> New photos/files uploaded will be attached to this task for all assigned members to see.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -135,16 +182,71 @@
 <script>
     $('#project_select').on('change', function() {
         var pId = $(this).val();
-        if (!pId) return;
+        var $milestone = $('#milestone_select');
+        if (!pId) {
+            $milestone.empty().append('<option value="">No Milestone</option>').trigger('change');
+            return;
+        }
         $.get("{{ route('admin.work_management.tasks.ajax_project_data') }}", { project_id: pId }, function(res) {
             if (res.status === 1) {
-                var $milestone = $('#milestone_select');
                 $milestone.empty().append('<option value="">No Milestone</option>');
-                res.milestones.forEach(function(m) {
-                    $milestone.append('<option value="' + m.id + '">' + m.title + '</option>');
-                });
+                if (res.milestones && res.milestones.length > 0) {
+                    res.milestones.forEach(function(m) {
+                        $milestone.append('<option value="' + m.id + '">' + m.title + '</option>');
+                    });
+                }
+                $milestone.trigger('change');
             }
         });
+    });
+
+    // Delete existing attachment
+    $('.delete-edit-attachment').on('click', function() {
+        var attId = $(this).data('id');
+        if (!confirm('Are you sure you want to remove this attachment?')) return;
+        $.ajax({
+            url: "/admin/work-management/tasks/delete-attachment/" + attId,
+            type: 'DELETE',
+            data: { _token: "{{ csrf_token() }}" },
+            success: function(res) {
+                if (res.status === 1) {
+                    $('#edit_att_' + attId).fadeOut(function() { $(this).remove(); });
+                } else {
+                    alert(res.message || 'Error deleting file');
+                }
+            }
+        });
+    });
+
+    // Live preview for new attachments
+    $('#edit_attachments_input').on('change', function() {
+        var $preview = $('#edit_attachments_preview');
+        $preview.empty();
+        var files = this.files;
+        if (files && files.length > 0) {
+            Array.from(files).forEach(function(file) {
+                var sizeKB = (file.size / 1024).toFixed(1) + ' KB';
+                if (file.type.startsWith('image/')) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var imgCard = $('<div class="card p-1 shadow-none border text-center" style="width: 100px;">' +
+                            '<img src="' + e.target.result + '" class="rounded" style="height: 60px; object-fit: cover; width: 100%;">' +
+                            '<small class="text-truncate d-block mt-1" style="font-size: 10px;" title="' + file.name + '">' + file.name + '</small>' +
+                            '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                        '</div>');
+                        $preview.append(imgCard);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    var docCard = $('<div class="card p-2 shadow-none border text-center d-flex flex-column align-items-center justify-content-center" style="width: 100px; min-height: 85px;">' +
+                        '<i class="fas fa-file-alt fa-2x text-primary mb-1"></i>' +
+                        '<small class="text-truncate d-block" style="font-size: 10px; max-width: 90px;" title="' + file.name + '">' + file.name + '</small>' +
+                        '<span class="badge bg-light text-secondary" style="font-size: 9px;">' + sizeKB + '</span>' +
+                    '</div>');
+                    $preview.append(docCard);
+                }
+            });
+        }
     });
 </script>
 @endpush

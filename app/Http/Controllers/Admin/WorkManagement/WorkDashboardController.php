@@ -98,13 +98,29 @@ class WorkDashboardController extends Controller
         $userId = auth()->id();
         $user = auth()->user();
 
-        // Get teams led by user or where user is member
-        $ledTeams = Team::with(['members', 'tasks.activePrimaryAssignee.user'])->where('team_leader_id', $userId)->get();
-        if ($user->isSuperAdmin() || $user->is_admin) {
-            $allTeams = Team::with(['members', 'tasks.activePrimaryAssignee.user'])->where('status', 'active')->get();
-        } else {
-            $allTeams = $ledTeams;
+        $isTopLevel = in_array(strtolower($user->role ?? ''), ['superadmin', 'admin'])
+            || ($user->is_admin ?? false)
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('superadmin') || $user->hasRole('admin')));
+
+        $teamsQuery = Team::with(['members', 'tasks.activePrimaryAssignee.user'])
+            ->where('status', 'active');
+
+        if ($user->organization_id) {
+            $teamsQuery->where('organization_id', $user->organization_id);
         }
+
+        if (!$isTopLevel) {
+            $teamsQuery->where(function ($q) use ($userId) {
+                $q->where('team_leader_id', $userId)
+                  ->orWhereHas('members', function ($subQ) use ($userId) {
+                      $subQ->where('admin.id', $userId);
+                  });
+            });
+        }
+
+        $allTeams = $teamsQuery->get();
+        $ledTeams = $allTeams->where('team_leader_id', $userId);
 
         return view('admin.work_management.dashboard.team_work', compact('allTeams', 'ledTeams'));
     }

@@ -592,26 +592,33 @@ class CallingController extends Controller
         // --- END TEAM METRICS ---
 
         // Build the Queue List
+        // Build the Queue List
         $queue = collect();
         
         foreach ($overdueFollowUps as $history) {
             if($history->customer) {
+                $calledToday = $history->created_at ? \Carbon\Carbon::parse($history->created_at)->isToday() : false;
                 $queue->push([
                     'type' => 'overdue',
                     'customer' => $history->customer,
                     'history' => $history,
-                    'sort_date' => $history->date_required
+                    'sort_date' => $history->date_required,
+                    'called_today' => $calledToday,
+                    'last_called_at' => $history->created_at ? $history->created_at->toDateTimeString() : null,
                 ]);
             }
         }
         
         foreach ($followUpsDueToday as $history) {
             if($history->customer) {
+                $calledToday = $history->created_at ? \Carbon\Carbon::parse($history->created_at)->isToday() : false;
                 $queue->push([
                     'type' => 'due_today',
                     'customer' => $history->customer,
                     'history' => $history,
-                    'sort_date' => $history->date_required
+                    'sort_date' => $history->date_required,
+                    'called_today' => $calledToday,
+                    'last_called_at' => $history->created_at ? $history->created_at->toDateTimeString() : null,
                 ]);
             }
         }
@@ -667,15 +674,29 @@ class CallingController extends Controller
                         'history' => $latestPastHistory,
                         'has_past_history' => $hasPastHistory,
                         'sort_date' => $asgn ? $asgn->updated_at : $startDate,
-                        'assignment_id' => $asgn ? $asgn->id : $cid
+                        'assignment_id' => $asgn ? $asgn->id : $cid,
+                        'called_today' => false,
+                        'last_called_at' => null,
                     ]);
                 }
             }
         }
         
-        // Sort queue: Priority (Overdue -> Due Today -> Reassigned Leads -> New Leads) and newest first within each category
+        // Sort queue: Priority (Overdue -> Due Today -> Reassigned Leads -> New Leads)
+        // Follow-up order requirement:
+        // 1. Overdue (uncontacted today)
+        // 2. Overdue (contacted today)
+        // 3. Due Today (uncontacted today - pending initial call today)
+        // 4. Due Today (contacted today & snoozed for today, e.g. "call back in 30 mins" - moved to bottom of follow-up list, sorted ascending so newly called goes to the very bottom)
+        // 5. Reassigned Leads (unattempted)
+        // 6. New Leads (unattempted)
         $queue = $queue->sort(function($a, $b) {
-            $typePriority = ['overdue' => 1, 'due_today' => 2, 'reassigned' => 3, 'new' => 4];
+            $typePriority = [
+                'overdue' => 1,
+                'due_today' => 2,
+                'reassigned' => 3,
+                'new' => 4,
+            ];
             $pA = $typePriority[$a['type']] ?? 5;
             $pB = $typePriority[$b['type']] ?? 5;
 
@@ -683,18 +704,48 @@ class CallingController extends Controller
                 return $pA <=> $pB;
             }
 
-            // Within same type, sort newest first
-            $dateA = $a['sort_date'] ?? '';
-            $dateB = $b['sort_date'] ?? '';
+            // For follow-ups (overdue and due_today):
+            if (in_array($a['type'], ['overdue', 'due_today'])) {
+                $calledTodayA = !empty($a['called_today']) ? 1 : 0;
+                $calledTodayB = !empty($b['called_today']) ? 1 : 0;
 
-            if ($dateA != $dateB) {
-                return $dateB <=> $dateA; // Newest first
+                // Uncalled today (0) comes BEFORE called today (1)
+                if ($calledTodayA !== $calledTodayB) {
+                    return $calledTodayA <=> $calledTodayB;
+                }
+
+                // If both were called today (e.g. snoozed for half an hour):
+                // Sort ascending by last_called_at so the one called earlier is dialed first,
+                // and the one JUST updated/called is pushed to the bottom of the follow-ups list.
+                if ($calledTodayA === 1) {
+                    $timeA = $a['last_called_at'] ?? '';
+                    $timeB = $b['last_called_at'] ?? '';
+                    if ($timeA !== $timeB) {
+                        return $timeA <=> $timeB; // Ascending: oldest call today first, newest call today at bottom
+                    }
+                } else {
+                    // Both are pending / uncalled today:
+                    // Sort by sort_date (earliest required date first) or assignment timestamp / id
+                    $dateA = $a['sort_date'] ?? '';
+                    $dateB = $b['sort_date'] ?? '';
+                    if ($dateA !== $dateB) {
+                        return $dateA <=> $dateB; // Earliest follow-up date first
+                    }
+                }
+            } else {
+                // For Reassigned and New leads: newest assignment first
+                $dateA = $a['sort_date'] ?? '';
+                $dateB = $b['sort_date'] ?? '';
+
+                if ($dateA != $dateB) {
+                    return $dateB <=> $dateA; // Newest first
+                }
             }
 
             $idA = $a['assignment_id'] ?? $a['customer']->id;
             $idB = $b['assignment_id'] ?? $b['customer']->id;
 
-            return $idB <=> $idA; // Newest first
+            return $idB <=> $idA;
         })->values();
 
         $latestAssignmentsIds = \Illuminate\Support\Facades\DB::table('lead_assignments')
