@@ -17,7 +17,7 @@ class Course extends Model
         'generic_eligibility', 'common_entrance_exams', 'core_curriculum',
         'common_specializations', 'skills_gained', 'career_scope',
         'average_salary_range', 'higher_education_options', 'course_comparison',
-        'pros_cons', 'faqs'
+        'pros_cons', 'faqs', 'related_courses'
     ];
 
     protected $casts = [
@@ -25,6 +25,7 @@ class Course extends Model
         'common_entrance_exams' => 'array',
         'common_specializations' => 'array',
         'faqs' => 'array',
+        'related_courses' => 'array',
         'status' => 'boolean',
         'is_show_on_website' => 'boolean',
     ];

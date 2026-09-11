@@ -16,9 +16,24 @@ class Project extends Model
     protected $guarded = ['id'];
     protected $dates = ['deleted_at', 'start_date', 'due_date', 'target_end_date', 'actual_end_date'];
 
+    public function getProjectCodeAttribute()
+    {
+        return !empty($this->attributes['code']) ? $this->attributes['code'] : (!empty($this->attributes['project_code']) ? $this->attributes['project_code'] : null);
+    }
+
+    public function setProjectCodeAttribute($value)
+    {
+        $this->attributes['code'] = $value;
+    }
+
     public function project_category()
     {
         return $this->belongsTo(ProjectCategory::class, 'category_id');
+    }
+
+    public function projectType()
+    {
+        return $this->belongsTo(ProjectType::class, 'project_type_id');
     }
 
     public function client()

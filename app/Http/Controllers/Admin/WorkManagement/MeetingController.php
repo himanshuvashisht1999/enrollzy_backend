@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\Admin;
 use App\Models\Tasks;
 use App\Models\TaskActivityLog;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -18,13 +19,13 @@ class MeetingController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         if ($request->ajax()) {
-            $user = auth()->user();
             $query = Meeting::with(['project', 'creator', 'participants.user']);
 
-            if ($user->organization_id) {
-                $query->where('organization_id', $user->organization_id);
-            }
+            WorkHierarchyService::applyMeetingScope($query, $user);
+
             if ($request->filled('project_id')) {
                 $query->where('project_id', $request->project_id);
             }
@@ -65,14 +66,21 @@ class MeetingController extends Controller
                 ->make(true);
         }
 
-        $projects = Project::where('status', 'active')->get();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
         return view('admin.work_management.meetings.index', compact('projects'));
     }
 
     public function create()
     {
-        $projects = Project::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+        $user = auth()->user();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
         return view('admin.work_management.meetings.create', compact('projects', 'staff'));
     }
 
@@ -115,7 +123,7 @@ class MeetingController extends Controller
     {
         $id = decrypt($id);
         $meeting = Meeting::with(['project', 'creator', 'participants.user'])->findOrFail($id);
-        $allStaff = Admin::where('status', 'active')->get();
+        $allStaff = WorkHierarchyService::getVisibleStaffQuery()->get();
 
         return view('admin.work_management.meetings.show', compact('meeting', 'allStaff'));
     }

@@ -41,8 +41,6 @@
                                 <small class="text-muted">Leave empty to auto-generate from name.</small>
                             </div>
 
-
-
                             {{-- Program Level --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Program Level</label>
@@ -103,6 +101,7 @@
                                 <input type="text" name="duration" class="form-control" value="{{ old('duration') }}"
                                     placeholder="e.g. 2 Years">
                             </div>
+
                             {{-- Course Full Form --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Course Full Form</label>
@@ -158,6 +157,21 @@
                                 <input type="text" name="average_salary_range" class="form-control" value="{{ old('average_salary_range') }}" placeholder="e.g. 5 LPA - 10 LPA">
                             </div>
 
+                            {{-- Related Courses --}}
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Related Courses</label>
+                                <select name="related_courses[]" class="form-select select2" multiple="multiple">
+                                    @if(isset($allCourses))
+                                        @foreach($allCourses as $relCourse)
+                                            <option value="{{ $relCourse->id }}" {{ in_array($relCourse->id, old('related_courses', [])) ? 'selected' : '' }}>
+                                                {{ $relCourse->name }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <small class="text-muted">Select other courses related to this course.</small>
+                            </div>
+
                             {{-- Overview --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Overview</label>
@@ -204,6 +218,75 @@
                             <div class="col-12">
                                 <label class="form-label fw-bold">Pros & Cons / Who Should Take This</label>
                                 <textarea name="pros_cons" class="form-control editor">{{ old('pros_cons') }}</textarea>
+                            </div>
+
+                            {{-- Course FAQs Section --}}
+                            <div class="col-12 mt-4">
+                                <div class="card border border-light-subtle shadow-none bg-light bg-opacity-50">
+                                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 px-3">
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark">
+                                                <i class="fas fa-question-circle text-primary me-2"></i>Course FAQs
+                                            </h6>
+                                            <small class="text-muted">Frequently asked questions and answers for this course.</small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-primary" id="add-faq-btn">
+                                            <i class="fas fa-plus me-1"></i> Add FAQ
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        @php
+                                            $oldFaqs = old('faqs', []);
+                                            if (is_string($oldFaqs)) {
+                                                $oldFaqs = json_decode($oldFaqs, true) ?? [];
+                                            }
+                                            if (!is_array($oldFaqs)) {
+                                                $oldFaqs = [];
+                                            }
+                                        @endphp
+                                        <div id="course_faqs_container">
+                                            @foreach($oldFaqs as $fIndex => $faqItem)
+                                                <div class="card mb-2 faq-item-card border border-light-subtle shadow-none rounded-3 bg-white">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-light">
+                                                            <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 faq-number" style="font-size: 0.8rem;">
+                                                                <i class="fas fa-question-circle me-1"></i>FAQ #{{ $loop->iteration }}
+                                                            </span>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 remove-faq-btn" style="font-size: 0.78rem;" title="Remove this FAQ">
+                                                                <i class="fas fa-trash-alt me-1"></i> Remove
+                                                            </button>
+                                                        </div>
+                                                        <div class="row g-2">
+                                                            <div class="col-12">
+                                                                <label class="form-label small fw-bold text-secondary mb-1">Question <span class="text-danger">*</span></label>
+                                                                <input type="text" name="faqs[{{ $fIndex }}][question]" class="form-control form-control-sm" placeholder="e.g. What is the eligibility criteria for this course?" value="{{ $faqItem['question'] ?? '' }}" required>
+                                                            </div>
+                                                            <div class="col-12">
+                                                                <label class="form-label small fw-bold text-secondary mb-1">Answer <span class="text-danger">*</span></label>
+                                                                <textarea name="faqs[{{ $fIndex }}][answer]" class="form-control form-control-sm" rows="2" placeholder="Provide a detailed and helpful answer..." required>{{ $faqItem['answer'] ?? '' }}</textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        {{-- Add More Button directly below the last FAQ --}}
+                                        <div id="add_more_container" class="mt-2 text-start" style="{{ count($oldFaqs) > 0 ? '' : 'display: none;' }}">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-more-faq-btn">
+                                                <i class="fas fa-plus me-1"></i> Add More FAQ
+                                            </button>
+                                        </div>
+
+                                        <div id="no_faqs_message" class="text-center py-4 text-muted border border-dashed rounded-3 bg-white" style="{{ count($oldFaqs) > 0 ? 'display: none;' : '' }}">
+                                            <i class="fas fa-comments fa-2x mb-2 text-muted opacity-50 d-block"></i>
+                                            <p class="mb-2 small">No FAQs added yet for this course.</p>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="empty-add-faq-btn">
+                                                <i class="fas fa-plus me-1"></i> Add First FAQ
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {{-- Sort Order --}}
@@ -262,6 +345,63 @@
         if (typeof initializeTinyMCE === 'function') {
             initializeTinyMCE('.editor');
         }
+
+        let faqIndex = {{ count($oldFaqs) }};
+
+        function updateFaqNumbers() {
+            const count = $('#course_faqs_container .faq-item-card').length;
+            $('#course_faqs_container .faq-item-card').each(function(idx) {
+                $(this).find('.faq-number').html('<i class="fas fa-question-circle me-1 text-primary"></i>FAQ #' + (idx + 1));
+            });
+            if (count === 0) {
+                $('#no_faqs_message').show();
+                $('#add_more_container').hide();
+            } else {
+                $('#no_faqs_message').hide();
+                $('#add_more_container').show();
+            }
+        }
+
+        function addFaqRow(q = '', a = '') {
+            const template = `
+                <div class="card mb-2 faq-item-card border border-light-subtle shadow-none rounded-3 bg-white">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-light">
+                            <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 faq-number" style="font-size: 0.8rem;">
+                                <i class="fas fa-question-circle me-1"></i>FAQ
+                            </span>
+                            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 remove-faq-btn" style="font-size: 0.78rem;" title="Remove this FAQ">
+                                <i class="fas fa-trash-alt me-1"></i> Remove
+                            </button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-secondary mb-1">Question <span class="text-danger">*</span></label>
+                                <input type="text" name="faqs[${faqIndex}][question]" class="form-control form-control-sm" placeholder="e.g. What is the eligibility criteria for this course?" value="${q}" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-secondary mb-1">Answer <span class="text-danger">*</span></label>
+                                <textarea name="faqs[${faqIndex}][answer]" class="form-control form-control-sm" rows="2" placeholder="Provide a detailed and helpful answer..." required>${a}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#course_faqs_container').append(template);
+            faqIndex++;
+            updateFaqNumbers();
+        }
+
+        $(document).on('click', '#add-faq-btn, #add-more-faq-btn, #empty-add-faq-btn', function() {
+            addFaqRow();
+        });
+
+        $(document).on('click', '.remove-faq-btn', function() {
+            $(this).closest('.faq-item-card').fadeOut(150, function() {
+                $(this).remove();
+                updateFaqNumbers();
+            });
+        });
     });
 </script>
 @endpush

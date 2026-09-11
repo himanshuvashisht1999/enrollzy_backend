@@ -32,7 +32,7 @@
                             <option value="">Select Project</option>
                             @foreach($projects as $p)
                                 <option value="{{ $p->id }}" {{ (isset($selectedProjectId) && $selectedProjectId == $p->id) ? 'selected' : '' }}>
-                                    {{ $p->title }} ({{ $p->project_code }})
+                                    {{ $p->title }}{{ !empty($p->project_code ?: $p->code) ? ' (' . ($p->project_code ?: $p->code) . ')' : '' }}
                                 </option>
                             @endforeach
                         </select>

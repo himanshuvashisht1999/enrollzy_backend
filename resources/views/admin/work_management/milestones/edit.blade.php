@@ -32,7 +32,7 @@
                         <select name="project_id" class="form-select select2 rounded-3" required>
                             @foreach($projects as $p)
                                 <option value="{{ $p->id }}" {{ $milestone->project_id == $p->id ? 'selected' : '' }}>
-                                    {{ $p->title }} ({{ $p->project_code }})
+                                    {{ $p->title }}{{ !empty($p->project_code ?: $p->code) ? ' (' . ($p->project_code ?: $p->code) . ')' : '' }}
                                 </option>
                             @endforeach
                         </select>

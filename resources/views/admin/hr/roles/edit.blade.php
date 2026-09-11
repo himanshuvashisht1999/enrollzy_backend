@@ -52,13 +52,59 @@
                                 </div>
                             </h6>
                             @foreach ($permissions as $item)
+                            @php
+                                $nameParts = explode('-', $item->name);
+                                $action = last($nameParts);
+                                $label = ucfirst($action);
+
+                                if (str_ends_with($item->name, '-browse')) {
+                                    if (str_contains($item->name, 'trial-balance')) $label = 'Trial Balance';
+                                    elseif (str_contains($item->name, 'profit-loss')) $label = 'Profit & Loss';
+                                    elseif (str_contains($item->name, 'balance-sheet')) $label = 'Balance Sheet';
+                                    elseif (str_contains($item->name, 'general-ledger')) $label = 'General Ledger';
+                                    elseif (str_contains($item->name, 'customer-ageing')) $label = 'Customer Ageing';
+                                    elseif (str_contains($item->name, 'vendor-ageing')) $label = 'Vendor Ageing';
+                                    elseif (str_contains($item->name, 'gst-report')) $label = 'GST Tax Register';
+                                    elseif (str_contains($item->name, 'tds-report')) $label = 'TDS Tax Register';
+                                    elseif (str_contains($item->name, 'my-work')) $label = 'My Work Hub';
+                                    elseif (str_contains($item->name, 'team-work')) $label = 'Team Workloads';
+                                    elseif (str_contains($item->name, 'calendar')) $label = 'Work Calendar';
+                                    elseif (str_contains($item->name, 'dashboard')) $label = 'Dashboard Overview';
+                                    elseif ($item->name === 'work-management-browse') $label = 'Access Work Management';
+                                    else $label = 'Browse';
+                                } elseif ($action === 'create' || $action === 'add') {
+                                    $label = 'Add / Create';
+                                } elseif ($action === 'post') {
+                                    $label = 'Post / Finalize';
+                                } elseif ($action === 'transfer') {
+                                    $label = 'Bank Transfer';
+                                } elseif ($action === 'reconcile') {
+                                    $label = 'Bank Reconcile';
+                                } elseif ($action === 'reverse') {
+                                    $label = 'Reverse Entry';
+                                } elseif ($action === 'reassign') {
+                                    $label = 'Reassign Task';
+                                } elseif ($action === 'delegate') {
+                                    $label = 'Delegate Task';
+                                } elseif ($action === 'kanban') {
+                                    $label = 'Task Board';
+                                } elseif ($action === 'submit') {
+                                    $label = 'Submit Claim';
+                                } elseif ($action === 'approve') {
+                                    $label = 'Approve Claim';
+                                } elseif (str_contains($item->name, 'receive-payment')) {
+                                    $label = 'Receive Payment';
+                                } elseif (str_contains($item->name, 'make-payment')) {
+                                    $label = 'Make Payment';
+                                }
+                            @endphp
                             <div class="form-check mb-2">
                                 <input class="form-check-input group-checkbox-{{ md5($group) }}" 
                                        type="checkbox" name="permission[]" value="{{ $item->id }}" 
                                        id="perm{{ $item->id }}"
                                        {{ in_array($item->id, $rolePermissions) ? 'checked' : '' }}>
                                 <label class="form-check-label text-muted small" for="perm{{ $item->id }}">
-                                    {{ ucfirst(last(explode('-', $item->name))) }}
+                                    {{ $label }}
                                 </label>
                             </div>
                             @endforeach

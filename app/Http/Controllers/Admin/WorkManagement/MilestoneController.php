@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\Admin;
 use App\Models\TaskActivityLog;
 use App\Services\WorkManagement\ProjectMetricsService;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -18,13 +19,12 @@ class MilestoneController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         if ($request->ajax()) {
-            $user = auth()->user();
             $query = Milestone::with(['project', 'team', 'owner']);
 
-            if ($user->organization_id) {
-                $query->where('organization_id', $user->organization_id);
-            }
+            WorkHierarchyService::applyMilestoneScope($query, $user);
 
             if ($request->filled('project_id')) {
                 $query->where('project_id', $request->project_id);
@@ -83,16 +83,27 @@ class MilestoneController extends Controller
                 ->make(true);
         }
 
-        $projects = Project::where('status', 'active')->get();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
         return view('admin.work_management.milestones.index', compact('projects'));
     }
 
     public function create(Request $request)
     {
+        $user = auth()->user();
         $selectedProjectId = $request->project_id ? (is_numeric($request->project_id) ? $request->project_id : decrypt($request->project_id)) : null;
-        $projects = Project::all();
-        $teams = Team::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
 
         return view('admin.work_management.milestones.create', compact('projects', 'teams', 'staff', 'selectedProjectId'));
     }
@@ -139,11 +150,19 @@ class MilestoneController extends Controller
 
     public function edit($id)
     {
+        $user = auth()->user();
         $id = decrypt($id);
         $milestone = Milestone::findOrFail($id);
-        $projects = Project::all();
-        $teams = Team::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
 
         return view('admin.work_management.milestones.edit', compact('milestone', 'projects', 'teams', 'staff'));
     }

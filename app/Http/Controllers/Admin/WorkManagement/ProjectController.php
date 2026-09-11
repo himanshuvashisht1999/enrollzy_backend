@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\WorkManagement;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectCategory;
+use App\Models\ProjectType;
 use App\Models\LeadSource;
 use App\Models\Client;
 use App\Models\HrDepartment;
@@ -18,6 +19,7 @@ use App\Models\ProjectExternalMember;
 use App\Models\ProjectDocument;
 use App\Models\TaskActivityLog;
 use App\Services\WorkManagement\ProjectMetricsService;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -27,13 +29,12 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $user = auth()->user();
-            $query = Project::with(['department', 'team', 'owner', 'project_category']);
+        $user = auth()->user();
 
-            if ($user->organization_id) {
-                $query->where('organization_id', $user->organization_id);
-            }
+        if ($request->ajax()) {
+            $query = Project::with(['department', 'team', 'owner', 'project_category', 'projectType']);
+
+            WorkHierarchyService::applyProjectScope($query, $user);
 
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
@@ -47,14 +48,21 @@ class ProjectController extends Controller
             if ($request->filled('team_id')) {
                 $query->where('team_id', $request->team_id);
             }
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+            if ($request->filled('project_type_id')) {
+                $query->where('project_type_id', $request->project_type_id);
+            }
 
             return DataTables::of($query)
                 ->addIndexColumn()
                 ->addColumn('code_title', function ($row) {
                     $code = $row->project_code ? '<span class="badge bg-light text-primary border me-1">' . $row->project_code . '</span>' : '';
+                    $typeName = $row->projectType->name ?? $row->project_type ?? 'Internal';
                     return '<div class="d-flex flex-column">' .
                            '<a href="' . route('admin.work_management.projects.show', encrypt($row->id)) . '" class="fw-bold text-dark text-decoration-none">' . $code . $row->title . '</a>' .
-                           '<small class="text-muted">' . ($row->project_category->name ?? 'General') . ' &bull; ' . ($row->project_type ?? 'Internal') . '</small>' .
+                           '<small class="text-muted">' . ($row->project_category->name ?? 'General') . ' &bull; ' . $typeName . '</small>' .
                            '</div>';
                 })
                 ->addColumn('team_dept', function ($row) {
@@ -110,23 +118,31 @@ class ProjectController extends Controller
         }
 
         $departments = HrDepartment::all();
-        $teams = Team::where('status', 'active')->get();
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+        $categories = ProjectCategory::all();
+        $projectTypes = ProjectType::where('status', 'active')->get();
 
-        return view('admin.work_management.projects.index', compact('departments', 'teams'));
+        return view('admin.work_management.projects.index', compact('departments', 'teams', 'categories', 'projectTypes'));
     }
 
     public function create()
     {
+        $user = auth()->user();
         $departments = HrDepartment::all();
-        $teams = Team::where('status', 'active')->get();
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
         $categories = ProjectCategory::all();
+        $projectTypes = ProjectType::where('status', 'active')->get();
         $leadSources = LeadSource::all();
         $clients = Client::all();
-        $staff = Admin::where('status', 'active')->get();
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
         $externalOrgs = ExternalOrganization::where('status', 'active')->get();
 
         return view('admin.work_management.projects.create', compact(
-            'departments', 'teams', 'categories', 'leadSources', 'clients', 'staff', 'externalOrgs'
+            'departments', 'teams', 'categories', 'projectTypes', 'leadSources', 'clients', 'staff', 'externalOrgs'
         ));
     }
 
@@ -150,11 +166,27 @@ class ProjectController extends Controller
             $data['organization_id'] = auth()->user()->organization_id ?? null;
             $data['staff_id'] = auth()->id();
 
-            // Auto project code if empty
-            if (empty($data['project_code'])) {
-                $count = Project::count() + 1;
-                $data['project_code'] = 'PRJ-' . date('ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+            // Sync project type name from ID if provided
+            if (!empty($data['project_type_id'])) {
+                $type = ProjectType::find($data['project_type_id']);
+                if ($type) {
+                    $data['project_type'] = $type->name;
+                }
+            } elseif (!empty($data['project_type'])) {
+                $type = ProjectType::where('name', $data['project_type'])->first();
+                if ($type) {
+                    $data['project_type_id'] = $type->id;
+                }
             }
+
+            // Auto project code if empty
+            $projCode = !empty($data['project_code']) ? $data['project_code'] : (!empty($data['code']) ? $data['code'] : null);
+            if (empty($projCode)) {
+                $count = Project::count() + 1;
+                $projCode = 'PRJ-' . date('ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+            }
+            $data['code'] = $projCode;
+            $data['project_code'] = $projCode;
 
             $project = Project::create($data);
 
@@ -202,7 +234,7 @@ class ProjectController extends Controller
     {
         $id = decrypt($id);
         $project = Project::with([
-            'department', 'team.leader', 'owner', 'creator', 'client', 'lead_source', 'project_category',
+            'department', 'team.leader', 'owner', 'creator', 'client', 'lead_source', 'project_category', 'projectType',
             'milestones.tasks.activePrimaryAssignee.user',
             'rootTasks.subtasks.activePrimaryAssignee.user',
             'members.department', 'externalMembers.organization', 'externalMembers.contact', 'externalMembers.team',
@@ -211,7 +243,7 @@ class ProjectController extends Controller
 
         ProjectMetricsService::updateProjectMetrics($project->id);
 
-        $allStaff = Admin::where('status', 'active')->get();
+        $allStaff = WorkHierarchyService::getVisibleStaffQuery()->get();
         $allExternalOrgs = ExternalOrganization::where('status', 'active')->get();
 
         return view('admin.work_management.projects.show', compact('project', 'allStaff', 'allExternalOrgs'));
@@ -219,18 +251,22 @@ class ProjectController extends Controller
 
     public function edit($id)
     {
+        $user = auth()->user();
         $id = decrypt($id);
-        $project = Project::with(['members', 'externalMembers'])->findOrFail($id);
+        $project = Project::with(['members', 'externalMembers', 'projectType', 'project_category'])->findOrFail($id);
         $departments = HrDepartment::all();
-        $teams = Team::where('status', 'active')->get();
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
         $categories = ProjectCategory::all();
+        $projectTypes = ProjectType::all();
         $leadSources = LeadSource::all();
         $clients = Client::all();
-        $staff = Admin::where('status', 'active')->get();
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
         $externalOrgs = ExternalOrganization::where('status', 'active')->get();
 
         return view('admin.work_management.projects.edit', compact(
-            'project', 'departments', 'teams', 'categories', 'leadSources', 'clients', 'staff', 'externalOrgs'
+            'project', 'departments', 'teams', 'categories', 'projectTypes', 'leadSources', 'clients', 'staff', 'externalOrgs'
         ));
     }
 
@@ -254,6 +290,24 @@ class ProjectController extends Controller
 
         try {
             $data = $request->except(['_token', '_method', 'internal_members', 'external_org_ids']);
+
+            // Sync project type name from ID if provided
+            if (!empty($data['project_type_id'])) {
+                $type = ProjectType::find($data['project_type_id']);
+                if ($type) {
+                    $data['project_type'] = $type->name;
+                }
+            } elseif (!empty($data['project_type'])) {
+                $type = ProjectType::where('name', $data['project_type'])->first();
+                if ($type) {
+                    $data['project_type_id'] = $type->id;
+                }
+            }
+
+            if (!empty($data['project_code'])) {
+                $data['code'] = $data['project_code'];
+            }
+
             $project->update($data);
 
             if ($request->has('internal_members')) {

@@ -10,6 +10,7 @@ use App\Models\Team;
 use App\Models\Admin;
 use App\Models\TaskActivityLog;
 use App\Models\Meeting;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,10 +19,9 @@ class WorkDashboardController extends Controller
     public function overview(Request $request)
     {
         $user = auth()->user();
-        $orgId = $user->organization_id ?? null;
 
         $projectQuery = Project::query();
-        if ($orgId) $projectQuery->where('organization_id', $orgId);
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
 
         $totalProjects = (clone $projectQuery)->count();
         $activeProjects = (clone $projectQuery)->whereIn('status', ['active', 'in_progress'])->count();
@@ -29,7 +29,7 @@ class WorkDashboardController extends Controller
         $completedProjects = (clone $projectQuery)->where('status', 'completed')->count();
 
         $taskQuery = Tasks::query();
-        if ($orgId) $taskQuery->where('organization_id', $orgId);
+        WorkHierarchyService::applyTaskScope($taskQuery, $user);
 
         $totalTasks = (clone $taskQuery)->count();
         $pendingTasks = (clone $taskQuery)->whereIn('status', ['not_started', 'backlog', 'assigned'])->count();
@@ -41,8 +41,24 @@ class WorkDashboardController extends Controller
             ->count();
 
         $recentProjects = (clone $projectQuery)->with(['team', 'owner', 'department'])->orderBy('id', 'desc')->take(6)->get();
-        $recentActivities = TaskActivityLog::with('actor')->orderBy('id', 'desc')->take(10)->get();
-        $teams = Team::with('leader')->where('status', 'active')->take(6)->get();
+
+        $teamQuery = Team::with('leader')->where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->take(6)->get();
+
+        $visibleTaskIds = (clone $taskQuery)->pluck('id')->toArray();
+        $visibleProjectIds = (clone $projectQuery)->pluck('id')->toArray();
+
+        $recentActivitiesQuery = TaskActivityLog::with('actor')->orderBy('id', 'desc');
+        if (!WorkHierarchyService::isSuperAdmin($user)) {
+            $subordinateIds = WorkHierarchyService::getSubordinateUserIds($user);
+            $recentActivitiesQuery->where(function ($q) use ($visibleTaskIds, $visibleProjectIds, $subordinateIds) {
+                $q->whereIn('task_id', $visibleTaskIds)
+                  ->orWhereIn('project_id', $visibleProjectIds)
+                  ->orWhereIn('user_id', $subordinateIds);
+            });
+        }
+        $recentActivities = $recentActivitiesQuery->take(10)->get();
 
         return view('admin.work_management.dashboard.overview', compact(
             'totalProjects', 'activeProjects', 'delayedProjects', 'completedProjects',
@@ -98,26 +114,12 @@ class WorkDashboardController extends Controller
         $userId = auth()->id();
         $user = auth()->user();
 
-        $isTopLevel = in_array(strtolower($user->role ?? ''), ['superadmin', 'admin'])
-            || ($user->is_admin ?? false)
-            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
-            || (method_exists($user, 'hasRole') && ($user->hasRole('superadmin') || $user->hasRole('admin')));
+        $isTopLevel = WorkHierarchyService::isSuperAdmin($user);
 
         $teamsQuery = Team::with(['members', 'tasks.activePrimaryAssignee.user'])
             ->where('status', 'active');
 
-        if ($user->organization_id) {
-            $teamsQuery->where('organization_id', $user->organization_id);
-        }
-
-        if (!$isTopLevel) {
-            $teamsQuery->where(function ($q) use ($userId) {
-                $q->where('team_leader_id', $userId)
-                  ->orWhereHas('members', function ($subQ) use ($userId) {
-                      $subQ->where('admin.id', $userId);
-                  });
-            });
-        }
+        WorkHierarchyService::applyTeamScope($teamsQuery, $user);
 
         $allTeams = $teamsQuery->get();
         $ledTeams = $allTeams->where('team_leader_id', $userId);
@@ -127,13 +129,21 @@ class WorkDashboardController extends Controller
 
     public function calendar(Request $request)
     {
-        $projects = Project::where('status', 'active')->get();
+        $user = auth()->user();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
         return view('admin.work_management.dashboard.calendar', compact('projects'));
     }
 
     public function calendarEvents(Request $request)
     {
-        $tasks = Tasks::whereNotNull('due_date')->get();
+        $user = auth()->user();
+        $taskQuery = Tasks::whereNotNull('due_date');
+        WorkHierarchyService::applyTaskScope($taskQuery, $user);
+        $tasks = $taskQuery->get();
+
         $events = [];
 
         foreach ($tasks as $t) {
@@ -147,7 +157,10 @@ class WorkDashboardController extends Controller
             ];
         }
 
-        $meetings = Meeting::where('status', 'scheduled')->get();
+        $meetingQuery = Meeting::where('status', 'scheduled');
+        WorkHierarchyService::applyMeetingScope($meetingQuery, $user);
+        $meetings = $meetingQuery->get();
+
         foreach ($meetings as $m) {
             $events[] = [
                 'id' => 'm_' . $m->id,

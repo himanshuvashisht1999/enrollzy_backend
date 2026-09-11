@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin\Hr;
 use Carbon\Carbon;
 use App\Models\Breaks;
 use App\Models\Attendance;
+use App\Models\Tasks;
+use App\Models\TaskComment;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -28,11 +31,11 @@ class ClockController extends Controller
 
         $authuser = Auth::id();
         
-        // Custom logic for recursive tasks (from legacy)
-        $tasks = DB::table('tasks')->where('assigned_to', $authuser)->where('status', '!=', 'completed')->get();
+        // Custom logic for recursive tasks
+        $tasks = Tasks::where('assigned_to', $authuser)->whereNotIn('status', ['completed', 'verified', 'closed', 'archived'])->get();
         foreach ($tasks as $task) {
             if (isset($task->id_recursive_task) && $task->id_recursive_task === 'yes') {
-                DB::table('tasks')->where('id', $task->id)->update(['status' => 'pending']);
+                $task->update(['status' => 'not_started']);
             }
         }
 
@@ -130,41 +133,49 @@ class ClockController extends Controller
             return response()->json(['status' => 0, 'message' => $validator->errors()->first()]);
         }
 
-        $authuser = Auth::id();
+        $user = Auth::user();
+        $authuser = $user->id;
         $attend = Attendance::find($request->attendance_id);
         
-        // Legacy checks for pending tasks/comments
-        $tasks = DB::table('tasks')->where('assigned_to', $authuser)->where('status', '!=', 'completed')->get();
-        
-        $hasRecursiveTask = false;
-        $needsComment = false;
+        // Enforce daily task update/comment requirement for staff members (SuperAdmin / Admin is exempt)
+        if (!WorkHierarchyService::isSuperAdmin($user)) {
+            // Find all pending tasks & subtasks assigned to this staff member (direct assignee or in activeAssignees)
+            $pendingTasks = Tasks::where(function ($q) use ($authuser) {
+                    $q->where('assigned_to', $authuser)
+                      ->orWhereHas('activeAssignees', function ($aq) use ($authuser) {
+                          $aq->where('user_id', $authuser);
+                      });
+                })
+                ->whereNotIn('status', ['completed', 'verified', 'closed', 'archived'])
+                ->get();
 
-        if ($tasks->isNotEmpty()) {
-            foreach ($tasks as $task) {
-                if (isset($task->id_recursive_task) && $task->id_recursive_task === 'yes') {
-                    $hasRecursiveTask = true;
+            if ($pendingTasks->isNotEmpty()) {
+                // Check for daily recursive tasks
+                $hasRecursiveTask = $pendingTasks->contains(function ($task) {
+                    return isset($task->id_recursive_task) && $task->id_recursive_task === 'yes';
+                });
+
+                if ($hasRecursiveTask) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'Wait, first complete your Daily Task and Then Logout.'
+                    ]);
                 }
-            }
 
-            // If no recursive task, check if they added a comment today
-            if (!$hasRecursiveTask) {
-                $todayComment = DB::table('task_comments')
-                    ->where('staff_id', $authuser) // Added staff_id check which should be there
+                // Check if user has posted at least one update/comment on their pending assigned tasks today
+                $pendingTaskIds = $pendingTasks->pluck('id')->toArray();
+                $hasCommentedToday = TaskComment::where('user_id', $authuser)
+                    ->whereIn('task_id', $pendingTaskIds)
                     ->whereDate('created_at', Carbon::today())
                     ->exists();
-                
-                if (!$todayComment) {
-                    $needsComment = true;
+
+                if (!$hasCommentedToday) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'Wait, please add at least one update or comment to your ongoing assigned task(s) for today before punching out.'
+                    ]);
                 }
             }
-        }
-
-        if ($hasRecursiveTask) {
-            return response()->json(['status' => 0, 'message' => 'Wait, first complete Daily Task and Then Logout.']);
-        }
-
-        if ($needsComment) {
-            return response()->json(['status' => 0, 'message' => 'Wait, first Add Comment to your Ongoing Task and Then Logout.']);
         }
 
         $openBreak = Breaks::where('attendance_id', $attend->id)->whereNull('end')->first();

@@ -8,9 +8,11 @@
         <h4 class="mb-0 fw-bold">Coaching Categories</h4>
         <p class="text-muted mb-0">Manage your Coaching Categories list.</p>
     </div>
+    @can('coaching-categories-add')
     <a href="{{ route('admin.coaching-categories.create') }}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Add New
     </a>
+    @endcan
 </div>
 
 <div class="card border-0 shadow-sm rounded-4">
@@ -40,16 +42,20 @@
                             </td>
                             <td>{{ $item->sort_order }}</td>
                             <td class="text-end pe-4">
-                                <a href="{{ route('admin.coaching-categories.edit', $item->id) }}" class="btn btn-sm btn-light border me-1">
+                                @can('coaching-categories-edit')
+                                <a href="{{ route('admin.coaching-categories.edit', $item->id) }}" class="btn btn-sm btn-light border me-1" title="Edit">
                                     <i class="fas fa-edit text-primary"></i>
                                 </a>
+                                @endcan
+                                @can('coaching-categories-delete')
                                 <form action="{{ route('admin.coaching-categories.destroy', $item->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-light border text-danger">
+                                    <button type="submit" class="btn btn-sm btn-light border text-danger" title="Delete">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
+                                @endcan
                             </td>
                         </tr>
                     @empty

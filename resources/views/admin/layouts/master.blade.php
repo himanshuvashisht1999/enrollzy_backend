@@ -410,8 +410,10 @@
                                     href="{{ route('admin.campus_type_new.index') }}">School Type</a></li>
 @endif
 
+@if($user && method_exists($user, 'can') && $user->can('coaching-categories-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.coaching-categories.*') ? 'active' : '' }}"
                                     href="{{ route('admin.coaching-categories.index') }}">Coaching Category</a></li>
+@endif
 
                             <!-- wrapped sublink missing -->
 @if($user && method_exists($user, 'can') && $user->can('facilities-browse'))
@@ -857,7 +859,7 @@
 @endif
 
                 {{-- Work Management Group (Decoupled Enterprise System) --}}
-                @if(($user && method_exists($user, 'canAny') && $user->canAny(['work-management-browse', 'work-management-projects-browse', 'work-management-tasks-browse', 'work-management-teams-browse', 'work-management-reports-browse'])) || $isAdmin)
+                @if(($user && method_exists($user, 'canAny') && $user->canAny(['work-management-browse', 'work-management-dashboard-browse', 'work-management-my-work-browse', 'work-management-team-work-browse', 'work-management-calendar-browse', 'work-management-projects-browse', 'work-management-milestones-browse', 'work-management-tasks-browse', 'work-management-teams-browse', 'work-management-partners-browse', 'work-management-meetings-browse', 'work-management-reports-browse', 'work-management-categories-browse', 'work-management-types-browse'])) || $isAdmin)
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/work-management*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#workManagementMenu" role="button"
@@ -868,43 +870,75 @@
                     <div class="collapse {{ request()->is('admin/work-management*') ? 'show' : '' }}" id="workManagementMenu">
                         <ul class="nav flex-column ps-3">
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Dashboards</div>
+                            @if($isAdmin || ($user && $user->canAny(['work-management-dashboard-browse', 'work-management-browse'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.overview') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.dashboard.overview') }}"><i class="fas fa-tachometer-alt me-1 text-primary"></i> Work Overview</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['work-management-my-work-browse', 'work-management-browse'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.my_work') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.dashboard.my_work') }}"><i class="fas fa-user-check me-1 text-info"></i> My Work Hub</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['work-management-team-work-browse', 'work-management-browse'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.team_work') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.dashboard.team_work') }}"><i class="fas fa-users-cog me-1 text-success"></i> Team Workloads</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['work-management-calendar-browse', 'work-management-browse'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.dashboard.calendar') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.dashboard.calendar') }}"><i class="fas fa-calendar-alt me-1 text-warning"></i> Work Calendar</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Work Execution</div>
+                            @if($isAdmin || ($user && $user->can('work-management-projects-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.projects.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.projects.index') }}"><i class="fas fa-folder-open me-1 text-primary"></i> Projects</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('work-management-milestones-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.milestones.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.milestones.index') }}"><i class="fas fa-flag-checkered me-1 text-info"></i> Milestones</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('work-management-tasks-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.tasks.index') || request()->routeIs('admin.work_management.tasks.show') || request()->routeIs('admin.work_management.tasks.create') || request()->routeIs('admin.work_management.tasks.edit') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.tasks.index') }}"><i class="fas fa-tasks me-1 text-warning"></i> Tasks & Subtasks</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.tasks.kanban') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.tasks.kanban') }}"><i class="fas fa-columns me-1 text-success"></i> Task Board</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Organization & Collaboration</div>
+                            @if($isAdmin || ($user && $user->can('work-management-teams-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.teams.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.teams.index') }}"><i class="fas fa-sitemap me-1 text-primary"></i> Internal Teams</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('work-management-partners-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.partners.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.partners.index') }}"><i class="fas fa-handshake me-1 text-info"></i> External Partners</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('work-management-meetings-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.meetings.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.meetings.index') }}"><i class="fas fa-video me-1 text-danger"></i> Meetings & Syncs</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Analytics</div>
+                            @if($isAdmin || ($user && $user->can('work-management-reports-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.reports.*') ? 'active' : '' }}"
                                     href="{{ route('admin.work_management.reports.index') }}"><i class="fas fa-chart-line me-1 text-primary"></i> Work Reports</a></li>
+                            @endif
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Master Configurations</div>
+                            @if($isAdmin || ($user && $user->can('work-management-categories-browse')))
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.categories.index') }}"><i class="fas fa-tags me-1 text-primary"></i> Project Categories</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('work-management-types-browse')))
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.work_management.types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.work_management.types.index') }}"><i class="fas fa-layer-group me-1 text-info"></i> Project Types</a></li>
+                            @endif
                         </ul>
                     </div>
                 </li>
                 @endif
 
                 {{-- Accounting & Finance Group (Double-Entry General Ledger System) --}}
-                @if(($user && method_exists($user, 'canAny') && $user->canAny(['accounting-dashboard-view', 'accounting-coa-browse', 'accounting-parties-browse', 'accounting-invoices-browse', 'accounting-bills-browse', 'accounting-expenses-browse', 'accounting-funding-browse', 'accounting-banking-browse', 'accounting-journals-browse', 'accounting-reports-trial-balance'])) || (isset($isAdmin) && $isAdmin) || true)
+                @if(($user && method_exists($user, 'canAny') && $user->canAny(['accounting-dashboard-browse', 'accounting-dashboard-view', 'accounting-coa-browse', 'accounting-chart-of-accounts-browse', 'accounting-parties-browse', 'accounting-invoices-browse', 'accounting-bills-browse', 'accounting-expenses-browse', 'accounting-funding-browse', 'accounting-banking-browse', 'accounting-journals-browse', 'accounting-reports-browse', 'accounting-reports-trial-balance', 'accounting-trial-balance-browse', 'accounting-profit-loss-browse', 'accounting-balance-sheet-browse', 'accounting-general-ledger-browse', 'accounting-customer-ageing-browse', 'accounting-vendor-ageing-browse', 'accounting-gst-report-browse', 'accounting-tds-report-browse'])) || (isset($isAdmin) && $isAdmin))
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/accounting*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#accountingFinanceMenu" role="button"
@@ -915,50 +949,86 @@
                     <div class="collapse {{ request()->is('admin/accounting*') ? 'show' : '' }}" id="accountingFinanceMenu">
                         <ul class="nav flex-column ps-3">
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Overview</div>
+                            @if($isAdmin || ($user && $user->canAny(['accounting-dashboard-browse', 'accounting-dashboard-view'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.dashboard') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.dashboard') }}"><i class="fas fa-chart-pie me-1 text-primary"></i> Accounting Dashboard</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Ledger & Master</div>
+                            @if($isAdmin || ($user && $user->canAny(['accounting-chart-of-accounts-browse', 'accounting-coa-browse'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.chart_of_accounts.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.chart_of_accounts.index') }}"><i class="fas fa-sitemap me-1 text-info"></i> Chart of Accounts</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('accounting-parties-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.parties.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.parties.index') }}"><i class="fas fa-address-book me-1 text-success"></i> Parties Directory</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Receivables & Payables</div>
+                            @if($isAdmin || ($user && $user->can('accounting-invoices-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.invoices.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.invoices.index') }}"><i class="fas fa-file-invoice me-1 text-primary"></i> Sales Invoices (AR)</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('accounting-bills-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.bills.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.bills.index') }}"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Vendor Bills (AP)</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('accounting-expenses-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.expenses.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.expenses.index') }}"><i class="fas fa-receipt me-1 text-warning"></i> Expenses & Claims</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Treasury & Journal</div>
+                            @if($isAdmin || ($user && $user->can('accounting-funding-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.funding.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.funding.index') }}"><i class="fas fa-hand-holding-usd me-1 text-warning"></i> Funding & Capital</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('accounting-banking-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.banking.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.banking.index') }}"><i class="fas fa-university me-1 text-primary"></i> Banking & Cash</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->can('accounting-journals-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.journals.*') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.journals.index') }}"><i class="fas fa-book me-1 text-dark"></i> Journal Vouchers (JV)</a></li>
+                            @endif
 
                             <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Financial Statements</div>
+                            @if($isAdmin || ($user && $user->can('accounting-reports-browse')))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.index') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.index') }}"><i class="fas fa-folder-open me-1 text-primary"></i> Reports Launchpad</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-trial-balance-browse', 'accounting-reports-trial-balance'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.trial_balance') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.trial_balance') }}"><i class="fas fa-balance-scale me-1 text-info"></i> Trial Balance</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-profit-loss-browse', 'accounting-reports-profit-loss'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.profit_loss') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.profit_loss') }}"><i class="fas fa-chart-line me-1 text-success"></i> Profit & Loss (P&L)</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-balance-sheet-browse', 'accounting-reports-balance-sheet'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.balance_sheet') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.balance_sheet') }}"><i class="fas fa-university me-1 text-warning"></i> Balance Sheet</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-general-ledger-browse', 'accounting-reports-general-ledger'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.general_ledger') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.general_ledger') }}"><i class="fas fa-book-open me-1 text-info"></i> General Ledger</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-customer-ageing-browse', 'accounting-reports-customer-ageing'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.customer_ageing') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.customer_ageing') }}"><i class="fas fa-user-clock me-1 text-danger"></i> Customer Ageing</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-vendor-ageing-browse', 'accounting-reports-vendor-ageing'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.vendor_ageing') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.vendor_ageing') }}"><i class="fas fa-truck-loading me-1 text-secondary"></i> Vendor Ageing</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-gst-report-browse', 'accounting-reports-gst-report'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.gst_report') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.gst_report') }}"><i class="fas fa-receipt me-1 text-dark"></i> GST Tax Register</a></li>
+                            @endif
+                            @if($isAdmin || ($user && $user->canAny(['accounting-tds-report-browse', 'accounting-reports-tds-report'])))
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.accounting.reports.tds_report') ? 'active' : '' }}"
                                     href="{{ route('admin.accounting.reports.tds_report') }}"><i class="fas fa-percentage me-1 text-info"></i> TDS Tax Register</a></li>
+                            @endif
                         </ul>
                     </div>
                 </li>

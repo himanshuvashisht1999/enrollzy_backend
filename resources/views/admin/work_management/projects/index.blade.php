@@ -21,7 +21,25 @@
         <div class="card-body">
             <!-- Filter Bar -->
             <div class="row g-3 mb-4 bg-light p-3 rounded-4">
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Category</label>
+                    <select id="filter_category" class="form-select form-select-sm rounded-3">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Project Type</label>
+                    <select id="filter_type" class="form-select form-select-sm rounded-3">
+                        <option value="">All Types</option>
+                        @foreach($projectTypes as $pType)
+                            <option value="{{ $pType->id }}">{{ $pType->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small fw-semibold">Department</label>
                     <select id="filter_department" class="form-select form-select-sm rounded-3">
                         <option value="">All Departments</option>
@@ -30,7 +48,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-semibold">Team</label>
                     <select id="filter_team" class="form-select form-select-sm rounded-3">
                         <option value="">All Teams</option>
@@ -39,7 +57,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-semibold">Health Status</label>
                     <select id="filter_health" class="form-select form-select-sm rounded-3">
                         <option value="">All Health Statuses</option>
@@ -49,7 +67,7 @@
                         <option value="on_hold">On Hold</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-semibold">Status</label>
                     <select id="filter_status" class="form-select form-select-sm rounded-3">
                         <option value="">All Statuses</option>
@@ -100,6 +118,8 @@
                     d.team_id = $('#filter_team').val();
                     d.health_status = $('#filter_health').val();
                     d.status = $('#filter_status').val();
+                    d.category_id = $('#filter_category').val();
+                    d.project_type_id = $('#filter_type').val();
                 }
             },
             columns: [
@@ -115,7 +135,7 @@
             ]
         });
 
-        $('#filter_department, #filter_team, #filter_health, #filter_status').on('change', function() {
+        $('#filter_department, #filter_team, #filter_health, #filter_status, #filter_category, #filter_type').on('change', function() {
             table.draw();
         });
     });

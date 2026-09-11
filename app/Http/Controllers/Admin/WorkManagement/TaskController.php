@@ -19,6 +19,7 @@ use App\Models\TaskDependency;
 use App\Models\TaskActivityLog;
 use App\Services\WorkManagement\WorkAssignmentService;
 use App\Services\WorkManagement\ProjectMetricsService;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -35,13 +36,12 @@ class TaskController extends Controller
 
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         if ($request->ajax()) {
-            $user = auth()->user();
             $query = Tasks::with(['project', 'milestone_assigned', 'team', 'activePrimaryAssignee.user', 'subtasks']);
 
-            if ($user->organization_id) {
-                $query->where('organization_id', $user->organization_id);
-            }
+            WorkHierarchyService::applyTaskScope($query, $user);
 
             if ($request->filled('project_id')) {
                 $query->where('project_id', $request->project_id);
@@ -134,15 +134,22 @@ class TaskController extends Controller
                 ->make(true);
         }
 
-        $projects = Project::where('status', 'active')->get();
-        $teams = Team::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
 
         return view('admin.work_management.tasks.index', compact('projects', 'teams', 'staff'));
     }
 
     public function create(Request $request)
     {
+        $user = auth()->user();
         $selectedProjectId = $request->project_id ? (is_numeric($request->project_id) ? $request->project_id : decrypt($request->project_id)) : null;
         $parentTaskId = $request->parent_task_id ? (is_numeric($request->parent_task_id) ? $request->parent_task_id : decrypt($request->parent_task_id)) : null;
         
@@ -151,9 +158,15 @@ class TaskController extends Controller
             $selectedProjectId = $parentTask->project_id;
         }
 
-        $projects = Project::all();
-        $teams = Team::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
         $externalOrgs = ExternalOrganization::where('status', 'active')->get();
         $externalTeams = ExternalTeam::where('status', 'active')->get();
         $externalContacts = ExternalContact::where('status', 'active')->get();
@@ -275,20 +288,39 @@ class TaskController extends Controller
             'timeEntries.user', 'attachments.uploader', 'comments.user', 'comments.replies.user', 'activityLogs.actor'
         ])->findOrFail($id);
 
-        $allStaff = Admin::where('status', 'active')->get();
-        $allTeams = Team::where('status', 'active')->get();
+        $allStaff = WorkHierarchyService::getVisibleStaffQuery()->get();
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery);
+        $allTeams = $teamQuery->get();
         $canPerformAction = $task->canUserPerformAction(auth()->id());
 
-        return view('admin.work_management.tasks.show', compact('task', 'allStaff', 'allTeams', 'canPerformAction'));
+        $existingDepTaskIds = $task->dependencies()->pluck('depends_on_task_id')->toArray();
+        $existingDepTaskIds[] = $task->id;
+
+        $availablePrerequisiteTasks = Tasks::where('project_id', $task->project_id)
+            ->whereNotIn('id', $existingDepTaskIds)
+            ->whereNotIn('status', ['archived'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return view('admin.work_management.tasks.show', compact('task', 'allStaff', 'allTeams', 'canPerformAction', 'availablePrerequisiteTasks'));
     }
 
     public function edit($id)
     {
+        $user = auth()->user();
         $id = is_numeric($id) ? $id : decrypt($id);
         $task = Tasks::with('attachments.uploader')->findOrFail($id);
-        $projects = Project::all();
-        $teams = Team::where('status', 'active')->get();
-        $staff = Admin::where('status', 'active')->get();
+
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
+
+        $teamQuery = Team::where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
         $milestones = Milestone::where('project_id', $task->project_id)->get();
 
         return view('admin.work_management.tasks.edit', compact('task', 'projects', 'teams', 'staff', 'milestones'));
@@ -501,6 +533,7 @@ class TaskController extends Controller
      */
     public function kanban(Request $request)
     {
+        $user = auth()->user();
         $projectId = null;
         if ($request->filled('project_id')) {
             try {
@@ -509,9 +542,14 @@ class TaskController extends Controller
                 $projectId = null;
             }
         }
-        $projects = Project::where('status', 'active')->get();
+
+        $projectQuery = Project::where('status', 'active');
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+        $projects = $projectQuery->get();
 
         $query = Tasks::with(['project', 'team', 'activePrimaryAssignee.user']);
+        WorkHierarchyService::applyTaskScope($query, $user);
+
         if ($projectId) {
             $query->where('project_id', $projectId);
         }
@@ -712,6 +750,77 @@ class TaskController extends Controller
             'milestones' => $milestones,
             'teams' => $teams,
             'staff' => $staff,
+        ]);
+    }
+
+    // Task Prerequisite / Dependency operations
+    public function addDependency(Request $request)
+    {
+        $request->validate([
+            'task_id' => 'required',
+            'depends_on_task_id' => 'required',
+            'dependency_type' => 'nullable|in:finish_to_start,start_to_start,finish_to_finish',
+        ]);
+
+        $taskId = is_numeric($request->task_id) ? $request->task_id : decrypt($request->task_id);
+        $dependsOnTaskId = is_numeric($request->depends_on_task_id) ? $request->depends_on_task_id : decrypt($request->depends_on_task_id);
+
+        if ($taskId == $dependsOnTaskId) {
+            return response()->json(['status' => 0, 'message' => 'A task cannot depend on itself.'], 422);
+        }
+
+        // Circular dependency check: does dependsOnTaskId already depend on taskId?
+        $circular = TaskDependency::where('task_id', $dependsOnTaskId)->where('depends_on_task_id', $taskId)->exists();
+        if ($circular) {
+            return response()->json(['status' => 0, 'message' => 'Cannot create circular dependency between these tasks.'], 422);
+        }
+
+        $dep = TaskDependency::firstOrCreate([
+            'task_id' => $taskId,
+            'depends_on_task_id' => $dependsOnTaskId,
+        ], [
+            'dependency_type' => $request->dependency_type ?: 'finish_to_start',
+        ]);
+
+        $task = Tasks::find($taskId);
+        $prereqTask = Tasks::find($dependsOnTaskId);
+
+        if ($task && $prereqTask) {
+            TaskActivityLog::log(
+                'updated',
+                "Linked Prerequisite Task '{$prereqTask->title}' (" . ucfirst(str_replace('_', ' ', $dep->dependency_type)) . ") to Task '{$task->title}'",
+                $task->id,
+                $task->project_id,
+                $task->milestone
+            );
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Prerequisite task linked successfully.',
+            'dependency' => $dep
+        ]);
+    }
+
+    public function deleteDependency($id)
+    {
+        $id = is_numeric($id) ? $id : decrypt($id);
+        $dep = TaskDependency::findOrFail($id);
+        $taskId = $dep->task_id;
+        $prereq = Tasks::find($dep->depends_on_task_id);
+        $dep->delete();
+
+        if ($prereq) {
+            TaskActivityLog::log(
+                'updated',
+                "Removed Prerequisite Task dependency: '{$prereq->title}'",
+                $taskId
+            );
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Prerequisite task dependency removed successfully.'
         ]);
     }
 }

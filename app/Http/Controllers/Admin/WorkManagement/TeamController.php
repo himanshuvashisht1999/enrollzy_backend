@@ -8,6 +8,7 @@ use App\Models\TeamMember;
 use App\Models\HrDepartment;
 use App\Models\Admin;
 use App\Models\TaskActivityLog;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -17,13 +18,13 @@ class TeamController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         if ($request->ajax()) {
-            $user = auth()->user();
             $query = Team::with(['department', 'parent', 'leader', 'members']);
 
-            if ($user->organization_id) {
-                $query->where('organization_id', $user->organization_id);
-            }
+            WorkHierarchyService::applyTeamScope($query, $user);
+
             if ($request->filled('department_id')) {
                 $query->where('department_id', $request->department_id);
             }

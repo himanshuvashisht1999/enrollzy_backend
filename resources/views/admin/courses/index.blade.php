@@ -41,7 +41,14 @@
                         @forelse($courses as $course)
                             <tr>
                                 <td class="ps-4">
-                                    <span class="fw-bold text-dark">{{ $course->name }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-dark">{{ $course->name }}</span>
+                                        @if(!empty($course->faqs) && is_array($course->faqs) && count($course->faqs) > 0)
+                                            <span class="badge bg-light text-primary border" title="{{ count($course->faqs) }} FAQs configured">
+                                                <i class="fas fa-question-circle me-1"></i>{{ count($course->faqs) }} FAQs
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td><code class="text-muted">{{ $course->slug }}</code></td>
                                 <td>{{ $course->discipline->title ?? '-' }}</td>

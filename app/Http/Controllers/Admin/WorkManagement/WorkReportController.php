@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\Admin;
 use App\Models\Tasks;
 use App\Models\TaskTimeEntry;
+use App\Services\WorkManagement\WorkHierarchyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -15,19 +16,35 @@ class WorkReportController extends Controller
 {
     public function index(Request $request)
     {
-        $totalProjects = Project::count();
-        $completedProjects = Project::where('status', 'completed')->count();
-        $totalTasks = Tasks::count();
-        $completedTasks = Tasks::whereIn('status', ['completed', 'verified', 'closed'])->count();
-        $overdueTasks = Tasks::whereNotIn('status', ['completed', 'verified', 'closed'])
+        $user = auth()->user();
+
+        $projectQuery = Project::query();
+        WorkHierarchyService::applyProjectScope($projectQuery, $user);
+
+        $totalProjects = (clone $projectQuery)->count();
+        $completedProjects = (clone $projectQuery)->where('status', 'completed')->count();
+
+        $taskQuery = Tasks::query();
+        WorkHierarchyService::applyTaskScope($taskQuery, $user);
+
+        $totalTasks = (clone $taskQuery)->count();
+        $completedTasks = (clone $taskQuery)->whereIn('status', ['completed', 'verified', 'closed'])->count();
+        $overdueTasks = (clone $taskQuery)->whereNotIn('status', ['completed', 'verified', 'closed'])
             ->whereNotNull('due_date')
             ->where('due_date', '<', date('Y-m-d'))
             ->count();
-        $totalHoursLogged = round(TaskTimeEntry::sum('duration_minutes') / 60, 1);
 
-        $teams = Team::withCount(['tasks', 'members'])->get();
-        $projects = Project::withCount(['tasks', 'milestones'])->get();
-        $staff = Admin::withCount('taskAssigneeRecords')->get();
+        $visibleTaskIds = (clone $taskQuery)->pluck('id')->toArray();
+        $totalHoursLogged = round(TaskTimeEntry::whereIn('task_id', $visibleTaskIds)->sum('duration_minutes') / 60, 1);
+
+        $teamQuery = Team::withCount(['tasks', 'members'])->where('status', 'active');
+        WorkHierarchyService::applyTeamScope($teamQuery, $user);
+        $teams = $teamQuery->get();
+
+        $projects = (clone $projectQuery)->withCount(['tasks', 'milestones'])->get();
+
+        $staffQuery = WorkHierarchyService::getVisibleStaffQuery($user)->withCount('taskAssigneeRecords');
+        $staff = $staffQuery->get();
 
         return view('admin.work_management.reports.index', compact(
             'totalProjects', 'completedProjects', 'totalTasks', 'completedTasks', 'overdueTasks', 'totalHoursLogged',

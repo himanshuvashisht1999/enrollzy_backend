@@ -436,8 +436,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('organisation-types', \App\Http\Controllers\Admin\OrganisationTypeController::class)->middleware('can:organisation-types-browse');
         Route::resource('accreditation-approvals', \App\Http\Controllers\Admin\AccreditationApprovalController::class)->middleware('can:accreditation-approvals-browse');
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class)->middleware('can:campus-types-browse');
-        Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class);
-        Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class);
+        Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class)->middleware('can:campus-types-browse');
+        Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class)->middleware('can:coaching-categories-browse');
         Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class)->middleware('can:course-types-browse');
         Route::resource('exam-categories', \App\Http\Controllers\Admin\ExamCategoryController::class)->middleware('can:exam-categories-browse');
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
@@ -570,6 +570,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('tasks/add-time-entry', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addTimeEntry'])->name('tasks.add_time_entry');
             Route::post('tasks/add-attachment', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addAttachment'])->name('tasks.add_attachment');
             Route::delete('tasks/delete-attachment/{id}', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'deleteAttachment'])->name('tasks.delete_attachment');
+            Route::post('tasks/add-dependency', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'addDependency'])->name('tasks.add_dependency');
+            Route::delete('tasks/delete-dependency/{id}', [\App\Http\Controllers\Admin\WorkManagement\TaskController::class, 'deleteDependency'])->name('tasks.delete_dependency');
             Route::resource('tasks', \App\Http\Controllers\Admin\WorkManagement\TaskController::class);
 
             // Comments
@@ -592,6 +594,14 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
             // Reports
             Route::get('reports', [\App\Http\Controllers\Admin\WorkManagement\WorkReportController::class, 'index'])->name('reports.index');
+
+            // Project Categories Master
+            Route::post('categories/quick-store', [\App\Http\Controllers\Admin\WorkManagement\ProjectCategoryController::class, 'quickStore'])->name('categories.quick_store');
+            Route::resource('categories', \App\Http\Controllers\Admin\WorkManagement\ProjectCategoryController::class);
+
+            // Project Types Master
+            Route::post('types/quick-store', [\App\Http\Controllers\Admin\WorkManagement\ProjectTypeController::class, 'quickStore'])->name('types.quick_store');
+            Route::resource('types', \App\Http\Controllers\Admin\WorkManagement\ProjectTypeController::class);
         });
 
         // Customer Management Module Routes

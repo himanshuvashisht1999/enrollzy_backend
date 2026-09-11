@@ -28,10 +28,14 @@
                         <h4 class="fw-bold mb-0 text-dark">{{ $project->title }}</h4>
                         {!! GetStatusBadge($project->status) !!}
                     </div>
-                    <p class="text-muted small mb-0">
-                        {{ $project->project_category->name ?? 'General Category' }} &bull; 
-                        Type: <span class="fw-semibold text-dark">{{ $project->project_type ?? 'Internal' }}</span> &bull; 
-                        Priority: {!! (new \App\Models\Tasks(['priority' => $project->priority]))->getPriorityBadge() !!}
+                    <p class="text-muted small mb-0 d-flex align-items-center flex-wrap gap-1">
+                        <span class="badge bg-light text-dark border"><i class="fas fa-tag text-primary me-1"></i>{{ $project->project_category->name ?? 'General Category' }}</span>
+                        @if($project->projectType)
+                            <span class="badge {{ $project->projectType->getBadgeClass() }}">{{ $project->projectType->name }}</span>
+                        @elseif($project->project_type)
+                            <span class="badge bg-soft-primary text-primary border border-primary">{{ $project->project_type }}</span>
+                        @endif
+                        <span class="ms-1">Priority: {!! (new \App\Models\Tasks(['priority' => $project->priority]))->getPriorityBadge() !!}</span>
                     </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">

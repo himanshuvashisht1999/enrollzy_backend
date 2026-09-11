@@ -32,23 +32,33 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Project Category <span class="text-danger">*</span></label>
-                        <select name="category_id" class="form-select select2 rounded-3" required>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold mb-0">Project Category <span class="text-danger">*</span></label>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none small text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#quickCategoryModal">
+                                <i class="fas fa-plus-circle me-1"></i>New
+                            </button>
+                        </div>
+                        <select name="category_id" id="category_select" class="form-select select2 rounded-3" required>
                             <option value="">Select Category</option>
                             @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Project Type</label>
-                        <select name="project_type" class="form-select rounded-3">
-                            <option value="Internal" selected>Internal</option>
-                            <option value="Client">Client</option>
-                            <option value="Marketing">Marketing Campaign</option>
-                            <option value="Development">Technology / Dev</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Partner">Partner Collaborative</option>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold mb-0">Project Type</label>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none small text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#quickTypeModal">
+                                <i class="fas fa-plus-circle me-1"></i>New
+                            </button>
+                        </div>
+                        <select name="project_type_id" id="project_type_select" class="form-select select2 rounded-3">
+                            <option value="">Select Type</option>
+                            @foreach($projectTypes as $type)
+                                <option value="{{ $type->id }}" {{ old('project_type_id') == $type->id ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -147,6 +157,80 @@
         </div>
     </div>
 </div>
+
+<!-- Quick Add Category Modal -->
+<div class="modal fade" id="quickCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-tags text-primary me-2"></i> Quick Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickCategoryForm">
+                @csrf
+                <div class="modal-body py-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="quick_cat_name" class="form-control rounded-3" placeholder="e.g. Digital Marketing, Infrastructure" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" id="quick_cat_description" class="form-control rounded-3" rows="2" placeholder="Brief scope description..."></textarea>
+                    </div>
+                    <div id="quickCatError" class="alert alert-danger d-none py-2 small"></div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="quickCatSubmitBtn" class="btn btn-primary rounded-pill px-4 shadow-sm">Save & Select</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Add Project Type Modal -->
+<div class="modal fade" id="quickTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-layer-group text-primary me-2"></i> Quick Add Project Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickTypeForm">
+                @csrf
+                <div class="modal-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold">Type Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="quick_type_name" class="form-control rounded-3" placeholder="e.g. Research & Dev" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Code</label>
+                            <input type="text" name="code" id="quick_type_code" class="form-control rounded-3" placeholder="e.g. RND">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Color Theme</label>
+                            <select name="color" id="quick_type_color" class="form-select rounded-3">
+                                <option value="primary" selected>Primary (Blue)</option>
+                                <option value="success">Success (Green)</option>
+                                <option value="info">Info (Cyan)</option>
+                                <option value="warning">Warning (Amber)</option>
+                                <option value="danger">Danger (Red)</option>
+                                <option value="dark">Dark (Charcoal)</option>
+                                <option value="secondary">Secondary (Gray)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="quickTypeError" class="alert alert-danger d-none py-2 mt-3 small"></div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="quickTypeSubmitBtn" class="btn btn-primary rounded-pill px-4 shadow-sm">Save & Select</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
@@ -154,6 +238,72 @@
 <script>
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
+
+        // Handle Quick Category AJAX
+        $('#quickCategoryForm').on('submit', function(e) {
+            e.preventDefault();
+            var $btn = $('#quickCatSubmitBtn');
+            var $err = $('#quickCatError');
+            $btn.prop('disabled', true).text('Saving...');
+            $err.addClass('d-none').text('');
+
+            $.ajax({
+                url: "{{ route('admin.work_management.categories.quick_store') }}",
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        var newOption = new Option(response.category.name, response.category.id, true, true);
+                        $('#category_select').append(newOption).trigger('change');
+                        $('#quickCategoryModal').modal('hide');
+                        $('#quickCategoryForm')[0].reset();
+                    }
+                },
+                error: function(xhr) {
+                    var msg = 'Failed to create category';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    $err.removeClass('d-none').text(msg);
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Save & Select');
+                }
+            });
+        });
+
+        // Handle Quick Type AJAX
+        $('#quickTypeForm').on('submit', function(e) {
+            e.preventDefault();
+            var $btn = $('#quickTypeSubmitBtn');
+            var $err = $('#quickTypeError');
+            $btn.prop('disabled', true).text('Saving...');
+            $err.addClass('d-none').text('');
+
+            $.ajax({
+                url: "{{ route('admin.work_management.types.quick_store') }}",
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        var newOption = new Option(response.type.name, response.type.id, true, true);
+                        $('#project_type_select').append(newOption).trigger('change');
+                        $('#quickTypeModal').modal('hide');
+                        $('#quickTypeForm')[0].reset();
+                    }
+                },
+                error: function(xhr) {
+                    var msg = 'Failed to create project type';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    $err.removeClass('d-none').text(msg);
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Save & Select');
+                }
+            });
+        });
     });
 </script>
 @endpush

@@ -493,17 +493,48 @@
             <!-- Prerequisites / Dependencies Card -->
             <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="fas fa-link text-primary me-2"></i> Prerequisite Tasks</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-link text-primary me-2"></i> Prerequisite Tasks</h6>
+                        <button type="button" class="btn btn-sm btn-soft-primary rounded-pill px-2 py-1 open-prereq-modal-btn" data-bs-toggle="modal" data-bs-target="#addPrerequisiteModal" title="Link a prerequisite task">
+                            <i class="fas fa-plus me-1"></i> Add
+                        </button>
+                    </div>
                     @forelse($task->dependencies as $dep)
-                        <div class="p-2 border rounded-3 mb-2 small bg-light">
-                            <div class="fw-bold text-dark">{{ $dep->prerequisiteTask->title ?? 'Task' }}</div>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <span class="text-muted">{{ $dep->dependency_type }}</span>
-                                {!! $dep->prerequisiteTask->getStatusBadge() !!}
+                        <div class="p-3 border rounded-3 mb-2 small bg-light" id="dep-row-{{ $dep->id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="pe-2">
+                                    @if($dep->prerequisiteTask)
+                                        <a href="{{ route('admin.work_management.tasks.show', encrypt($dep->prerequisiteTask->id)) }}" class="fw-bold text-dark text-decoration-none">
+                                            @if($dep->prerequisiteTask->task_code)
+                                                <span class="badge bg-white text-secondary border me-1">{{ $dep->prerequisiteTask->task_code }}</span>
+                                            @endif
+                                            {{ $dep->prerequisiteTask->title }}
+                                        </a>
+                                    @else
+                                        <span class="text-muted">Unknown Task</span>
+                                    @endif
+                                </div>
+                                <button type="button" class="btn btn-link text-danger p-0 delete-dependency-btn" data-id="{{ $dep->id }}" title="Remove dependency">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                <span class="badge bg-soft-info text-info">
+                                    <i class="fas fa-arrow-right me-1"></i> {{ ucwords(str_replace('_', ' ', $dep->dependency_type)) }}
+                                </span>
+                                @if($dep->prerequisiteTask)
+                                    {!! $dep->prerequisiteTask->getStatusBadge() !!}
+                                @endif
                             </div>
                         </div>
                     @empty
-                        <p class="text-muted small mb-0">No blocking prerequisites. Task is ready for execution.</p>
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle text-success fs-3 mb-2"></i>
+                            <p class="text-muted small mb-0">No blocking prerequisites. Task is ready for execution.</p>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill mt-2 px-3 open-prereq-modal-btn" data-bs-toggle="modal" data-bs-target="#addPrerequisiteModal">
+                                <i class="fas fa-plus me-1"></i> Link Prerequisite
+                            </button>
+                        </div>
                     @endforelse
                 </div>
             </div>
@@ -640,6 +671,52 @@
                 <a id="imagePreviewDownloadBtn" href="" target="_blank" class="btn btn-sm btn-outline-light rounded-pill px-3">
                     <i class="fas fa-download me-1"></i> Open Original
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Prerequisite Task -->
+<div class="modal fade" id="addPrerequisiteModal" tabindex="-1" aria-labelledby="addPrerequisiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-link text-primary me-2"></i> Link Prerequisite Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted mb-3">
+                    Select a task that must be completed or started before this task (<strong>{{ $task->title }}</strong>) can proceed.
+                </p>
+                <form id="addPrerequisiteForm">
+                    <input type="hidden" name="task_id" value="{{ $task->id }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Prerequisite Task <span class="text-danger">*</span></label>
+                        <select name="depends_on_task_id" class="form-select rounded-3" required>
+                            <option value="">-- Select Prerequisite Task --</option>
+                            @if(isset($availablePrerequisiteTasks) && count($availablePrerequisiteTasks) > 0)
+                                @foreach($availablePrerequisiteTasks as $availTask)
+                                    <option value="{{ $availTask->id }}">
+                                        [{{ $availTask->task_code ?: 'TSK' }}] {{ $availTask->title }} ({{ ucfirst(str_replace('_', ' ', $availTask->status)) }})
+                                    </option>
+                                @endforeach
+                            @else
+                                <option value="" disabled>No other available tasks in this project</option>
+                            @endif
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Dependency Type</label>
+                        <select name="dependency_type" class="form-select rounded-3">
+                            <option value="finish_to_start" selected>Finish to Start (Prerequisite must finish before this starts)</option>
+                            <option value="start_to_start">Start to Start (Prerequisite must start before this starts)</option>
+                            <option value="finish_to_finish">Finish to Finish (Prerequisite must finish before this finishes)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">
+                        <i class="fas fa-link me-1"></i> Link Prerequisite Task
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -901,6 +978,52 @@
             if (res.status === 1) {
                 alert(res.message);
                 location.reload();
+            }
+        });
+    });
+
+    // Open Prerequisite Modal Trigger
+    $(document).on('click', '.open-prereq-modal-btn', function(e) {
+        e.preventDefault();
+        $('#addPrerequisiteModal').modal('show');
+    });
+
+    // Add Prerequisite AJAX
+    $('#addPrerequisiteForm').on('submit', function(e) {
+        e.preventDefault();
+        var $btn = $(this).find('button[type="submit"]');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Linking...');
+
+        $.post("{{ route('admin.work_management.tasks.add_dependency') }}", $(this).serialize() + '&_token={{ csrf_token() }}', function(res) {
+            if (res.status === 1) {
+                location.reload();
+            } else {
+                alert(res.message || 'Error linking prerequisite');
+                $btn.prop('disabled', false).html('<i class="fas fa-link me-1"></i> Link Prerequisite Task');
+            }
+        }).fail(function(xhr) {
+            alert(xhr.responseJSON ? xhr.responseJSON.message : 'Error linking prerequisite');
+            $btn.prop('disabled', false).html('<i class="fas fa-link me-1"></i> Link Prerequisite Task');
+        });
+    });
+
+    // Delete Prerequisite AJAX
+    $(document).on('click', '.delete-dependency-btn', function() {
+        var depId = $(this).data('id');
+        if (!confirm('Remove this prerequisite task dependency?')) return;
+        $.ajax({
+            url: "/admin/work-management/tasks/delete-dependency/" + depId,
+            type: 'DELETE',
+            data: { _token: "{{ csrf_token() }}" },
+            success: function(res) {
+                if (res.status === 1) {
+                    location.reload();
+                } else {
+                    alert(res.message || 'Error deleting dependency');
+                }
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON ? xhr.responseJSON.message : 'Error removing dependency');
             }
         });
     });

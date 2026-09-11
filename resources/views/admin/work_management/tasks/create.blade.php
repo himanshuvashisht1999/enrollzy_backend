@@ -65,7 +65,7 @@
                                     <option value="">Select Project</option>
                                     @foreach($projects as $proj)
                                         <option value="{{ $proj->id }}" {{ (old('project_id', $selectedProjectId) == $proj->id) ? 'selected' : '' }}>
-                                            {{ $proj->title }} ({{ $proj->code ?? 'PRJ' }})
+                                            {{ $proj->title }}{{ !empty($proj->project_code ?: $proj->code) ? ' (' . ($proj->project_code ?: $proj->code) . ')' : '' }}
                                         </option>
                                     @endforeach
                                 </select>

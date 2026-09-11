@@ -34,10 +34,11 @@ class CourseController extends Controller
         $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
         $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
+        $allCourses = Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
 
         return view(
             'admin.courses.create',
-            compact('programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations')
+            compact('programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations', 'allCourses')
         );
 
     }
@@ -46,6 +47,36 @@ class CourseController extends Controller
     {
         $data = $request->all();
         $data['slug'] = empty($request->slug) ? Str::slug($request->name) : Str::slug($request->slug);
+
+        // Sanitize FAQs array
+        if (isset($data['faqs']) && is_array($data['faqs'])) {
+            $cleanFaqs = [];
+            foreach ($data['faqs'] as $faq) {
+                $q = isset($faq['question']) ? trim($faq['question']) : '';
+                $a = isset($faq['answer']) ? trim($faq['answer']) : '';
+                if ($q !== '' || $a !== '') {
+                    $cleanFaqs[] = [
+                        'question' => $q,
+                        'answer' => $a,
+                    ];
+                }
+            }
+            $data['faqs'] = !empty($cleanFaqs) ? $cleanFaqs : null;
+        } else {
+            $data['faqs'] = null;
+        }
+
+        // Sanitize Related Courses array
+        if (isset($data['related_courses']) && is_array($data['related_courses'])) {
+            $data['related_courses'] = array_values(array_filter($data['related_courses'], function($id) {
+                return !empty($id);
+            }));
+            if (empty($data['related_courses'])) {
+                $data['related_courses'] = null;
+            }
+        } else {
+            $data['related_courses'] = null;
+        }
 
         // Validate everything including the potentially auto-generated slug
         \Illuminate\Support\Facades\Validator::make($data, [
@@ -58,6 +89,11 @@ class CourseController extends Controller
             'stream_offered_id' => 'nullable|exists:stream_offereds,id',
             'discipline_id' => 'nullable|exists:disciplines,id',
             'duration' => 'nullable|string|max:100',
+            'faqs' => 'nullable|array',
+            'faqs.*.question' => 'nullable|string',
+            'faqs.*.answer' => 'nullable|string',
+            'related_courses' => 'nullable|array',
+            'related_courses.*' => 'nullable|exists:courses,id',
         ], [
             'slug.unique' => 'A course with this name or slug already exists.'
         ])->validate();
@@ -85,10 +121,11 @@ class CourseController extends Controller
         $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
         $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
+        $allCourses = Course::where('id', '!=', $course->id)->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
 
         return view(
             'admin.courses.edit',
-            compact('course', 'programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations')
+            compact('course', 'programLevels', 'streamOffereds', 'disciplines', 'programTypes', 'courseTypes', 'exams', 'specializations', 'allCourses')
         );
     }
 
@@ -96,6 +133,36 @@ class CourseController extends Controller
     {
         $data = $request->all();
         $data['slug'] = empty($request->slug) ? Str::slug($request->name) : Str::slug($request->slug);
+
+        // Sanitize FAQs array
+        if (isset($data['faqs']) && is_array($data['faqs'])) {
+            $cleanFaqs = [];
+            foreach ($data['faqs'] as $faq) {
+                $q = isset($faq['question']) ? trim($faq['question']) : '';
+                $a = isset($faq['answer']) ? trim($faq['answer']) : '';
+                if ($q !== '' || $a !== '') {
+                    $cleanFaqs[] = [
+                        'question' => $q,
+                        'answer' => $a,
+                    ];
+                }
+            }
+            $data['faqs'] = !empty($cleanFaqs) ? $cleanFaqs : null;
+        } else {
+            $data['faqs'] = null;
+        }
+
+        // Sanitize Related Courses array
+        if (isset($data['related_courses']) && is_array($data['related_courses'])) {
+            $data['related_courses'] = array_values(array_filter($data['related_courses'], function($id) {
+                return !empty($id);
+            }));
+            if (empty($data['related_courses'])) {
+                $data['related_courses'] = null;
+            }
+        } else {
+            $data['related_courses'] = null;
+        }
 
         \Illuminate\Support\Facades\Validator::make($data, [
             'name' => 'required|string|max:255',
@@ -107,6 +174,11 @@ class CourseController extends Controller
             'stream_offered_id' => 'nullable|exists:stream_offereds,id',
             'discipline_id' => 'nullable|exists:disciplines,id',
             'duration' => 'nullable|string|max:100',
+            'faqs' => 'nullable|array',
+            'faqs.*.question' => 'nullable|string',
+            'faqs.*.answer' => 'nullable|string',
+            'related_courses' => 'nullable|array',
+            'related_courses.*' => 'nullable|exists:courses,id',
         ], [
             'slug.unique' => 'A course with this name or slug already exists.'
         ])->validate();
