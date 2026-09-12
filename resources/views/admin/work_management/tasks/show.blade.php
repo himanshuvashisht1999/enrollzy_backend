@@ -91,7 +91,16 @@
                     </div>
 
                     <h4 class="fw-bold text-dark mb-2">{{ $task->title }}</h4>
-                    <p class="text-muted mb-4">{{ $task->description ?: 'No detailed description provided.' }}</p>
+                    <p class="text-muted mb-2">{{ $task->description ?: 'No detailed description provided.' }}</p>
+                    <div class="d-flex align-items-center flex-wrap gap-3 text-muted small mb-4 pt-1">
+                        <span><i class="fas fa-user-check text-primary me-1"></i> Assigned by: <strong class="text-dark">{{ $task->assigner_name }}</strong></span>
+                        @if($task->creator && $task->creator->id != ($task->activePrimaryAssignee->assigned_by ?? $task->created_by))
+                            <span>&bull;</span>
+                            <span><i class="fas fa-user-edit text-secondary me-1"></i> Created by: <strong class="text-dark">{{ $task->creator->name }}</strong></span>
+                        @endif
+                        <span>&bull;</span>
+                        <span><i class="fas fa-calendar-alt text-secondary me-1"></i> Created on: {{ $task->created_at ? $task->created_at->format('M d, Y') : 'N/A' }}</span>
+                    </div>
 
                     <!-- Nav Tabs -->
                     <ul class="nav nav-pills border-bottom pb-2" id="taskTab" role="tablist">
@@ -440,7 +449,14 @@
                             </div>
                         </div>
                         <div class="mt-3 pt-3 border-top border-white-50 small text-white-50">
-                            Custody since: <strong>{{ $task->activePrimaryAssignee->assigned_at ? date('M d, Y', strtotime($task->activePrimaryAssignee->assigned_at)) : 'N/A' }}</strong>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Custody since:</span>
+                                <strong>{{ $task->activePrimaryAssignee->assigned_at ? date('M d, Y', strtotime($task->activePrimaryAssignee->assigned_at)) : 'N/A' }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Assigned by:</span>
+                                <strong class="text-white">{{ $task->assigner_name }}</strong>
+                            </div>
                         </div>
                     @else
                         <div class="text-white-50 small">No active assignee currently assigned.</div>
@@ -467,6 +483,14 @@
                         <li class="list-group-item d-flex justify-content-between px-0 py-2">
                             <span class="text-muted">Executing Team:</span>
                             <span class="fw-bold">{{ $task->team->name ?? 'Cross-functional' }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Assigned By:</span>
+                            <span class="fw-bold text-dark"><i class="fas fa-user-check text-primary me-1"></i>{{ $task->assigner_name }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Created By:</span>
+                            <span class="fw-semibold text-dark"><i class="fas fa-user-edit text-secondary me-1"></i>{{ $task->creator_name }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between px-0 py-2">
                             <span class="text-muted">Start Date:</span>

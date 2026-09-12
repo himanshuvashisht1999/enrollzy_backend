@@ -199,4 +199,23 @@ class Tasks extends Model
         ];
         return $badges[$priority] ?? '<span class="badge bg-secondary">' . ucfirst($priority) . '</span>';
     }
+
+    public function getAssignerNameAttribute()
+    {
+        if ($this->activePrimaryAssignee && $this->activePrimaryAssignee->assigner) {
+            return $this->activePrimaryAssignee->assigner->name;
+        }
+        if ($this->creator) {
+            return $this->creator->name;
+        }
+        if ($this->assigned_by) {
+            return $this->assigned_by->name;
+        }
+        return 'System';
+    }
+
+    public function getCreatorNameAttribute()
+    {
+        return $this->creator->name ?? ($this->assigned_by->name ?? 'System');
+    }
 }

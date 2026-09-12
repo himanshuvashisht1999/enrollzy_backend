@@ -50,12 +50,15 @@ class WorkDashboardController extends Controller
         $visibleProjectIds = (clone $projectQuery)->pluck('id')->toArray();
 
         $recentActivitiesQuery = TaskActivityLog::with('actor')->orderBy('id', 'desc');
+        if ($user && $user->organization_id) {
+            $recentActivitiesQuery->where('organization_id', $user->organization_id);
+        }
         if (!WorkHierarchyService::isSuperAdmin($user)) {
             $subordinateIds = WorkHierarchyService::getSubordinateUserIds($user);
             $recentActivitiesQuery->where(function ($q) use ($visibleTaskIds, $visibleProjectIds, $subordinateIds) {
                 $q->whereIn('task_id', $visibleTaskIds)
                   ->orWhereIn('project_id', $visibleProjectIds)
-                  ->orWhereIn('user_id', $subordinateIds);
+                  ->orWhereIn('performed_by', $subordinateIds);
             });
         }
         $recentActivities = $recentActivitiesQuery->take(10)->get();

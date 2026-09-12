@@ -23,63 +23,71 @@
     <!-- KPI Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Projects</span>
-                        <h3 class="fw-bold mb-0 text-dark">{{ $totalProjects }}</h3>
-                        <small class="text-success fw-bold"><i class="fas fa-play-circle me-1"></i>{{ $activeProjects }} Active</small>
-                    </div>
-                    <div class="bg-soft-primary rounded-4 p-3 text-primary fs-4">
-                        <i class="fas fa-folder-open"></i>
+            <a href="{{ route('admin.work_management.projects.index') }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white card-hover-link">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Projects</span>
+                            <h3 class="fw-bold mb-0 text-dark">{{ $totalProjects }}</h3>
+                            <small class="text-success fw-bold"><i class="fas fa-play-circle me-1"></i>{{ $activeProjects }} Active</small>
+                        </div>
+                        <div class="bg-soft-primary rounded-4 p-3 text-primary fs-4">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Tasks</span>
-                        <h3 class="fw-bold mb-0 text-dark">{{ $totalTasks }}</h3>
-                        <small class="text-info fw-bold"><i class="fas fa-spinner me-1"></i>{{ $inProgressTasks }} In Progress</small>
-                    </div>
-                    <div class="bg-soft-info rounded-4 p-3 text-info fs-4">
-                        <i class="fas fa-tasks"></i>
+            <a href="{{ route('admin.work_management.tasks.index') }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white card-hover-link">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Tasks</span>
+                            <h3 class="fw-bold mb-0 text-dark">{{ $totalTasks }}</h3>
+                            <small class="text-info fw-bold"><i class="fas fa-spinner me-1"></i>{{ $inProgressTasks }} In Progress</small>
+                        </div>
+                        <div class="bg-soft-info rounded-4 p-3 text-info fs-4">
+                            <i class="fas fa-tasks"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Completed Tasks</span>
-                        <h3 class="fw-bold mb-0 text-success">{{ $completedTasks }}</h3>
-                        <small class="text-muted"><i class="fas fa-check-circle text-success me-1"></i>Verified & Closed</small>
-                    </div>
-                    <div class="bg-soft-success rounded-4 p-3 text-success fs-4">
-                        <i class="fas fa-check-double"></i>
+            <a href="{{ route('admin.work_management.tasks.index', ['status' => 'completed']) }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white card-hover-link">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Completed Tasks</span>
+                            <h3 class="fw-bold mb-0 text-success">{{ $completedTasks }}</h3>
+                            <small class="text-muted"><i class="fas fa-check-circle text-success me-1"></i>Verified & Closed</small>
+                        </div>
+                        <div class="bg-soft-success rounded-4 p-3 text-success fs-4">
+                            <i class="fas fa-check-double"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Overdue Tasks</span>
-                        <h3 class="fw-bold mb-0 text-danger">{{ $overdueTasks }}</h3>
-                        <small class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Needs Immediate Attention</small>
-                    </div>
-                    <div class="bg-soft-danger rounded-4 p-3 text-danger fs-4">
-                        <i class="fas fa-calendar-times"></i>
+            <a href="{{ route('admin.work_management.tasks.index', ['overdue' => 1]) }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white card-hover-link">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Overdue Tasks</span>
+                            <h3 class="fw-bold mb-0 text-danger">{{ $overdueTasks }}</h3>
+                            <small class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Needs Immediate Attention</small>
+                        </div>
+                        <div class="bg-soft-danger rounded-4 p-3 text-danger fs-4">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -108,7 +116,7 @@
                                 @forelse($recentProjects as $p)
                                 <tr>
                                     <td class="ps-3">
-                                        <a href="{{ route('admin.work_management.projects.show', encrypt($p->id)) }}" class="fw-bold text-dark text-decoration-none">
+                                        <a href="{{ route('admin.work_management.tasks.index', ['project_id' => $p->id]) }}" class="fw-bold text-dark text-decoration-none" title="View tasks for {{ $p->title }}">
                                             {{ $p->title }}
                                         </a>
                                         @if($p->project_code)
@@ -131,7 +139,7 @@
                                     </td>
                                     <td>
                                         @php
-                                            $h = $p->health_status ?? 'on_track';
+                                             $h = $p->health_status ?? 'on_track';
                                             $badgeClass = $h == 'on_track' ? 'bg-soft-success text-success border-success' : ($h == 'at_risk' ? 'bg-soft-warning text-warning border-warning' : 'bg-soft-danger text-danger border-danger');
                                         @endphp
                                         <span class="badge {{ $badgeClass }} border text-capitalize small px-2 py-1">
@@ -139,9 +147,14 @@
                                         </span>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <a href="{{ route('admin.work_management.projects.show', encrypt($p->id)) }}" class="btn btn-sm btn-soft-primary rounded-circle">
-                                            <i class="fas fa-arrow-right"></i>
-                                        </a>
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+                                            <a href="{{ route('admin.work_management.tasks.index', ['project_id' => $p->id]) }}" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1" title="Go directly to Tasks">
+                                                <i class="fas fa-tasks me-1"></i> Tasks
+                                            </a>
+                                            <a href="{{ route('admin.work_management.projects.show', encrypt($p->id)) }}" class="btn btn-sm btn-soft-primary rounded-circle" title="View Project Overview">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -205,7 +218,19 @@
                             <span class="fw-bold text-dark small">{{ $act->performed_by_name ?? 'System' }}</span>
                             <small class="text-muted">{{ $act->created_at->diffForHumans() }}</small>
                         </div>
-                        <p class="small text-muted mb-0">{{ $act->description }}</p>
+                        <p class="small text-muted mb-0">
+                            @if($act->task_id)
+                                <a href="{{ route('admin.work_management.tasks.show', encrypt($act->task_id)) }}" class="text-dark text-decoration-none fw-semibold">
+                                    {{ $act->description }}
+                                </a>
+                            @elseif($act->project_id)
+                                <a href="{{ route('admin.work_management.tasks.index', ['project_id' => $act->project_id]) }}" class="text-dark text-decoration-none fw-semibold">
+                                    {{ $act->description }}
+                                </a>
+                            @else
+                                {{ $act->description }}
+                            @endif
+                        </p>
                     </div>
                 </div>
                 @empty
@@ -222,5 +247,13 @@
     .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); color: #856404; }
     .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
     .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+    .card-hover-link {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+    .card-hover-link:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12) !important;
+    }
 </style>
 @endsection

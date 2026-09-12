@@ -26,12 +26,13 @@
         <div class="card-body">
             <!-- Filter Bar -->
             <div class="row g-3 mb-4 bg-light p-3 rounded-4">
+                <input type="hidden" id="filter_overdue" value="{{ request('overdue', '') }}">
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Project</label>
                     <select id="filter_project" class="form-select form-select-sm rounded-3">
                         <option value="">All Projects</option>
                         @foreach($projects as $p)
-                            <option value="{{ $p->id }}">{{ $p->title }}</option>
+                            <option value="{{ $p->id }}" {{ (isset($selectedProjectId) && $selectedProjectId == $p->id) ? 'selected' : '' }}>{{ $p->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -40,7 +41,7 @@
                     <select id="filter_team" class="form-select form-select-sm rounded-3">
                         <option value="">All Teams</option>
                         @foreach($teams as $t)
-                            <option value="{{ $t->id }}">{{ $t->name }}</option>
+                            <option value="{{ $t->id }}" {{ request('team_id') == $t->id ? 'selected' : '' }}>{{ $t->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -49,7 +50,7 @@
                     <select id="filter_assignee" class="form-select form-select-sm rounded-3">
                         <option value="">All Staff</option>
                         @foreach($staff as $s)
-                            <option value="{{ $s->id }}">{{ $s->name }}</option>
+                            <option value="{{ $s->id }}" {{ request('assigned_to') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -57,31 +58,31 @@
                     <label class="form-label small fw-semibold">Status</label>
                     <select id="filter_status" class="form-select form-select-sm rounded-3">
                         <option value="">All Statuses</option>
-                        <option value="backlog">Backlog</option>
-                        <option value="not_started">Not Started</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="under_review">Under Review</option>
-                        <option value="completed">Completed</option>
-                        <option value="verified">Verified</option>
-                        <option value="closed">Closed</option>
+                        <option value="backlog" {{ request('status') == 'backlog' ? 'selected' : '' }}>Backlog</option>
+                        <option value="not_started" {{ request('status') == 'not_started' ? 'selected' : '' }}>Not Started</option>
+                        <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                        <option value="under_review" {{ request('status') == 'under_review' ? 'selected' : '' }}>Under Review</option>
+                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
+                        <option value="closed" {{ request('status') == 'closed' ? 'selected' : '' }}>Closed</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Priority</label>
                     <select id="filter_priority" class="form-select form-select-sm rounded-3">
                         <option value="">All Priorities</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
+                        <option value="urgent" {{ request('priority') == 'urgent' ? 'selected' : '' }}>Urgent</option>
+                        <option value="high" {{ request('priority') == 'high' ? 'selected' : '' }}>High</option>
+                        <option value="medium" {{ request('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
+                        <option value="low" {{ request('priority') == 'low' ? 'selected' : '' }}>Low</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Type</label>
                     <select id="filter_is_subtask" class="form-select form-select-sm rounded-3">
                         <option value="">All (Tasks & Subtasks)</option>
-                        <option value="0">Parent Tasks Only</option>
-                        <option value="1">Subtasks Only</option>
+                        <option value="0" {{ request('is_subtask') === '0' ? 'selected' : '' }}>Parent Tasks Only</option>
+                        <option value="1" {{ request('is_subtask') === '1' ? 'selected' : '' }}>Subtasks Only</option>
                     </select>
                 </div>
             </div>
@@ -125,6 +126,7 @@
                     d.status = $('#filter_status').val();
                     d.priority = $('#filter_priority').val();
                     d.is_subtask = $('#filter_is_subtask').val();
+                    d.overdue = $('#filter_overdue').val();
                 }
             },
             columns: [
@@ -140,7 +142,12 @@
             order: [[1, 'asc']]
         });
 
-        $('#filter_project, #filter_team, #filter_assignee, #filter_status, #filter_priority, #filter_is_subtask').on('change', function() {
+        $('#filter_project, #filter_team, #filter_assignee, #filter_priority, #filter_is_subtask').on('change', function() {
+            table.draw();
+        });
+
+        $('#filter_status').on('change', function() {
+            $('#filter_overdue').val('');
             table.draw();
         });
     });

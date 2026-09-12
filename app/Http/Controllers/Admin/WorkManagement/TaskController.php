@@ -44,7 +44,11 @@ class TaskController extends Controller
             WorkHierarchyService::applyTaskScope($query, $user);
 
             if ($request->filled('project_id')) {
-                $query->where('project_id', $request->project_id);
+                $projId = $request->project_id;
+                try {
+                    $projId = decrypt($projId);
+                } catch (\Exception $e) {}
+                $query->where('project_id', $projId);
             }
             if ($request->filled('milestone_id')) {
                 $query->where('milestone', $request->milestone_id);
@@ -95,11 +99,14 @@ class TaskController extends Controller
                 })
                 ->addColumn('assignee', function ($row) {
                     $primary = $row->activePrimaryAssignee;
+                    $assignerName = $row->assigner_name;
+                    $assignerInfo = ($assignerName && $assignerName !== 'System') ? '<small class="text-muted d-block mt-1" style="font-size: 11px;"><i class="fas fa-user-check text-secondary me-1"></i>By: ' . e($assignerName) . '</small>' : '';
+
                     if ($primary) {
-                        return '<span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-user me-1 text-primary"></i>' . $primary->display_name . '</span>';
+                        return '<div><span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-user me-1 text-primary"></i>' . e($primary->display_name) . '</span>' . $assignerInfo . '</div>';
                     } elseif ($row->assigned_to) {
                         $staff = Admin::find($row->assigned_to);
-                        return $staff ? '<span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-user me-1 text-primary"></i>' . $staff->name . '</span>' : '<span class="text-muted small">Unassigned</span>';
+                        return $staff ? '<div><span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-user me-1 text-primary"></i>' . e($staff->name) . '</span>' . $assignerInfo . '</div>' : '<span class="text-muted small">Unassigned</span>';
                     }
                     return '<span class="text-muted small">Unassigned</span>';
                 })
@@ -143,8 +150,14 @@ class TaskController extends Controller
         $teams = $teamQuery->get();
 
         $staff = WorkHierarchyService::getVisibleStaffQuery($user)->get();
+        $selectedProjectId = $request->project_id;
+        if ($selectedProjectId) {
+            try {
+                $selectedProjectId = decrypt($selectedProjectId);
+            } catch (\Exception $e) {}
+        }
 
-        return view('admin.work_management.tasks.index', compact('projects', 'teams', 'staff'));
+        return view('admin.work_management.tasks.index', compact('projects', 'teams', 'staff', 'selectedProjectId'));
     }
 
     public function create(Request $request)
@@ -281,8 +294,10 @@ class TaskController extends Controller
         $id = is_numeric($id) ? $id : decrypt($id);
         $task = Tasks::with([
             'project.department', 'project.team', 'milestone_assigned', 'team.leader', 'parentTask',
+            'creator', 'assigned_by',
             'subtasks.activePrimaryAssignee.user', 'subtasks.team',
-            'activeAssignees.user', 'activeAssignees.team', 'activeAssignees.externalContact', 'activeAssignees.externalTeam',
+            'activeAssignees.user', 'activeAssignees.team', 'activeAssignees.externalContact', 'activeAssignees.externalTeam', 'activeAssignees.assigner',
+            'activePrimaryAssignee.assigner',
             'delegations.delegator', 'delegations.targetUser', 'delegations.targetTeam',
             'dependencies.prerequisiteTask', 'checklists.completedBy',
             'timeEntries.user', 'attachments.uploader', 'comments.user', 'comments.replies.user', 'activityLogs.actor'
