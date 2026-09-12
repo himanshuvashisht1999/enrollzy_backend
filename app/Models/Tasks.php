@@ -142,17 +142,23 @@ class Tasks extends Model
         }
         if (!$user) return false;
 
-        // If it's a subtask: Strict single-assignee custody
-        // Only the current active primary assignee has custody; previous assignees are revoked.
+        // Admin/SuperAdmin can always perform actions across the organization
+        if (\App\Services\WorkManagement\WorkHierarchyService::isSuperAdmin($user)) return true;
+        if (!empty($user->is_admin)) return true;
+
+        // Creator of the task or Project Owner/Creator can always perform actions
+        if ($this->created_by == $userId || $this->staff_id == $userId) return true;
+        if ($this->project && ($this->project->owner_id == $userId || $this->project->staff_id == $userId || $this->project->created_by == $userId)) return true;
+
+        // If it's a subtask:
         if ($this->isSubtask()) {
             $primary = $this->activePrimaryAssignee;
             if ($primary && $primary->user_id == $userId) return true;
-            if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) return true;
+            // If user is manager/supervisor of the assignee
+            $subordinateIds = \App\Services\WorkManagement\WorkHierarchyService::getSubordinateUserIds($user);
+            if ($primary && in_array($primary->user_id, $subordinateIds)) return true;
             return false;
         }
-
-        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) return true;
-        if (!empty($user->is_admin)) return true;
 
         // For parent tasks, check active assignees or legacy assigned_to
         $activeUserIds = $this->activeAssignees()->where('assignee_type', 'internal_user')->pluck('user_id')->toArray();
@@ -163,7 +169,9 @@ class Tasks extends Model
             if (in_array($userId, $legacyIds)) return true;
         }
 
-        if ($this->created_by == $userId || $this->staff_id == $userId) return true;
+        // If user is manager of any active assignee
+        $subordinateIds = \App\Services\WorkManagement\WorkHierarchyService::getSubordinateUserIds($user);
+        if (!empty(array_intersect($activeUserIds, $subordinateIds))) return true;
 
         return false;
     }

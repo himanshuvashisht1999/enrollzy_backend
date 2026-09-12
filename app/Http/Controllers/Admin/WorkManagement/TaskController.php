@@ -721,9 +721,8 @@ class TaskController extends Controller
 
         $user = auth()->user();
         $isAuthorized = ($attachment->uploaded_by == auth()->id())
-            || ($user->is_admin ?? false)
-            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
-            || (in_array(strtolower($user->role ?? ''), ['superadmin', 'admin']));
+            || WorkHierarchyService::isSuperAdmin($user)
+            || ($task && ($task->created_by == $user->id || $task->staff_id == $user->id));
 
         if (!$isAuthorized) {
             return response()->json(['status' => 0, 'message' => 'Unauthorized to delete this file.'], 403);

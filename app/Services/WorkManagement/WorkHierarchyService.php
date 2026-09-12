@@ -21,8 +21,8 @@ class WorkHierarchyService
         $user = $user ?: auth()->user();
         if (!$user) return false;
 
-        $role = strtolower($user->role ?? '');
-        return in_array($role, ['superadmin', 'admin'])
+        $role = strtolower(trim($user->role ?? ''));
+        return in_array($role, ['superadmin', 'admin', 'administrator', 'super admin', 'super-admin'])
             || ($user->is_admin ?? false)
             || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
             || (method_exists($user, 'hasRole') && ($user->hasRole('superadmin') || $user->hasRole('admin')));
@@ -52,9 +52,9 @@ class WorkHierarchyService
         $hasReports = Admin::where('manager_id', $user->id)->exists();
         if ($hasReports) return true;
 
-        // Check role title containing manager / lead
-        $role = strtolower($user->role ?? '');
-        if (str_contains($role, 'manager') || str_contains($role, 'leader') || str_contains($role, 'lead')) {
+        // Check role title containing manager / lead / head / supervisor
+        $role = strtolower(trim($user->role ?? ''));
+        if (str_contains($role, 'manager') || str_contains($role, 'leader') || str_contains($role, 'lead') || str_contains($role, 'head') || str_contains($role, 'supervisor')) {
             return true;
         }
 
@@ -62,27 +62,48 @@ class WorkHierarchyService
     }
 
     /**
-     * Get all subordinate / team member user IDs for a user
+     * Get all subordinate / team member user IDs for a user (Recursive)
      */
     public static function getSubordinateUserIds($user = null): array
     {
         $user = $user ?: auth()->user();
         if (!$user) return [];
 
-        $userIds = [$user->id];
+        $allSubordinateIds = [(int)$user->id];
+        $toProcess = [(int)$user->id];
+        $processed = [];
 
-        // 1. Direct reports via manager_id in admin table
-        $directReports = Admin::where('manager_id', $user->id)->pluck('id')->toArray();
-        $userIds = array_merge($userIds, $directReports);
+        while (!empty($toProcess)) {
+            $currentId = array_shift($toProcess);
+            if (in_array($currentId, $processed)) {
+                continue;
+            }
+            $processed[] = $currentId;
 
-        // 2. Members of teams led by this user
-        $ledTeamIds = self::getLedTeamIds($user);
-        if (!empty($ledTeamIds)) {
-            $teamMemberIds = TeamMember::whereIn('team_id', $ledTeamIds)->pluck('user_id')->toArray();
-            $userIds = array_merge($userIds, $teamMemberIds);
+            // 1. Direct reports via manager_id in admin table
+            $directReports = Admin::where('manager_id', $currentId)->pluck('id')->toArray();
+
+            // 2. Members of teams led by this user
+            $ledTeamIds = Team::where('team_leader_id', $currentId)->pluck('id')->toArray();
+            $pivotTeamIds = TeamMember::where('user_id', $currentId)->where('is_team_leader', 1)->pluck('team_id')->toArray();
+            $allLedTeamIds = array_unique(array_merge($ledTeamIds, $pivotTeamIds));
+
+            $teamMemberIds = [];
+            if (!empty($allLedTeamIds)) {
+                $teamMemberIds = TeamMember::whereIn('team_id', $allLedTeamIds)->pluck('user_id')->toArray();
+            }
+
+            $newFound = array_unique(array_merge($directReports, $teamMemberIds));
+            foreach ($newFound as $foundId) {
+                $foundId = (int)$foundId;
+                if (!in_array($foundId, $allSubordinateIds)) {
+                    $allSubordinateIds[] = $foundId;
+                    $toProcess[] = $foundId;
+                }
+            }
         }
 
-        return array_values(array_unique(array_filter($userIds)));
+        return array_values(array_unique(array_filter($allSubordinateIds)));
     }
 
     /**
@@ -132,59 +153,38 @@ class WorkHierarchyService
         }
 
         $userId = $user->id;
+        $subordinateIds = self::getSubordinateUserIds($user);
+        $ledTeamIds = self::getLedTeamIds($user);
+        $userTeamIds = self::getUserTeamIds($user);
 
-        // Tier 2: Team Leader / Manager
-        if (self::isTeamLeader($user)) {
-            $ledTeamIds = self::getLedTeamIds($user);
-            $subordinateIds = self::getSubordinateUserIds($user);
-
-            return $query->where(function ($q) use ($userId, $ledTeamIds, $subordinateIds) {
-                // Owned or created by leader
-                $q->where('projects.owner_id', $userId)
-                  ->orWhere('projects.staff_id', $userId)
-                  ->orWhere('projects.created_by', $userId)
-                  // Member of project
-                  ->orWhereHas('members', function ($mq) use ($userId) {
-                      $mq->where('admin.id', $userId);
-                  });
-
-                // Associated with teams led by user
-                if (!empty($ledTeamIds)) {
-                    $q->orWhereIn('projects.team_id', $ledTeamIds);
-                }
-
-                // Has tasks belonging to or created by subordinates
-                $q->orWhereHas('tasks', function ($tq) use ($subordinateIds, $ledTeamIds) {
-                    $tq->whereIn('tasks.assigned_to', $subordinateIds)
-                       ->orWhereIn('tasks.created_by', $subordinateIds)
-                       ->orWhereIn('tasks.staff_id', $subordinateIds)
-                       ->orWhereHas('activeAssignees', function ($aq) use ($subordinateIds) {
-                           $aq->whereIn('task_assignees.user_id', $subordinateIds);
-                       });
-
-                    if (!empty($ledTeamIds)) {
-                        $tq->orWhereIn('tasks.team_id', $ledTeamIds);
-                    }
-                });
-            });
-        }
-
-        // Tier 3: Regular Staff -> Only own projects or projects where they are assigned tasks/members
-        return $query->where(function ($q) use ($userId) {
-            $q->where('projects.owner_id', $userId)
-              ->orWhere('projects.staff_id', $userId)
-              ->orWhere('projects.created_by', $userId)
-              ->orWhereHas('members', function ($mq) use ($userId) {
-                  $mq->where('admin.id', $userId);
+        return $query->where(function ($q) use ($userId, $subordinateIds, $ledTeamIds, $userTeamIds) {
+            // Owned or created by leader or subordinates
+            $q->whereIn('projects.owner_id', $subordinateIds)
+              ->orWhereIn('projects.staff_id', $subordinateIds)
+              ->orWhereIn('projects.created_by', $subordinateIds)
+              // Member of project
+              ->orWhereHas('members', function ($mq) use ($subordinateIds) {
+                  $mq->whereIn('admin.id', $subordinateIds);
               })
-              ->orWhereHas('tasks', function ($tq) use ($userId) {
-                  $tq->where('tasks.assigned_to', $userId)
-                     ->orWhere('tasks.created_by', $userId)
-                     ->orWhere('tasks.staff_id', $userId)
-                     ->orWhereHas('activeAssignees', function ($aq) use ($userId) {
-                         $aq->where('task_assignees.user_id', $userId);
+              // Has tasks belonging to, assigned by, or created by subordinates
+              ->orWhereHas('tasks', function ($tq) use ($subordinateIds, $ledTeamIds, $userTeamIds) {
+                  $tq->whereIn('tasks.assigned_to', $subordinateIds)
+                     ->orWhereIn('tasks.created_by', $subordinateIds)
+                     ->orWhereIn('tasks.staff_id', $subordinateIds)
+                     ->orWhereHas('activeAssignees', function ($aq) use ($subordinateIds, $userTeamIds) {
+                         $aq->whereIn('task_assignees.user_id', $subordinateIds)
+                            ->orWhereIn('task_assignees.team_id', $userTeamIds)
+                            ->orWhereIn('task_assignees.assigned_by', $subordinateIds);
                      });
+
+                  if (!empty($ledTeamIds)) {
+                      $tq->orWhereIn('tasks.team_id', $ledTeamIds);
+                  }
               });
+
+            if (!empty($ledTeamIds)) {
+                $q->orWhereIn('projects.team_id', $ledTeamIds);
+            }
         });
     }
 
@@ -201,40 +201,54 @@ class WorkHierarchyService
             $query->where('tasks.organization_id', $user->organization_id);
         }
 
-        // Tier 1: Super Admin / Admin -> Full Visibility
+        // Tier 1: Super Admin / Admin -> Full Visibility across organization
         if (self::isSuperAdmin($user)) {
             return $query;
         }
 
         $userId = $user->id;
+        $subordinateIds = self::getSubordinateUserIds($user);
+        $ledTeamIds = self::getLedTeamIds($user);
+        $userTeamIds = self::getUserTeamIds($user);
 
-        // Tier 2: Team Leader / Manager -> Sees their own tasks + all tasks of staff under them
-        if (self::isTeamLeader($user)) {
-            $subordinateIds = self::getSubordinateUserIds($user);
-            $ledTeamIds = self::getLedTeamIds($user);
-
-            return $query->where(function ($q) use ($subordinateIds, $ledTeamIds) {
-                $q->whereIn('tasks.assigned_to', $subordinateIds)
-                  ->orWhereIn('tasks.created_by', $subordinateIds)
-                  ->orWhereIn('tasks.staff_id', $subordinateIds)
-                  ->orWhereHas('activeAssignees', function ($aq) use ($subordinateIds) {
-                      $aq->whereIn('task_assignees.user_id', $subordinateIds);
-                  });
-
-                if (!empty($ledTeamIds)) {
-                    $q->orWhereIn('tasks.team_id', $ledTeamIds);
-                }
-            });
-        }
-
-        // Tier 3: Regular Staff -> Sees ONLY their own tasks (assigned to them or created by them)
-        return $query->where(function ($q) use ($userId) {
-            $q->where('tasks.assigned_to', $userId)
-              ->orWhere('tasks.created_by', $userId)
-              ->orWhere('tasks.staff_id', $userId)
-              ->orWhereHas('activeAssignees', function ($aq) use ($userId) {
-                  $aq->where('task_assignees.user_id', $userId);
+        return $query->where(function ($q) use ($userId, $subordinateIds, $ledTeamIds, $userTeamIds, $user) {
+            // 1. Assigned to or created by user or any subordinate in the reporting line
+            $q->whereIn('tasks.assigned_to', $subordinateIds)
+              ->orWhereIn('tasks.created_by', $subordinateIds)
+              ->orWhereIn('tasks.staff_id', $subordinateIds)
+              // 2. Active assignees assigned to user/subordinates or assigned BY user/subordinates
+              ->orWhereHas('activeAssignees', function ($aq) use ($subordinateIds, $userTeamIds) {
+                  $aq->whereIn('task_assignees.user_id', $subordinateIds)
+                     ->orWhereIn('task_assignees.team_id', $userTeamIds)
+                     ->orWhereIn('task_assignees.assigned_by', $subordinateIds);
+              })
+              // 3. Historical assignees where user/subordinate assigned or held custody
+              ->orWhereHas('assignees', function ($asq) use ($subordinateIds) {
+                  $asq->whereIn('task_assignees.assigned_by', $subordinateIds)
+                      ->orWhereIn('task_assignees.user_id', $subordinateIds);
+              })
+              // 4. Delegations initiated by or sent to user/subordinates
+              ->orWhereHas('delegations', function ($dq) use ($subordinateIds) {
+                  $dq->whereIn('task_delegations.from_user_id', $subordinateIds)
+                     ->orWhereIn('task_delegations.to_user_id', $subordinateIds);
+              })
+              // 5. If user owns or has access to the project
+              ->orWhereHas('project', function ($pq) use ($user) {
+                  self::applyProjectScope($pq, $user);
+              })
+              // 6. Child subtasks of a parent task visible to this user
+              ->orWhereHas('parentTask', function ($ptq) use ($subordinateIds) {
+                  $ptq->whereIn('tasks.assigned_to', $subordinateIds)
+                      ->orWhereIn('tasks.created_by', $subordinateIds)
+                      ->orWhereIn('tasks.staff_id', $subordinateIds)
+                      ->orWhereHas('activeAssignees', function ($paq) use ($subordinateIds) {
+                          $paq->whereIn('task_assignees.user_id', $subordinateIds);
+                      });
               });
+
+            if (!empty($ledTeamIds)) {
+                $q->orWhereIn('tasks.team_id', $ledTeamIds);
+            }
         });
     }
 
@@ -255,44 +269,23 @@ class WorkHierarchyService
         }
 
         $userId = $user->id;
+        $subordinateIds = self::getSubordinateUserIds($user);
+        $ledTeamIds = self::getLedTeamIds($user);
 
-        if (self::isTeamLeader($user)) {
-            $subordinateIds = self::getSubordinateUserIds($user);
-            $ledTeamIds = self::getLedTeamIds($user);
-
-            return $query->where(function ($q) use ($userId, $subordinateIds, $ledTeamIds) {
-                $q->where('milestones.owner_id', $userId)
-                  ->orWhere('milestones.lead_user_id', $userId)
-                  ->orWhereHas('project', function ($pq) {
-                      self::applyProjectScope($pq);
-                  })
-                  ->orWhereHas('tasks', function ($tq) use ($subordinateIds) {
-                      $tq->whereIn('tasks.assigned_to', $subordinateIds)
-                         ->orWhereHas('activeAssignees', function ($aq) use ($subordinateIds) {
-                             $aq->whereIn('task_assignees.user_id', $subordinateIds);
-                         });
-                  });
-
-                if (!empty($ledTeamIds)) {
-                    $q->orWhereIn('milestones.team_id', $ledTeamIds);
-                }
-            });
-        }
-
-        // Regular Staff
-        return $query->where(function ($q) use ($userId) {
-            $q->where('milestones.owner_id', $userId)
-              ->orWhere('milestones.lead_user_id', $userId)
-              ->orWhereHas('project', function ($pq) {
-                  self::applyProjectScope($pq);
+        return $query->where(function ($q) use ($userId, $subordinateIds, $ledTeamIds, $user) {
+            $q->whereIn('milestones.owner_id', $subordinateIds)
+              ->orWhereIn('milestones.lead_user_id', $subordinateIds)
+              ->orWhereIn('milestones.created_by', $subordinateIds)
+              ->orWhereHas('project', function ($pq) use ($user) {
+                  self::applyProjectScope($pq, $user);
               })
-              ->orWhereHas('tasks', function ($tq) use ($userId) {
-                  $tq->where('tasks.assigned_to', $userId)
-                     ->orWhere('tasks.created_by', $userId)
-                     ->orWhereHas('activeAssignees', function ($aq) use ($userId) {
-                         $aq->where('task_assignees.user_id', $userId);
-                     });
+              ->orWhereHas('tasks', function ($tq) use ($user) {
+                  self::applyTaskScope($tq, $user);
               });
+
+            if (!empty($ledTeamIds)) {
+                $q->orWhereIn('milestones.team_id', $ledTeamIds);
+            }
         });
     }
 
@@ -313,13 +306,16 @@ class WorkHierarchyService
         }
 
         $userId = $user->id;
+        $subordinateIds = self::getSubordinateUserIds($user);
         $userTeamIds = self::getUserTeamIds($user);
+        $ledTeamIds = self::getLedTeamIds($user);
 
-        return $query->where(function ($q) use ($userId, $userTeamIds) {
-            $q->where('teams.team_leader_id', $userId)
+        return $query->where(function ($q) use ($userId, $subordinateIds, $userTeamIds, $ledTeamIds) {
+            $q->whereIn('teams.team_leader_id', $subordinateIds)
               ->orWhereIn('teams.id', $userTeamIds)
-              ->orWhereHas('members', function ($mq) use ($userId) {
-                  $mq->where('admin.id', $userId);
+              ->orWhereIn('teams.id', $ledTeamIds)
+              ->orWhereHas('members', function ($mq) use ($subordinateIds) {
+                  $mq->whereIn('admin.id', $subordinateIds);
               });
         });
     }
@@ -341,27 +337,12 @@ class WorkHierarchyService
         }
 
         $userId = $user->id;
+        $subordinateIds = self::getSubordinateUserIds($user);
 
-        if (self::isTeamLeader($user)) {
-            $subordinateIds = self::getSubordinateUserIds($user);
-
-            return $query->where(function ($q) use ($userId, $subordinateIds) {
-                $q->where('meetings.created_by', $userId)
-                  ->orWhereIn('meetings.created_by', $subordinateIds)
-                  ->orWhereHas('participants', function ($pq) use ($subordinateIds) {
-                      $pq->whereIn('meeting_participants.user_id', $subordinateIds);
-                  })
-                  ->orWhereHas('project', function ($projQ) use ($user) {
-                      self::applyProjectScope($projQ, $user);
-                  });
-            });
-        }
-
-        // Regular Staff
-        return $query->where(function ($q) use ($userId, $user) {
-            $q->where('meetings.created_by', $userId)
-              ->orWhereHas('participants', function ($pq) use ($userId) {
-                  $pq->where('meeting_participants.user_id', $userId);
+        return $query->where(function ($q) use ($userId, $subordinateIds, $user) {
+            $q->whereIn('meetings.created_by', $subordinateIds)
+              ->orWhereHas('participants', function ($pq) use ($subordinateIds) {
+                  $pq->whereIn('meeting_participants.user_id', $subordinateIds);
               })
               ->orWhereHas('project', function ($projQ) use ($user) {
                   self::applyProjectScope($projQ, $user);
@@ -392,7 +373,14 @@ class WorkHierarchyService
             return $query->whereIn('id', $subordinateIds);
         }
 
-        // Regular Staff: only see themselves
-        return $query->where('id', $user->id);
+        // Regular Staff: themselves + any teammates
+        $userTeamIds = self::getUserTeamIds($user);
+        $teammateIds = [];
+        if (!empty($userTeamIds)) {
+            $teammateIds = TeamMember::whereIn('team_id', $userTeamIds)->pluck('user_id')->toArray();
+        }
+        $allowedIds = array_values(array_unique(array_merge([$user->id], $teammateIds)));
+
+        return $query->whereIn('id', $allowedIds);
     }
 }
