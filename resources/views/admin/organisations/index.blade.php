@@ -5,9 +5,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">All Organisations</h4>
-                        <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h4 class="card-title mb-0">All Organisations</h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
+                                <i class="fas fa-magic me-1"></i> Auto-Create via AI
+                            </a>
+                            <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <form action="" method="GET" class="mb-3">

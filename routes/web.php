@@ -153,6 +153,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::get('/export', [AcademicDirectoryController::class, 'exportDirectory'])->name('export');
     });
 
+    // AI-Powered Organisation Auto-Import
+    Route::get('/admin/ai-organisations/create', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'create'])->name('admin.ai-organisations.create');
+    Route::post('/admin/ai-organisations/extract', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'extract'])->name('admin.ai-organisations.extract');
+    Route::post('/admin/ai-organisations/store', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'store'])->name('admin.ai-organisations.store');
+
     // Organisations
     Route::resource('/admin/organisations', OrganisationController::class)->names([
         'index' => 'admin.organisations.index',

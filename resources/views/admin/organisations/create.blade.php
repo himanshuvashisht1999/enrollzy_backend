@@ -5,10 +5,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Add New Organisation</h4>
-                        <a href="{{ route('admin.organisations.index') }}"
-                            class="btn btn-secondary btn-sm float-end">Back</a>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h4 class="card-title mb-0">Add New Organisation</h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
+                                <i class="fas fa-magic me-1"></i> Auto-Create via AI from URL
+                            </a>
+                            <a href="{{ route('admin.organisations.index') }}" class="btn btn-secondary">Back</a>
+                        </div>
                     </div>
                     <div class="card-body">
                         @if ($errors->any())
