@@ -8,6 +8,9 @@
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h4 class="card-title mb-0">All Organisations</h4>
                         <div class="d-flex gap-2">
+                            <a href="{{ route('admin.ai-organisations.update') }}" class="btn btn-outline-primary shadow-sm">
+                                <i class="fas fa-robot me-1"></i> Update via Bot
+                            </a>
                             <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
                                 <i class="fas fa-magic me-1"></i> Auto-Create via AI
                             </a>
@@ -87,6 +90,10 @@
                                                     <i class="fas {{ $uni->status ? 'fa-eye' : 'fa-eye-slash' }}"></i>
                                                 </button>
                                             </form>
+                                            <a href="{{ route('admin.ai-organisations.update', ['org_id' => $uni->id]) }}"
+                                                class="btn btn-sm btn-primary text-white me-2" title="Update via Bot">
+                                                <i class="fas fa-robot"></i>
+                                            </a>
                                             <a href="{{ route('admin.organisations.campuses.index', $uni->id) }}"
                                                 class="btn btn-sm btn-warning text-dark me-2" title="Campuses">
                                                 <i class="fas fa-city"></i>

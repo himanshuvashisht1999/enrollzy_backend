@@ -155,8 +155,20 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // AI-Powered Organisation Auto-Import
     Route::get('/admin/ai-organisations/create', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'create'])->name('admin.ai-organisations.create');
+    Route::post('/admin/ai-organisations/preview-prompt', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'previewPrompt'])->name('admin.ai-organisations.preview-prompt');
     Route::post('/admin/ai-organisations/extract', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'extract'])->name('admin.ai-organisations.extract');
     Route::post('/admin/ai-organisations/store', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'store'])->name('admin.ai-organisations.store');
+
+    // AI-Powered Organisation Bot Update (Review & Approval Diff)
+    Route::get('/admin/ai-organisations/update', [\App\Http\Controllers\Admin\AiOrganisationUpdateController::class, 'index'])->name('admin.ai-organisations.update');
+    Route::get('/admin/ai-organisations/{id}/data', [\App\Http\Controllers\Admin\AiOrganisationUpdateController::class, 'getOrganisationData'])->name('admin.ai-organisations.data');
+    Route::post('/admin/ai-organisations/fetch-updates', [\App\Http\Controllers\Admin\AiOrganisationUpdateController::class, 'fetchUpdates'])->name('admin.ai-organisations.fetch-updates');
+    Route::post('/admin/ai-organisations/apply-updates', [\App\Http\Controllers\Admin\AiOrganisationUpdateController::class, 'applyUpdates'])->name('admin.ai-organisations.apply-updates');
+
+    // Organisation Fields Configuration (Academics Module)
+    Route::get('/admin/organisation-fields', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'index'])->name('admin.organisation-fields.index');
+    Route::post('/admin/organisation-fields', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'store'])->name('admin.organisation-fields.store');
+    Route::post('/admin/organisation-fields/{typeId}/reset', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'reset'])->name('admin.organisation-fields.reset');
 
     // Organisations
     Route::resource('/admin/organisations', OrganisationController::class)->names([

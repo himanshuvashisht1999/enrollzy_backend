@@ -43,8 +43,10 @@
                                     <option value="">Auto-Detect (Recommended)</option>
                                     <option value="University">University</option>
                                     <option value="College">College / Institute</option>
+                                    {{-- Commented out other organisation types for now:
                                     <option value="School">School / Chain of Schools</option>
                                     <option value="Exam Conducting Body">Exam Conducting Body</option>
+                                    --}}
                                 </select>
                             </div>
                         </div>
@@ -707,8 +709,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function populateMasterSelectors(masters) {
         const orgTypeSelect = document.getElementById('aiOrgTypeMaster');
         if (orgTypeSelect && masters.organisation_types) {
+            const allowedTypes = ['college', 'university'];
             orgTypeSelect.innerHTML = '<option value="">-- Select Master Type --</option>' +
-                masters.organisation_types.map(ot => `<option value="${ot.id}">${ot.title}</option>`).join('');
+                masters.organisation_types
+                    .filter(ot => allowedTypes.includes(ot.title.toLowerCase()))
+                    .map(ot => `<option value="${ot.id}">${ot.title}</option>`).join('');
         }
     }
 

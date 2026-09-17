@@ -253,6 +253,10 @@ class LeadAssignController extends Controller
                 }
             }
 
+            if ($customers->isNotEmpty()) {
+                \App\Models\Admin::whereIn('unlocked_lead_id', $customers->toArray())->update(['unlocked_lead_id' => null]);
+            }
+
             $msg = "Successfully assigned {$assignedCount} leads to the selected staff member.";
             if ($skipped > 0) {
                 $msg .= " ({$skipped} skipped because they were already assigned to this staff.)";

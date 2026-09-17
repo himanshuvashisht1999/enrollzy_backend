@@ -90,6 +90,8 @@ class CallingController extends Controller
             ]);
         }
 
+        \App\Models\Admin::where('unlocked_lead_id', $request->customer_id)->update(['unlocked_lead_id' => null]);
+
         return response()->json(['status' => 1, 'message' => 'Lead reassigned successfully!']);
     }
 
@@ -184,6 +186,10 @@ class CallingController extends Controller
             }
         }
 
+        if (!empty($customerIds)) {
+            \App\Models\Admin::whereIn('unlocked_lead_id', $customerIds)->update(['unlocked_lead_id' => null]);
+        }
+
         $msg = "Successfully assigned $assignedCount leads.";
         if ($skippedCount > 0) {
             $msg .= " ($skippedCount skipped because they were already assigned to this staff.)";
@@ -198,10 +204,29 @@ class CallingController extends Controller
         $user = auth()->user();
         
         if ($user->unlocked_lead_id && $user->unlocked_lead_id != $customerId) {
-            return response()->json([
-                'status' => 0,
-                'message' => 'You must update the status of the previously unlocked lead before viewing another number.'
-            ]);
+            // Check if the previously unlocked lead is still assigned to this user and uncontacted
+            $prevAssignment = \App\Models\LeadAssignment::where('customer_id', $user->unlocked_lead_id)
+                ->where('staff_id', $user->id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $hasCallingHistorySinceAssignment = false;
+            if ($prevAssignment) {
+                $hasCallingHistorySinceAssignment = \App\Models\CallingHistory::where('user_id', $user->unlocked_lead_id)
+                    ->where('created_at', '>=', $prevAssignment->updated_at)
+                    ->exists();
+            }
+
+            // If the previously unlocked lead is no longer assigned to this user or has already been updated, auto-clear it
+            if (!$prevAssignment || $hasCallingHistorySinceAssignment) {
+                $user->unlocked_lead_id = null;
+                $user->save();
+            } else {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'You must update the status of the previously unlocked lead before viewing another number.'
+                ]);
+            }
         }
         
         $customer = \App\Models\Customer::find($customerId);
@@ -211,7 +236,7 @@ class CallingController extends Controller
         
         return response()->json([
             'status' => 1,
-            'phone' => $customer->phone
+            'phone' => $customer ? $customer->phone : ''
         ]);
     }
 
@@ -955,7 +980,27 @@ class CallingController extends Controller
                 $q->where('organization_id', $organization_id);
             })->where('status', 1)->get();
 
-        $unlocked_lead_id = auth()->user()->unlocked_lead_id;
+        $user = auth()->user();
+        if ($user && $user->unlocked_lead_id) {
+            $prevAssignment = \App\Models\LeadAssignment::where('customer_id', $user->unlocked_lead_id)
+                ->where('staff_id', $user->id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $hasCallingHistorySinceAssignment = false;
+            if ($prevAssignment) {
+                $hasCallingHistorySinceAssignment = \App\Models\CallingHistory::where('user_id', $user->unlocked_lead_id)
+                    ->where('created_at', '>=', $prevAssignment->updated_at)
+                    ->exists();
+            }
+
+            if (!$prevAssignment || $hasCallingHistorySinceAssignment) {
+                $user->unlocked_lead_id = null;
+                $user->save();
+            }
+        }
+
+        $unlocked_lead_id = $user ? $user->unlocked_lead_id : null;
 
         $dbCountries = \App\Models\Customer::when($organization_id, function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);

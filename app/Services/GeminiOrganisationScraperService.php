@@ -25,17 +25,39 @@ class GeminiOrganisationScraperService
      * @return array
      * @throws \Exception
      */
-    public function extractFromUrl(string $url, string $orgTypeTitle = 'University', int $orgTypeId = 1): array
+    public function extractFromUrl(
+        string $url,
+        string $orgTypeTitle = 'University',
+        int $orgTypeId = 1,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null,
+        ?string $customPrompt = null
+    ): array
     {
         if (empty($this->apiKey)) {
             throw new \Exception('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
         }
 
-        // 1. Fetch initial content from the URL
-        $websiteContent = $this->fetchUrlContent($url);
+        if (!empty($customPrompt)) {
+            $prompt = $customPrompt;
+        } else {
+            // 1. Fetch initial content from the main URL
+            $websiteContent = $this->fetchUrlContent($url);
 
-        // 2. Build structured extraction prompt tailored to the selected Organisation Type
-        $prompt = $this->buildPrompt($url, $websiteContent, $orgTypeTitle, $orgTypeId);
+            // 2. Fetch and combine content from any additional reference URLs
+            $combinedContent = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
+            if (!empty($referenceUrls)) {
+                $combinedContent .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
+                foreach ($referenceUrls as $idx => $refUrl) {
+                    $refNum = $idx + 1;
+                    $refContent = $this->fetchUrlContent($refUrl);
+                    $combinedContent .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . substr($refContent, 0, 10000);
+                }
+            }
+
+            // 3. Build structured extraction prompt tailored to the selected Organisation Type and Mode
+            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg);
+        }
 
         // Candidate fallback models in case of high demand
         $modelsToTry = array_unique([
@@ -46,6 +68,56 @@ class GeminiOrganisationScraperService
             'gemini-3.1-flash-lite'
         ]);
 
+        return $this->executePrompt($prompt, $modelsToTry);
+    }
+
+    /**
+     * Public method to build the prompt for preview / customization
+     */
+    public function buildExtractionPrompt(
+        string $url,
+        string $orgTypeTitle = 'University',
+        int $orgTypeId = 1,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null,
+        string $content = ''
+    ): string {
+        return $this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg);
+    }
+
+    /**
+     * Extract scoped updates for an existing organisation strictly for enabled/selected fields
+     */
+    public function extractScopedUpdates(
+        string $url,
+        string $orgTypeTitle,
+        int $orgTypeId,
+        array $allowedFields,
+        array $currentData
+    ): array {
+        if (empty($this->apiKey)) {
+            throw new \Exception('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
+        }
+
+        $websiteContent = $this->fetchUrlContent($url);
+        $prompt = $this->buildScopedUpdatePrompt($url, $websiteContent, $orgTypeTitle, $allowedFields, $currentData);
+
+        $modelsToTry = array_unique([
+            $this->model,
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-3.7-flash',
+            'gemini-3.1-flash-lite'
+        ]);
+
+        return $this->executePrompt($prompt, $modelsToTry);
+    }
+
+    /**
+     * Execute a prompt against Gemini models with fallback
+     */
+    protected function executePrompt(string $prompt, array $modelsToTry): array
+    {
         $lastError = null;
 
         foreach ($modelsToTry as $modelName) {
@@ -101,7 +173,7 @@ class GeminiOrganisationScraperService
                     // Try direct JSON decode
                     $clean = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', trim($text));
                     $decoded = json_decode($clean, true);
-                    if (is_array($decoded) && isset($decoded['organisation'])) {
+                    if (is_array($decoded) && (isset($decoded['organisation']) || isset($decoded['campuses']) || isset($decoded['courses']) || isset($decoded['departments']))) {
                         $data = $decoded;
                         break;
                     }
@@ -109,14 +181,26 @@ class GeminiOrganisationScraperService
                     // Try finding JSON substring { ... }
                     if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $text, $matches)) {
                         $decodedSub = json_decode($matches[0], true);
-                        if (is_array($decodedSub) && isset($decodedSub['organisation'])) {
+                        if (is_array($decodedSub) && (isset($decodedSub['organisation']) || isset($decodedSub['campuses']) || isset($decodedSub['courses']) || isset($decodedSub['departments']))) {
                             $data = $decodedSub;
                             break;
                         }
                     }
                 }
 
-                if (is_array($data) && isset($data['organisation'])) {
+                if (is_array($data) && (isset($data['organisation']) || isset($data['campuses']) || isset($data['courses']) || isset($data['departments']))) {
+                    if (!isset($data['organisation'])) {
+                        $data['organisation'] = [];
+                    }
+                    if (!isset($data['campuses'])) {
+                        $data['campuses'] = [];
+                    }
+                    if (!isset($data['departments'])) {
+                        $data['departments'] = [];
+                    }
+                    if (!isset($data['courses'])) {
+                        $data['courses'] = [];
+                    }
                     return $data;
                 }
 
@@ -127,6 +211,72 @@ class GeminiOrganisationScraperService
         }
 
         throw new \Exception('Gemini API extraction failed: ' . ($lastError ?? 'Could not parse response from available AI models.'));
+    }
+
+    /**
+     * Build prompt strictly scoped to allowed fields and current data comparison
+     */
+    protected function buildScopedUpdatePrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        array $allowedFields,
+        array $currentData
+    ): string {
+        $allowedJson = json_encode($allowedFields, JSON_PRETTY_PRINT);
+        $currentJson = json_encode($currentData, JSON_PRETTY_PRINT);
+
+        return <<<PROMPT
+You are an expert institutional research and verification AI agent.
+You are tasked with reviewing and fetching UPDATES for an existing educational institution.
+
+INSTITUTION URL: {$url}
+ORGANISATION TYPE: {$orgTypeTitle}
+
+RAW WEBSITE / SEARCH CONTENT:
+{$content}
+
+CURRENT DATABASE RECORD (OLD DATA):
+{$currentJson}
+
+ALLOWED FIELDS FOR UPDATE:
+Only the following fields are enabled by the admin for checking and updating:
+{$allowedJson}
+
+CRITICAL RULES:
+1. ONLY return data for the keys explicitly listed in "ALLOWED FIELDS". Do NOT invent or include other field keys.
+2. For every allowed field:
+   - Search the website and Google Search Grounding to find the latest and most accurate current values.
+   - If a field is already accurate in the database, keep the current value.
+   - If there is a newer, updated, or previously missing value (e.g. new HOD, new NAAC grade, contact phone, website, accreditation), provide the NEW accurate value.
+3. For departments, campuses, and courses:
+   - For existing departments/campuses/courses provided in CURRENT DATABASE RECORD, provide their updated fields matching the allowed keys.
+   - You may also include newly detected departments, campuses, or courses if verified on the official website.
+4. Output MUST be ONLY valid JSON matching this structure:
+{
+  "organisation": {
+    /* ONLY allowed organisation keys */
+  },
+  "campuses": [
+    {
+      "name": "...",
+      /* ONLY allowed campus keys */
+    }
+  ],
+  "departments": [
+    {
+      "name": "...",
+      /* ONLY allowed department keys */
+    }
+  ],
+  "courses": [
+    {
+      "academic_unit_name": "...",
+      /* ONLY allowed course keys */
+    }
+  ]
+}
+PROMPT;
     }
 
     /**
@@ -159,192 +309,339 @@ class GeminiOrganisationScraperService
     }
 
     /**
-     * Build structured extraction prompt tailored to the selected Organisation Type
+     * Build structured extraction prompt tailored to the selected Organisation Type and Mode
      */
-    protected function buildPrompt(string $url, string $content, string $orgTypeTitle, int $orgTypeId): string
+    protected function buildPrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        int $orgTypeId,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null
+    ): string
     {
+        if ($targetOrg) {
+            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+        }
+
         $titleLower = strtolower($orgTypeTitle);
 
         if (str_contains($titleLower, 'school') || $orgTypeId === 4) {
-            return $this->buildSchoolPrompt($url, $content, $orgTypeTitle);
+            return $this->buildSchoolPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
 
         if (str_contains($titleLower, 'exam') || str_contains($titleLower, 'conducting') || $orgTypeId === 5) {
-            return $this->buildExamConductingBodyPrompt($url, $content, $orgTypeTitle);
+            return $this->buildExamConductingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
 
         if (str_contains($titleLower, 'counselling') || $orgTypeId === 6) {
-            return $this->buildCounsellingBodyPrompt($url, $content, $orgTypeTitle);
+            return $this->buildCounsellingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
 
         if (str_contains($titleLower, 'regulatory') || str_contains($titleLower, 'agency') || in_array($orgTypeId, [7, 8])) {
-            return $this->buildRegulatoryBodyPrompt($url, $content, $orgTypeTitle);
+            return $this->buildRegulatoryBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
 
         if (str_contains($titleLower, 'institute') || $orgTypeId === 3) {
-            return $this->buildInstitutePrompt($url, $content, $orgTypeTitle);
+            return $this->buildInstitutePrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
 
         // Default to University / College (Types 1, 2)
-        return $this->buildUniversityPrompt($url, $content, $orgTypeTitle);
+        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls);
     }
 
-    protected function buildUniversityPrompt(string $url, string $content, string $orgTypeTitle): string
+    protected function formatReferenceUrlsText(array $referenceUrls): string
     {
+        if (empty($referenceUrls)) {
+            return '';
+        }
+        return "\nADDITIONAL REFERENCE URLS PROVIDED BY ADMIN:\n" . implode("\n", array_map(fn($u) => "- " . $u, $referenceUrls)) . "\n";
+    }
+
+    /**
+     * Specialized Prompt for Mode 2: Campuses, Departments, and Courses for an existing Target Organisation
+     */
+    public function buildCampusesAndCoursesPrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null
+    ): string {
+        $orgName = $targetOrg ? $targetOrg->name : 'the Selected Institution';
+        $orgShort = $targetOrg ? $targetOrg->short_name : '';
+        $orgSite = $targetOrg ? $targetOrg->official_website : $url;
+        $orgId = $targetOrg ? $targetOrg->id : 0;
+
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
+
         return <<<PROMPT
-You are an expert higher education data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the educational institution at URL: {$url}
-Organisation Type: {$orgTypeTitle}
+You are an expert higher education data extraction and research AI agent.
+Your PRIMARY GOAL is to perform comprehensive, verified research and extract all physical CAMPUSES, academic DEPARTMENTS / FACULTIES, and ACADEMIC COURSES / DEGREES offered by the institution "{$orgName}".
 
-RAW WEBSITE CONTENT PREVIEW:
-{$content}
+TARGET INSTITUTION: {$orgName}
+SHORT NAME: {$orgShort}
+OFFICIAL SITE: {$orgSite}
+PRIMARY URL: {$url}{$refUrlsText}
+ORGANISATION TYPE: {$orgTypeTitle}
+{$cleanContent}
 
-IMPORTANT INSTRUCTIONS:
-1. Extract or research the full exhaustive hierarchy:
-   - "organisation": Main institutional details covering Core, Governance, Legal/Regulatory, Contacts, Portals, Trust/Society details.
-   - "campuses": All campus locations with Infrastructure, Amenities, Hostel, Transport, Safety, and Contact fields.
-   - "departments": All faculties/schools/departments with HOD, Faculty stats, Labs, Research, and Contact fields.
-   - "courses": All degree/diploma programs with Levels, Streams, Fees, Durations, Eligibility, Admissions, Placements, and Facilities.
-2. Cross-verify and fill all fields possible using Google Search Grounding based on institution name and URL. If any field is not found anywhere, return empty string "" or false for booleans, but always include the key in JSON.
-3. Return ONLY valid JSON matching EXACTLY this structure:
+CRITICAL RESEARCH & WRITING INSTRUCTIONS:
+1. DEEP WEB SEARCH & FACT VERIFICATION:
+   - The institution "{$orgName}" already exists in our database. DO NOT focus on basic organisation identity fields.
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
+   - If courses, fee structures, eligibility criteria, campus details, or department information are missing or incomplete on the provided URLs, actively search Google Search Grounding, official admission portals, academic catalogues, Shiksha, Collegedunia, Wikipedia, and brochure PDFs for "{$orgName}" to discover all available physical campuses, academic faculties, and degree programs.
+2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
+   - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
+   - Synthesize, summarize, and write original, clear, informative, professional, and SEO-friendly summaries in your own words for:
+     * `about_department`: 1-2 paragraphs detailing the department's academic philosophy, faculty expertise, lab infrastructure, and focus areas.
+     * `overview` (Course Overview): 1-2 engaging paragraphs explaining the degree curriculum, industry relevance, career pathways, and learning outcomes.
+     * `eligibility`: Clear, concise criteria (e.g. "10+2 with minimum 50% aggregate marks in PCM from a recognized board").
+     * `admission_process`: Clear step-by-step summary (e.g. "Online application followed by entrance exam score evaluation and personal interview").
+     * `placement_details`: Comprehensive summary including average & highest package, top recruiters, and industry domains.
+3. STRUCTURE & LINKING:
+   - Link each course to its respective campus and department name.
+   - If exact fees or dates are not publicly listed, provide accurate estimates/ranges based on verified sources or standard fees for this institution.
+4. RETURN FORMAT:
+   - Return ONLY valid, parseable JSON matching EXACTLY this structure:
 
 {
-  "organisation": {
-    "name": "Full Legal Name of Institution",
-    "short_name": "Short Name / Abbreviation",
-    "brand_name": "Brand Name",
-    "organisation_type": "{$orgTypeTitle}",
-    "brand_type": "Independent",
-    "central_authority": "Governing Body / Trust",
-    "head_office_location": "City, State",
-    "official_website": "{$url}",
-    "admission_portal_url": "",
-    "student_portal_url": "",
-    "parent_portal_url": "",
-    "established_year": 2005,
-    "ownership_type": "Private",
-    "university_type": "Private University",
-    "about_university": "Detailed overview...",
-    "about_organisation": "Detailed overview...",
-    "vision_mission": "Vision & Mission...",
-    "core_values": ["Excellence", "Innovation", "Integrity"],
-    "chancellor_name": "Chancellor / Founder",
-    "vice_chancellor_name": "Vice Chancellor / Principal",
-    "governing_body_name": "Board of Governors / Management Trust",
-    "autonomous_status": true,
-    "degree_awarding_authority": true,
-    "ugc_recognized": true,
-    "ugc_approval_number": "",
-    "aicte_approved": true,
-    "naac_accredited": true,
-    "naac_grade": "A+",
-    "nirf_rank_overall": null,
-    "nirf_rank_category": null,
-    "international_accreditations": ["ABET", "AACSB", "QS 5-Star"],
-    "statutory_approvals": ["UGC", "AICTE", "NBA", "BCI", "PCI"],
-    "levels_offered": ["Undergraduate", "Postgraduate", "Doctoral", "Diploma"],
-    "number_of_campuses": 2,
-    "number_of_constituent_colleges": 5,
-    "number_of_affiliated_colleges": 0,
-    "email": "info@institution.edu",
-    "phone": "+91 XXXXXXXXXX",
-    "is_top": false
-  },
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
   "campuses": [
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
       "established_year": 2005,
-      "city": "",
-      "state": "",
+      "city": "Bengaluru",
+      "state": "Karnataka",
       "country": "India",
-      "pincode": "",
-      "full_address": "",
-      "google_map_url": "",
-      "nearest_transport_hub": "",
-      "campus_area_acres": 50,
-      "academic_blocks_count": 5,
-      "classrooms_count": 60,
+      "pincode": "562106",
+      "full_address": "Chikkahagade Cross, Chandapura - Anekal Main Road, Bengaluru, Karnataka",
+      "google_map_url": "https://maps.google.com/?q=Alliance+University+Bangalore",
+      "nearest_transport_hub": "Electronic City Metro / Chandapura Bus Stand",
+      "campus_area_acres": 55,
+      "academic_blocks_count": 6,
+      "classrooms_count": 80,
       "smart_classrooms": true,
-      "laboratories_count": 25,
+      "laboratories_count": 30,
       "library_available": true,
       "digital_library_access": true,
       "hostel_available": true,
       "hostel_type": "Both",
-      "hostel_capacity": 2000,
+      "hostel_capacity": 2500,
       "medical_facility_available": true,
-      "sports_facilities": ["Cricket Ground", "Football Field", "Gymnasium"],
+      "sports_facilities": [
+        "Cricket Ground",
+        "Football Turf",
+        "Basketball Court",
+        "Indoor Gymnasium",
+        "Badminton Court"
+      ],
       "transport_available": true,
       "cctv_coverage": true,
       "fire_safety_certified": true,
-      "campus_email": "",
-      "campus_contact_numbers": []
+      "campus_email": "campus@alliance.edu.in",
+      "campus_contact_numbers": [
+        "+91 80 4619 9000"
+      ]
     }
   ],
   "departments": [
     {
-      "department_name": "Department of Computer Science & Engineering",
-      "department_code": "CSE",
+      "department_name": "Alliance School of Business",
+      "department_code": "ASOB",
       "department_type": "Academic",
-      "established_year": 2005,
-      "head_of_department_name": "",
-      "head_of_department_designation": "Professor & Head",
-      "hod_email": "",
-      "faculty_count": 40,
-      "discipline_area": "Engineering & Technology",
-      "specializations_supported": ["AI & ML", "Data Science"],
-      "education_levels_supported": ["Undergraduate", "Postgraduate"],
-      "department_labs_count": 8,
-      "research_publications_count": 120,
-      "funded_projects_count": 5,
-      "patents_filed_count": 3,
+      "established_year": 2010,
+      "head_of_department_name": "Dr. Ray Titus",
+      "head_of_department_designation": "Dean & Professor of Marketing",
+      "hod_email": "dean.asob@alliance.edu.in",
+      "faculty_count": 45,
+      "discipline_area": "Management & Business Administration",
+      "specializations_supported": [
+        "Marketing",
+        "Finance",
+        "Operations",
+        "Human Resource Management",
+        "Business Analytics"
+      ],
+      "education_levels_supported": [
+        "Undergraduate",
+        "Postgraduate",
+        "Doctoral (Ph.D)"
+      ],
+      "department_labs_count": 4,
+      "research_publications_count": 180,
+      "funded_projects_count": 8,
+      "patents_filed_count": 2,
       "phd_supervision_available": true,
       "industry_collaboration_supported": true,
       "is_interdisciplinary": true,
       "specialized_labs_available": true,
-      "about_department": ""
+      "about_department": "Alliance School of Business is recognized for excellence in management education, emphasizing case-based pedagogy, corporate mentorship, global student exchange, and cutting-edge business research."
     }
   ],
   "courses": [
     {
-      "course_name": "Bachelor of Technology in Computer Science and Engineering",
-      "short_name": "B.Tech CSE",
-      "program_level": "Undergraduate",
-      "department_name": "Department of Computer Science & Engineering",
+      "course_name": "Master of Business Administration",
+      "short_name": "MBA",
+      "program_level": "Postgraduate",
+      "department_name": "Alliance School of Business",
       "campus_name": "Main Campus",
-      "stream": "Engineering",
-      "discipline": "Computer Science & Engineering",
-      "specialization": "Artificial Intelligence",
-      "duration": "4 Years",
+      "stream": "Management",
+      "discipline": "Business Administration",
+      "specialization": "Business Analytics & Marketing",
+      "duration": "2 Years",
       "mode": "Regular",
-      "fees": "200000",
-      "total_fees": "800000",
-      "annual_fee_range": "₹2,00,000 - ₹2,50,000",
-      "admission_fee": "25000",
+      "fees": "750000",
+      "total_fees": "1500000",
+      "annual_fee_range": "₹7,50,000 - ₹8,00,000",
+      "admission_fee": "50000",
       "installment_available": true,
       "scholarship_available": true,
       "refund_policy_available": true,
       "roi": "High",
-      "eligibility": "10+2 with 60% PCM",
-      "admission_process": "Merit / Entrance exam",
-      "entrance_exams": "JEE Main",
-      "placement_details": "Average package ₹8-10 LPA",
-      "rating": "4.5",
-      "overview": ""
+      "eligibility": "Bachelor's degree in any discipline with minimum 50% aggregate marks (45% for reserved categories).",
+      "admission_process": "National entrance score (CAT/MAT/XAT/GMAT/AMAT) followed by Alliance Selection Process (Oral Presentation & Personal Interview).",
+      "entrance_exams": "CAT, MAT, XAT, GMAT, NMAT, CMAT",
+      "placement_details": "Average package ₹8.5 LPA, highest domestic package ₹21 LPA with 600+ recruiting partners including Deloitte, KPMG, Amazon, and EY.",
+      "rating": "4.6",
+      "overview": "The MBA program at Alliance University offers a globally benchmarked curriculum designed to develop strategic decision-making, ethical leadership, and data-driven management skills through experiential learning and corporate internships."
     }
   ]
 }
 PROMPT;
     }
 
-    protected function buildInstitutePrompt(string $url, string $content, string $orgTypeTitle): string
+    /**
+     * Specialized Prompt for Mode 1: Organisation Profile Auto-Creation ONLY
+     */
+    public function buildOrganisationOnlyPrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        int $orgTypeId = 1,
+        array $referenceUrls = []
+    ): string {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
+
+        return <<<PROMPT
+You are an expert higher education data extraction and research AI agent.
+Your PRIMARY GOAL is to perform comprehensive, verified research and extract institutional profile data for the educational institution at:
+PRIMARY OFFICIAL URL: {$url}{$refUrlsText}
+ORGANISATION TYPE: {$orgTypeTitle}
+
+=== CRITICAL EXTRACTION SCOPE: ORGANISATION PROFILE ONLY ===
+Extract ONLY the institutional profile for the "organisation" object.
+{$cleanContent}
+
+CRITICAL RESEARCH & WRITING INSTRUCTIONS:
+1. DEEP WEB SEARCH & FACT VERIFICATION:
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
+   - If any important institutional details (e.g. established year, UGC/AICTE approval, NAAC grade & cycle, NIRF ranking, Chancellor/VC names, managing trust, official contacts) are NOT found on the provided URLs, actively search Google Search Grounding, official regulatory directories (UGC, AICTE, NAAC, NIRF, AISHE), Wikipedia, and authoritative educational portals.
+2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
+   - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
+   - Synthesize, rewrite, and write original, engaging, professionally structured, and SEO-friendly summaries in your own words for:
+     * `about_university` / `about_organisation`: 2-3 well-written paragraphs covering history, academic standing, campus culture, infrastructure, and institutional achievements.
+     * `vision_mission`: Clear, inspiring, and concise vision and mission statements.
+     * `core_values`: Clean array of 3 to 6 key institutional values (e.g. ["Academic Rigor", "Innovation & Research", "Ethical Leadership", "Inclusivity"]).
+3. COMPLETENESS & CLEAN DATA:
+   - If a field is not applicable or genuinely cannot be found after deep search, use empty string "" for text/urls, null for numbers, false for booleans, or [] for lists.
+4. RETURN FORMAT:
+   - Return ONLY valid, parseable JSON matching EXACTLY this structure:
+
+{
+  "organisation": {
+    "name": "Full Official Legal Name of Institution",
+    "short_name": "Short Name / Abbreviation",
+    "brand_name": "Brand Name / Popular Name",
+    "organisation_type": "{$orgTypeTitle}",
+    "brand_type": "Independent",
+    "central_authority": "Governing Body / Sponsoring Trust / Society Name",
+    "head_office_location": "City, State, Country",
+    "official_website": "{$url}",
+    "admission_portal_url": "https://admissions.example.edu.in",
+    "student_portal_url": "https://portal.example.edu.in",
+    "parent_portal_url": "",
+    "established_year": 1985,
+    "ownership_type": "Private",
+    "university_type": "Private University",
+    "about_university": "Write a polished, original 2-paragraph profile describing the institution's legacy, campus environment, and academic focus...",
+    "about_organisation": "Write an executive overview highlighting key highlights, leadership, and recognitions...",
+    "vision_mission": "To provide transformative education and foster ethical leadership, innovation, and global excellence...",
+    "core_values": [
+      "Academic Excellence",
+      "Integrity & Ethics",
+      "Innovation & Research",
+      "Social Responsibility"
+    ],
+    "chancellor_name": "Chancellor / Founder Name",
+    "vice_chancellor_name": "Vice Chancellor / Principal / Director Name",
+    "governing_body_name": "Board of Governors / Management Trust Name",
+    "autonomous_status": true,
+    "degree_awarding_authority": true,
+    "ugc_recognized": true,
+    "ugc_approval_number": "F. No. 12-34/2005(CPP-I)",
+    "aicte_approved": true,
+    "naac_accredited": true,
+    "naac_grade": "A+",
+    "nirf_rank_overall": 45,
+    "nirf_rank_category": "Ranked in Top 50 by NIRF",
+    "international_accreditations": [
+      "ABET",
+      "AACSB",
+      "QS 5-Star"
+    ],
+    "statutory_approvals": [
+      "UGC",
+      "AICTE",
+      "NBA",
+      "BCI",
+      "PCI"
+    ],
+    "levels_offered": [
+      "Undergraduate",
+      "Postgraduate",
+      "Doctoral (Ph.D)",
+      "Diploma"
+    ],
+    "number_of_campuses": 2,
+    "number_of_constituent_colleges": 4,
+    "number_of_affiliated_colleges": 0,
+    "email": "admissions@institution.edu.in",
+    "phone": "+91 11 XXXXXXXX",
+    "is_top": true
+  }
+}
+PROMPT;
+    }
+
+    protected function buildUniversityPrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null
+    ): string
     {
+        if ($targetOrg) {
+            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+        }
+        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, 1, $referenceUrls);
+    }
+
+    protected function buildInstitutePrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
         return <<<PROMPT
 You are an expert institutional data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the Institute / Academy at URL: {$url}
+Extract comprehensive, highly accurate, and verified data for the Institute / Academy at PRIMARY URL: {$url}{$refUrlsText}
 Organisation Type: {$orgTypeTitle}
 
-RAW WEBSITE CONTENT PREVIEW:
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:
@@ -446,14 +743,16 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildSchoolPrompt(string $url, string $content, string $orgTypeTitle): string
+    protected function buildSchoolPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
     {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
         return <<<PROMPT
 You are an expert K-12 school education data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the School / School Network at URL: {$url}
+Extract comprehensive, highly accurate, and verified data for the School / School Network at PRIMARY URL: {$url}{$refUrlsText}
 Organisation Type: {$orgTypeTitle}
 
-RAW WEBSITE CONTENT PREVIEW:
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:
@@ -563,14 +862,16 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildExamConductingBodyPrompt(string $url, string $content, string $orgTypeTitle): string
+    protected function buildExamConductingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
     {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
         return <<<PROMPT
 You are an expert exam authority and testing agency data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the Exam Conducting Body at URL: {$url}
+Extract comprehensive, highly accurate, and verified data for the Exam Conducting Body at PRIMARY URL: {$url}{$refUrlsText}
 Organisation Type: {$orgTypeTitle}
 
-RAW WEBSITE CONTENT PREVIEW:
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:
@@ -657,14 +958,16 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildCounsellingBodyPrompt(string $url, string $content, string $orgTypeTitle): string
+    protected function buildCounsellingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
     {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
         return <<<PROMPT
 You are an expert admission counselling and seat allocation authority research AI.
-Extract comprehensive, highly accurate, and verified data for the Counselling Body at URL: {$url}
+Extract comprehensive, highly accurate, and verified data for the Counselling Body at PRIMARY URL: {$url}{$refUrlsText}
 Organisation Type: {$orgTypeTitle}
 
-RAW WEBSITE CONTENT PREVIEW:
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:
@@ -770,14 +1073,16 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildRegulatoryBodyPrompt(string $url, string $content, string $orgTypeTitle): string
+    protected function buildRegulatoryBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
     {
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
         return <<<PROMPT
 You are an expert regulatory body and government education agency research AI.
-Extract comprehensive, highly accurate, and verified data for the Regulatory Body / Government Agency at URL: {$url}
+Extract comprehensive, highly accurate, and verified data for the Regulatory Body / Government Agency at PRIMARY URL: {$url}{$refUrlsText}
 Organisation Type: {$orgTypeTitle}
 
-RAW WEBSITE CONTENT PREVIEW:
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:

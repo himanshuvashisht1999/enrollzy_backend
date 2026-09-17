@@ -266,31 +266,36 @@ class OrganisationImportService
     {
         return DB::transaction(function () use ($data) {
             $orgInput = $data['organisation'] ?? [];
-            if (empty($orgInput['name'])) {
-                throw new \Exception('Organisation name is missing.');
-            }
+            $targetOrgId = $data['target_organisation_id'] ?? $orgInput['id'] ?? null;
 
-            // 1. Resolve Organisation Type Master (NEVER CREATE)
-            $orgTypeId = 1; // Default to 1 (University)
-            if (!empty($orgInput['organisation_type_id'])) {
-                $ot = OrganisationType::find($orgInput['organisation_type_id']);
-                if ($ot) $orgTypeId = $ot->id;
-            } elseif (!empty($orgInput['organisation_type'])) {
-                $orgTypeName = $orgInput['organisation_type'];
-                $orgType = OrganisationType::where('title', 'like', '%' . $orgTypeName . '%')->first();
-                if ($orgType) $orgTypeId = $orgType->id;
-            }
+            if ($targetOrgId) {
+                $organisation = Organisation::with(['campuses', 'departments'])->findOrFail($targetOrgId);
+            } else {
+                if (empty($orgInput['name'])) {
+                    throw new \Exception('Organisation name is missing.');
+                }
 
-            // 2. Prepare Organisation Record
-            $slug = Str::slug($orgInput['name']);
-            $originalSlug = $slug;
-            $count = 1;
-            while (Organisation::where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $count;
-                $count++;
-            }
+                // 1. Resolve Organisation Type Master (NEVER CREATE)
+                $orgTypeId = 1; // Default to 1 (University)
+                if (!empty($orgInput['organisation_type_id'])) {
+                    $ot = OrganisationType::find($orgInput['organisation_type_id']);
+                    if ($ot) $orgTypeId = $ot->id;
+                } elseif (!empty($orgInput['organisation_type'])) {
+                    $orgTypeName = $orgInput['organisation_type'];
+                    $orgType = OrganisationType::where('title', 'like', '%' . $orgTypeName . '%')->first();
+                    if ($orgType) $orgTypeId = $orgType->id;
+                }
 
-            $organisation = Organisation::create([
+                // 2. Prepare Organisation Record
+                $slug = Str::slug($orgInput['name']);
+                $originalSlug = $slug;
+                $count = 1;
+                while (Organisation::where('slug', $slug)->exists()) {
+                    $slug = $originalSlug . '-' . $count;
+                    $count++;
+                }
+
+                $organisation = Organisation::create([
                 'name' => $orgInput['name'],
                 'short_name' => $orgInput['short_name'] ?? null,
                 'brand_name' => $orgInput['brand_name'] ?? ($orgInput['short_name'] ?? null),
@@ -462,20 +467,27 @@ class OrganisationImportService
                 'candidate_handbook_url' => $orgInput['candidate_handbook_url'] ?? null,
                 'helpdesk_toll_free_number' => $orgInput['helpdesk_toll_free_number'] ?? null,
                 'helpdesk_operational_hours' => $orgInput['helpdesk_operational_hours'] ?? null,
-                'social_media_handles' => $orgInput['social_media_handles'] ?? null,
-                'total_candidates_handled_estimate' => $orgInput['total_candidates_handled_estimate'] ?? null,
-                'legal_reference_document_url' => $orgInput['legal_reference_document_url'] ?? null,
                 'status' => true,
                 'is_top' => !empty($orgInput['is_top']),
             ]);
+            }
 
             // 3. Create Campuses
             $campusMap = []; // Name -> Campus instance
+            if ($targetOrgId && $organisation->relationLoaded('campuses')) {
+                foreach ($organisation->campuses as $existingCampus) {
+                    $campusMap[$existingCampus->campus_name] = $existingCampus;
+                }
+            }
+
             $campusesInput = $data['campuses'] ?? [];
 
             if (!empty($campusesInput)) {
                 foreach ($campusesInput as $index => $cInput) {
                     $campusName = !empty($cInput['campus_name']) ? $cInput['campus_name'] : ($organisation->name . ' - Campus ' . ($index + 1));
+                    if (isset($campusMap[$campusName])) {
+                        continue;
+                    }
                     $campusSlug = Str::slug($campusName . '-' . Str::random(4));
 
                     $campus = Campus::create([
@@ -523,8 +535,8 @@ class OrganisationImportService
                     $campusMap[$campusName] = $campus;
                     $campusMap[$index] = $campus;
                 }
-            } else {
-                // Create Default Main Campus
+            } elseif (!$targetOrgId && (!isset($data['mode']) || $data['mode'] !== 'organisation_only') && !empty($campusesInput)) {
+                // Create Default Main Campus only if not in organisation_only mode
                 $defaultCampus = Campus::create([
                     'id' => (string) Str::uuid(),
                     'organisation_id' => $organisation->id,
@@ -540,15 +552,24 @@ class OrganisationImportService
             }
 
             // Primary campus reference
-            $primaryCampus = reset($campusMap);
+            $primaryCampus = !empty($campusMap) ? reset($campusMap) : ($organisation->campuses()->first() ?? null);
 
             // 4. Create Departments
             $deptMap = []; // Name -> Department instance
+            if ($targetOrgId && $organisation->relationLoaded('departments')) {
+                foreach ($organisation->departments as $existingDept) {
+                    $deptMap[$existingDept->name] = $existingDept;
+                }
+            }
+
             $deptsInput = $data['departments'] ?? [];
 
             if (!empty($deptsInput)) {
                 foreach ($deptsInput as $index => $dInput) {
                     $deptName = $dInput['department_name'] ?? ('Department ' . ($index + 1));
+                    if (isset($deptMap[$deptName])) {
+                        continue;
+                    }
                     $deptSlug = Str::slug($deptName . '-' . Str::random(4));
 
                     $department = Department::create([
