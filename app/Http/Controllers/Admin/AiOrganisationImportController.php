@@ -46,23 +46,86 @@ class AiOrganisationImportController extends Controller
     }
 
     /**
+     * AJAX endpoint to get cascading options for Campuses and Departments
+     */
+    public function cascadingOptions(Request $request)
+    {
+        $organisationId = $request->query('organisation_id');
+        $campusId = $request->query('campus_id');
+
+        $campuses = [];
+        $departments = [];
+
+        if ($organisationId) {
+            $campuses = \App\Models\Campus::where('organisation_id', $organisationId)
+                ->select('id', 'campus_name', 'city')
+                ->orderBy('campus_name')
+                ->get();
+        }
+
+        if ($campusId) {
+            $departments = \App\Models\Department::where('campus_id', $campusId)
+                ->select('id', 'department_name', 'department_code')
+                ->orderBy('department_name')
+                ->get();
+        } elseif ($organisationId) {
+            $departments = \App\Models\Department::where('organisation_id', $organisationId)
+                ->select('id', 'department_name', 'department_code')
+                ->orderBy('department_name')
+                ->get();
+        }
+
+        return response()->json([
+            'success' => true,
+            'campuses' => $campuses,
+            'departments' => $departments
+        ]);
+    }
+
+    /**
      * AJAX endpoint to preview/generate the AI prompt before extraction
      */
     public function previewPrompt(Request $request)
     {
-        $request->validate([
+        $mode = $request->input('mode', 'organisation');
+
+        $rules = [
             'url' => 'nullable|string',
-            'organisation_type_id' => 'required|exists:organisation_types,id',
-            'target_organisation_id' => 'nullable|exists:organisations,id',
+            'mode' => 'required|in:organisation,campus,department,course',
             'reference_urls' => 'nullable|array',
             'reference_urls.*' => 'nullable|string',
-        ]);
+        ];
+
+        if ($mode === 'organisation') {
+            $rules['organisation_type_id'] = 'required|exists:organisation_types,id';
+        } elseif ($mode === 'campus') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+        } elseif ($mode === 'department') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+            $rules['target_campus_id'] = 'nullable|exists:campuses,id';
+        } elseif ($mode === 'course') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+            $rules['target_campus_id'] = 'nullable|exists:campuses,id';
+            $rules['target_department_id'] = 'nullable|exists:departments,id';
+        }
+
+        $request->validate($rules);
 
         try {
             $url = $request->input('url') ?: 'https://www.example.edu';
-            $orgType = \App\Models\OrganisationType::findOrFail($request->input('organisation_type_id'));
+            $orgType = $request->filled('organisation_type_id') ? \App\Models\OrganisationType::find($request->input('organisation_type_id')) : null;
+            $orgTypeId = $orgType ? $orgType->id : 1;
+            $orgTypeTitle = $orgType ? $orgType->title : 'University';
+
             $targetOrgId = $request->input('target_organisation_id');
             $targetOrg = $targetOrgId ? \App\Models\Organisation::find($targetOrgId) : null;
+            $targetCampus = $request->filled('target_campus_id') ? \App\Models\Campus::find($request->input('target_campus_id')) : null;
+            $targetDepartment = $request->filled('target_department_id') ? \App\Models\Department::find($request->input('target_department_id')) : null;
+
+            if ($targetOrg && $targetOrg->organisationType) {
+                $orgTypeTitle = $targetOrg->organisationType->title;
+                $orgTypeId = $targetOrg->organisation_type_id;
+            }
 
             $referenceUrls = [];
             if ($request->has('reference_urls') && is_array($request->input('reference_urls'))) {
@@ -76,17 +139,23 @@ class AiOrganisationImportController extends Controller
 
             $prompt = $this->scraper->buildExtractionPrompt(
                 $url,
-                $orgType->title,
-                $orgType->id,
+                $orgTypeTitle,
+                $orgTypeId,
                 $referenceUrls,
-                $targetOrg
+                $targetOrg,
+                '',
+                $mode,
+                $targetCampus,
+                $targetDepartment
             );
 
             return response()->json([
                 'success' => true,
                 'prompt' => $prompt,
-                'mode' => $targetOrg ? 'campuses_and_courses' : 'organisation_only',
-                'target_organisation_name' => $targetOrg ? $targetOrg->name : null
+                'mode' => $mode,
+                'target_organisation_name' => $targetOrg ? $targetOrg->name : null,
+                'target_campus_name' => $targetCampus ? $targetCampus->campus_name : null,
+                'target_department_name' => $targetDepartment ? $targetDepartment->department_name : null
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -101,19 +170,45 @@ class AiOrganisationImportController extends Controller
      */
     public function extract(Request $request)
     {
-        $request->validate([
+        $mode = $request->input('mode', 'organisation');
+
+        $rules = [
             'url' => 'required|url',
-            'organisation_type_id' => 'required|exists:organisation_types,id',
-            'target_organisation_id' => 'nullable|exists:organisations,id',
+            'mode' => 'required|in:organisation,campus,department,course',
             'reference_urls' => 'nullable|array',
             'reference_urls.*' => 'nullable|string',
             'custom_prompt' => 'nullable|string',
-        ]);
+        ];
+
+        if ($mode === 'organisation') {
+            $rules['organisation_type_id'] = 'required|exists:organisation_types,id';
+        } elseif ($mode === 'campus') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+        } elseif ($mode === 'department') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+            $rules['target_campus_id'] = 'required|exists:campuses,id';
+        } elseif ($mode === 'course') {
+            $rules['target_organisation_id'] = 'required|exists:organisations,id';
+            $rules['target_campus_id'] = 'required|exists:campuses,id';
+            $rules['target_department_id'] = 'required|exists:departments,id';
+        }
+
+        $request->validate($rules);
 
         try {
-            $orgType = \App\Models\OrganisationType::findOrFail($request->input('organisation_type_id'));
+            $orgType = $request->filled('organisation_type_id') ? \App\Models\OrganisationType::find($request->input('organisation_type_id')) : null;
+            $orgTypeId = $orgType ? $orgType->id : 1;
+            $orgTypeTitle = $orgType ? $orgType->title : 'University';
+
             $targetOrgId = $request->input('target_organisation_id');
             $targetOrg = $targetOrgId ? \App\Models\Organisation::find($targetOrgId) : null;
+            $targetCampus = $request->filled('target_campus_id') ? \App\Models\Campus::find($request->input('target_campus_id')) : null;
+            $targetDepartment = $request->filled('target_department_id') ? \App\Models\Department::find($request->input('target_department_id')) : null;
+
+            if ($targetOrg && $targetOrg->organisationType) {
+                $orgTypeTitle = $targetOrg->organisationType->title;
+                $orgTypeId = $targetOrg->organisation_type_id;
+            }
 
             $referenceUrls = [];
             if ($request->has('reference_urls') && is_array($request->input('reference_urls'))) {
@@ -129,36 +224,58 @@ class AiOrganisationImportController extends Controller
 
             $data = $this->scraper->extractFromUrl(
                 $request->input('url'),
-                $orgType->title,
-                $orgType->id,
+                $orgTypeTitle,
+                $orgTypeId,
                 $referenceUrls,
                 $targetOrg,
-                !empty($customPrompt) ? $customPrompt : null
+                !empty($customPrompt) ? $customPrompt : null,
+                $mode,
+                $targetCampus,
+                $targetDepartment
             );
 
-            if (!isset($data['organisation'])) {
-                $data['organisation'] = [];
-            }
+            $data['mode'] = $mode;
+            $data['target_organisation_id'] = $targetOrg ? $targetOrg->id : null;
+            $data['target_organisation_name'] = $targetOrg ? $targetOrg->name : null;
+            $data['target_campus_id'] = $targetCampus ? $targetCampus->id : null;
+            $data['target_campus_name'] = $targetCampus ? $targetCampus->campus_name : null;
+            $data['target_department_id'] = $targetDepartment ? $targetDepartment->id : null;
+            $data['target_department_name'] = $targetDepartment ? $targetDepartment->department_name : null;
 
-            if ($targetOrg) {
-                $data['target_organisation_id'] = $targetOrg->id;
-                $data['target_organisation_name'] = $targetOrg->name;
-                $data['mode'] = 'campuses_and_courses';
-                $data['organisation']['id'] = $targetOrg->id;
-                $data['organisation']['name'] = $targetOrg->name;
-                $data['organisation']['short_name'] = $targetOrg->short_name;
-                $data['organisation']['official_website'] = $targetOrg->official_website ?: $request->input('url');
-            } else {
-                $data['target_organisation_id'] = null;
-                $data['mode'] = 'organisation_only';
-                // Strictly no campuses, departments, or courses when creating an organisation only
+            // Isolate entity arrays according to mode
+            if ($mode === 'organisation') {
+                if (!isset($data['organisation'])) {
+                    $data['organisation'] = [];
+                }
+                if ($orgType) {
+                    $data['organisation']['organisation_type_id'] = $orgType->id;
+                    $data['organisation']['organisation_type'] = $orgType->title;
+                }
                 $data['campuses'] = [];
                 $data['departments'] = [];
                 $data['courses'] = [];
+            } elseif ($mode === 'campus') {
+                $data['organisation'] = [];
+                $data['departments'] = [];
+                $data['courses'] = [];
+                if (!isset($data['campuses'])) {
+                    $data['campuses'] = [];
+                }
+            } elseif ($mode === 'department') {
+                $data['organisation'] = [];
+                $data['campuses'] = [];
+                $data['courses'] = [];
+                if (!isset($data['departments'])) {
+                    $data['departments'] = [];
+                }
+            } elseif ($mode === 'course') {
+                $data['organisation'] = [];
+                $data['campuses'] = [];
+                $data['departments'] = [];
+                if (!isset($data['courses'])) {
+                    $data['courses'] = [];
+                }
             }
-
-            $data['organisation']['organisation_type_id'] = $orgType->id;
-            $data['organisation']['organisation_type'] = $orgType->title;
 
             $masters = [
                 'courses' => \App\Models\Course::select('id', 'name', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration')->orderBy('name')->get(),
@@ -171,10 +288,14 @@ class AiOrganisationImportController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
-                'selected_type_id' => $orgType->id,
+                'mode' => $mode,
+                'selected_type_id' => $orgTypeId,
                 'target_organisation_id' => $targetOrg ? $targetOrg->id : null,
                 'target_organisation_name' => $targetOrg ? $targetOrg->name : null,
-                'mode' => $targetOrg ? 'campuses_and_courses' : 'organisation_only',
+                'target_campus_id' => $targetCampus ? $targetCampus->id : null,
+                'target_campus_name' => $targetCampus ? $targetCampus->campus_name : null,
+                'target_department_id' => $targetDepartment ? $targetDepartment->id : null,
+                'target_department_name' => $targetDepartment ? $targetDepartment->department_name : null,
                 'masters' => $masters,
                 'message' => 'Data extracted and verified successfully.'
             ]);
@@ -201,24 +322,34 @@ class AiOrganisationImportController extends Controller
             $raw = $request->input('extracted_json');
             $data = is_array($raw) ? $raw : json_decode($raw, true);
 
-            if (!is_array($data) || (empty($data['organisation']) && empty($data['target_organisation_id']))) {
+            if (!is_array($data)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid data payload received.'
                 ], 422);
             }
 
-            $isCampusesMode = !empty($data['target_organisation_id']);
+            $mode = $data['mode'] ?? 'organisation';
             $organisation = $this->importer->saveImportedData($data);
 
-            $message = $isCampusesMode
-                ? "Campuses, departments, and courses for '{$organisation->name}' created successfully!"
-                : "Organisation '{$organisation->name}' created successfully!";
+            if ($mode === 'campus') {
+                $message = "Campuses for '{$organisation->name}' created successfully!";
+                $redirectUrl = route('admin.organisations.edit', $organisation->id) . '#campuses';
+            } elseif ($mode === 'department') {
+                $message = "Departments for '{$organisation->name}' created successfully!";
+                $redirectUrl = route('admin.organisations.edit', $organisation->id) . '#departments';
+            } elseif ($mode === 'course') {
+                $message = "Courses for '{$organisation->name}' created successfully!";
+                $redirectUrl = route('admin.organisations.edit', $organisation->id) . '#courses';
+            } else {
+                $message = "Organisation '{$organisation->name}' created successfully!";
+                $redirectUrl = route('admin.organisations.edit', $organisation->id);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'redirect_url' => route('admin.organisations.edit', $organisation->id)
+                'redirect_url' => $redirectUrl
             ]);
         } catch (\Exception $e) {
             Log::error('AI Organisation Store Error: ' . $e->getMessage());

@@ -18,6 +18,8 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, WithChunkReading
 {
     protected $organization_id;
+    protected $default_category_id;
+    protected $categories;
     protected $courses;
     protected $organisations;
     protected $sessions;
@@ -27,14 +29,16 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
     protected $importedCount = 0;
     protected $skippedCount = 0;
 
-    public function __construct($organization_id)
+    public function __construct($organization_id, $default_category_id = null)
     {
         $this->organization_id = $organization_id;
+        $this->default_category_id = $default_category_id;
         $this->loadMasters();
     }
 
     protected function loadMasters()
     {
+        $this->categories = \App\Models\CustomerCategory::all();
         $this->courses = Course::select('id', 'name')->get();
         $this->organisations = Organisation::select('id', 'name')->get();
         $this->sessions = CustomerSession::all();
@@ -51,7 +55,7 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
         // Collect all potential phones in this chunk for batch database check
         $phonesInChunk = [];
         foreach ($rows as $row) {
-            $rawPhone = $this->extractValue($row, ['phone_number', 'phone', 'mobile', 'mobile_number', 'contact_number']);
+            $rawPhone = $this->extractValue($row, ['phone_number', 'phone', 'mobile', 'mobile_number', 'contact_number', 'number', 'contact']);
             $cleanPhone = $this->cleanPhoneNumber($rawPhone);
             if ($cleanPhone) {
                 $phonesInChunk[] = $cleanPhone;
@@ -86,11 +90,15 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
         $newRecords = [];
 
         foreach ($rows as $row) {
-            $name = trim((string)$this->extractValue($row, ['name', 'student_name', 'student']));
-            $email = trim((string)$this->extractValue($row, ['student_email', 'email', 'email_id']));
-            $email = !empty($email) ? $email : null;
+            // 1. Compulsory Field: Name
+            $name = trim((string)$this->extractValue($row, ['name', 'student_name', 'student', 'customer_name']));
+            if (empty($name)) {
+                $this->skippedCount++;
+                continue;
+            }
 
-            $rawPhone = $this->extractValue($row, ['phone_number', 'phone', 'mobile', 'mobile_number', 'contact_number']);
+            // 2. Compulsory Field: Phone Number
+            $rawPhone = $this->extractValue($row, ['phone_number', 'phone', 'mobile', 'mobile_number', 'contact_number', 'number', 'contact']);
             $phone = $this->cleanPhoneNumber($rawPhone);
 
             // Skip if phone is invalid or already exists in DB / current batch
@@ -99,31 +107,44 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
                 continue;
             }
 
+            // 3. Compulsory Field: Category ID
+            $rawCategoryId = $this->extractValue($row, ['category_id', 'master_category_id', 'cat_id', 'master_cat_id', 'categoryid', 'category', 'category_name']);
+            $categoryId = $this->resolveCategory($rawCategoryId);
+
+            if (!$categoryId) {
+                $this->skippedCount++;
+                continue;
+            }
+
             // Mark phone as seen to prevent duplicates within the file
             $this->seenPhones[$phone] = true;
 
-            // 1. Current Course
+            // Optional Fields
+            $email = trim((string)$this->extractValue($row, ['student_email', 'email', 'email_id']));
+            $email = !empty($email) ? $email : null;
+
+            // Optional: Current Course
             $rawCourse = trim((string)$this->extractValue($row, ['current_course', 'course', 'course_name']));
             [$courseId, $courseText] = $this->resolveCourse($rawCourse);
 
-            // 2. Current University / Organisation
+            // Optional: Current University / Organisation
             $rawUniversity = trim((string)$this->extractValue($row, ['current_university', 'university', 'organisation', 'organization', 'institute', 'college']));
             [$universityId, $universityText] = $this->resolveUniversity($rawUniversity);
 
-            // 3. Passing Year / Session
+            // Optional: Passing Year / Session
             $rawPassingYear = trim((string)$this->extractValue($row, ['passing_year', 'session', 'passing_session', 'year']));
             $sessionId = $this->resolveSession($rawPassingYear);
 
-            // 4. Current Program Mode / Type
+            // Optional: Current Program Mode / Type
             $rawProgramMode = trim((string)$this->extractValue($row, ['current_program_mode', 'current_program_type', 'program_mode', 'mode', 'course_type', 'program_type']));
             $programTypeId = $this->resolveProgramMode($rawProgramMode);
 
             $newRecords[] = [
-                'name'                   => !empty($name) ? $name : 'Unknown',
+                'name'                   => $name,
                 'email'                  => $email,
                 'phone'                  => $phone,
                 'mobile'                 => $phone,
-                'category_id'            => 2,
+                'category_id'            => $categoryId,
                 'role'                   => 'user',
                 'status'                 => 'active',
                 'organization_id'        => $this->organization_id,
@@ -142,6 +163,39 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
             Customer::insert($newRecords);
             $this->importedCount += count($newRecords);
         }
+    }
+
+    protected function resolveCategory($rawCategoryId)
+    {
+        if (empty($rawCategoryId) && !empty($this->default_category_id)) {
+            $rawCategoryId = $this->default_category_id;
+        }
+
+        if (empty($rawCategoryId)) {
+            return null;
+        }
+
+        // 1. Check if numeric Category ID
+        if (is_numeric($rawCategoryId)) {
+            $catId = (int)$rawCategoryId;
+            $matched = $this->categories->firstWhere('id', $catId);
+            if ($matched) {
+                return $matched->id;
+            }
+        }
+
+        // 2. Match by category name if text was entered
+        $normalized = $this->normalizeString($rawCategoryId);
+        if ($normalized !== '') {
+            $matched = $this->categories->first(function ($cat) use ($normalized) {
+                return $this->normalizeString($cat->name) === $normalized;
+            });
+            if ($matched) {
+                return $matched->id;
+            }
+        }
+
+        return null;
     }
 
     protected function resolveCourse($rawCourse)
@@ -255,7 +309,7 @@ class CustomerImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wi
             $phone = substr($phone, 2);
         }
 
-        if (strlen($phone) < 8) {
+        if (empty($phone)) {
             return null;
         }
 

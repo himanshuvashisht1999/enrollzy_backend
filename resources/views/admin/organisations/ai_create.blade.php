@@ -62,36 +62,113 @@
             <h5 class="card-title mb-0 fw-bold"><i class="fas fa-magic text-primary me-2"></i>AI Auto-Creation</h5>
         </div>
         <div class="card-body">
-            <div class="row g-3 align-items-start">
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">Website URL <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-globe text-muted"></i></span>
-                        <input type="url" id="aiInputUrl" class="form-control" placeholder="https://www.example.edu.in" required>
+            <!-- Mode Selector Bar -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark mb-2">
+                    <i class="fas fa-layer-group text-primary me-1"></i> What do you want to import / create? <span class="text-danger">*</span>
+                </label>
+                <div class="row g-2">
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeOrganisation" value="organisation" checked autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeOrganisation">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-university fa-lg me-2"></i>
+                                <span class="fw-bold">Organisation</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">New Institution Profile</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeCampus" value="campus" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeCampus">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-city fa-lg me-2"></i>
+                                <span class="fw-bold">Campus</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Campus Locations</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeDepartment" value="department" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeDepartment">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-building fa-lg me-2"></i>
+                                <span class="fw-bold">Department</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Academic Faculties</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeCourse" value="course" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeCourse">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-graduation-cap fa-lg me-2"></i>
+                                <span class="fw-bold">Course / Program</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Degrees & Programs</div>
+                        </label>
                     </div>
                 </div>
-                <div class="col-md-3">
+            </div>
+
+            <!-- Dynamic Cascading Selectors and URL Inputs -->
+            <div class="row g-3 align-items-start">
+                <!-- Target Organisation (for Campus, Department, Course) -->
+                <div class="col-md-4 d-none" id="groupTargetOrg">
+                    <label class="form-label fw-bold" id="labelTargetOrg">
+                        Target Organisation <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetOrg" class="form-select">
+                        <option value="">-- Select Organisation * --</option>
+                        @if(isset($organisations))
+                            @foreach($organisations as $org)
+                                <option value="{{ $org->id }}" data-type-id="{{ $org->organisation_type_id }}" data-website="{{ $org->official_website }}">{{ $org->name }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <!-- Target Campus (for Department, Course) -->
+                <div class="col-md-4 d-none" id="groupTargetCampus">
+                    <label class="form-label fw-bold" id="labelTargetCampus">
+                        Target Campus <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetCampus" class="form-select">
+                        <option value="">-- Select Campus * --</option>
+                    </select>
+                </div>
+
+                <!-- Target Department (for Course) -->
+                <div class="col-md-4 d-none" id="groupTargetDept">
+                    <label class="form-label fw-bold" id="labelTargetDept">
+                        Target Department <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetDept" class="form-select">
+                        <option value="">-- Select Department * --</option>
+                    </select>
+                </div>
+
+                <!-- Organisation Type (for Organisation) -->
+                <div class="col-md-4" id="groupOrgType">
                     <label class="form-label fw-bold">Organisation Type <span class="text-danger">*</span></label>
                     <select id="aiInputOrgType" class="form-select" required>
                         <option value="">-- Select Type * --</option>
                         @if(isset($organisationTypes))
                             @foreach($organisationTypes as $type)
                                 @if(in_array(strtolower($type->title), ['college', 'university']))
-                                    <option value="{{ $type->id }}">{{ $type->title }}</option>
+                                    <option value="{{ $type->id }}" {{ $loop->first ? 'selected' : '' }}>{{ $type->title }}</option>
                                 @endif
                             @endforeach
                         @endif
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">
-                        Target Organisation <span class="text-muted fw-normal">(Optional)</span>
-                    </label>
-                    <select id="aiInputTargetOrg" class="form-select">
-                        <option value="">-- Create New Organisation --</option>
-                    </select>
-                    <div id="targetOrgHelp" class="small mt-1 text-muted">
-                        <i class="fas fa-info-circle me-1"></i> Creating a new organisation only.
+
+                <!-- Website URL -->
+                <div class="col-md-8" id="groupWebsiteUrl">
+                    <label class="form-label fw-bold" id="labelWebsiteUrl">Official Website URL <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-globe text-muted"></i></span>
+                        <input type="url" id="aiInputUrl" class="form-control" placeholder="https://www.example.edu.in" required>
                     </div>
                 </div>
             </div>
@@ -362,9 +439,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     let currentExtractedData = null;
-    let currentExtractionMode = 'organisation_only';
+    let currentExtractionMode = 'organisation';
     let currentTargetOrgId = null;
     let currentTargetOrgName = '';
+    let currentTargetCampusId = null;
+    let currentTargetCampusName = '';
+    let currentTargetDeptId = null;
+    let currentTargetDeptName = '';
+
     const allOrganisations = @json($organisations ?? []);
     let globalMasters = {
         courses: @json($courses ?? []),
@@ -446,14 +528,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const normName = normalizeStr(aiName);
         const normShort = normalizeStr(aiShortName);
 
-        // 1. Direct normalized match
         for (const c of globalMasters.courses) {
             const normC = normalizeStr(c.name);
             if (normName !== '' && normName === normC) return c;
             if (normShort !== '' && normShort === normC) return c;
         }
 
-        // 2. Alias mapping lookup
         for (const [longForm, aliasList] of Object.entries(DEGREE_ALIASES)) {
             const normLong = normalizeStr(longForm);
             const matchesLong = (normName === normLong || normName.includes(normLong));
@@ -477,7 +557,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // 3. Substring & Similarity score
         let best = null;
         let maxScore = 0;
         for (const c of globalMasters.courses) {
@@ -572,18 +651,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return best;
     }
 
-    function findBestOrgTypeMatch(aiOrgType) {
-        if (!globalMasters.organisation_types || !aiOrgType) return '1';
-        const norm = normalizeStr(aiOrgType);
-        for (const ot of globalMasters.organisation_types) {
-            const normOt = normalizeStr(ot.title);
-            if (norm === normOt || normOt.includes(norm) || norm.includes(normOt)) {
-                return ot.id;
-            }
-        }
-        return '1';
-    }
-
     function getAvailableCampuses() {
         const campuses = [];
         document.querySelectorAll('.campus-item .c-name').forEach(input => {
@@ -662,76 +729,145 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Step 1: Dynamic Target Organisation Filtering & Helper with Select2 compatibility
-    function filterTargetOrganisations() {
-        const $orgType = $('#aiInputOrgType');
-        const $targetOrg = $('#aiInputTargetOrg');
-        if (!$targetOrg.length) return;
-
-        const selectedType = $orgType.val();
-        const currentVal = $targetOrg.val();
-
-        if ($targetOrg.hasClass("select2-hidden-accessible")) {
-            $targetOrg.select2('destroy');
-        }
-
-        $targetOrg.empty();
-        $targetOrg.append(new Option('-- Create New Organisation --', ''));
-
-        let matchFound = false;
-        if (selectedType) {
-            const matching = (allOrganisations || []).filter(function (org) {
-                return String(org.organisation_type_id) === String(selectedType);
-            });
-
-            matching.forEach(function (org) {
-                const label = org.name + (org.short_name ? ' (' + org.short_name + ')' : '');
-                const isSelected = (String(org.id) === String(currentVal));
-                if (isSelected) matchFound = true;
-                $targetOrg.append(new Option(label, org.id, isSelected, isSelected));
-            });
-        }
-
-        if (!matchFound) {
-            $targetOrg.val('');
-        }
-
-        if (typeof $.fn.select2 !== 'undefined') {
-            $targetOrg.select2({ width: '100%' });
-        }
-
-        updateTargetOrgHelper();
+    // ----------------------------------------------------
+    // Entity Mode Radio Switching & Dynamic Containers
+    // ----------------------------------------------------
+    function getSelectedEntityMode() {
+        const checked = document.querySelector('input[name="aiEntityMode"]:checked');
+        return checked ? checked.value : 'organisation';
     }
 
-    function updateTargetOrgHelper() {
-        const $targetOrg = $('#aiInputTargetOrg');
-        const targetOrgHelp = document.getElementById('targetOrgHelp');
-        if (!targetOrgHelp || !$targetOrg.length) return;
+    function handleEntityModeChange() {
+        const mode = getSelectedEntityMode();
+        const groupOrgType = document.getElementById('groupOrgType');
+        const groupTargetOrg = document.getElementById('groupTargetOrg');
+        const groupTargetCampus = document.getElementById('groupTargetCampus');
+        const groupTargetDept = document.getElementById('groupTargetDept');
+        const labelWebsiteUrl = document.getElementById('labelWebsiteUrl');
+        const aiInputUrl = document.getElementById('aiInputUrl');
+        const badgePromptMode = document.getElementById('badgePromptMode');
 
-        const val = $targetOrg.val();
-        if (val && val !== '') {
-            const selectedText = $targetOrg.find('option:selected').text();
-            targetOrgHelp.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check-circle me-1"></i> Adding campuses & courses to <u>${selectedText}</u></span>`;
-
-            const selOrg = (allOrganisations || []).find(o => String(o.id) === String(val));
-            const urlInput = document.getElementById('aiInputUrl');
-            if (urlInput && !urlInput.value && selOrg && selOrg.official_website) {
-                urlInput.value = selOrg.official_website;
+        if (mode === 'organisation') {
+            if (groupOrgType) groupOrgType.classList.remove('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.add('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.add('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = 'Official Website URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = 'https://www.example.edu.in';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = 'Organisation Only';
+                badgePromptMode.className = 'badge bg-light text-dark border ms-1 fw-normal';
             }
-        } else {
-            targetOrgHelp.innerHTML = `<span class="text-muted"><i class="fas fa-info-circle me-1"></i> Creating a new organisation only.</span>`;
+        } else if (mode === 'campus') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.add('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = 'Campus Website / Page URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = 'https://www.example.edu.in/campuses/city-campus';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = 'Campus Only';
+                badgePromptMode.className = 'badge bg-info-subtle text-info border border-info ms-1 fw-normal';
+            }
+        } else if (mode === 'department') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = 'Department Website / Faculty URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = 'https://www.example.edu.in/department/computer-science';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = 'Department Only';
+                badgePromptMode.className = 'badge bg-warning-subtle text-warning border border-warning ms-1 fw-normal';
+            }
+        } else if (mode === 'course') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
+            if (groupTargetDept) groupTargetDept.classList.remove('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = 'Course / Admissions Website URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = 'https://www.example.edu.in/admissions/btech-cse';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = 'Course / Program Only';
+                badgePromptMode.className = 'badge bg-success-subtle text-success border border-success ms-1 fw-normal';
+            }
         }
 
         fetchAndRefreshPrompt(false);
     }
 
-    $(document).on('change', '#aiInputOrgType', function () {
-        filterTargetOrganisations();
+    document.querySelectorAll('.entity-mode-radio').forEach(radio => {
+        radio.addEventListener('change', handleEntityModeChange);
+    });
+
+    // ----------------------------------------------------
+    // Cascading Dropdowns: Org -> Campuses -> Departments
+    // ----------------------------------------------------
+    $('#aiInputTargetOrg').on('change', function () {
+        const orgId = $(this).val();
+        const selOrg = (allOrganisations || []).find(o => String(o.id) === String(orgId));
+        const urlInput = document.getElementById('aiInputUrl');
+        if (urlInput && !urlInput.value && selOrg && selOrg.official_website) {
+            urlInput.value = selOrg.official_website;
+        }
+
+        const $campusSelect = $('#aiInputTargetCampus');
+        const $deptSelect = $('#aiInputTargetDept');
+        $campusSelect.empty().append(new Option('-- Select Campus * --', ''));
+        $deptSelect.empty().append(new Option('-- Select Department * --', ''));
+
+        if (orgId) {
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?organisation_id=${orgId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.campuses && Array.isArray(data.campuses)) {
+                        data.campuses.forEach(c => {
+                            $campusSelect.append(new Option(c.campus_name + (c.city ? ' (' + c.city + ')' : ''), c.id));
+                        });
+                    }
+                    if (data.departments && Array.isArray(data.departments)) {
+                        data.departments.forEach(d => {
+                            $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching cascading options:', err));
+        }
+
         fetchAndRefreshPrompt(false);
     });
 
-    $(document).on('change', '#aiInputTargetOrg', function () {
-        updateTargetOrgHelper();
+    $('#aiInputTargetCampus').on('change', function () {
+        const orgId = $('#aiInputTargetOrg').val();
+        const campusId = $(this).val();
+        const $deptSelect = $('#aiInputTargetDept');
+        $deptSelect.empty().append(new Option('-- Select Department * --', ''));
+
+        if (orgId || campusId) {
+            const params = new URLSearchParams();
+            if (orgId) params.append('organisation_id', orgId);
+            if (campusId) params.append('campus_id', campusId);
+
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?${params.toString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.departments && Array.isArray(data.departments)) {
+                        data.departments.forEach(d => {
+                            $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching cascading departments:', err));
+        }
+
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiInputTargetDept').on('change', function () {
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiInputOrgType').on('change', function () {
         fetchAndRefreshPrompt(false);
     });
 
@@ -742,12 +878,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    setTimeout(function () {
-        filterTargetOrganisations();
-        fetchAndRefreshPrompt(false);
-    }, 150);
-
+    // ----------------------------------------------------
     // Prompt Preview & Editing Logic
+    // ----------------------------------------------------
     let promptIsManuallyEdited = false;
     let isPromptOpen = false;
     let promptFetchDebounce = null;
@@ -800,12 +933,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function fetchAndRefreshPrompt(force = false) {
+        const mode = getSelectedEntityMode();
         const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
+        const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
+        const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
 
         // Update badge immediately
         if (badgePromptMode) {
-            badgePromptMode.innerText = targetOrgId ? 'Campuses & Courses' : 'Organisation Only';
-            badgePromptMode.className = targetOrgId ? 'badge bg-success-subtle text-success border border-success ms-1 fw-normal' : 'badge bg-light text-dark border ms-1 fw-normal';
+            if (mode === 'organisation') {
+                badgePromptMode.innerText = 'Organisation Only';
+                badgePromptMode.className = 'badge bg-light text-dark border ms-1 fw-normal';
+            } else if (mode === 'campus') {
+                badgePromptMode.innerText = 'Campus Only';
+                badgePromptMode.className = 'badge bg-info-subtle text-info border border-info ms-1 fw-normal';
+            } else if (mode === 'department') {
+                badgePromptMode.innerText = 'Department Only';
+                badgePromptMode.className = 'badge bg-warning-subtle text-warning border border-warning ms-1 fw-normal';
+            } else if (mode === 'course') {
+                badgePromptMode.innerText = 'Course / Program Only';
+                badgePromptMode.className = 'badge bg-success-subtle text-success border border-success ms-1 fw-normal';
+            }
         }
 
         if (promptIsManuallyEdited && !force) return;
@@ -832,9 +979,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
                 },
                 body: JSON.stringify({
+                    mode: mode,
                     url: url || 'https://www.example.edu',
                     organisation_type_id: orgTypeId,
                     target_organisation_id: targetOrgId || null,
+                    target_campus_id: targetCampusId || null,
+                    target_department_id: targetDeptId || null,
                     reference_urls: referenceUrls
                 })
             })
@@ -895,11 +1045,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 1. Trigger AI Extraction
+    // ----------------------------------------------------
+    // Trigger AI Extraction
+    // ----------------------------------------------------
     btnRunAiExtraction.addEventListener('click', function () {
+        const mode = getSelectedEntityMode();
         const url = document.getElementById('aiInputUrl').value.trim();
-        const orgTypeId = document.getElementById('aiInputOrgType').value;
+        const orgTypeId = document.getElementById('aiInputOrgType') ? document.getElementById('aiInputOrgType').value : '1';
         const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
+        const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
+        const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
 
         if (!url) {
             alert('Please enter a valid website URL.');
@@ -907,13 +1062,30 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (!orgTypeId) {
+        if (mode === 'organisation' && !orgTypeId) {
             alert('Please select an Organisation Type before extracting data.');
             document.getElementById('aiInputOrgType').focus();
             return;
         }
 
-        // Collect all non-empty reference URLs
+        if (mode !== 'organisation' && !targetOrgId) {
+            alert('Please select a Target Organisation before proceeding.');
+            document.getElementById('aiInputTargetOrg').focus();
+            return;
+        }
+
+        if ((mode === 'department' || mode === 'course') && !targetCampusId) {
+            alert('Please select a Target Campus before proceeding.');
+            document.getElementById('aiInputTargetCampus').focus();
+            return;
+        }
+
+        if (mode === 'course' && !targetDeptId) {
+            alert('Please select a Target Department before proceeding.');
+            document.getElementById('aiInputTargetDept').focus();
+            return;
+        }
+
         const referenceUrls = [];
         document.querySelectorAll('#referenceUrlsContainer .ref-url-input').forEach(input => {
             const val = input.value.trim();
@@ -926,12 +1098,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const loadingStatusEl = document.getElementById('aiLoadingStatusText');
         if (loadingStatusEl) {
-            if (targetOrgId) {
-                const selOrg = allOrganisations.find(o => String(o.id) === String(targetOrgId));
-                const orgName = selOrg ? selOrg.name : 'the organisation';
-                loadingStatusEl.innerText = `Extracting campuses, departments, and courses for '${orgName}'... Please wait.`;
+            const selOrg = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
+            const orgName = selOrg ? selOrg.name : 'the organisation';
+
+            if (mode === 'campus') {
+                loadingStatusEl.innerText = `Extracting campus locations and infrastructure for '${orgName}'... Please wait.`;
+            } else if (mode === 'department') {
+                loadingStatusEl.innerText = `Extracting academic faculties and departments for '${orgName}'... Please wait.`;
+            } else if (mode === 'course') {
+                loadingStatusEl.innerText = `Extracting degrees and matching master programs for '${orgName}'... Please wait.`;
             } else {
-                loadingStatusEl.innerText = 'Extracting organisation profile... Please wait.';
+                loadingStatusEl.innerText = 'Extracting institutional identity profile... Please wait.';
             }
         }
 
@@ -946,9 +1123,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
             },
             body: JSON.stringify({
+                mode: mode,
                 url: url,
                 organisation_type_id: orgTypeId,
                 target_organisation_id: targetOrgId || null,
+                target_campus_id: targetCampusId || null,
+                target_department_id: targetDeptId || null,
                 reference_urls: referenceUrls,
                 custom_prompt: customPromptVal
             })
@@ -957,9 +1137,13 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(result => {
             if (result.success && result.data) {
                 currentExtractedData = result.data;
-                currentExtractionMode = result.data.mode || (targetOrgId ? 'campuses_and_courses' : 'organisation_only');
-                currentTargetOrgId = result.data.target_organisation_id || (targetOrgId ? targetOrgId : null);
-                currentTargetOrgName = result.data.target_organisation_name || '';
+                currentExtractionMode = result.mode || mode;
+                currentTargetOrgId = result.target_organisation_id || (targetOrgId ? targetOrgId : null);
+                currentTargetOrgName = result.target_organisation_name || '';
+                currentTargetCampusId = result.target_campus_id || null;
+                currentTargetCampusName = result.target_campus_name || '';
+                currentTargetDeptId = result.target_department_id || null;
+                currentTargetDeptName = result.target_department_name || '';
 
                 if (result.masters) {
                     globalMasters = result.masters;
@@ -993,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // 2. Restart Extraction
+    // Restart Extraction
     btnRestartExtraction.addEventListener('click', function () {
         aiStepPreview.classList.add('d-none');
         aiStepInput.classList.remove('d-none');
@@ -1006,14 +1190,16 @@ document.addEventListener('DOMContentLoaded', function () {
         return String(val);
     }
 
-    // 3. Render Complete All Fields Preview
+    // ----------------------------------------------------
+    // Render Review Workspace (Isolated Single-Entity Display)
+    // ----------------------------------------------------
     function renderAllFieldsPreview(data, selectedTypeId) {
         const org = data.organisation || {};
         const campuses = data.campuses || [];
         const departments = data.departments || [];
         const courses = data.courses || [];
 
-        const activeTypeId = selectedTypeId || org.organisation_type_id || document.getElementById('aiInputOrgType').value || 1;
+        const activeTypeId = selectedTypeId || org.organisation_type_id || document.getElementById('aiInputOrgType')?.value || 1;
 
         // Set Master Type and Toggle Container
         const orgTypeMasterEl = document.getElementById('aiOrgTypeMaster');
@@ -1024,15 +1210,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Common Fields
         const orgName = org.name || '';
-        document.getElementById('aiOrgName').value = orgName;
+        if (document.getElementById('aiOrgName')) {
+            document.getElementById('aiOrgName').value = orgName;
+        }
 
-        // Update header & badges according to Mode
         const headerTitleEl = document.getElementById('previewOrgHeaderTitle');
         const headerBadgeEl = document.getElementById('previewOrgNameBadge');
-        const mode1Notices = document.querySelectorAll('.mode1-skipped-notice');
         const mode2NoticeEl = document.getElementById('mode2OrgNotice');
-        const mode2OrgNameTextEl = document.getElementById('mode2OrgNameText');
-        const mode2OnlyBtns = document.querySelectorAll('.mode2-only-btn');
         const saveButtons = document.querySelectorAll('.btn-confirm-save-action');
 
         const tabItemOrg = document.getElementById('tab-item-org');
@@ -1045,197 +1229,168 @@ document.addEventListener('DOMContentLoaded', function () {
         const tabCoursesPane = document.getElementById('tab-courses');
         const unfilledBanner = document.getElementById('unfilledFieldsBanner');
 
-        if (currentExtractionMode === 'campuses_and_courses') {
-            const displayName = currentTargetOrgName || org.name || 'Selected Organisation';
-            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-layer-group text-success me-2"></i>Campuses & Courses for <strong>${displayName}</strong>`;
-            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>${displayName}</span>`;
-            
-            // Hide Organisation Tab & Pane completely
-            if (tabItemOrg) tabItemOrg.classList.add('d-none');
-            if (tabOrgPane) {
-                tabOrgPane.classList.add('d-none');
-                tabOrgPane.classList.remove('active', 'show');
+        const tabOrgBtn = document.getElementById('tab-org-btn');
+        const tabCampusesBtn = document.getElementById('tab-campuses-btn');
+        const tabDeptsBtn = document.getElementById('tab-depts-btn');
+        const tabCoursesBtn = document.getElementById('tab-courses-btn');
+
+        // Hide all tabs and panes first
+        [tabItemOrg, tabItemCampuses, tabItemDepts, tabItemCourses].forEach(t => t && t.classList.add('d-none'));
+        [tabOrgPane, tabCampusesPane, tabDeptsPane, tabCoursesPane].forEach(p => {
+            if (p) {
+                p.classList.add('d-none');
+                p.classList.remove('active', 'show');
             }
+        });
+        [tabOrgBtn, tabCampusesBtn, tabDeptsBtn, tabCoursesBtn].forEach(b => b && b.classList.remove('active'));
 
-            // Show Campus, Dept, Courses tabs & panes
-            if (tabItemCampuses) tabItemCampuses.classList.remove('d-none');
-            if (tabItemDepts) tabItemDepts.classList.remove('d-none');
-            if (tabItemCourses) tabItemCourses.classList.remove('d-none');
-            if (tabCampusesPane) tabCampusesPane.classList.remove('d-none');
-            if (tabDeptsPane) tabDeptsPane.classList.remove('d-none');
-            if (tabCoursesPane) tabCoursesPane.classList.remove('d-none');
+        if (mode2NoticeEl) mode2NoticeEl.classList.add('d-none');
+        if (unfilledBanner) unfilledBanner.classList.add('d-none');
 
-            // Hide Unfilled Warning Banner
-            if (unfilledBanner) unfilledBanner.classList.add('d-none');
+        const orgDisplayName = currentTargetOrgName || org.name || 'Selected Organisation';
 
-            mode1Notices.forEach(n => n.classList.add('d-none'));
-            if (mode2NoticeEl) {
-                mode2NoticeEl.classList.remove('d-none');
-                if (mode2OrgNameTextEl) mode2OrgNameTextEl.innerText = displayName;
-            }
-            mode2OnlyBtns.forEach(b => b.classList.remove('d-none'));
-            saveButtons.forEach(b => {
-                b.innerHTML = '<i class="fas fa-save me-1"></i> Save Campuses & Courses';
-            });
-        } else {
-            // Mode: Organisation Only
-            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-university text-primary me-2"></i>Organisation Preview`;
+        // 1. ORGANISATION MODE
+        if (currentExtractionMode === 'organisation') {
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-university text-primary me-2"></i>Organisation Profile Preview`;
             if (headerBadgeEl) headerBadgeEl.innerText = (org.short_name || orgName || '') + (org.established_year ? ' (Est. ' + org.established_year + ')' : '');
-            
-            // Show Organisation Tab & Pane
+
             if (tabItemOrg) tabItemOrg.classList.remove('d-none');
-            if (tabOrgPane) tabOrgPane.classList.remove('d-none');
+            if (tabOrgPane) {
+                tabOrgPane.classList.remove('d-none');
+                tabOrgPane.classList.add('active', 'show');
+            }
+            if (tabOrgBtn) tabOrgBtn.classList.add('active');
 
-            // Hide Campus, Dept, Courses tabs & panes
-            if (tabItemCampuses) tabItemCampuses.classList.add('d-none');
-            if (tabItemDepts) tabItemDepts.classList.add('d-none');
-            if (tabItemCourses) tabItemCourses.classList.add('d-none');
-            if (tabCampusesPane) {
-                tabCampusesPane.classList.add('d-none');
-                tabCampusesPane.classList.remove('active', 'show');
-            }
-            if (tabDeptsPane) {
-                tabDeptsPane.classList.add('d-none');
-                tabDeptsPane.classList.remove('active', 'show');
-            }
-            if (tabCoursesPane) {
-                tabCoursesPane.classList.add('d-none');
-                tabCoursesPane.classList.remove('active', 'show');
-            }
-
-            mode1Notices.forEach(n => n.classList.remove('d-none'));
-            if (mode2NoticeEl) mode2NoticeEl.classList.add('d-none');
-            mode2OnlyBtns.forEach(b => b.classList.add('d-none'));
             saveButtons.forEach(b => {
                 b.innerHTML = '<i class="fas fa-save me-1"></i> Save Organisation';
             });
-        }
 
-        if (document.getElementById('aiOrgCentralAuth')) {
-            document.getElementById('aiOrgCentralAuth').value = org.central_authority || org.managing_trust_or_society_name || '';
-        }
-        if (document.getElementById('aiOrgLocation')) {
-            document.getElementById('aiOrgLocation').value = org.head_office_location || org.headquarters_location || '';
-        }
-        if (document.getElementById('aiOrgIsTop')) {
-            document.getElementById('aiOrgIsTop').value = (org.is_top !== undefined && org.is_top !== null) ? org.is_top : 0;
-        }
-        if (document.getElementById('aiOrgCoreValues')) {
-            document.getElementById('aiOrgCoreValues').value = toCsv(org.core_values);
-        }
+            // Populate Org Fields
+            if (document.getElementById('aiOrgCentralAuth')) {
+                document.getElementById('aiOrgCentralAuth').value = org.central_authority || org.managing_trust_or_society_name || '';
+            }
+            if (document.getElementById('aiOrgLocation')) {
+                document.getElementById('aiOrgLocation').value = org.head_office_location || org.headquarters_location || '';
+            }
+            if (document.getElementById('aiOrgIsTop')) {
+                document.getElementById('aiOrgIsTop').value = (org.is_top !== undefined && org.is_top !== null) ? org.is_top : 0;
+            }
+            if (document.getElementById('aiOrgCoreValues')) {
+                document.getElementById('aiOrgCoreValues').value = toCsv(org.core_values);
+            }
 
-        // Auto-fill active category container inputs dynamically
-        const visibleContainer = document.querySelector('#tab-org .col-12[id$="-fields"][style*="display: block"]') ||
-                                 document.querySelector('#tab-org .col-12[id$="-fields"]:not([style*="display: none"])');
-        if (visibleContainer) {
-            // Fill inputs and selects
-            visibleContainer.querySelectorAll('input, select, textarea').forEach(input => {
-                const name = input.getAttribute('name');
-                if (!name || input.type === 'file') return;
+            const visibleContainer = document.querySelector('#tab-org .col-12[id$="-fields"][style*="display: block"]') ||
+                                     document.querySelector('#tab-org .col-12[id$="-fields"]:not([style*="display: none"])');
+            if (visibleContainer) {
+                visibleContainer.querySelectorAll('input, select, textarea').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (!name || input.type === 'file') return;
 
-                const baseName = name.replace(/\[\]$/, '');
+                    const baseName = name.replace(/\[\]$/, '');
 
-                if (org[baseName] !== undefined && org[baseName] !== null) {
-                    const val = org[baseName];
-                    if (input.type === 'checkbox') {
-                        if (name.endsWith('[]')) {
-                            // Multi-checkbox (e.g. levels_offered[], education_boards_supported[], functions[], etc.)
-                            const arr = Array.isArray(val) ? val.map(String) : (typeof val === 'string' ? val.split(',').map(s => s.trim()) : []);
-                            input.checked = arr.includes(String(input.value));
+                    if (org[baseName] !== undefined && org[baseName] !== null) {
+                        const val = org[baseName];
+                        if (input.type === 'checkbox') {
+                            if (name.endsWith('[]')) {
+                                const arr = Array.isArray(val) ? val.map(String) : (typeof val === 'string' ? val.split(',').map(s => s.trim()) : []);
+                                input.checked = arr.includes(String(input.value));
+                            } else {
+                                input.checked = Boolean(val == 1 || val === true || val === '1' || val === 'true');
+                            }
+                        } else if (input.tagName === 'SELECT') {
+                            input.value = String(val);
+                        } else if (input.tagName === 'TEXTAREA') {
+                            input.value = typeof val === 'object' ? JSON.stringify(val) : String(val);
                         } else {
-                            // Boolean switch
-                            input.checked = Boolean(val == 1 || val === true || val === '1' || val === 'true');
-                        }
-                    } else if (input.tagName === 'SELECT') {
-                        input.value = String(val);
-                    } else if (input.tagName === 'TEXTAREA') {
-                        input.value = typeof val === 'object' ? JSON.stringify(val) : String(val);
-                    } else {
-                        // Text / Number / URL / Email input
-                        if (name.endsWith('[]')) {
-                            input.value = toCsv(val);
-                        } else {
-                            input.value = typeof val === 'object' ? toCsv(val) : String(val);
+                            if (name.endsWith('[]')) {
+                                input.value = toCsv(val);
+                            } else {
+                                input.value = typeof val === 'object' ? toCsv(val) : String(val);
+                            }
                         }
                     }
-                }
-            });
-        }
-
-        // Tab 2: Campuses Cards
-        const campusesContainer = document.getElementById('campusesContainer');
-        campusesContainer.innerHTML = '';
-
-        // Tab 3: Departments Cards
-        const deptsContainer = document.getElementById('deptsContainer');
-        deptsContainer.innerHTML = '';
-
-        // Tab 4: Courses Cards
-        const coursesContainer = document.getElementById('coursesContainer');
-        coursesContainer.innerHTML = '';
-
-        if (currentExtractionMode === 'organisation_only') {
-            campusesContainer.innerHTML = '<div class="alert alert-light text-center py-4 border text-muted"><i class="fas fa-ban fa-2x mb-2 text-secondary d-block"></i>Campuses are skipped in Organisation Only mode.</div>';
-            deptsContainer.innerHTML = '<div class="alert alert-light text-center py-4 border text-muted"><i class="fas fa-ban fa-2x mb-2 text-secondary d-block"></i>Departments are skipped in Organisation Only mode.</div>';
-            coursesContainer.innerHTML = '<div class="alert alert-light text-center py-4 border text-muted"><i class="fas fa-ban fa-2x mb-2 text-secondary d-block"></i>Courses are skipped in Organisation Only mode.</div>';
-        } else {
-            if (campuses.length === 0) {
-                campuses.push({ campus_name: (displayName || 'Main') + ' - Campus', campus_type: 'Main' });
+                });
             }
-            campuses.forEach((c, idx) => {
+
+            highlightUnfilledFields();
+
+        // 2. CAMPUS MODE
+        } else if (currentExtractionMode === 'campus') {
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-city text-primary me-2"></i>Campuses for <strong>${orgDisplayName}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-info-subtle text-info border border-info px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}</span>`;
+
+            if (tabItemCampuses) tabItemCampuses.classList.remove('d-none');
+            if (tabCampusesPane) {
+                tabCampusesPane.classList.remove('d-none');
+                tabCampusesPane.classList.add('active', 'show');
+            }
+            if (tabCampusesBtn) tabCampusesBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = '<i class="fas fa-save me-1"></i> Save Campuses';
+            });
+
+            const campusesContainer = document.getElementById('campusesContainer');
+            campusesContainer.innerHTML = '';
+
+            const cList = campuses.length > 0 ? campuses : [{ campus_name: orgDisplayName + ' - Main Campus', campus_type: 'Main' }];
+            cList.forEach((c, idx) => {
                 appendCampusCard(c, idx);
             });
 
-            if (departments.length === 0) {
-                departments.push({ department_name: 'General Faculty' });
+        // 3. DEPARTMENT MODE
+        } else if (currentExtractionMode === 'department') {
+            const subLabel = currentTargetCampusName ? ` (${currentTargetCampusName})` : '';
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-building text-primary me-2"></i>Departments for <strong>${orgDisplayName}${subLabel}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}${subLabel}</span>`;
+
+            if (tabItemDepts) tabItemDepts.classList.remove('d-none');
+            if (tabDeptsPane) {
+                tabDeptsPane.classList.remove('d-none');
+                tabDeptsPane.classList.add('active', 'show');
             }
-            departments.forEach((d, idx) => {
+            if (tabDeptsBtn) tabDeptsBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = '<i class="fas fa-save me-1"></i> Save Departments';
+            });
+
+            const deptsContainer = document.getElementById('deptsContainer');
+            deptsContainer.innerHTML = '';
+
+            const dList = departments.length > 0 ? departments : [{ department_name: 'Department of Computer Science & Engineering' }];
+            dList.forEach((d, idx) => {
                 appendDeptCard(d, idx);
             });
 
-            courses.forEach((cr, idx) => {
+        // 4. COURSE MODE
+        } else if (currentExtractionMode === 'course') {
+            const subLabel = (currentTargetDeptName ? ` - ${currentTargetDeptName}` : '') + (currentTargetCampusName ? ` (${currentTargetCampusName})` : '');
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-graduation-cap text-success me-2"></i>Courses & Programs for <strong>${orgDisplayName}${subLabel}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}</span>`;
+
+            if (tabItemCourses) tabItemCourses.classList.remove('d-none');
+            if (tabCoursesPane) {
+                tabCoursesPane.classList.remove('d-none');
+                tabCoursesPane.classList.add('active', 'show');
+            }
+            if (tabCoursesBtn) tabCoursesBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = '<i class="fas fa-save me-1"></i> Save Courses';
+            });
+
+            const coursesContainer = document.getElementById('coursesContainer');
+            coursesContainer.innerHTML = '';
+
+            const crList = courses.length > 0 ? courses : [{ course_name: 'Bachelor of Technology (B.Tech)' }];
+            crList.forEach((cr, idx) => {
                 appendCourseCard(cr, idx);
             });
         }
 
         updateAllBadges();
         refreshCourseCampusAndDeptDropdowns();
-        highlightUnfilledFields();
-
-        // Default tab selection
-        if (currentExtractionMode === 'campuses_and_courses') {
-            const campusesTabBtn = document.getElementById('tab-campuses-btn');
-            const orgTabBtn = document.getElementById('tab-org-btn');
-            if (orgTabBtn) orgTabBtn.classList.remove('active');
-            if (tabOrgPane) tabOrgPane.classList.remove('active', 'show');
-
-            if (campusesTabBtn) {
-                campusesTabBtn.classList.add('active');
-                if (tabCampusesPane) tabCampusesPane.classList.add('active', 'show');
-                if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
-                    const bsTab = bootstrap.Tab.getOrCreateInstance(campusesTabBtn);
-                    bsTab.show();
-                } else {
-                    campusesTabBtn.click();
-                }
-            }
-        } else {
-            const orgTabBtn = document.getElementById('tab-org-btn');
-            const campusesTabBtn = document.getElementById('tab-campuses-btn');
-            if (campusesTabBtn) campusesTabBtn.classList.remove('active');
-            if (tabCampusesPane) tabCampusesPane.classList.remove('active', 'show');
-
-            if (orgTabBtn) {
-                orgTabBtn.classList.add('active');
-                if (tabOrgPane) tabOrgPane.classList.add('active', 'show');
-                if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
-                    const bsTab = bootstrap.Tab.getOrCreateInstance(orgTabBtn);
-                    bsTab.show();
-                } else {
-                    orgTabBtn.click();
-                }
-            }
-        }
     }
 
     // ----------------------------------------------------
@@ -1259,7 +1414,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!el || el.disabled) return false;
         if (el.type === 'hidden' || el.type === 'file' || el.type === 'checkbox' || el.type === 'radio') return false;
 
-        // Skip inputs inside non-displayed category container
         const parentSpecific = el.closest('.col-12[id$="-fields"]');
         if (parentSpecific && (parentSpecific.style.display === 'none' || window.getComputedStyle(parentSpecific).display === 'none')) {
             return false;
@@ -1294,13 +1448,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function highlightUnfilledFields() {
+        if (currentExtractionMode !== 'organisation') return;
+
         const tabOrg = document.getElementById('tab-org');
         if (!tabOrg) return;
 
         const visibleTypeContainer = tabOrg.querySelector('.col-12[id$="-fields"][style*="display: block"]') ||
                                      tabOrg.querySelector('.col-12[id$="-fields"]:not([style*="display: none"])');
 
-        // Check common & specific inputs in Tab 1
         const inputsToCheck = tabOrg.querySelectorAll(
             'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea'
         );
@@ -1330,23 +1485,11 @@ document.addEventListener('DOMContentLoaded', function () {
             updateFieldHighlight(el);
         });
 
-        // Also highlight empty inputs in Campuses, Departments, Courses
-        const cardInputs = document.querySelectorAll('#tab-campuses input, #tab-campuses select, #tab-depts input, #tab-depts select, #tab-courses input, #tab-courses select');
-        cardInputs.forEach(el => {
-            if (el.type === 'hidden' || el.type === 'checkbox' || el.type === 'file' || el.type === 'radio') return;
-            const empty = (el.tagName === 'SELECT') ? (!el.value || el.value === '') : (el.value.trim() === '');
-            if (empty) {
-                el.classList.add('field-not-autofilled');
-            } else {
-                el.classList.remove('field-not-autofilled');
-            }
-        });
-
         updateAllUnfilledCounters();
     }
 
     function updateAllUnfilledCounters() {
-        if (currentExtractionMode === 'campuses_and_courses') {
+        if (currentExtractionMode !== 'organisation') {
             const banner = document.getElementById('unfilledFieldsBanner');
             const badgeOrg = document.getElementById('badgeOrgUnfilledCount');
             if (banner) banner.classList.add('d-none');
@@ -1359,7 +1502,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const unfilledInOrg = tabOrg.querySelectorAll('.field-not-autofilled').length;
 
-        // 1. Alert Banner
         const banner = document.getElementById('unfilledFieldsBanner');
         const badge = document.getElementById('unfilledCountBadge');
         if (banner && badge) {
@@ -1371,7 +1513,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // 2. Tab 1 button badge
         const badgeOrg = document.getElementById('badgeOrgUnfilledCount');
         if (badgeOrg) {
             if (unfilledInOrg > 0) {
@@ -1382,7 +1523,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // 3. Sub-tabs inside type-specific containers (e.g. #uniTab)
         const subTabButtons = tabOrg.querySelectorAll('.nav-tabs button[data-bs-toggle="tab"]');
         subTabButtons.forEach(btn => {
             const targetSelector = btn.getAttribute('data-bs-target');
@@ -1447,7 +1587,6 @@ document.addEventListener('DOMContentLoaded', function () {
         btnJump.addEventListener('click', function () {
             const nextEl = document.querySelector('#tab-org .field-not-autofilled');
             if (nextEl) {
-                // If it's inside an inactive sub-tab pane, activate that sub-tab
                 const parentPane = nextEl.closest('.tab-pane');
                 if (parentPane && !parentPane.classList.contains('active')) {
                     const paneId = parentPane.id;
@@ -1530,7 +1669,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="url" class="form-control c-map" value="${c.google_map_url || ''}">
                     </div>
 
-                    <!-- Amenities & Counts -->
                     <div class="col-md-2">
                         <label class="form-label fw-bold small">Classrooms Count</label>
                         <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}">
@@ -1557,7 +1695,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="number" class="form-control c-hostel-cap" value="${c.hostel_capacity || ''}">
                     </div>
 
-                    <!-- Checkbox Switches -->
                     <div class="col-12 py-2 px-3 border rounded bg-light my-2">
                         <div class="d-flex flex-wrap gap-4">
                             <div class="form-check form-switch">
@@ -1707,7 +1844,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="number" class="form-control d-patents" value="${d.patents_filed_count || ''}">
                     </div>
 
-                    <!-- Switches -->
                     <div class="col-12 py-2 px-3 border rounded bg-light my-2">
                         <div class="d-flex flex-wrap gap-4">
                             <div class="form-check form-switch">
@@ -1756,11 +1892,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const rawAiName = cr.course_name || '';
         const rawAiShort = cr.short_name || '';
 
-        // Auto-match Master Course
         const matchedCourse = findBestCourseMatch(rawAiName, rawAiShort);
         const selectedCourseId = matchedCourse ? matchedCourse.id : (cr.course_id || '');
 
-        // Auto-match Masters: Program Level, Stream, Discipline
         const defaultLevelId = matchedCourse && matchedCourse.program_level_id 
             ? matchedCourse.program_level_id 
             : findBestLevelMatch(cr.program_level);
@@ -1775,7 +1909,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const defaultDuration = (matchedCourse && matchedCourse.duration) ? matchedCourse.duration : (cr.duration || '3 Years');
 
-        // Available campuses & departments
         const availableCampuses = getAvailableCampuses();
         const availableDepts = getAvailableDepts();
         const selectedCampus = cr.campus_name || availableCampuses[0] || 'Main Campus';
@@ -1799,7 +1932,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <!-- Master Course Select -->
                     <div class="col-md-6">
                         <label class="form-label fw-bold small">
                             Master Course <span class="text-danger">*</span> (From Database Masters)
@@ -1822,7 +1954,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="text" class="form-control cr-short-name" value="${rawAiShort}">
                     </div>
 
-                    <!-- Program Level Master Select -->
                     <div class="col-md-3">
                         <label class="form-label fw-bold small">Program Level</label>
                         <select class="form-select cr-level-id">
@@ -1835,7 +1966,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         </select>
                     </div>
 
-                    <!-- Stream Master Select -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">Stream Offered</label>
                         <select class="form-select cr-stream-id">
@@ -1848,7 +1978,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         </select>
                     </div>
 
-                    <!-- Discipline Master Select -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">Discipline</label>
                         <select class="form-select cr-discipline-id">
@@ -1866,7 +1995,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="text" class="form-control cr-spec" value="${cr.specialization || ''}">
                     </div>
 
-                    <!-- Campus & Department Association -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">Campus</label>
                         <select class="form-select cr-campus-select">
@@ -1967,7 +2095,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         `;
 
-        // Handle Course Master Dropdown Change Event
         const courseSelect = div.querySelector('.cr-course-id');
         courseSelect.addEventListener('change', function () {
             const chosenId = this.value;
@@ -2030,18 +2157,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const bDepts = document.getElementById('badgeDeptsCount');
         const bCourses = document.getElementById('badgeCoursesCount');
 
-        if (currentExtractionMode === 'organisation_only') {
-            if (bCampuses) bCampuses.innerHTML = '0';
-            if (bDepts) bDepts.innerHTML = '0';
-            if (bCourses) bCourses.innerHTML = '0';
-        } else {
-            if (bCampuses) bCampuses.innerText = cCount;
-            if (bDepts) bDepts.innerText = dCount;
-            if (bCourses) bCourses.innerText = crCount;
-        }
+        if (bCampuses) bCampuses.innerText = cCount;
+        if (bDepts) bDepts.innerText = dCount;
+        if (bCourses) bCourses.innerText = crCount;
     }
 
-    // Confirm & Save All Records
+    // ----------------------------------------------------
+    // Confirm & Save Records
+    // ----------------------------------------------------
     document.querySelectorAll('.btn-confirm-save-action').forEach(btn => {
         btn.addEventListener('click', function () {
             const saveButtons = document.querySelectorAll('.btn-confirm-save-action');
@@ -2050,8 +2173,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 b.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
             });
 
-            let orgPayload = {};
-            if (currentExtractionMode === 'organisation_only') {
+            const mode = currentExtractionMode || 'organisation';
+            let payload = {
+                mode: mode,
+                target_organisation_id: currentTargetOrgId || null,
+                target_campus_id: currentTargetCampusId || null,
+                target_department_id: currentTargetDeptId || null,
+                organisation: {},
+                campuses: [],
+                departments: [],
+                courses: []
+            };
+
+            // 1. ORGANISATION MODE SAVE
+            if (mode === 'organisation') {
                 const orgName = document.getElementById('aiOrgName') ? document.getElementById('aiOrgName').value.trim() : '';
                 if (!orgName) {
                     alert('Please enter an Organisation Name before saving.');
@@ -2068,7 +2203,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     ? orgTypeSelect.options[orgTypeSelect.selectedIndex].text 
                     : 'University';
 
-                orgPayload = {
+                const orgPayload = {
                     name: orgName,
                     organisation_type_id: selectedOrgTypeId || null,
                     organisation_type: selectedOrgTypeName,
@@ -2078,7 +2213,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     core_values: document.getElementById('aiOrgCoreValues') ? document.getElementById('aiOrgCoreValues').value.split(',').map(s => s.trim()).filter(Boolean) : []
                 };
 
-                // Dynamically collect all inputs from the visible type-specific container
                 const activeContainer = document.querySelector('#tab-org .col-12[id$="-fields"][style*="display: block"]') ||
                                         document.querySelector('#tab-org .col-12[id$="-fields"]:not([style*="display: none"])');
                 if (activeContainer) {
@@ -2112,20 +2246,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
                 }
-            }
+                payload.organisation = orgPayload;
 
-            const payload = {
-                target_organisation_id: currentTargetOrgId || null,
-                mode: currentExtractionMode || 'organisation_only',
-                organisation: orgPayload,
-                campuses: [],
-                departments: [],
-                courses: []
-            };
-
-            // Only collect Campuses, Departments, Courses if Mode 2 (campuses_and_courses)
-            if (currentExtractionMode !== 'organisation_only') {
-                // Collect Campuses
+            // 2. CAMPUS MODE SAVE
+            } else if (mode === 'campus') {
                 document.querySelectorAll('.campus-item').forEach(el => {
                     const name = el.querySelector('.c-name')?.value.trim();
                     if (name) {
@@ -2161,7 +2285,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // Collect Departments
+            // 3. DEPARTMENT MODE SAVE
+            } else if (mode === 'department') {
                 document.querySelectorAll('.dept-item').forEach(el => {
                     const name = el.querySelector('.d-name')?.value.trim();
                     if (name) {
@@ -2190,7 +2315,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // Collect Courses with Selected Master IDs
+            // 4. COURSE MODE SAVE
+            } else if (mode === 'course') {
                 document.querySelectorAll('.course-item').forEach(el => {
                     const courseId = el.querySelector('.cr-course-id')?.value;
                     const selectedMaster = (globalMasters.courses || []).find(c => String(c.id) === String(courseId));
@@ -2247,22 +2373,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.location.href = "{{ route('admin.organisations.index') }}";
                     }
                 } else {
-                    throw new Error(res.message || 'Failed to save organisation.');
+                    throw new Error(res.message || 'Failed to save data.');
                 }
             })
             .catch(err => {
                 alert('Error saving data: ' + err.message);
                 saveButtons.forEach(b => {
                     b.disabled = false;
-                    b.innerHTML = currentExtractionMode === 'campuses_and_courses'
-                        ? '<i class="fas fa-save me-1"></i> Save Campuses, Departments & Courses'
-                        : '<i class="fas fa-save me-1"></i> Save Organisation';
+                    b.innerHTML = '<i class="fas fa-save me-1"></i> Save Records';
                 });
             });
         });
     });
 
-    // Initial toggle
+    // Initial setup
+    handleEntityModeChange();
     const initialTypeId = (aiOrgTypeMaster && aiOrgTypeMaster.value) || 1;
     toggleOrgTypeFields(initialTypeId);
 });

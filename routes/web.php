@@ -155,6 +155,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     // AI-Powered Organisation Auto-Import
     Route::get('/admin/ai-organisations/create', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'create'])->name('admin.ai-organisations.create');
+    Route::get('/admin/ai-organisations/cascading-options', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'cascadingOptions'])->name('admin.ai-organisations.cascading-options');
     Route::post('/admin/ai-organisations/preview-prompt', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'previewPrompt'])->name('admin.ai-organisations.preview-prompt');
     Route::post('/admin/ai-organisations/extract', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'extract'])->name('admin.ai-organisations.extract');
     Route::post('/admin/ai-organisations/store', [\App\Http\Controllers\Admin\AiOrganisationImportController::class, 'store'])->name('admin.ai-organisations.store');

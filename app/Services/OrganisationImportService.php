@@ -472,7 +472,206 @@ class OrganisationImportService
             ]);
             }
 
-            // 3. Create Campuses
+            $mode = $data['mode'] ?? ($targetOrgId ? 'campuses_and_courses' : 'organisation');
+
+            // --- MODE: CAMPUS ONLY ---
+            if ($mode === 'campus') {
+                $campusesInput = $data['campuses'] ?? [];
+                foreach ($campusesInput as $index => $cInput) {
+                    $campusName = !empty($cInput['campus_name']) ? $cInput['campus_name'] : ($organisation->name . ' - Campus ' . ($index + 1));
+                    $campusSlug = Str::slug($campusName . '-' . Str::random(4));
+
+                    Campus::create([
+                        'id' => (string) Str::uuid(),
+                        'organisation_id' => $organisation->id,
+                        'campus_name' => $campusName,
+                        'slug' => $campusSlug,
+                        'campus_type' => in_array($cInput['campus_type'] ?? '', ['Main', 'Regional', 'Satellite']) ? $cInput['campus_type'] : ($index === 0 ? 'Main' : 'Regional'),
+                        'established_year' => $this->parseInteger($cInput['established_year'] ?? $organisation->established_year),
+                        'city' => $cInput['city'] ?? null,
+                        'state' => $cInput['state'] ?? null,
+                        'country' => $cInput['country'] ?? 'India',
+                        'pincode' => $cInput['pincode'] ?? null,
+                        'full_address' => $cInput['full_address'] ?? null,
+                        'google_map_url' => $cInput['google_map_url'] ?? null,
+                        'nearest_transport_hub' => $cInput['nearest_transport_hub'] ?? null,
+                        'campus_area_acres' => $this->parseFloat($cInput['campus_area_acres'] ?? null, 0.0, 999999.99),
+                        'academic_blocks_count' => $this->parseInteger($cInput['academic_blocks_count'] ?? 0) ?? 0,
+                        'classrooms_count' => $this->parseInteger($cInput['classrooms_count'] ?? 0) ?? 0,
+                        'smart_classrooms' => !empty($cInput['smart_classrooms']),
+                        'laboratories_count' => $this->parseInteger($cInput['laboratories_count'] ?? 0) ?? 0,
+                        'research_centers_count' => $this->parseInteger($cInput['research_centers_count'] ?? 0) ?? 0,
+                        'library_available' => !empty($cInput['library_available']),
+                        'library_books_count' => $this->parseInteger($cInput['library_books_count'] ?? 0) ?? 0,
+                        'digital_library_access' => !empty($cInput['digital_library_access']),
+                        'hostel_available' => !empty($cInput['hostel_available']),
+                        'hostel_type' => in_array($cInput['hostel_type'] ?? '', ['Boys', 'Girls', 'Both', 'None']) ? $cInput['hostel_type'] : null,
+                        'hostel_capacity' => $this->parseInteger($cInput['hostel_capacity'] ?? 0) ?? 0,
+                        'food_facility' => $cInput['food_facility'] ?? null,
+                        'medical_facility_available' => !empty($cInput['medical_facility_available']),
+                        'sports_facilities' => $this->parseArray($cInput['sports_facilities'] ?? null),
+                        'transport_available' => !empty($cInput['transport_available']),
+                        'bus_routes_count' => $this->parseInteger($cInput['bus_routes_count'] ?? 0) ?? 0,
+                        'parking_available' => !empty($cInput['parking_available']),
+                        'cctv_coverage' => !empty($cInput['cctv_coverage']),
+                        'security_staff_count' => $this->parseInteger($cInput['security_staff_count'] ?? 0) ?? 0,
+                        'fire_safety_certified' => !empty($cInput['fire_safety_certified']),
+                        'disaster_management_plan' => !empty($cInput['disaster_management_plan']),
+                        'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
+                        'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
+                        'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
+                        'status' => true,
+                    ]);
+                }
+                return $organisation;
+            }
+
+            // --- MODE: DEPARTMENT ONLY ---
+            if ($mode === 'department') {
+                $targetCampusId = $data['target_campus_id'] ?? null;
+                $deptsInput = $data['departments'] ?? [];
+                foreach ($deptsInput as $index => $dInput) {
+                    $deptName = $dInput['department_name'] ?? ('Department ' . ($index + 1));
+                    $deptSlug = Str::slug($deptName . '-' . Str::random(4));
+
+                    Department::create([
+                        'id' => (string) Str::uuid(),
+                        'organisation_id' => $organisation->id,
+                        'campus_id' => $targetCampusId,
+                        'department_name' => $deptName,
+                        'department_code' => $dInput['department_code'] ?? null,
+                        'department_type' => in_array($dInput['department_type'] ?? '', ['Academic', 'Clinical', 'Research', 'Interdisciplinary']) ? $dInput['department_type'] : 'Academic',
+                        'established_year' => $this->parseInteger($dInput['established_year'] ?? null),
+                        'slug' => $deptSlug,
+                        'about_department' => $dInput['about_department'] ?? null,
+                        'discipline_area' => $dInput['discipline_area'] ?? null,
+                        'specializations_supported' => $this->parseArray($dInput['specializations_supported'] ?? null),
+                        'education_levels_supported' => $this->parseArray($dInput['education_levels_supported'] ?? null),
+                        'is_interdisciplinary' => !empty($dInput['is_interdisciplinary']),
+                        'head_of_department_name' => $dInput['head_of_department_name'] ?? null,
+                        'head_of_department_designation' => $dInput['head_of_department_designation'] ?? null,
+                        'hod_appointment_type' => in_array($dInput['hod_appointment_type'] ?? '', ['Permanent', 'Acting']) ? $dInput['hod_appointment_type'] : null,
+                        'hod_email' => $dInput['hod_email'] ?? null,
+                        'department_office_contact' => $dInput['department_office_contact'] ?? null,
+                        'faculty_count' => $this->parseInteger($dInput['faculty_count'] ?? null),
+                        'curriculum_design_responsibility' => !empty($dInput['curriculum_design_responsibility']),
+                        'exam_setting_responsibility' => !empty($dInput['exam_setting_responsibility']),
+                        'research_programs_managed' => !empty($dInput['research_programs_managed']),
+                        'phd_supervision_available' => !empty($dInput['phd_supervision_available']),
+                        'industry_collaboration_supported' => !empty($dInput['industry_collaboration_supported']),
+                        'department_labs_count' => (string)($this->parseInteger($dInput['department_labs_count'] ?? 0) ?? 0),
+                        'specialized_labs_available' => !empty($dInput['specialized_labs_available']),
+                        'research_centers_under_department' => $dInput['research_centers_under_department'] ?? null,
+                        'department_library_section' => !empty($dInput['department_library_section']),
+                        'classrooms_count' => (string)($this->parseInteger($dInput['classrooms_count'] ?? 0) ?? 0),
+                        'research_publications_count' => $this->parseInteger($dInput['research_publications_count'] ?? 0) ?? 0,
+                        'funded_projects_count' => $this->parseInteger($dInput['funded_projects_count'] ?? 0) ?? 0,
+                        'patents_filed_count' => $this->parseInteger($dInput['patents_filed_count'] ?? 0) ?? 0,
+                        'industry_projects_count' => $this->parseInteger($dInput['industry_projects_count'] ?? 0) ?? 0,
+                        'department_website_url' => $dInput['department_website_url'] ?? null,
+                        'department_email' => $dInput['department_email'] ?? null,
+                        'department_notice_board_url' => $dInput['department_notice_board_url'] ?? null,
+                        'status' => 'Active',
+                        'visibility' => 'Public',
+                    ]);
+                }
+                return $organisation;
+            }
+
+            // --- MODE: COURSE ONLY ---
+            if ($mode === 'course') {
+                $targetCampusId = $data['target_campus_id'] ?? null;
+                $targetDeptId = $data['target_department_id'] ?? null;
+                $coursesInput = $data['courses'] ?? [];
+
+                foreach ($coursesInput as $cData) {
+                    $courseName = $cData['academic_unit_name'] ?? $cData['course_name'] ?? $cData['name'] ?? null;
+                    $shortName = $cData['short_name'] ?? null;
+                    $courseId = !empty($cData['course_id']) ? (int)$cData['course_id'] : null;
+
+                    $masterCourse = $this->resolveMasterCourse($courseId, $courseName, $shortName);
+
+                    $programLevelId = null;
+                    if (!empty($cData['program_level_id'])) {
+                        $pl = ProgramLevel::find($cData['program_level_id']);
+                        if ($pl) $programLevelId = $pl->id;
+                    } elseif (!empty($cData['program_level'])) {
+                        $pl = ProgramLevel::where('title', 'like', '%' . trim($cData['program_level']) . '%')->first();
+                        if ($pl) $programLevelId = $pl->id;
+                    }
+                    if (!$programLevelId && $masterCourse && $masterCourse->program_level_id) {
+                        $programLevelId = $masterCourse->program_level_id;
+                    }
+
+                    $streamId = null;
+                    if (!empty($cData['stream_offered_id'])) {
+                        $st = StreamOffered::find($cData['stream_offered_id']);
+                        if ($st) $streamId = $st->id;
+                    } elseif (!empty($cData['stream'])) {
+                        $st = StreamOffered::where('title', 'like', '%' . trim($cData['stream']) . '%')->first();
+                        if ($st) $streamId = $st->id;
+                    }
+                    if (!$streamId && $masterCourse && $masterCourse->stream_offered_id) {
+                        $streamId = $masterCourse->stream_offered_id;
+                    }
+
+                    $disciplineId = null;
+                    if (!empty($cData['discipline_id'])) {
+                        $disc = Discipline::find($cData['discipline_id']);
+                        if ($disc) $disciplineId = $disc->id;
+                    } elseif (!empty($cData['discipline'])) {
+                        $disc = Discipline::where('title', 'like', '%' . trim($cData['discipline']) . '%')->first();
+                        if ($disc) $disciplineId = $disc->id;
+                    }
+                    if (!$disciplineId && $masterCourse && $masterCourse->discipline_id) {
+                        $disciplineId = $masterCourse->discipline_id;
+                    }
+
+                    $displayCourseName = $masterCourse ? $masterCourse->name : ($courseName ?: 'Academic Program');
+                    $rawTotalFees = !empty($cData['total_fees']) ? $cData['total_fees'] : ($cData['fees'] ?? null);
+
+                    OrganisationCourse::create([
+                        'organisation_id' => $organisation->id,
+                        'campus_id' => $targetCampusId,
+                        'department_id' => $targetDeptId,
+                        'course_id' => $masterCourse ? $masterCourse->id : null,
+                        'academic_unit_name' => Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, ''),
+                        'slug' => Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4)),
+                        'mode' => in_array($cData['mode'] ?? '', ['Regular', 'Online', 'Distance', 'Part-time']) ? $cData['mode'] : 'Regular',
+                        'duration' => Str::limit($cData['duration'] ?? ($masterCourse->duration ?? '3 Years'), 250, ''),
+                        'fees' => !empty($cData['fees']) ? Str::limit((string)$cData['fees'], 250, '') : null,
+                        'total_fees' => $this->parseFee($rawTotalFees),
+                        'fees_structure' => $cData['fees_structure'] ?? null,
+                        'annual_fee_range' => !empty($cData['annual_fee_range']) ? Str::limit((string)$cData['annual_fee_range'], 250, '') : null,
+                        'admission_fee' => !empty($cData['admission_fee']) ? Str::limit((string)$cData['admission_fee'], 250, '') : null,
+                        'eligibility' => $cData['eligibility'] ?? null,
+                        'admission_process' => $cData['admission_process'] ?? null,
+                        'provisional_admission' => !empty($cData['provisional_admission']),
+                        'installment_available' => !empty($cData['installment_available']),
+                        'scholarship_available' => !empty($cData['scholarship_available']),
+                        'refund_policy_available' => !empty($cData['refund_policy_available']),
+                        'roi' => in_array($cData['roi'] ?? '', ['Low', 'Medium', 'High']) ? $cData['roi'] : null,
+                        'curriculum' => $cData['curriculum'] ?? null,
+                        'career_prospects' => $cData['career_prospects'] ?? null,
+                        'placement_details' => $cData['placement_details'] ?? null,
+                        'rating' => $this->parseFloat($cData['rating'] ?? null, 0.0, 9.9),
+                        'industrial_collaboration' => $cData['industrial_collaboration'] ?? null,
+                        'internship_ranking' => $cData['internship_ranking'] ?? null,
+                        'program_level_id' => $programLevelId,
+                        'stream_offered_id' => $streamId,
+                        'discipline_id' => $disciplineId,
+                        'status' => true,
+                    ]);
+                }
+                return $organisation;
+            }
+
+            // --- MODE: ORGANISATION ONLY ---
+            if ($mode === 'organisation' || empty($data['campuses'])) {
+                return $organisation;
+            }
+
+            // 3. Create Campuses (Legacy / Campuses and Courses Mode)
             $campusMap = []; // Name -> Campus instance
             if ($targetOrgId && $organisation->relationLoaded('campuses')) {
                 foreach ($organisation->campuses as $existingCampus) {
@@ -526,8 +725,8 @@ class OrganisationImportService
                         'security_staff_count' => $this->parseInteger($cInput['security_staff_count'] ?? 0) ?? 0,
                         'fire_safety_certified' => !empty($cInput['fire_safety_certified']),
                         'disaster_management_plan' => !empty($cInput['disaster_management_plan']),
-                        'campus_email' => $cInput['campus_email'] ?? ($orgInput['email'] ?? null),
-                        'campus_website' => $cInput['campus_website'] ?? ($orgInput['official_website'] ?? null),
+                        'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
+                        'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
                         'status' => true,
                     ]);
@@ -535,20 +734,6 @@ class OrganisationImportService
                     $campusMap[$campusName] = $campus;
                     $campusMap[$index] = $campus;
                 }
-            } elseif (!$targetOrgId && (!isset($data['mode']) || $data['mode'] !== 'organisation_only') && !empty($campusesInput)) {
-                // Create Default Main Campus only if not in organisation_only mode
-                $defaultCampus = Campus::create([
-                    'id' => (string) Str::uuid(),
-                    'organisation_id' => $organisation->id,
-                    'campus_name' => $organisation->name . ' - Main Campus',
-                    'slug' => Str::slug($organisation->name . '-main-' . Str::random(4)),
-                    'campus_type' => 'Main',
-                    'city' => $orgInput['head_office_location'] ?? null,
-                    'full_address' => $orgInput['head_office_location'] ?? null,
-                    'established_year' => $organisation->established_year,
-                    'status' => true,
-                ]);
-                $campusMap['default'] = $defaultCampus;
             }
 
             // Primary campus reference

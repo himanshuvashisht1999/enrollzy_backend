@@ -10,8 +10,8 @@ class CustomerSampleExport implements FromArray, WithHeadings
     public function array(): array
     {
         return [
-            ['1', 'JYOTI', '', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '8869935841', '2026', 'Regular'],
-            ['2', 'KAJAL', 'kajal@example.com', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '7705070011', '2026', 'Regular'],
+            ['1', 'JYOTI', '8869935841', '1', '', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '2026', 'Regular'],
+            ['2', 'KAJAL', '7705070011', '2', 'kajal@example.com', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '2026', 'Regular'],
         ];
     }
 
@@ -20,10 +20,11 @@ class CustomerSampleExport implements FromArray, WithHeadings
         return [
             'S.No',
             'NAME',
+            'Phone Number',
+            'Category ID',
             'Student Email',
             'Current Course',
             'Current University',
-            'Phone Number',
             'Passing Year',
             'Current Program Mode',
         ];

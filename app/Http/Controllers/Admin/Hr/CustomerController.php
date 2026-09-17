@@ -67,7 +67,11 @@ class CustomerController extends Controller implements HasMiddleware
                 ->make(true);
         }
 
-        return view('admin.customers.index');
+        $master_categories = CustomerCategory::where('parent_id', 0)
+            ->where('status', 'active')
+            ->get();
+
+        return view('admin.customers.index', compact('master_categories'));
     }
 
     public function create()
@@ -415,7 +419,8 @@ class CustomerController extends Controller implements HasMiddleware
     public function import(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'file' => 'required|mimes:xlsx,xls,csv'
+            'file' => 'required|mimes:xlsx,xls,csv',
+            'category_id' => 'nullable|exists:customer_categories,id'
         ]);
 
         if ($validator->fails()) {
@@ -429,7 +434,9 @@ class CustomerController extends Controller implements HasMiddleware
             \Illuminate\Support\Facades\DB::disableQueryLog();
 
             $organization_id = auth()->user()->organization_id;
-            $import = new CustomerImport($organization_id);
+            $default_category_id = $request->input('category_id');
+
+            $import = new CustomerImport($organization_id, $default_category_id);
             Excel::import($import, $request->file('file'));
 
             $imported = $import->getImportedCount();
@@ -437,7 +444,7 @@ class CustomerController extends Controller implements HasMiddleware
 
             $msg = "Successfully imported {$imported} student(s).";
             if ($skipped > 0) {
-                $msg .= " ({$skipped} duplicate or invalid phone number records skipped)";
+                $msg .= " ({$skipped} invalid/duplicate records skipped)";
             }
 
             return response()->json(['status' => 1, 'message' => $msg]);

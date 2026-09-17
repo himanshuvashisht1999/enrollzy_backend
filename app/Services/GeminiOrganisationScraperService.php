@@ -17,13 +17,7 @@ class GeminiOrganisationScraperService
     }
 
     /**
-     * Extract organisation, campus, department, and course details from a given URL using Gemini + Search Grounding
-     *
-     * @param string $url
-     * @param string $orgTypeTitle
-     * @param int $orgTypeId
-     * @return array
-     * @throws \Exception
+     * Extract organisation, campus, department, or course details from a given URL using Gemini + Search Grounding
      */
     public function extractFromUrl(
         string $url,
@@ -31,7 +25,10 @@ class GeminiOrganisationScraperService
         int $orgTypeId = 1,
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
-        ?string $customPrompt = null
+        ?string $customPrompt = null,
+        string $mode = 'organisation',
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
     ): array
     {
         if (empty($this->apiKey)) {
@@ -55,8 +52,8 @@ class GeminiOrganisationScraperService
                 }
             }
 
-            // 3. Build structured extraction prompt tailored to the selected Organisation Type and Mode
-            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg);
+            // 3. Build structured extraction prompt tailored to the selected Entity Mode
+            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment);
         }
 
         // Candidate fallback models in case of high demand
@@ -80,9 +77,12 @@ class GeminiOrganisationScraperService
         int $orgTypeId = 1,
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
-        string $content = ''
+        string $content = '',
+        string $mode = 'organisation',
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
     ): string {
-        return $this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg);
+        return $this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment);
     }
 
     /**
@@ -137,6 +137,7 @@ class GeminiOrganisationScraperService
                 ],
                 'generationConfig' => [
                     'temperature' => 0.1,
+                    'maxOutputTokens' => 8192,
                 ]
             ];
 
@@ -189,19 +190,7 @@ class GeminiOrganisationScraperService
                 }
 
                 if (is_array($data) && (isset($data['organisation']) || isset($data['campuses']) || isset($data['courses']) || isset($data['departments']))) {
-                    if (!isset($data['organisation'])) {
-                        $data['organisation'] = [];
-                    }
-                    if (!isset($data['campuses'])) {
-                        $data['campuses'] = [];
-                    }
-                    if (!isset($data['departments'])) {
-                        $data['departments'] = [];
-                    }
-                    if (!isset($data['courses'])) {
-                        $data['courses'] = [];
-                    }
-                    return $data;
+                    return $this->normalizeExtractedPayload($data);
                 }
 
             } catch (\Exception $e) {
@@ -211,6 +200,75 @@ class GeminiOrganisationScraperService
         }
 
         throw new \Exception('Gemini API extraction failed: ' . ($lastError ?? 'Could not parse response from available AI models.'));
+    }
+
+    /**
+     * Normalize and sanitize extracted payload keys
+     */
+    protected function normalizeExtractedPayload(array $data): array
+    {
+        if (!isset($data['organisation']) || !is_array($data['organisation'])) {
+            $data['organisation'] = [];
+        }
+        if (!isset($data['campuses']) || !is_array($data['campuses'])) {
+            $data['campuses'] = [];
+        }
+        if (!isset($data['departments']) || !is_array($data['departments'])) {
+            $data['departments'] = [];
+        }
+        if (!isset($data['courses']) || !is_array($data['courses'])) {
+            $data['courses'] = [];
+        }
+
+        // Normalize Campuses
+        foreach ($data['campuses'] as &$c) {
+            if (!is_array($c)) continue;
+            if (empty($c['campus_name']) && !empty($c['name'])) {
+                $c['campus_name'] = $c['name'];
+            }
+            if (empty($c['full_address']) && !empty($c['address'])) {
+                $c['full_address'] = $c['address'];
+            }
+        }
+        unset($c);
+
+        // Normalize Departments
+        foreach ($data['departments'] as &$d) {
+            if (!is_array($d)) continue;
+            if (empty($d['department_name']) && !empty($d['name'])) {
+                $d['department_name'] = $d['name'];
+            }
+            if (empty($d['about_department'])) {
+                $d['about_department'] = $d['description'] ?? $d['overview'] ?? $d['about'] ?? '';
+            }
+        }
+        unset($d);
+
+        // Normalize Courses
+        foreach ($data['courses'] as &$cr) {
+            if (!is_array($cr)) continue;
+            if (empty($cr['course_name'])) {
+                $cr['course_name'] = $cr['name'] ?? $cr['academic_unit_name'] ?? $cr['program_name'] ?? $cr['title'] ?? 'Course';
+            }
+            if (empty($cr['overview'])) {
+                $cr['overview'] = $cr['description'] ?? $cr['about_course'] ?? $cr['course_overview'] ?? '';
+            }
+            if (empty($cr['fees'])) {
+                $cr['fees'] = $cr['fee_per_year'] ?? $cr['annual_fee'] ?? $cr['annual_fees'] ?? '';
+            }
+            if (empty($cr['total_fees'])) {
+                $cr['total_fees'] = $cr['total_fee'] ?? $cr['course_fee'] ?? '';
+            }
+            if (empty($cr['entrance_exams'])) {
+                $cr['entrance_exams'] = $cr['exams'] ?? $cr['entrance_exam'] ?? $cr['accepted_exams'] ?? '';
+            }
+            if (empty($cr['placement_details'])) {
+                $cr['placement_details'] = $cr['placements'] ?? $cr['career_prospects'] ?? '';
+            }
+        }
+        unset($cr);
+
+        return $data;
     }
 
     /**
@@ -309,7 +367,7 @@ PROMPT;
     }
 
     /**
-     * Build structured extraction prompt tailored to the selected Organisation Type and Mode
+     * Build structured extraction prompt tailored to the selected Entity Mode
      */
     protected function buildPrompt(
         string $url,
@@ -317,9 +375,24 @@ PROMPT;
         string $orgTypeTitle,
         int $orgTypeId,
         array $referenceUrls = [],
-        ?\App\Models\Organisation $targetOrg = null
+        ?\App\Models\Organisation $targetOrg = null,
+        string $mode = 'organisation',
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
     ): string
     {
+        if ($mode === 'campus') {
+            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg);
+        }
+
+        if ($mode === 'department') {
+            return $this->buildDepartmentOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus);
+        }
+
+        if ($mode === 'course') {
+            return $this->buildCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment);
+        }
+
         if ($targetOrg) {
             return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
         }
@@ -348,6 +421,267 @@ PROMPT;
 
         // Default to University / College (Types 1, 2)
         return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls);
+    }
+
+    /**
+     * Dedicated Prompt for Campus Only Extraction
+     */
+    public function buildCampusOnlyPrompt(
+        string $url,
+        string $content,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null
+    ): string {
+        $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgShort = $targetOrg ? $targetOrg->short_name : '';
+        $orgSite = $targetOrg ? $targetOrg->official_website : $url;
+        $orgId = $targetOrg ? $targetOrg->id : 0;
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+
+        return <<<PROMPT
+You are an expert institutional infrastructure, geography, and campus research AI agent.
+Your EXCLUSIVE MISSION is to perform comprehensive research and extract ALL physical CAMPUSES, BRANCH CENTRES, and SATELLITE LOCATIONS for the institution "{$orgName}".
+DO NOT extract departments, individual courses, or generic organisation overviews. Focus strictly on physical Campuses.
+
+TARGET INSTITUTION: {$orgName}
+SHORT NAME: {$orgShort}
+OFFICIAL SITE: {$orgSite}
+PRIMARY URL: {$url}{$refUrlsText}
+{$cleanContent}
+
+=== CRITICAL RESEARCH & EXTRACTION MANDATE ===
+1. EXHAUSTIVE CAMPUS DISCOVERY:
+   - Discover and extract ALL physical campuses (e.g. Main Campus, City Campus, South Campus, Medical College Campus, Off-Campus Research Centre).
+   - If only one campus exists, provide deep and comprehensive infrastructure data for that campus.
+
+2. SEARCH GROUNDING & ACCURACY:
+   - Search the official website, Google Maps, NIRF infrastructure reports, and NAAC SSR documents for accurate physical addresses, campus acreage, transport hubs, hostel capacities, and sports facilities.
+
+3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "mode": "campus",
+  "campuses": [
+    {
+      "campus_name": "Main Campus",
+      "campus_type": "Main",
+      "established_year": 2005,
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India",
+      "pincode": "562106",
+      "full_address": "Chikkahagade Cross, Chandapura - Anekal Main Road, Bengaluru, Karnataka 562106",
+      "google_map_url": "https://maps.google.com/?q=Alliance+University+Bangalore",
+      "nearest_transport_hub": "Chandapura Railway Station (3 km) / Electronic City Metro (10 km)",
+      "campus_area_acres": 55.5,
+      "academic_blocks_count": 6,
+      "classrooms_count": 80,
+      "smart_classrooms": true,
+      "laboratories_count": 35,
+      "library_available": true,
+      "digital_library_access": true,
+      "hostel_available": true,
+      "hostel_type": "Both",
+      "hostel_capacity": 2500,
+      "medical_facility_available": true,
+      "sports_facilities": [
+        "Cricket Ground",
+        "Football Turf",
+        "Basketball Court",
+        "Indoor Gymnasium",
+        "Tennis Court",
+        "Badminton Arena"
+      ],
+      "transport_available": true,
+      "cctv_coverage": true,
+      "fire_safety_certified": true,
+      "campus_email": "campus@example.edu.in",
+      "campus_contact_numbers": [
+        "+91 80 4619 9000",
+        "+91 80 4619 9001"
+      ]
+    }
+  ]
+}
+PROMPT;
+    }
+
+    /**
+     * Dedicated Prompt for Department Only Extraction
+     */
+    public function buildDepartmentOnlyPrompt(
+        string $url,
+        string $content,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null,
+        ?\App\Models\Campus $targetCampus = null
+    ): string {
+        $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgId = $targetOrg ? $targetOrg->id : 0;
+        $campusName = $targetCampus ? $targetCampus->campus_name : 'Main / Selected Campus';
+        $campusId = $targetCampus ? $targetCampus->id : null;
+        $campusIdJson = $campusId ? json_encode($campusId) : 'null';
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+
+        return <<<PROMPT
+You are an expert academic faculties, colleges, and university departmental research AI agent.
+Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, and FACULTIES for the institution "{$orgName}" (Campus: {$campusName}).
+DO NOT extract general organisation profiles, campuses, or individual courses. ONLY extract Departments.
+
+TARGET INSTITUTION: {$orgName}
+TARGET CAMPUS: {$campusName}
+PRIMARY URL: {$url}{$refUrlsText}
+{$cleanContent}
+
+=== CRITICAL EXHAUSTIVE EXTRACTION MANDATE ===
+1. COMPREHENSIVELY EXTRACT ALL DEPARTMENTS:
+   - Identify every distinct academic department, school, and faculty (e.g. Department of Computer Science & Engineering, Department of Mechanical Engineering, Department of Electrical & Electronics, Department of Civil Engineering, School of Management Studies, School of Law, Department of Pharmacy, Department of Basic Sciences & Humanities, etc.).
+   - DO NOT omit or merge departments. Return each department as a separate object in the `departments` array.
+
+2. SEARCH GROUNDING & ACCURACY:
+   - Search the official website directory, NIRF reports, NAAC self-study reports (SSR), faculty directories, and Wikipedia to verify all active academic departments, faculty names, HOD/Dean names, faculty strengths, and research achievements.
+
+3. ORIGINAL & HIGH-QUALITY WRITING:
+   - `about_department`: Write 2 rich, well-crafted, original paragraphs highlighting the department's academic philosophy, curriculum rigor, research thrust areas, state-of-the-art laboratory infrastructure, and faculty qualifications.
+
+4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "target_campus_id": {$campusIdJson},
+  "target_campus_name": "{$campusName}",
+  "mode": "department",
+  "departments": [
+    {
+      "department_name": "Department of Computer Science and Engineering",
+      "department_code": "CSE",
+      "department_type": "Academic",
+      "established_year": 2005,
+      "head_of_department_name": "Dr. Ramesh Kumar, Ph.D.",
+      "head_of_department_designation": "Professor & Head of Department",
+      "hod_appointment_type": "Permanent",
+      "hod_email": "hod.cse@example.edu",
+      "department_office_contact": "+91 80 98765432",
+      "faculty_count": 32,
+      "about_department": "The Department of Computer Science and Engineering is a premier center of technological education and research. It offers world-class academic programs with an industry-aligned curriculum emphasizing Artificial Intelligence, Cloud Computing, Cyber Security, and Software Engineering. With advanced research laboratories and strong corporate ties, the department provides an intellectually stimulating environment for aspiring engineers.",
+      "discipline_area": "Engineering & Technology",
+      "specializations_supported": [
+        "Artificial Intelligence & Machine Learning",
+        "Data Science",
+        "Cyber Security",
+        "Cloud Computing",
+        "Internet of Things (IoT)"
+      ],
+      "education_levels_supported": [
+        "Undergraduate",
+        "Postgraduate",
+        "Doctoral (Ph.D)"
+      ],
+      "department_labs_count": 8,
+      "specialized_labs_available": true,
+      "research_publications_count": 65,
+      "funded_projects_count": 6,
+      "patents_filed_count": 4,
+      "phd_supervision_available": true,
+      "industry_collaboration_supported": true,
+      "is_interdisciplinary": false
+    }
+  ]
+}
+PROMPT;
+    }
+
+    /**
+     * Dedicated Prompt for Course Only Extraction
+     */
+    public function buildCourseOnlyPrompt(
+        string $url,
+        string $content,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null,
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
+    ): string {
+        $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgId = $targetOrg ? $targetOrg->id : 0;
+        $campusName = $targetCampus ? $targetCampus->campus_name : 'Main / Selected Campus';
+        $campusId = $targetCampus ? $targetCampus->id : null;
+        $campusIdJson = $campusId ? json_encode($campusId) : 'null';
+        $deptName = $targetDepartment ? $targetDepartment->department_name : 'All Departments / Selected Department';
+        $deptId = $targetDepartment ? $targetDepartment->id : null;
+        $deptIdJson = $deptId ? json_encode($deptId) : 'null';
+
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+
+        return <<<PROMPT
+You are an expert higher education admissions, academic programs, and degree curriculum research AI agent.
+Your EXCLUSIVE MISSION is to perform an in-depth, exhaustive extraction of ALL DEGREE COURSES, SPECIALIZATIONS, DIPLOMAS, and POSTGRADUATE PROGRAMS offered by "{$orgName}" (Campus: {$campusName}, Department: {$deptName}).
+DO NOT extract organisation overviews, campuses, or department profiles. ONLY extract Courses and Programs.
+
+TARGET INSTITUTION: {$orgName}
+TARGET CAMPUS: {$campusName}
+TARGET DEPARTMENT: {$deptName}
+PRIMARY URL: {$url}{$refUrlsText}
+{$cleanContent}
+
+=== CRITICAL EXHAUSTIVE EXTRACTION MANDATE ===
+1. EXHAUSTIVE COVERAGE - DO NOT TRUNCATE OR OMIT:
+   - A single department or institution often offers 10, 15, 20, or even 30 distinct degree programs and specialization tracks (e.g., B.Tech in CSE Core, B.Tech CSE with AI & ML, B.Tech CSE with Data Science, B.Tech CSE with Cyber Security, B.Tech CSE with Cloud Computing, M.Tech in Computer Science, BCA, MCA, Integrated MCA, Ph.D. in Computer Science, etc.).
+   - You MUST extract EVERY SINGLE COURSE / SPECIALIZATION PROGRAM separately.
+   - If there are 20 programs offered, return all 20 entries in the `courses` array. Never summarize, group together, or omit any program.
+
+2. SEARCH GROUNDING & ACCURACY:
+   - Actively use Google Search Grounding to verify full course catalogues, official syllabus brochures, NIRF/NAAC documents, admission portals (e.g. Shiksha, Collegedunia, official university brochure PDFs).
+   - If specific fees, eligibility, or entrance exams are not on the primary page, find verified data from the official admission prospectus or reliable institutional portals.
+
+3. POLISHED, PROFESSIONAL, ORIGINAL WRITING:
+   - `overview`: Write a high-quality, comprehensive 1-2 paragraph description explaining the course curriculum highlights, industry relevance, modern lab tools taught (e.g. Python, AWS, Docker, TensorFlow, CAD, etc.), and career outcomes.
+   - `eligibility`: State exact entry requirements (e.g. "10+2 with minimum 60% aggregate in Physics, Mathematics, and Chemistry/CS from a recognized board").
+   - `admission_process`: Step-by-step admission pipeline (e.g. "Merit in JEE Main / University Entrance Test -> Counseling -> Seat Allocation -> Document Verification").
+   - `placement_details`: Comprehensive career stats (e.g. "Average Package: ₹ 7.5 LPA, Highest Package: ₹ 32 LPA, 90%+ placement rate. Top Recruiters: Microsoft, Amazon, Google, TCS, Infosys, Deloitte").
+
+4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "target_campus_id": {$campusIdJson},
+  "target_campus_name": "{$campusName}",
+  "target_department_id": {$deptIdJson},
+  "target_department_name": "{$deptName}",
+  "mode": "course",
+  "courses": [
+    {
+      "course_name": "Bachelor of Technology in Computer Science and Engineering (Artificial Intelligence & Machine Learning)",
+      "short_name": "B.Tech CSE (AI & ML)",
+      "program_level": "Undergraduate",
+      "stream": "Engineering",
+      "discipline": "Computer Science & Engineering",
+      "specialization": "Artificial Intelligence & Machine Learning",
+      "duration": "4 Years",
+      "mode": "Regular",
+      "fees": "₹ 2,20,000 / Year",
+      "total_fees": 880000,
+      "annual_fee_range": "₹ 2.0 - 2.5 Lakhs / Year",
+      "admission_fee": "25000",
+      "rating": "4.6",
+      "roi": "High",
+      "entrance_exams": "JEE Main, CUET, State CET, Institution Entrance Test",
+      "eligibility": "Passed 10+2 examination with Physics and Mathematics as compulsory subjects along with Chemistry/CS with at least 60% marks.",
+      "admission_process": "Qualify in JEE Main / State CET followed by centralized counseling and document verification.",
+      "placement_details": "Average package: 8.2 LPA, Highest package: 35 LPA. Top recruiters: Amazon, Microsoft, Infosys, TCS, Adobe, Wipro.",
+      "installment_available": true,
+      "scholarship_available": true,
+      "refund_policy_available": true,
+      "provisional_admission": true,
+      "overview": "The B.Tech in Computer Science and Engineering with specialization in AI & ML is a 4-year undergraduate program designed to equip students with deep knowledge of machine learning algorithms, deep learning, neural networks, natural language processing, and big data technologies. Students gain practical experience through dedicated AI research labs and capstone industry projects."
+    }
+  ]
+}
+PROMPT;
     }
 
     protected function formatReferenceUrlsText(array $referenceUrls): string

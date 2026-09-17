@@ -68,6 +68,17 @@
             <form id="importForm" action="{{ route('admin.customers.main.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body pb-0">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Master Category <span class="text-muted small">(Optional - fallback if not in Excel)</span></label>
+                        <select name="category_id" id="import_category_id" class="form-select rounded-3">
+                            <option value="">-- Select Master Category (or define in Excel) --</option>
+                            @if(isset($master_categories))
+                                @foreach($master_categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }} (ID: {{ $cat->id }})</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
                     <div class="mb-3 d-flex justify-content-between">
                         <label class="form-label small fw-bold">Upload Excel File <span class="text-danger">*</span></label>
                         <a href="{{ route('admin.customers.main.sample-download') }}" class="text-success small fw-bold"><i class="fas fa-download"></i> Download Sample</a>
@@ -76,8 +87,9 @@
                         <input type="file" name="file" id="file" class="form-control rounded-3" accept=".xlsx,.xls,.csv" required>
                     </div>
                     <div class="alert alert-info small rounded-3 mt-3">
-                        <i class="fas fa-info-circle me-1"></i> Excel Columns: <b>S.No, NAME, Student Email, Current Course, Current University, Phone Number, Passing Year, Current Program Mode</b>.<br>
-                        <span class="text-muted small">Duplicate phone numbers already in the system will be skipped automatically.</span>
+                        <i class="fas fa-info-circle me-1"></i> <b>Excel Columns:</b> S.No, NAME, Phone Number, Category ID, Student Email, Current Course, Current University, Passing Year, Current Program Mode.<br><br>
+                        <span class="text-danger fw-bold">* Compulsory Fields:</span> <b>NAME</b>, <b>Phone Number</b>, and <b>Category ID</b> (or selected Master Category above).<br>
+                        <span class="text-muted small">All other fields are optional. Duplicate phone numbers and rows missing compulsory fields will be skipped automatically.</span>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
