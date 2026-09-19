@@ -71,6 +71,7 @@ class OrganisationFieldCatalogService
                     ['name' => 'governing_body_name', 'label' => 'Governing Body / Trust Name'],
                     ['name' => 'chancellor_name', 'label' => 'Chancellor Name'],
                     ['name' => 'vice_chancellor_name', 'label' => 'Vice Chancellor Name'],
+                    ['name' => 'university_category', 'label' => 'University Category (Teaching / Research / Teaching + Research)'],
                     ['name' => 'registrar_name', 'label' => 'Registrar Name'],
                     ['name' => 'number_of_campuses', 'label' => 'Number of Campuses'],
                     ['name' => 'number_of_constituent_colleges', 'label' => 'Number of Constituent Colleges'],

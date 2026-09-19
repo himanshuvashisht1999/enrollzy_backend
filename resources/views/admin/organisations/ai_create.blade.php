@@ -1293,12 +1293,39 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (input.type === 'checkbox') {
                             if (name.endsWith('[]')) {
                                 const arr = Array.isArray(val) ? val.map(String) : (typeof val === 'string' ? val.split(',').map(s => s.trim()) : []);
-                                input.checked = arr.includes(String(input.value));
+                                if (baseName === 'levels_offered') {
+                                    const valLower = String(input.value).toLowerCase();
+                                    input.checked = arr.some(lvl => {
+                                        const l = String(lvl).toLowerCase();
+                                        if (valLower === 'ug') return l.includes('undergrad') || l.includes('bachelor') || l === 'ug';
+                                        if (valLower === 'pg') return l.includes('postgrad') || l.includes('master') || l === 'pg';
+                                        if (valLower === 'doctoral') return l.includes('phd') || l.includes('ph.d') || l.includes('doc') || l.includes('research');
+                                        if (valLower === 'diploma') return l.includes('diploma') || l.includes('polytechnic');
+                                        return l === valLower;
+                                    });
+                                } else {
+                                    input.checked = arr.some(item => item.toLowerCase() === input.value.toLowerCase());
+                                }
                             } else {
                                 input.checked = Boolean(val == 1 || val === true || val === '1' || val === 'true');
                             }
                         } else if (input.tagName === 'SELECT') {
                             input.value = String(val);
+                            // If direct match failed, try fuzzy/case-insensitive match
+                            if (!input.value && input.options) {
+                                const valStr = String(val).toLowerCase().trim();
+                                for (let i = 0; i < input.options.length; i++) {
+                                    const optVal = input.options[i].value.toLowerCase().trim();
+                                    const optText = input.options[i].text.toLowerCase().trim();
+                                    if (optVal && (optVal === valStr || valStr.includes(optVal) || optVal.includes(valStr) || optText.includes(valStr) || valStr.includes(optText))) {
+                                        input.value = input.options[i].value;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (window.jQuery) {
+                                $(input).val(input.value).trigger('change.select2');
+                            }
                         } else if (input.tagName === 'TEXTAREA') {
                             input.value = typeof val === 'object' ? JSON.stringify(val) : String(val);
                         } else {
@@ -1310,6 +1337,35 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 });
+
+                // Display Image Previews for Logo & Cover Image
+                const logoPreview = visibleContainer.querySelector('.file-preview[data-preview="logo_url"]');
+                if (logoPreview && org.logo_url) {
+                    logoPreview.innerHTML = `
+                        <div class="d-flex align-items-center p-2 border rounded bg-light mb-2">
+                            <img src="${org.logo_url}" class="img-thumbnail me-2" style="height: 55px; max-width: 90px; object-fit: contain;" alt="Logo" onerror="this.parentElement.remove()">
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success mb-1" style="font-size: 0.7rem;"><i class="fas fa-check-circle me-1"></i>AI Found Official Logo</span>
+                                <div class="small text-muted text-truncate" style="max-width: 250px; font-size: 0.75rem;">${org.logo_url}</div>
+                                <input type="hidden" name="ai_extracted_logo_url" value="${org.logo_url}">
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const coverPreview = visibleContainer.querySelector('.file-preview[data-preview="cover_image_url"]');
+                if (coverPreview && org.cover_image_url) {
+                    coverPreview.innerHTML = `
+                        <div class="d-flex align-items-center p-2 border rounded bg-light mb-2">
+                            <img src="${org.cover_image_url}" class="img-thumbnail me-2" style="height: 55px; max-width: 110px; object-fit: cover;" alt="Cover" onerror="this.parentElement.remove()">
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success mb-1" style="font-size: 0.7rem;"><i class="fas fa-check-circle me-1"></i>AI Found Campus Photo</span>
+                                <div class="small text-muted text-truncate" style="max-width: 250px; font-size: 0.75rem;">${org.cover_image_url}</div>
+                                <input type="hidden" name="ai_extracted_cover_image_url" value="${org.cover_image_url}">
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             highlightUnfilledFields();
@@ -1429,9 +1485,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!el) return;
         const empty = isFieldEmpty(el);
         const label = findLabelForInput(el);
+        const $select2Selection = window.jQuery ? $(el).next('.select2-container').find('.select2-selection') : null;
 
         if (empty) {
             el.classList.add('field-not-autofilled');
+            if ($select2Selection && $select2Selection.length) {
+                $select2Selection.addClass('field-not-autofilled');
+            }
             if (label && !label.querySelector('.badge-not-autofilled')) {
                 const badge = document.createElement('span');
                 badge.className = 'badge badge-not-autofilled ms-2';
@@ -1440,6 +1500,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } else {
             el.classList.remove('field-not-autofilled');
+            if ($select2Selection && $select2Selection.length) {
+                $select2Selection.removeClass('field-not-autofilled');
+            }
             if (label) {
                 const badge = label.querySelector('.badge-not-autofilled');
                 if (badge) badge.remove();
@@ -1555,29 +1618,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!el || !el.matches('input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea')) {
                     return;
                 }
-                const empty = (el.tagName === 'SELECT') ? (!el.value || el.value === '') : (el.value.trim() === '');
-                if (empty) {
-                    el.classList.add('field-not-autofilled');
-                } else {
-                    el.classList.remove('field-not-autofilled');
-                }
-
-                if (el.closest('#tab-org')) {
-                    const label = findLabelForInput(el);
-                    if (empty) {
-                        if (label && !label.querySelector('.badge-not-autofilled')) {
-                            const badge = document.createElement('span');
-                            badge.className = 'badge badge-not-autofilled ms-2';
-                            badge.innerHTML = '<i class="fas fa-pen-nib me-1"></i>Not auto-filled';
-                            label.appendChild(badge);
-                        }
-                    } else if (label) {
-                        const badge = label.querySelector('.badge-not-autofilled');
-                        if (badge) badge.remove();
-                    }
-                }
+                updateFieldHighlight(el);
                 updateAllUnfilledCounters();
             });
+        });
+    }
+
+    if (window.jQuery) {
+        $(document).on('change select2:select select2:clear', '#tab-org select', function () {
+            updateFieldHighlight(this);
+            updateAllUnfilledCounters();
         });
     }
 
@@ -2246,6 +2296,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
                 }
+
+                const extractedLogo = document.querySelector('input[name="ai_extracted_logo_url"]')?.value || currentExtractedData?.organisation?.logo_url;
+                if (extractedLogo && !orgPayload.logo_url) {
+                    orgPayload.logo_url = extractedLogo;
+                }
+                const extractedCover = document.querySelector('input[name="ai_extracted_cover_image_url"]')?.value || currentExtractedData?.organisation?.cover_image_url;
+                if (extractedCover && !orgPayload.cover_image_url) {
+                    orgPayload.cover_image_url = extractedCover;
+                }
+
                 payload.organisation = orgPayload;
 
             // 2. CAMPUS MODE SAVE

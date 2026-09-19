@@ -220,6 +220,72 @@ class GeminiOrganisationScraperService
             $data['courses'] = [];
         }
 
+        // Normalize Organisation
+        if (!empty($data['organisation'])) {
+            $org = &$data['organisation'];
+
+            // Normalize university_type
+            $rawUniType = strtolower((string)($org['university_type'] ?? ''));
+            if (str_contains($rawUniType, 'deemed')) {
+                $org['university_type'] = 'Deemed';
+            } elseif (str_contains($rawUniType, 'central')) {
+                $org['university_type'] = 'Central';
+            } elseif (str_contains($rawUniType, 'state')) {
+                $org['university_type'] = 'State';
+            } elseif (str_contains($rawUniType, 'international')) {
+                $org['university_type'] = 'International';
+            } elseif (str_contains($rawUniType, 'privat')) {
+                $org['university_type'] = 'Private';
+            }
+
+            // Normalize ownership_type
+            $rawOwnership = strtolower((string)($org['ownership_type'] ?? ''));
+            if (str_contains($rawOwnership, 'gov') || str_contains($rawOwnership, 'public') || str_contains($rawOwnership, 'state')) {
+                $org['ownership_type'] = 'Government';
+            } elseif (str_contains($rawOwnership, 'trust') || str_contains($rawOwnership, 'society')) {
+                $org['ownership_type'] = 'Trust';
+            } elseif (str_contains($rawOwnership, 'minority')) {
+                $org['ownership_type'] = 'Minority';
+            } elseif (str_contains($rawOwnership, 'privat')) {
+                $org['ownership_type'] = 'Private';
+            }
+
+            // Normalize university_category
+            $rawCat = strtolower((string)($org['university_category'] ?? ''));
+            if ((str_contains($rawCat, 'teach') && str_contains($rawCat, 'research')) || str_contains($rawCat, '+') || str_contains($rawCat, '&') || str_contains($rawCat, 'both')) {
+                $org['university_category'] = 'Teaching + Research';
+            } elseif (str_contains($rawCat, 'research')) {
+                $org['university_category'] = 'Research';
+            } elseif (str_contains($rawCat, 'teach')) {
+                $org['university_category'] = 'Teaching';
+            } else {
+                if (!empty($org['naac_accredited']) || !empty($org['nirf_rank_overall'])) {
+                    $org['university_category'] = 'Teaching + Research';
+                }
+            }
+
+            // Normalize levels_offered
+            if (!empty($org['levels_offered'])) {
+                $rawLevels = is_array($org['levels_offered']) ? $org['levels_offered'] : explode(',', (string)$org['levels_offered']);
+                $normalizedLevels = [];
+                foreach ($rawLevels as $lvl) {
+                    $lvlLower = strtolower(trim((string)$lvl));
+                    if (str_contains($lvlLower, 'undergrad') || str_contains($lvlLower, 'bachelor') || $lvlLower === 'ug' || (str_contains($lvlLower, 'graduate') && !str_contains($lvlLower, 'post'))) {
+                        $normalizedLevels[] = 'UG';
+                    } elseif (str_contains($lvlLower, 'postgrad') || str_contains($lvlLower, 'master') || $lvlLower === 'pg') {
+                        $normalizedLevels[] = 'PG';
+                    } elseif (str_contains($lvlLower, 'phd') || str_contains($lvlLower, 'ph.d') || str_contains($lvlLower, 'doc') || str_contains($lvlLower, 'research')) {
+                        $normalizedLevels[] = 'Doctoral';
+                    } elseif (str_contains($lvlLower, 'diploma') || str_contains($lvlLower, 'polytechnic') || str_contains($lvlLower, 'cert')) {
+                        $normalizedLevels[] = 'Diploma';
+                    }
+                }
+                $org['levels_offered'] = array_values(array_unique($normalizedLevels));
+            }
+
+            unset($org);
+        }
+
         // Normalize Campuses
         foreach ($data['campuses'] as &$c) {
             if (!is_array($c)) continue;
@@ -272,73 +338,7 @@ class GeminiOrganisationScraperService
     }
 
     /**
-     * Build prompt strictly scoped to allowed fields and current data comparison
-     */
-    protected function buildScopedUpdatePrompt(
-        string $url,
-        string $content,
-        string $orgTypeTitle,
-        array $allowedFields,
-        array $currentData
-    ): string {
-        $allowedJson = json_encode($allowedFields, JSON_PRETTY_PRINT);
-        $currentJson = json_encode($currentData, JSON_PRETTY_PRINT);
-
-        return <<<PROMPT
-You are an expert institutional research and verification AI agent.
-You are tasked with reviewing and fetching UPDATES for an existing educational institution.
-
-INSTITUTION URL: {$url}
-ORGANISATION TYPE: {$orgTypeTitle}
-
-RAW WEBSITE / SEARCH CONTENT:
-{$content}
-
-CURRENT DATABASE RECORD (OLD DATA):
-{$currentJson}
-
-ALLOWED FIELDS FOR UPDATE:
-Only the following fields are enabled by the admin for checking and updating:
-{$allowedJson}
-
-CRITICAL RULES:
-1. ONLY return data for the keys explicitly listed in "ALLOWED FIELDS". Do NOT invent or include other field keys.
-2. For every allowed field:
-   - Search the website and Google Search Grounding to find the latest and most accurate current values.
-   - If a field is already accurate in the database, keep the current value.
-   - If there is a newer, updated, or previously missing value (e.g. new HOD, new NAAC grade, contact phone, website, accreditation), provide the NEW accurate value.
-3. For departments, campuses, and courses:
-   - For existing departments/campuses/courses provided in CURRENT DATABASE RECORD, provide their updated fields matching the allowed keys.
-   - You may also include newly detected departments, campuses, or courses if verified on the official website.
-4. Output MUST be ONLY valid JSON matching this structure:
-{
-  "organisation": {
-    /* ONLY allowed organisation keys */
-  },
-  "campuses": [
-    {
-      "name": "...",
-      /* ONLY allowed campus keys */
-    }
-  ],
-  "departments": [
-    {
-      "name": "...",
-      /* ONLY allowed department keys */
-    }
-  ],
-  "courses": [
-    {
-      "academic_unit_name": "...",
-      /* ONLY allowed course keys */
-    }
-  ]
-}
-PROMPT;
-    }
-
-    /**
-     * Fetch and clean text from given URL
+     * Fetch and clean text and meta images from given URL
      */
     protected function fetchUrlContent(string $url): string
     {
@@ -352,18 +352,88 @@ PROMPT;
 
             if ($response->successful()) {
                 $html = $response->body();
+                
+                // Extract image candidates before stripping tags
+                $imgCandidates = $this->extractImageCandidatesFromHtml($html, $url);
+                $imgMeta = "";
+                if (!empty($imgCandidates['logo'])) {
+                    $imgMeta .= "\n- Detected Official Logo Candidate URL: " . $imgCandidates['logo'];
+                }
+                if (!empty($imgCandidates['cover'])) {
+                    $imgMeta .= "\n- Detected Campus Cover Image Candidate URL: " . $imgCandidates['cover'];
+                }
+
                 // Remove scripts and styles
                 $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
                 $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
                 $cleanText = strip_tags($html);
                 $cleanText = preg_replace('/\s+/', ' ', $cleanText);
-                return substr(trim($cleanText), 0, 15000);
+                
+                $result = substr(trim($cleanText), 0, 15000);
+                if (!empty($imgMeta)) {
+                    $result = "PAGE ASSET CANDIDATES:{$imgMeta}\n\n" . $result;
+                }
+                return $result;
             }
         } catch (\Exception $e) {
             Log::warning('Direct URL scrape failed, relying on Gemini search: ' . $e->getMessage());
         }
 
         return "Official Website URL: {$url}";
+    }
+
+    /**
+     * Extract logo and cover image candidates from raw HTML
+     */
+    protected function extractImageCandidatesFromHtml(string $html, string $baseUrl): array
+    {
+        $images = [
+            'logo' => null,
+            'cover' => null,
+        ];
+
+        // 1. OpenGraph & Twitter Image
+        if (preg_match('/<meta\s+(?:property|name)=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']/i', $html, $m)) {
+            $images['cover'] = $this->resolveAbsoluteUrl($m[1], $baseUrl);
+        }
+
+        // 2. Logo in img tags
+        if (preg_match('/<img[^>]+(?:class|id|alt)=["\'][^"\']*(?:logo|brand|crest)[^"\']*["\'][^>]+src=["\']([^"\']+)["\']/i', $html, $m) ||
+            preg_match('/<img[^>]+src=["\']([^"\']*(?:logo|brand|crest)[^"\']*)["\']/i', $html, $m)) {
+            $images['logo'] = $this->resolveAbsoluteUrl($m[1], $baseUrl);
+        } elseif (preg_match('/<link\s+rel=["\'](?:icon|shortcut icon|apple-touch-icon)["\']\s+href=["\']([^"\']+)["\']/i', $html, $m)) {
+            $images['logo'] = $this->resolveAbsoluteUrl($m[1], $baseUrl);
+        }
+
+        // 3. Wikipedia Infobox Image Check
+        if (str_contains($baseUrl, 'wikipedia.org')) {
+            if (preg_match('/<table[^>]*class=["\'][^"\']*infobox[^"\']*["\'][^>]*>.*?<img[^>]+src=["\']([^"\']+)["\']/is', $html, $m)) {
+                $images['logo'] = $this->resolveAbsoluteUrl($m[1], $baseUrl);
+            }
+        }
+
+        return $images;
+    }
+
+    /**
+     * Resolve relative URL to absolute URL
+     */
+    protected function resolveAbsoluteUrl(string $url, string $baseUrl): string
+    {
+        $url = trim($url);
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return $url;
+        }
+        $parsed = parse_url($baseUrl);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? '';
+        if (str_starts_with($url, '/')) {
+            return "{$scheme}://{$host}{$url}";
+        }
+        return "{$scheme}://{$host}/" . ltrim($url, '/');
     }
 
     /**
@@ -859,7 +929,7 @@ PROMPT;
         array $referenceUrls = []
     ): string {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
-        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
 
         return <<<PROMPT
 You are an expert higher education data extraction and research AI agent.
@@ -872,18 +942,31 @@ Extract ONLY the institutional profile for the "organisation" object.
 {$cleanContent}
 
 CRITICAL RESEARCH & WRITING INSTRUCTIONS:
-1. DEEP WEB SEARCH & FACT VERIFICATION:
-   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
-   - If any important institutional details (e.g. established year, UGC/AICTE approval, NAAC grade & cycle, NIRF ranking, Chancellor/VC names, managing trust, official contacts) are NOT found on the provided URLs, actively search Google Search Grounding, official regulatory directories (UGC, AICTE, NAAC, NIRF, AISHE), Wikipedia, and authoritative educational portals.
-2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
-   - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
-   - Synthesize, rewrite, and write original, engaging, professionally structured, and SEO-friendly summaries in your own words for:
+1. DEEP WEB SEARCH & FACT VERIFICATION (GOOGLE GROUNDING):
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS (e.g. Wikipedia, NAAC, NIRF) provided above.
+   - If ANY institutional details (e.g. Established year, Ownership Type, University Type, University Category, Levels Offered, UGC/AICTE approval, NAAC grade & cycle, NIRF ranking, Chancellor/VC names, Logo URL, Cover Image URL, managing trust, official contacts) are NOT found in the provided preview text, ACTIVELY USE GOOGLE SEARCH GROUNDING, official regulatory directories (UGC, AICTE, NAAC, NIRF, AISHE), Wikipedia, and authoritative public educational portals to find the real verified facts. DO NOT LEAVE THEM BLANK.
+2. STRICT ENUM VALUE MATCHING (CRITICAL FOR DATABASE MAPPING):
+   - `university_type`: STRICT ENUM. Must be EXACTLY ONE of: "Central", "State", "Deemed", "Private", "International".
+     * NOTE: If the institution is a Deemed-to-be-University (e.g. Thapar, BITS Pilani, NMIMS, Amrita, Manipal), return "Deemed".
+     * If it is a State Private University, return "Private".
+     * If it is a State Public University, return "State".
+     * If it is a Central University, return "Central".
+   - `ownership_type`: STRICT ENUM. Must be EXACTLY ONE of: "Government", "Private", "Trust", "Minority".
+     * NOTE: For private or trust-founded institutions (e.g. Thapar Educational Trust), return "Private" or "Trust".
+   - `university_category`: STRICT ENUM. Must be EXACTLY ONE of: "Teaching", "Research", "Teaching + Research".
+     * NOTE: For universities offering undergraduate, postgraduate, and active Ph.D./research programs, return "Teaching + Research".
+   - `levels_offered`: ARRAY. Must contain ONLY values from: ["Diploma", "UG", "PG", "Doctoral"].
+     * Example: ["UG", "PG", "Doctoral"]
+3. LOGO & COVER IMAGE URLS:
+   - `logo_url`: Direct HTTPS URL to the official high-resolution logo / university crest (extract from website header, meta tags, or Wikipedia / Wikimedia Commons infobox image).
+   - `cover_image_url`: Direct HTTPS URL to a high-quality campus landscape photo, main building facade, or banner image.
+4. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
+   - DO NOT copy-paste raw text or boilerplate disclaimers.
+   - Synthesize, rewrite, and produce original, engaging, professionally structured, and SEO-friendly summaries:
      * `about_university` / `about_organisation`: 2-3 well-written paragraphs covering history, academic standing, campus culture, infrastructure, and institutional achievements.
      * `vision_mission`: Clear, inspiring, and concise vision and mission statements.
      * `core_values`: Clean array of 3 to 6 key institutional values (e.g. ["Academic Rigor", "Innovation & Research", "Ethical Leadership", "Inclusivity"]).
-3. COMPLETENESS & CLEAN DATA:
-   - If a field is not applicable or genuinely cannot be found after deep search, use empty string "" for text/urls, null for numbers, false for booleans, or [] for lists.
-4. RETURN FORMAT:
+5. RETURN FORMAT:
    - Return ONLY valid, parseable JSON matching EXACTLY this structure:
 
 {
@@ -899,9 +982,17 @@ CRITICAL RESEARCH & WRITING INSTRUCTIONS:
     "admission_portal_url": "https://admissions.example.edu.in",
     "student_portal_url": "https://portal.example.edu.in",
     "parent_portal_url": "",
-    "established_year": 1985,
+    "established_year": 1956,
     "ownership_type": "Private",
-    "university_type": "Private University",
+    "university_type": "Deemed",
+    "university_category": "Teaching + Research",
+    "levels_offered": [
+      "UG",
+      "PG",
+      "Doctoral"
+    ],
+    "logo_url": "https://upload.wikimedia.org/.../logo.png",
+    "cover_image_url": "https://upload.wikimedia.org/.../campus.jpg",
     "about_university": "Write a polished, original 2-paragraph profile describing the institution's legacy, campus environment, and academic focus...",
     "about_organisation": "Write an executive overview highlighting key highlights, leadership, and recognitions...",
     "vision_mission": "To provide transformative education and foster ethical leadership, innovation, and global excellence...",
@@ -934,12 +1025,6 @@ CRITICAL RESEARCH & WRITING INSTRUCTIONS:
       "NBA",
       "BCI",
       "PCI"
-    ],
-    "levels_offered": [
-      "Undergraduate",
-      "Postgraduate",
-      "Doctoral (Ph.D)",
-      "Diploma"
     ],
     "number_of_campuses": 2,
     "number_of_constituent_colleges": 4,

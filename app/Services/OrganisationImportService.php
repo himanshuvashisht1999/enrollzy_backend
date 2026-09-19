@@ -311,6 +311,9 @@ class OrganisationImportService
                 'established_year' => $this->parseInteger($orgInput['established_year'] ?? null),
                 'ownership_type' => $orgInput['ownership_type'] ?? null,
                 'university_type' => $orgInput['university_type'] ?? ($orgInput['ownership_type'] ?? null),
+                'university_category' => $orgInput['university_category'] ?? null,
+                'logo_url' => $this->handleRemoteOrLocalImage($orgInput['logo_url'] ?? null, 'logo', (int)$orgTypeId),
+                'cover_image_url' => $this->handleRemoteOrLocalImage($orgInput['cover_image_url'] ?? null, 'cover', (int)$orgTypeId),
                 'about_university' => $orgInput['about_university'] ?? ($orgInput['about_organisation'] ?? null),
                 'about_organisation' => $orgInput['about_organisation'] ?? ($orgInput['about_university'] ?? null),
                 'vision_mission' => $orgInput['vision_mission'] ?? null,
@@ -915,5 +918,55 @@ class OrganisationImportService
 
             return $organisation;
         });
+    }
+
+    /**
+     * Download and store remote image locally or return existing path
+     */
+    protected function handleRemoteOrLocalImage(?string $url, string $type = 'logo', int $orgTypeId = 1): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+
+        try {
+            $path = match ($orgTypeId) {
+                3 => 'media/institutes',
+                4 => 'media/schools',
+                6 => 'media/counselling_bodies',
+                7 => 'media/regulatory_bodies',
+                default => 'media/universities'
+            };
+
+            $dir = public_path($path);
+            if (!file_exists($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            $ext = 'png';
+            $pathInfo = pathinfo(parse_url($url, PHP_URL_PATH) ?? '');
+            if (!empty($pathInfo['extension']) && in_array(strtolower($pathInfo['extension']), ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'])) {
+                $ext = strtolower($pathInfo['extension']);
+            }
+
+            $fileName = time() . '_' . uniqid() . '_' . $type . '.' . $ext;
+            $response = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ])->get($url);
+
+            if ($response->successful() && strlen($response->body()) > 100) {
+                file_put_contents($dir . '/' . $fileName, $response->body());
+                return $path . '/' . $fileName;
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Could not download remote image ({$url}): " . $e->getMessage());
+        }
+
+        return $url;
     }
 }
