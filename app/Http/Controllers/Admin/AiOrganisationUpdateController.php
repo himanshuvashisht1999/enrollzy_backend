@@ -93,6 +93,10 @@ class AiOrganisationUpdateController extends Controller
      */
     public function fetchUpdates(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
             'url' => 'required|url',
@@ -369,6 +373,10 @@ class AiOrganisationUpdateController extends Controller
      */
     public function applyUpdates(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
             'approved_updates' => 'required|array',

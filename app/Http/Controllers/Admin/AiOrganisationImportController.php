@@ -87,6 +87,10 @@ class AiOrganisationImportController extends Controller
      */
     public function previewPrompt(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $mode = $request->input('mode', 'organisation');
 
         $rules = [
@@ -175,6 +179,10 @@ class AiOrganisationImportController extends Controller
      */
     public function extract(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $mode = $request->input('mode', 'organisation');
 
         $rules = [
@@ -324,6 +332,10 @@ class AiOrganisationImportController extends Controller
      */
     public function store(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $request->validate([
             'extracted_json' => 'required',
         ]);

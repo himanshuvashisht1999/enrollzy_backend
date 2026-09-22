@@ -65,7 +65,14 @@ class GeminiOrganisationScraperService
             'gemini-3.1-flash-lite',
         ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
-        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogle);
+        // When extracting targeted entities (department, course, campus) and direct website content is rich,
+        // bypass Google search grounding tool to prevent slow responses and 504 Gateway Timeouts
+        $searchGoogleForApi = $searchGoogle;
+        if ($mode !== 'organisation' && !empty($websiteContent) && strlen($websiteContent) > 1000) {
+            $searchGoogleForApi = false;
+        }
+
+        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi);
     }
 
     /**
@@ -533,7 +540,7 @@ class GeminiOrganisationScraperService
     {
         try {
             $response = Http::withoutVerifying()
-                ->timeout(20)
+                ->timeout(10)
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -555,6 +562,85 @@ class GeminiOrganisationScraperService
 
                 // Extract structured academic navigation (departments, courses, academic hubs)
                 $navData = $this->extractAcademicNavigationFromHtml($html, $url);
+                // Remove scripts and styles for primary page
+                $cleanHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+                $cleanHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanHtml);
+                $cleanHtml = preg_replace('/<\/(div|p|tr|li|h[1-6]|table|section|article|header|footer|nav)>/i', "\n", $cleanHtml);
+                $cleanHtml = preg_replace('/<(br|hr)\s*\/?>/i', "\n", $cleanHtml);
+                $cleanHtml = preg_replace('/<\/(td|th)>/i', " \t ", $cleanHtml);
+                $cleanText = strip_tags($cleanHtml);
+                $cleanText = preg_replace('/[ \t]+/', ' ', $cleanText);
+                $cleanText = preg_replace('/\n\s*\n+/', "\n", $cleanText);
+                $cleanText = $this->sanitizeUtf8($cleanText);
+                
+                $result = "";
+                if (!empty($imgMeta)) {
+                    $result .= "PAGE ASSET CANDIDATES:{$imgMeta}\n\n";
+                }
+                $result .= "=== MAIN BODY TEXT CONTENT ===\n" . mb_substr(trim($cleanText), 0, 70000, 'UTF-8');
+
+                // Smart Automatic Linked Sub-page Crawler (Fast concurrent fetch with 5s timeout)
+                if ($autoCrawlSubPages) {
+                    // If this is a dedicated department list page or course list page where we already have navigation entries, skip crawling to stay fast
+                    $hasRichDirectNav = ($mode === 'department' && count($navData['departments'] ?? []) >= 15)
+                                     || ($mode === 'course' && count($navData['courses'] ?? []) >= 20);
+
+                    if (!$hasRichDirectNav) {
+                        $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
+                        
+                        if (!empty($subPageCandidates)) {
+                            $maxSubpages = ($mode === 'organisation') ? 3 : (($mode === 'course') ? 3 : 2);
+                            $subPageCandidates = array_slice($subPageCandidates, 0, $maxSubpages);
+
+                            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($subPageCandidates) {
+                                $requests = [];
+                                foreach ($subPageCandidates as $idx => $candidate) {
+                                    $requests[$idx] = $pool->as((string)$idx)
+                                        ->withoutVerifying()
+                                        ->timeout(6)
+                                        ->withHeaders([
+                                            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                                            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                        ])
+                                        ->get($candidate['url']);
+                                }
+                                return $requests;
+                            });
+
+                            foreach ($subPageCandidates as $idx => $candidate) {
+                                $res = $responses[(string)$idx] ?? null;
+                                if ($res && $res->successful()) {
+                                    $subHtml = $res->body();
+
+                                    // Extract academic navigation from subpage too
+                                    $subNav = $this->extractAcademicNavigationFromHtml($subHtml, $candidate['url']);
+                                    if (!empty($subNav['departments'])) {
+                                        foreach ($subNav['departments'] as $dName => $dUrl) {
+                                            $navData['departments'][$dName] = $dUrl;
+                                        }
+                                    }
+                                    if (!empty($subNav['courses'])) {
+                                        foreach ($subNav['courses'] as $cName => $cUrl) {
+                                            $navData['courses'][$cName] = $cUrl;
+                                        }
+                                    }
+
+                                    $subClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $subHtml);
+                                    $subClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $subClean);
+                                    $subClean = strip_tags($subClean);
+                                    $subClean = preg_replace('/\s+/', ' ', $subClean);
+                                    $subClean = $this->sanitizeUtf8(trim($subClean));
+
+                                    if (!empty($subClean)) {
+                                        $result .= "\n\n=== AUTO-FETCHED INTERNAL LINKED PAGE: {$candidate['type']} - '{$candidate['title']}' (URL: {$candidate['url']}) ===\n" . mb_substr($subClean, 0, 15000, 'UTF-8');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Re-build structureMeta with all merged departments & courses
                 $structureMeta = "";
                 if (!empty($navData['departments'])) {
                     $structureMeta .= "\n=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE (" . count($navData['departments']) . ") ===\n";
@@ -573,109 +659,8 @@ class GeminiOrganisationScraperService
                     }
                 }
 
-                // Remove scripts and styles for primary page
-                $cleanHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-                $cleanHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanHtml);
-                $cleanHtml = preg_replace('/<\/(div|p|tr|li|h[1-6]|table|section|article|header|footer|nav)>/i', "\n", $cleanHtml);
-                $cleanHtml = preg_replace('/<(br|hr)\s*\/?>/i', "\n", $cleanHtml);
-                $cleanHtml = preg_replace('/<\/(td|th)>/i', " \t ", $cleanHtml);
-                $cleanText = strip_tags($cleanHtml);
-                $cleanText = preg_replace('/[ \t]+/', ' ', $cleanText);
-                $cleanText = preg_replace('/\n\s*\n+/', "\n", $cleanText);
-                $cleanText = $this->sanitizeUtf8($cleanText);
-                
-                $result = "";
-                if (!empty($imgMeta)) {
-                    $result .= "PAGE ASSET CANDIDATES:{$imgMeta}\n\n";
-                }
-                if (!empty($structureMeta)) {
-                    $result .= $structureMeta . "\n\n=== MAIN BODY TEXT CONTENT ===\n";
-                }
-                $result .= mb_substr(trim($cleanText), 0, 80000, 'UTF-8');
-
-                // Smart Automatic Linked Sub-page Crawler (Fees, Eligibility, Degree Programs, Placements)
-                if ($autoCrawlSubPages) {
-                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
-                    
-                    if (!empty($subPageCandidates)) {
-                        $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($subPageCandidates) {
-                            $requests = [];
-                            foreach ($subPageCandidates as $idx => $candidate) {
-                                $requests[$idx] = $pool->as((string)$idx)
-                                    ->withoutVerifying()
-                                    ->timeout(15)
-                                    ->withHeaders([
-                                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                                        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                    ])
-                                    ->get($candidate['url']);
-                            }
-                            return $requests;
-                        });
-
-                        $nestedFeeCandidates = [];
-
-                        foreach ($subPageCandidates as $idx => $candidate) {
-                            $res = $responses[(string)$idx] ?? null;
-                            if ($res && $res->successful()) {
-                                $subHtml = $res->body();
-                                
-                                // If this subpage is a course or academic page, check if it links to a specific fee page
-                                if (in_array($mode, ['course', 'department', 'organisation'])) {
-                                    $subNested = $this->discoverRelevantInternalPages($subHtml, $candidate['url'], $mode);
-                                    foreach ($subNested as $sn) {
-                                        if (str_contains(strtolower($sn['type']), 'fee') && !isset($subPageCandidates[$sn['url']])) {
-                                            $nestedFeeCandidates[$sn['url']] = $sn;
-                                        }
-                                    }
-                                }
-
-                                $subClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $subHtml);
-                                $subClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $subClean);
-                                $subClean = strip_tags($subClean);
-                                $subClean = preg_replace('/\s+/', ' ', $subClean);
-                                $subClean = $this->sanitizeUtf8(trim($subClean));
-
-                                if (!empty($subClean)) {
-                                    $result .= "\n\n=== AUTO-FETCHED INTERNAL LINKED PAGE: {$candidate['type']} - '{$candidate['title']}' (URL: {$candidate['url']}) ===\n" . mb_substr($subClean, 0, 15000, 'UTF-8');
-                                }
-                            }
-                        }
-
-                        // If nested fee pages were discovered (e.g. from course page to direct fee structure table), fetch them too
-                        if (!empty($nestedFeeCandidates)) {
-                            $topNested = array_slice(array_values($nestedFeeCandidates), 0, 2);
-                            $nestedResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($topNested) {
-                                $requests = [];
-                                foreach ($topNested as $nIdx => $nCand) {
-                                    $requests[$nIdx] = $pool->as((string)$nIdx)
-                                        ->withoutVerifying()
-                                        ->timeout(15)
-                                        ->withHeaders([
-                                            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                                            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                        ])
-                                        ->get($nCand['url']);
-                                }
-                                return $requests;
-                            });
-
-                            foreach ($topNested as $nIdx => $nCand) {
-                                $nRes = $nestedResponses[(string)$nIdx] ?? null;
-                                if ($nRes && $nRes->successful()) {
-                                    $nHtml = $nRes->body();
-                                    $nClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $nHtml);
-                                    $nClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $nClean);
-                                    $nClean = strip_tags($nClean);
-                                    $nClean = preg_replace('/\s+/', ' ', $nClean);
-                                    $nClean = $this->sanitizeUtf8(trim($nClean));
-                                    if (!empty($nClean)) {
-                                        $result .= "\n\n=== AUTO-FETCHED DEDICATED FEE STRUCTURE PAGE: '{$nCand['title']}' (URL: {$nCand['url']}) ===\n" . mb_substr($nClean, 0, 15000, 'UTF-8');
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (!empty($structureMeta) && !str_contains($result, '=== DETECTED OFFICIAL DEPARTMENTS')) {
+                    $result = $structureMeta . "\n\n" . $result;
                 }
 
                 return $result;
@@ -851,6 +836,52 @@ class GeminiOrganisationScraperService
             }
         }
 
+        // If candidate list is empty or sparse (e.g. Angular/SPA single-page homepages), probe root domain canonical directories
+        if (count($candidates) < 3) {
+            $parsed = parse_url($baseUrl);
+            $host = strtolower($parsed['host'] ?? '');
+            $parts = explode('.', $host);
+            $rootDomain = (count($parts) >= 2) ? implode('.', array_slice($parts, -2)) : $host;
+
+            $probePaths = [
+                "https://www.{$rootDomain}/course-list.aspx",
+                "https://www.{$rootDomain}/courses",
+                "https://www.{$rootDomain}/department-list",
+                "https://www.{$rootDomain}/departments",
+                "https://www.{$rootDomain}/academics",
+                "https://www.{$rootDomain}/programs",
+                "https://www.{$rootDomain}/schools",
+                "https://www.{$rootDomain}/faculties",
+                "https://{$host}/course-list.aspx",
+                "https://{$host}/departments",
+                "https://{$host}/programs",
+                "https://{$host}/ug",
+                "https://{$host}/pg",
+            ];
+
+            $probeResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($probePaths) {
+                $reqs = [];
+                foreach ($probePaths as $idx => $p) {
+                    $reqs[$idx] = $pool->as((string)$idx)->withoutVerifying()->timeout(4)->get($p);
+                }
+                return $reqs;
+            });
+
+            foreach ($probePaths as $idx => $p) {
+                $res = $probeResponses[(string)$idx] ?? null;
+                if ($res && $res->successful() && strlen($res->body()) > 2000) {
+                    $cleanP = rtrim($p, '/');
+                    $candidates[$cleanP] = [
+                        'url' => $cleanP,
+                        'title' => 'Official Academic Catalog Directory',
+                        'type' => 'Academic Directory Catalog',
+                        'score' => 950,
+                    ];
+                    break; // Use the first rich catalog found
+                }
+            }
+        }
+
         uasort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
         return array_slice(array_values($candidates), 0, 8);
     }
@@ -925,7 +956,25 @@ class GeminiOrganisationScraperService
             }
         }
 
-        // 2. Second: Parse all <a> tags (cards, list items, navigation links)
+        // 2. Parse Select Dropdowns (Discipline, Department, Faculty, School options)
+        if (preg_match_all('/<select\b[^>]*(?:name|id|class)=["\'][^"\']*(?:discipline|department|faculty|school|institute|branch|academic)[^"\']*["\'][^>]*>(.*?)<\/select>/is', $html, $selectMatches)) {
+            foreach ($selectMatches[1] as $optionsBlock) {
+                if (preg_match_all('/<option\s+[^>]*value=["\']([^"\']*)["\'][^>]*>(.*?)<\/option>/is', $optionsBlock, $optMatches, PREG_SET_ORDER)) {
+                    foreach ($optMatches as $om) {
+                        $val = trim($om[1]);
+                        $label = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($om[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                        if (!empty($label) && $val !== '0' && $val !== '' && !preg_match('/^(select|all|choose|--|program type|program level)/i', $label) && strlen($label) >= 3 && strlen($label) <= 100) {
+                            $optUrl = $baseUrl . (str_contains($baseUrl, '?') ? '&' : '?') . 'discipline=' . urlencode($label);
+                            if (!isset($departmentsByUrl[$optUrl])) {
+                                $departmentsByUrl[$optUrl] = $label;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Third: Parse all <a> tags (cards, list items, navigation links, query parameters)
         preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
 
         $parsedBasePath = strtolower(rtrim(parse_url($baseUrl, PHP_URL_PATH) ?? '', '/'));
@@ -948,6 +997,18 @@ class GeminiOrganisationScraperService
 
             $absUrl = $this->resolveAbsoluteUrl($href, $baseUrl);
             $parsedAbsPath = strtolower(rtrim(parse_url($absUrl, PHP_URL_PATH) ?? '', '/'));
+
+            // Check if link contains department or discipline query parameters (e.g. fd=Aerospace, dept=Biotech, discipline=Law)
+            if (preg_match('/(?:[?&])(?:fd|dept|department|discipline|faculty)=([^&"\'\s]+)/i', $href, $paramMatch)) {
+                $paramVal = urldecode($paramMatch[1]);
+                $deptNameCandidate = (!empty($rawText) && !preg_match($genericButtonPattern, $rawText) && !preg_match($nonAcademicPattern, $rawText) && strlen($rawText) >= 3) ? $rawText : $paramVal;
+                if (!empty($deptNameCandidate) && !in_array(strtolower($deptNameCandidate), ['all', 'select', '0', 'all programs', 'program type']) && strlen($deptNameCandidate) >= 3 && strlen($deptNameCandidate) <= 100) {
+                    if (!isset($departmentsByUrl[$absUrl])) {
+                        $departmentsByUrl[$absUrl] = $deptNameCandidate;
+                    }
+                    continue;
+                }
+            }
 
             // Ignore links pointing to department list / directory overview pages itself
             if ($parsedAbsPath === $parsedBasePath || preg_match('/(\/department-list|\/departments-list|\/all-departments|\/faculty-list)$/i', $parsedAbsPath)) {
@@ -984,7 +1045,8 @@ class GeminiOrganisationScraperService
                 continue;
             }
 
-            if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of)/i', $rawText)) {
+            if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of|institute of)/i', $rawText) ||
+                preg_match('/(school of [a-z\s]+|institute of [a-z\s]+|faculty of [a-z\s]+)/i', $rawText)) {
                 if (!isset($departmentsByUrl[$absUrl])) {
                     $departmentsByUrl[$absUrl] = $rawText;
                 }
@@ -1244,22 +1306,22 @@ PROMPT;
 
         // Check for structured detected departments
         $detectedDeptText = "";
-        if (preg_match('/=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE \((\d+)\) ===\n(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+        if (preg_match('/===\s*DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
             $count = (int)$m[1];
             $deptList = trim($m[2]);
             $detectedDeptText = <<<DET_DEPT
 MANDATORY TARGET DEPARTMENTS TO POPULATE ({$count} Departments detected directly from official website navigation):
 {$deptList}
 
-STRICT EXHAUSTIVE RULE:
-- You MUST create an entry in the "departments" array for EVERY SINGLE ONE of the {$count} departments in the list above.
-- DO NOT SKIP, SAMPLE, MERGE, OR TRUNCATE. If {$count} departments are listed, exactly {$count} departmental objects must be returned in the JSON array.
+STRICT EXHAUSTIVE MANDATE:
+- You MUST create an entry in the "departments" array for EVERY SINGLE ONE of the {$count} departments in the list above (including Aerospace, Anthropology, Biotechnology, Architecture, Artificial Intelligence, Forensic Sciences, Psychology, Law, etc.).
+- DO NOT SKIP, SAMPLE, MERGE, OR STOP AT 20. If {$count} departments are listed, exactly {$count} distinct departmental objects must be returned in the JSON array.
 DET_DEPT;
         } else {
             $detectedDeptText = <<<DET_DEPT
-STRICT EXHAUSTIVE RULE:
-- You MUST comprehensively extract all active academic departments, wings, and schools (typically 10 to 30+ departments for universities, or academic wings/subject departments for schools).
-- DO NOT return only 3 or 4 sample departments. Return every single academic department active at the institution (e.g. Science, Mathematics, Humanities, Commerce, Performing Arts, Primary Wing, Secondary Wing, etc.).
+STRICT EXHAUSTIVE MANDATE:
+- You MUST comprehensively extract and return ALL active academic departments, faculties, and institutes (universities typically offer 50 to 100+ departments including Aerospace, Anthropology, Biotechnology, Artificial Intelligence, Forensic Sciences, Psychology, Law, Management, Humanities, etc.).
+- DO NOT return only 15-20 sample departments. Return every single academic department active at the institution.
 DET_DEPT;
         }
 
@@ -1296,8 +1358,8 @@ PRIMARY URL: {$url}{$refUrlsText}
 
 {$searchInstructions}
 
-3. CONCISE & POLISHED WRITING (TO ENSURE ALL DEPARTMENTS FIT IN JSON OUTPUT):
-   - `about_department`: Write a concise, high-impact 1-paragraph summary (2-3 sentences) highlighting the department's core curriculum focus, research labs, and career pathways. (Keep it concise so all departments fit cleanly within the JSON token limit).
+3. FAST & CONCISE WRITING (TO ENSURE RAPID GENERATION WITHOUT SERVER TIMEOUTS):
+   - `about_department`: Write 1 crisp, high-impact sentence (e.g. "The department provides undergraduate and postgraduate education emphasizing research labs and practical industry training."). Keeping this to 1 sentence guarantees fast completion and avoids server timeouts.
 
 4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -1363,7 +1425,7 @@ PROMPT;
 
         // Check for structured detected courses
         $detectedCourseText = "";
-        if (preg_match('/=== DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\) ===\n(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+        if (preg_match('/===\s*DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
             $count = (int)$m[1];
             $courseList = trim(substr($m[2], 0, 5000));
             $detectedCourseText = <<<DET_COURSE

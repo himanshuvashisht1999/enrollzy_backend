@@ -182,7 +182,7 @@
                                     <i class="fab fa-google text-primary me-1"></i> Search Google for missing/additional details
                                 </label>
                                 <div class="text-muted" style="font-size: 0.75rem;">
-                                    When enabled, AI will query Google to verify and discover real rankings, addresses, acreage, and facility details. Uncheck to strictly extract ONLY from provided URL text.
+                                    When enabled, AI will query Google for missing rankings and address data. Keep unchecked for fast extraction from department / course directories to prevent gateway timeouts.
                                 </div>
                             </div>
                         </div>
@@ -874,6 +874,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        const searchGoogleCheck = document.getElementById('aiSearchGoogleCheck');
+        if (searchGoogleCheck) {
+            if (mode === 'organisation') {
+                searchGoogleCheck.checked = true;
+            } else {
+                searchGoogleCheck.checked = false;
+            }
+        }
+
         fetchAndRefreshPrompt(false);
     }
 
@@ -898,15 +907,19 @@ document.addEventListener('DOMContentLoaded', function () {
         $deptSelect.empty().append(new Option('-- Select Department * --', ''));
 
         if (orgId) {
-            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?organisation_id=${orgId}`)
-                .then(res => res.json())
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?organisation_id=${orgId}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.ok ? res.json() : null)
                 .then(data => {
-                    if (data.campuses && Array.isArray(data.campuses)) {
+                    if (data && data.campuses && Array.isArray(data.campuses)) {
                         data.campuses.forEach(c => {
                             $campusSelect.append(new Option(c.campus_name + (c.city ? ' (' + c.city + ')' : ''), c.id));
                         });
                     }
-                    if (data.departments && Array.isArray(data.departments)) {
+                    if (data && data.departments && Array.isArray(data.departments)) {
                         data.departments.forEach(d => {
                             $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
                         });
@@ -929,10 +942,14 @@ document.addEventListener('DOMContentLoaded', function () {
             if (orgId) params.append('organisation_id', orgId);
             if (campusId) params.append('campus_id', campusId);
 
-            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?${params.toString()}`)
-                .then(res => res.json())
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?${params.toString()}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.ok ? res.json() : null)
                 .then(data => {
-                    if (data.departments && Array.isArray(data.departments)) {
+                    if (data && data.departments && Array.isArray(data.departments)) {
                         data.departments.forEach(d => {
                             $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
                         });
@@ -1062,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
                 },
                 body: JSON.stringify({
@@ -1075,10 +1093,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     search_google: searchGoogle
                 })
             })
-            .then(res => res.json())
+            .then(async res => {
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) return null;
+                return res.json();
+            })
             .then(result => {
                 if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
-                if (result.success && result.prompt) {
+                if (result && result.success && result.prompt) {
                     if (aiCustomPrompt) {
                         aiCustomPrompt.value = result.prompt;
                         updatePromptCharCount();
@@ -1208,6 +1230,7 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
             },
             body: JSON.stringify({
@@ -1222,7 +1245,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 search_google: searchGoogle
             })
         })
-        .then(response => response.json())
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                if (response.status === 504 || response.status === 502) {
+                    throw new Error('Server Gateway Timeout (' + response.status + '). The website may have taken too long to respond. Please try again or uncheck Search Grounding to speed up extraction.');
+                }
+                throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+            }
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || `Server error (${response.status})`);
+            }
+            return data;
+        })
         .then(result => {
             if (result.success && result.data) {
                 currentExtractedData = result.data;
@@ -2522,13 +2559,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
                 },
                 body: JSON.stringify({
                     extracted_json: payload
                 })
             })
-            .then(response => response.json())
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+                }
+                const res = await response.json();
+                if (!response.ok || !res.success) {
+                    throw new Error(res.message || `Failed to save data (HTTP ${response.status})`);
+                }
+                return res;
+            })
             .then(res => {
                 if (res.success) {
                     alert(res.message);

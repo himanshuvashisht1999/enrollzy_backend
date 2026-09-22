@@ -675,6 +675,7 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
             },
             body: JSON.stringify({
@@ -682,7 +683,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 organisation_type: orgType
             })
         })
-        .then(response => response.json())
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                if (response.status === 504 || response.status === 502) {
+                    throw new Error('Server Gateway Timeout (' + response.status + '). The website may have taken too long to respond. Please try again.');
+                }
+                throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+            }
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || `Server error (${response.status})`);
+            }
+            return data;
+        })
         .then(result => {
             if (result.success && result.data) {
                 currentExtractedData = result.data;
@@ -1536,13 +1551,25 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
             },
             body: JSON.stringify({
                 extracted_json: payload
             })
         })
-        .then(response => response.json())
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+            }
+            const res = await response.json();
+            if (!response.ok || !res.success) {
+                throw new Error(res.message || `Failed to save data (HTTP ${response.status})`);
+            }
+            return res;
+        })
         .then(res => {
             if (res.success) {
                 alert(res.message);
