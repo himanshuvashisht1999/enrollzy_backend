@@ -709,7 +709,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function populateMasterSelectors(masters) {
         const orgTypeSelect = document.getElementById('aiOrgTypeMaster');
         if (orgTypeSelect && masters.organisation_types) {
-            const allowedTypes = ['college', 'university'];
+            const allowedTypes = ['university', 'college', 'school'];
             orgTypeSelect.innerHTML = '<option value="">-- Select Master Type --</option>' +
                 masters.organisation_types
                     .filter(ot => allowedTypes.includes(ot.title.toLowerCase()))

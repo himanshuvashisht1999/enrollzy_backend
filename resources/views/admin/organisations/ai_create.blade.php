@@ -155,7 +155,7 @@
                         <option value="">-- Select Type * --</option>
                         @if(isset($organisationTypes))
                             @foreach($organisationTypes as $type)
-                                @if(in_array(strtolower($type->title), ['college', 'university']))
+                                @if(in_array(strtolower($type->title), ['university', 'college', 'school']))
                                     <option value="{{ $type->id }}" {{ $loop->first ? 'selected' : '' }}>{{ $type->title }}</option>
                                 @endif
                             @endforeach
@@ -169,6 +169,23 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-globe text-muted"></i></span>
                         <input type="url" id="aiInputUrl" class="form-control" placeholder="https://www.example.edu.in" required>
+                    </div>
+                </div>
+
+                <!-- Google Search Grounding Option -->
+                <div class="col-12 mt-2">
+                    <div class="card bg-light border-0 shadow-none p-2 rounded-3">
+                        <div class="form-check form-switch d-flex align-items-center gap-2 mb-0 ps-0">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="aiSearchGoogleCheck" checked style="width: 2.3em; height: 1.25em; cursor: pointer;">
+                            <div>
+                                <label class="form-check-label fw-bold text-dark small mb-0" for="aiSearchGoogleCheck" style="cursor: pointer;">
+                                    <i class="fab fa-google text-primary me-1"></i> Search Google for missing/additional details
+                                </label>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    When enabled, AI will query Google to verify and discover real rankings, addresses, acreage, and facility details. Uncheck to strictly extract ONLY from provided URL text.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -333,7 +350,7 @@
                                     <option value="">-- Select Master Type --</option>
                                     @if(isset($organisationTypes))
                                         @foreach($organisationTypes as $ot)
-                                            @if(in_array(strtolower($ot->title), ['college', 'university']))
+                                            @if(in_array(strtolower($ot->title), ['university', 'college', 'school']))
                                                 <option value="{{ $ot->id }}">{{ $ot->title }}</option>
                                             @endif
                                         @endforeach
@@ -456,40 +473,11 @@ document.addEventListener('DOMContentLoaded', function () {
         organisation_types: @json($organisationTypes ?? [])
     };
 
-    const DEGREE_ALIASES = {
-        'diploma in pharmacy': ['d.pharm', 'd pharm', 'dpharm', 'diploma pharmacy', 'd pharma', 'd. pharma'],
-        'bachelor of pharmacy': ['b.pharm', 'b pharm', 'bpharm', 'b pharmacy', 'b pharma', 'b. pharma'],
-        'master of pharmacy': ['m.pharm', 'm pharm', 'mpharm', 'm pharmacy', 'm pharma', 'm. pharma'],
-        'bachelor of technology': ['b.tech', 'b tech', 'btech', 'b.e', 'be', 'bachelor of engineering'],
-        'master of technology': ['m.tech', 'm tech', 'mtech', 'm.e', 'me', 'master of engineering'],
-        'master of business administration': ['mba'],
-        'bachelor of business administration': ['bba'],
-        'bachelor of computer applications': ['bca'],
-        'master of computer applications': ['mca'],
-        'bachelor of commerce': ['b.com', 'bcom', 'b. com'],
-        'master of commerce': ['m.com', 'mcom', 'm. com'],
-        'bachelor of science': ['b.sc', 'bsc', 'b. sc'],
-        'master of science': ['m.sc', 'msc', 'm. sc'],
-        'bachelor of arts': ['b.a', 'ba', 'b. a'],
-        'master of arts': ['m.a', 'ma', 'm. a'],
-        'bachelor of laws': ['llb', 'll.b', 'bachelor of law'],
-        'master of laws': ['llm', 'll.m'],
-        'bachelor of medicine and bachelor of surgery': ['mbbs', 'm.b.b.s'],
-        'bachelor of dental surgery': ['bds', 'b.d.s'],
-        'doctor of medicine': ['md', 'm.d'],
-        'master of surgery': ['ms', 'm.s'],
-        'bachelor of architecture': ['b.arch', 'b arch', 'barch'],
-        'bachelor of design': ['b.des', 'b design', 'bdesign', 'b des'],
-        'bachelor of education': ['b.ed', 'b ed', 'bed'],
-        'master of education': ['m.ed', 'm ed', 'med'],
-        'doctor of philosophy': ['ph.d', 'phd', 'doctorate']
-    };
-
     function normalizeStr(str) {
         if (!str) return '';
         return str.toString()
             .toLowerCase()
-            .replace(/\b(in|of|and|&|the|for|with|a|an|program|course|degree|honors|hons)\b/gi, '')
+            .replace(/\b(in|of|and|&|the|for|with|a|an|program|programs|course|courses|degree|honors|hons)\b/gi, '')
             .replace(/[^a-z0-9]/gi, '')
             .trim();
     }
@@ -523,60 +511,123 @@ document.addEventListener('DOMContentLoaded', function () {
         return (longerLength - editDistance) / parseFloat(longerLength);
     }
 
-    function findBestCourseMatch(aiName, aiShortName) {
-        if (!globalMasters.courses || globalMasters.courses.length === 0) return null;
+    function extractDegreePrefix(str) {
+        if (!str) return '';
+        const s = ' ' + str.toString().toLowerCase().replace(/[^a-z0-9]/g, ' ') + ' ';
+
+        if (/\b(ph\s*d|doctorate|doctor of philosophy|d\s*phil)\b/.test(s)) return 'phd';
+        if (/\b(b\s*tech|bachelor of technology|b\s*e|bachelor of engineering)\b/.test(s)) return 'btech';
+        if (/\b(m\s*tech|master of technology|m\s*e|master of engineering)\b/.test(s)) return 'mtech';
+        if (/\b(b\s*pharm|b\s*pharma|bachelor of pharmacy|b\s*pharmacy)\b/.test(s)) return 'bpharm';
+        if (/\b(m\s*pharm|m\s*pharma|master of pharmacy|m\s*pharmacy)\b/.test(s)) return 'mpharm';
+        if (/\b(d\s*pharm|d\s*pharma|diploma in pharmacy|diploma pharmacy)\b/.test(s)) return 'dpharm';
+        if (/\b(diploma|polytechnic)\b/.test(s)) return 'diploma';
+        if (/\b(bca|bachelor of computer application|bachelor of computer applications)\b/.test(s)) return 'bca';
+        if (/\b(mca|master of computer application|master of computer applications)\b/.test(s)) return 'mca';
+        if (/\b(bba|bachelor of business administration|bms|bbs)\b/.test(s)) return 'bba';
+        if (/\b(mba|master of business administration|pgdm)\b/.test(s)) return 'mba';
+        if (/\b(b\s*sc|bachelor of science|b\s*s)\b/.test(s)) return 'bsc';
+        if (/\b(m\s*sc|master of science|m\s*s)\b/.test(s) && !/\b(master of surgery)\b/.test(s)) return 'msc';
+        if (/\b(b\s*com|bachelor of commerce)\b/.test(s)) return 'bcom';
+        if (/\b(m\s*com|master of commerce)\b/.test(s)) return 'mcom';
+        if (/\b(b\s*a|bachelor of arts)\b/.test(s)) return 'ba';
+        if (/\b(m\s*a|master of arts)\b/.test(s)) return 'ma';
+        if (/\b(llb|bachelor of law|bachelor of laws)\b/.test(s)) return 'llb';
+        if (/\b(llm|master of law|master of laws)\b/.test(s)) return 'llm';
+        if (/\b(mbbs)\b/.test(s)) return 'mbbs';
+        if (/\b(bds|bachelor of dental surgery)\b/.test(s)) return 'bds';
+        if (/\b(md|doctor of medicine)\b/.test(s)) return 'md';
+        if (/\b(ms|master of surgery)\b/.test(s)) return 'ms';
+        if (/\b(b\s*arch|bachelor of architecture)\b/.test(s)) return 'barch';
+        if (/\b(m\s*arch|master of architecture)\b/.test(s)) return 'march';
+        if (/\b(b\s*des|bachelor of design)\b/.test(s)) return 'bdes';
+        if (/\b(m\s*des|master of design)\b/.test(s)) return 'mdes';
+        if (/\b(b\s*ed|bachelor of education)\b/.test(s)) return 'bed';
+        if (/\b(m\s*ed|master of education)\b/.test(s)) return 'med';
+        if (/\b(bpt|bachelor of physiotherapy|bachelors in physiotherapy)\b/.test(s)) return 'bpt';
+        if (/\b(mpt|master of physiotherapy|masters in physiotherapy)\b/.test(s)) return 'mpt';
+
+        return '';
+    }
+
+    function extractSubjectCore(str) {
+        if (!str) return '';
+        return str.toString()
+            .toLowerCase()
+            .replace(/\b(\d+\s*(years?|yrs?|semesters?|sems?))\b/gi, '')
+            .replace(/\b(b\.?tech|m\.?tech|b\.?e|m\.?e|b\.?sc|m\.?sc|bca|mca|bba|mba|b\.?com|m\.?com|b\.?a|m\.?a|b\.?pharm|m\.?pharm|d\.?pharm|b\.?des|m\.?des|b\.?arch|m\.?arch|b\.?ed|m\.?ed|ph\.?d|phd|doctorate|doctor of philosophy|diploma|bpt|mpt|bachelor of technology|master of technology|bachelor of engineering|master of engineering|bachelor of science|master of science|bachelor of commerce|master of commerce|bachelor of arts|master of arts|bachelor of pharmacy|master of pharmacy|bachelor of design|master of design|bachelor of architecture|master of architecture|bachelor of business administration|master of business administration|bachelor of computer applications|master of computer applications)\b/gi, '')
+            .replace(/\b(in|of|and|&|the|for|with|a|an|program|programs|course|courses|degree|honors|hons|engineering|technology|studies|science|sciences)\b/gi, '')
+            .replace(/[^a-z0-9]/gi, '')
+            .trim();
+    }
+
+    function findBestCourseMatch(aiName, aiShortName, aiLevel, aiStream, aiDiscipline) {
+        if (!globalMasters.courses || globalMasters.courses.length === 0 || (!aiName && !aiShortName)) return null;
+
+        const aiDegree = extractDegreePrefix(aiName) || extractDegreePrefix(aiShortName) || extractDegreePrefix(aiLevel);
+        const aiSubject = extractSubjectCore(aiName) || extractSubjectCore(aiShortName) || extractSubjectCore(aiDiscipline);
         const normName = normalizeStr(aiName);
         const normShort = normalizeStr(aiShortName);
 
+        // 1. Direct exact full string match
         for (const c of globalMasters.courses) {
             const normC = normalizeStr(c.name);
             if (normName !== '' && normName === normC) return c;
             if (normShort !== '' && normShort === normC) return c;
         }
 
-        for (const [longForm, aliasList] of Object.entries(DEGREE_ALIASES)) {
-            const normLong = normalizeStr(longForm);
-            const matchesLong = (normName === normLong || normName.includes(normLong));
-            let matchesShort = false;
-            for (const al of aliasList) {
-                const normAl = normalizeStr(al);
-                if ((normShort !== '' && normShort === normAl) || (normName !== '' && normName === normAl)) {
-                    matchesShort = true;
-                    break;
+        // 2. Degree Prefix + Subject Matching
+        let bestCandidate = null;
+        let bestScore = -1;
+
+        for (const c of globalMasters.courses) {
+            const cDegree = extractDegreePrefix(c.name);
+            const cSubject = extractSubjectCore(c.name);
+            const normC = normalizeStr(c.name);
+
+            // If AI extracted a degree prefix, candidate MUST match it!
+            if (aiDegree !== '') {
+                if (cDegree !== '' && cDegree !== aiDegree) {
+                    continue; // Strict degree mismatch: B.Tech must NEVER match M.Tech, Ph.D, etc.
                 }
             }
 
-            if (matchesLong || matchesShort) {
-                for (const c of globalMasters.courses) {
-                    const normC = normalizeStr(c.name);
-                    if (normC === normLong) return c;
-                    for (const al of aliasList) {
-                        if (normC === normalizeStr(al)) return c;
+            let score = 0;
+
+            // Degree Match Bonus
+            if (aiDegree !== '' && cDegree === aiDegree) {
+                score += 10.0;
+            }
+
+            // Subject Core Comparison
+            if (aiSubject !== '' && cSubject !== '') {
+                if (aiSubject === cSubject) {
+                    score += 50.0; // Perfect subject match
+                } else if (cSubject.startsWith(aiSubject) || aiSubject.startsWith(cSubject)) {
+                    score += 25.0 + (Math.min(aiSubject.length, cSubject.length) / Math.max(aiSubject.length, cSubject.length) * 10);
+                } else if (cSubject.includes(aiSubject) || aiSubject.includes(cSubject)) {
+                    score += 15.0 + (Math.min(aiSubject.length, cSubject.length) / Math.max(aiSubject.length, cSubject.length) * 10);
+                } else {
+                    const sim = stringSimilarity(aiSubject, cSubject);
+                    if (sim >= 0.6) {
+                        score += sim * 15;
                     }
                 }
+            } else if (aiSubject === '' && cSubject === '') {
+                score += 30.0;
+            }
+
+            // Full normalized string similarity fallback
+            const fullSim = stringSimilarity(normName, normC);
+            score += fullSim * 5.0;
+
+            if (score > bestScore && score >= 10.0) {
+                bestScore = score;
+                bestCandidate = c;
             }
         }
 
-        let best = null;
-        let maxScore = 0;
-        for (const c of globalMasters.courses) {
-            const normC = normalizeStr(c.name);
-            if (normName !== '' && (normC.includes(normName) || normName.includes(normC))) {
-                const score = Math.min(normName.length, normC.length) / Math.max(normName.length, normC.length);
-                if (score > maxScore) {
-                    maxScore = score;
-                    best = c;
-                }
-            } else {
-                const score = stringSimilarity(normName, normC);
-                if (score > maxScore && score >= 0.55) {
-                    maxScore = score;
-                    best = c;
-                }
-            }
-        }
-
-        return best;
+        return bestCandidate;
     }
 
     function findBestLevelMatch(aiLevel) {
@@ -599,7 +650,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (m) return m.id;
         }
         if (norm.includes('phd') || norm.includes('doctor') || norm.includes('research')) {
-            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('phd') || normalizeStr(l.title).includes('ph.d'));
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('phd') || normalizeStr(l.title).includes('ph.d') || normalizeStr(l.title).includes('doctor'));
             if (m) return m.id;
         }
         if (norm.includes('certif')) {
@@ -655,8 +706,23 @@ document.addEventListener('DOMContentLoaded', function () {
         const campuses = [];
         document.querySelectorAll('.campus-item .c-name').forEach(input => {
             const val = input.value.trim();
-            if (val) campuses.push(val);
+            if (val && !campuses.includes(val)) campuses.push(val);
         });
+
+        const campusSelectEl = document.getElementById('aiInputTargetCampus');
+        if (campusSelectEl) {
+            Array.from(campusSelectEl.options).forEach(opt => {
+                const val = opt.text ? opt.text.replace(/\s*\(.*?\)\s*$/, '').trim() : '';
+                if (val && !val.startsWith('--') && !campuses.includes(val)) {
+                    campuses.push(val);
+                }
+            });
+        }
+
+        if (currentTargetCampusName && !campuses.includes(currentTargetCampusName)) {
+            campuses.unshift(currentTargetCampusName);
+        }
+
         return campuses.length ? campuses : ['Main Campus'];
     }
 
@@ -664,8 +730,23 @@ document.addEventListener('DOMContentLoaded', function () {
         const depts = [];
         document.querySelectorAll('.dept-item .d-name').forEach(input => {
             const val = input.value.trim();
-            if (val) depts.push(val);
+            if (val && !depts.includes(val)) depts.push(val);
         });
+
+        const deptSelectEl = document.getElementById('aiInputTargetDept');
+        if (deptSelectEl) {
+            Array.from(deptSelectEl.options).forEach(opt => {
+                const val = opt.text ? opt.text.replace(/\s*\[.*?\]\s*$/, '').trim() : '';
+                if (val && !val.startsWith('--') && !depts.includes(val)) {
+                    depts.push(val);
+                }
+            });
+        }
+
+        if (currentTargetDeptName && !depts.includes(currentTargetDeptName)) {
+            depts.unshift(currentTargetDeptName);
+        }
+
         return depts.length ? depts : ['General Faculty'];
     }
 
@@ -676,12 +757,12 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.course-item').forEach(card => {
             const campusSelect = card.querySelector('.cr-campus-select');
             if (campusSelect) {
-                const curVal = campusSelect.value;
+                const curVal = campusSelect.value || currentTargetCampusName;
                 campusSelect.innerHTML = campuses.map(c => `<option value="${c}" ${c === curVal ? 'selected' : ''}>${c}</option>`).join('');
             }
             const deptSelect = card.querySelector('.cr-dept-select');
             if (deptSelect) {
-                const curVal = deptSelect.value;
+                const curVal = deptSelect.value || currentTargetDeptName;
                 deptSelect.innerHTML = depts.map(d => `<option value="${d}" ${d === curVal ? 'selected' : ''}>${d}</option>`).join('');
             }
         });
@@ -871,6 +952,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fetchAndRefreshPrompt(false);
     });
 
+    $('#aiSearchGoogleCheck').on('change', function () {
+        fetchAndRefreshPrompt(false);
+    });
+
     const aiInputUrlEl = document.getElementById('aiInputUrl');
     if (aiInputUrlEl) {
         aiInputUrlEl.addEventListener('blur', function () {
@@ -937,6 +1022,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
         const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
         const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
+        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 1;
 
         // Update badge immediately
         if (badgePromptMode) {
@@ -985,7 +1071,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     target_organisation_id: targetOrgId || null,
                     target_campus_id: targetCampusId || null,
                     target_department_id: targetDeptId || null,
-                    reference_urls: referenceUrls
+                    reference_urls: referenceUrls,
+                    search_google: searchGoogle
                 })
             })
             .then(res => res.json())
@@ -1055,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
         const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
         const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
+        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 1;
 
         if (!url) {
             alert('Please enter a valid website URL.');
@@ -1094,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        const customPromptVal = (aiCustomPrompt && aiCustomPrompt.value.trim()) ? aiCustomPrompt.value.trim() : null;
+        const customPromptVal = (promptIsManuallyEdited && aiCustomPrompt && aiCustomPrompt.value.trim()) ? aiCustomPrompt.value.trim() : null;
 
         const loadingStatusEl = document.getElementById('aiLoadingStatusText');
         if (loadingStatusEl) {
@@ -1102,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const orgName = selOrg ? selOrg.name : 'the organisation';
 
             if (mode === 'campus') {
-                loadingStatusEl.innerText = `Extracting campus locations and infrastructure for '${orgName}'... Please wait.`;
+                loadingStatusEl.innerText = `Extracting campus details for '${orgName}'... Please wait.`;
             } else if (mode === 'department') {
                 loadingStatusEl.innerText = `Extracting academic faculties and departments for '${orgName}'... Please wait.`;
             } else if (mode === 'course') {
@@ -1130,7 +1218,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 target_campus_id: targetCampusId || null,
                 target_department_id: targetDeptId || null,
                 reference_urls: referenceUrls,
-                custom_prompt: customPromptVal
+                custom_prompt: customPromptVal,
+                search_google: searchGoogle
             })
         })
         .then(response => response.json())
@@ -1168,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const orgTypeSelect = document.getElementById('aiOrgTypeMaster');
         if (orgTypeSelect && masters.organisation_types) {
             const currentVal = orgTypeSelect.value;
-            const allowedTypes = ['college', 'university'];
+            const allowedTypes = ['university', 'college', 'school'];
             orgTypeSelect.innerHTML = '<option value="">-- Select Master Type --</option>' +
                 masters.organisation_types
                     .filter(ot => allowedTypes.includes(ot.title.toLowerCase()))
@@ -1941,28 +2030,44 @@ document.addEventListener('DOMContentLoaded', function () {
     function appendCourseCard(cr = {}, idx = Date.now()) {
         const rawAiName = cr.course_name || '';
         const rawAiShort = cr.short_name || '';
+        const rawAiLevel = cr.program_level || '';
+        const rawAiStream = cr.stream || '';
+        const rawAiDiscipline = cr.discipline || '';
 
-        const matchedCourse = findBestCourseMatch(rawAiName, rawAiShort);
+        const matchedCourse = findBestCourseMatch(rawAiName, rawAiShort, rawAiLevel, rawAiStream, rawAiDiscipline);
         const selectedCourseId = matchedCourse ? matchedCourse.id : (cr.course_id || '');
 
         const defaultLevelId = matchedCourse && matchedCourse.program_level_id 
             ? matchedCourse.program_level_id 
-            : findBestLevelMatch(cr.program_level);
+            : findBestLevelMatch(rawAiLevel);
 
         const defaultStreamId = matchedCourse && matchedCourse.stream_offered_id 
             ? matchedCourse.stream_offered_id 
-            : findBestStreamMatch(cr.stream);
+            : findBestStreamMatch(rawAiStream);
 
         const defaultDisciplineId = matchedCourse && matchedCourse.discipline_id 
             ? matchedCourse.discipline_id 
-            : findBestDisciplineMatch(cr.discipline);
+            : findBestDisciplineMatch(rawAiDiscipline);
 
         const defaultDuration = (matchedCourse && matchedCourse.duration) ? matchedCourse.duration : (cr.duration || '3 Years');
 
         const availableCampuses = getAvailableCampuses();
         const availableDepts = getAvailableDepts();
-        const selectedCampus = cr.campus_name || availableCampuses[0] || 'Main Campus';
-        const selectedDept = cr.department_name || availableDepts[0] || 'General Faculty';
+        let selectedCampus = cr.campus_name || currentTargetCampusName || availableCampuses[0] || 'Main Campus';
+        let selectedDept = cr.department_name || currentTargetDeptName || availableDepts[0] || 'General Faculty';
+
+        if (!availableCampuses.includes(selectedCampus)) {
+            const mC = availableCampuses.find(c => normalizeStr(c).includes(normalizeStr(selectedCampus)) || normalizeStr(selectedCampus).includes(normalizeStr(c)));
+            if (mC) selectedCampus = mC;
+            else availableCampuses.unshift(selectedCampus);
+        }
+
+        if (!availableDepts.includes(selectedDept)) {
+            const mD = availableDepts.find(d => normalizeStr(d).includes(normalizeStr(selectedDept)) || normalizeStr(selectedDept).includes(normalizeStr(d)));
+            if (mD) selectedDept = mD;
+            else if (currentTargetDeptName && availableDepts.includes(currentTargetDeptName)) selectedDept = currentTargetDeptName;
+            else availableDepts.unshift(selectedDept);
+        }
 
         const div = document.createElement('div');
         div.className = 'card border mb-3 course-item';

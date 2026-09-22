@@ -13,7 +13,7 @@ class GeminiOrganisationScraperService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model = config('services.gemini.model', 'gemini-1.5-flash');
+        $this->model = config('services.gemini.model', 'gemini-3.6-flash');
     }
 
     /**
@@ -28,7 +28,8 @@ class GeminiOrganisationScraperService
         ?string $customPrompt = null,
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        bool $searchGoogle = true
     ): array
     {
         if (empty($this->apiKey)) {
@@ -36,10 +37,10 @@ class GeminiOrganisationScraperService
         }
 
         if (!empty($customPrompt)) {
-            $prompt = $customPrompt;
+            $prompt = $this->sanitizeUtf8($customPrompt);
         } else {
-            // 1. Fetch initial content from the main URL
-            $websiteContent = $this->fetchUrlContent($url);
+            // 1. Fetch initial content from the main URL (with smart automatic linked sub-page discovery)
+            $websiteContent = $this->fetchUrlContent($url, $mode, true);
 
             // 2. Fetch and combine content from any additional reference URLs
             $combinedContent = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
@@ -47,25 +48,24 @@ class GeminiOrganisationScraperService
                 $combinedContent .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
                 foreach ($referenceUrls as $idx => $refUrl) {
                     $refNum = $idx + 1;
-                    $refContent = $this->fetchUrlContent($refUrl);
-                    $combinedContent .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . substr($refContent, 0, 10000);
+                    $refContent = $this->fetchUrlContent($refUrl, $mode, false);
+                    $combinedContent .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . mb_substr($refContent, 0, 10000, 'UTF-8');
                 }
             }
 
             // 3. Build structured extraction prompt tailored to the selected Entity Mode
-            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment);
+            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle);
         }
 
         // Candidate fallback models in case of high demand
-        $modelsToTry = array_unique([
+        $modelsToTry = array_values(array_filter(array_unique([
             $this->model,
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
+            'gemini-3.6-flash',
             'gemini-3.7-flash',
-            'gemini-3.1-flash-lite'
-        ]);
+            'gemini-3.1-flash-lite',
+        ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
-        return $this->executePrompt($prompt, $modelsToTry);
+        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogle);
     }
 
     /**
@@ -80,9 +80,22 @@ class GeminiOrganisationScraperService
         string $content = '',
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        bool $searchGoogle = true
     ): string {
-        return $this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment);
+        if (empty($content) && !empty($url) && filter_var($url, FILTER_VALIDATE_URL) && !str_contains($url, 'example.edu')) {
+            $websiteContent = $this->fetchUrlContent($url, $mode, true);
+            $content = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
+            if (!empty($referenceUrls)) {
+                $content .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
+                foreach ($referenceUrls as $idx => $refUrl) {
+                    $refNum = $idx + 1;
+                    $refContent = $this->fetchUrlContent($refUrl, $mode, false);
+                    $content .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . mb_substr($refContent, 0, 10000, 'UTF-8');
+                }
+            }
+        }
+        return $this->sanitizeUtf8($this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle));
     }
 
     /**
@@ -102,23 +115,23 @@ class GeminiOrganisationScraperService
         $websiteContent = $this->fetchUrlContent($url);
         $prompt = $this->buildScopedUpdatePrompt($url, $websiteContent, $orgTypeTitle, $allowedFields, $currentData);
 
-        $modelsToTry = array_unique([
+        $modelsToTry = array_values(array_filter(array_unique([
             $this->model,
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
+            'gemini-3.6-flash',
             'gemini-3.7-flash',
-            'gemini-3.1-flash-lite'
-        ]);
+            'gemini-3.1-flash-lite',
+        ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
-        return $this->executePrompt($prompt, $modelsToTry);
+        return $this->executePrompt($prompt, $modelsToTry, true);
     }
 
     /**
      * Execute a prompt against Gemini models with fallback
      */
-    protected function executePrompt(string $prompt, array $modelsToTry): array
+    protected function executePrompt(string $prompt, array $modelsToTry, bool $searchGoogle = true): array
     {
         $lastError = null;
+        $prompt = $this->sanitizeUtf8($prompt);
 
         foreach ($modelsToTry as $modelName) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}";
@@ -132,28 +145,33 @@ class GeminiOrganisationScraperService
                         ]
                     ]
                 ],
-                'tools' => [
-                    ['google_search' => (object)[]]
-                ],
                 'generationConfig' => [
                     'temperature' => 0.1,
-                    'maxOutputTokens' => 8192,
+                    'maxOutputTokens' => 32768,
                 ]
             ];
 
+            if ($searchGoogle) {
+                $payload['tools'] = [
+                    ['google_search' => (object)[]]
+                ];
+            }
+
             try {
-                $response = Http::timeout(90)->post($endpoint, $payload);
+                $response = Http::withoutVerifying()->timeout(120)->post($endpoint, $payload);
 
-                // Fallback tool naming if needed
-                if ($response->status() === 400 && str_contains($response->body(), 'tools')) {
-                    $payload['tools'] = [['googleSearch' => (object)[]]];
-                    $response = Http::timeout(90)->post($endpoint, $payload);
-                }
+                if ($searchGoogle && !$response->successful()) {
+                    // Fallback tool naming if needed
+                    if ($response->status() === 400 && str_contains($response->body(), 'tools')) {
+                        $payload['tools'] = [['googleSearch' => (object)[]]];
+                        $response = Http::withoutVerifying()->timeout(120)->post($endpoint, $payload);
+                    }
 
-                if (!$response->successful()) {
-                    // Try without tool if tools conflict
-                    unset($payload['tools']);
-                    $response = Http::timeout(90)->post($endpoint, $payload);
+                    if (!$response->successful() && $response->status() !== 404) {
+                        // Try without tool if tools conflict
+                        unset($payload['tools']);
+                        $response = Http::withoutVerifying()->timeout(120)->post($endpoint, $payload);
+                    }
                 }
 
                 if (!$response->successful()) {
@@ -171,7 +189,12 @@ class GeminiOrganisationScraperService
                 $data = null;
                 foreach ($parts as $part) {
                     $text = $part['text'] ?? '';
-                    // Try direct JSON decode
+                    if (empty($text)) {
+                        continue;
+                    }
+                    $text = $this->sanitizeUtf8($text);
+
+                    // 1. Try direct JSON decode
                     $clean = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', trim($text));
                     $decoded = json_decode($clean, true);
                     if (is_array($decoded) && (isset($decoded['organisation']) || isset($decoded['campuses']) || isset($decoded['courses']) || isset($decoded['departments']))) {
@@ -179,11 +202,14 @@ class GeminiOrganisationScraperService
                         break;
                     }
 
-                    // Try finding JSON substring { ... }
-                    if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $text, $matches)) {
-                        $decodedSub = json_decode($matches[0], true);
-                        if (is_array($decodedSub) && (isset($decodedSub['organisation']) || isset($decodedSub['campuses']) || isset($decodedSub['courses']) || isset($decodedSub['departments']))) {
-                            $data = $decodedSub;
+                    // 2. Substring between first { and last }
+                    $firstBrace = mb_strpos($text, '{', 0, 'UTF-8');
+                    $lastBrace = mb_strrpos($text, '}', 0, 'UTF-8');
+                    if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+                        $candidate = mb_substr($text, $firstBrace, $lastBrace - $firstBrace + 1, 'UTF-8');
+                        $decoded = json_decode($candidate, true);
+                        if (is_array($decoded) && (isset($decoded['organisation']) || isset($decoded['campuses']) || isset($decoded['courses']) || isset($decoded['departments']))) {
+                            $data = $decoded;
                             break;
                         }
                     }
@@ -203,10 +229,59 @@ class GeminiOrganisationScraperService
     }
 
     /**
+     * Sanitize string to guarantee valid UTF-8 encoding without malformed byte sequences
+     */
+    public function sanitizeUtf8(?string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        // 1. Check and convert encoding if needed
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $encoding = mb_detect_encoding($text, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII', 'UTF-16', 'UTF-32'], true) ?: 'ISO-8859-1';
+            $text = mb_convert_encoding($text, 'UTF-8', $encoding);
+        }
+
+        // 2. Remove/replace any broken multi-byte sequences using iconv
+        if (function_exists('iconv')) {
+            $cleaned = @iconv('UTF-8', 'UTF-8//IGNORE', $text);
+            if ($cleaned !== false) {
+                $text = $cleaned;
+            }
+        }
+
+        // 3. Clean invalid control chars while preserving valid UTF-8
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        return $sanitized !== null ? $sanitized : mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    }
+
+    /**
+     * Recursively sanitize all strings in an array to valid UTF-8
+     */
+    public function sanitizeUtf8Recursive($data)
+    {
+        if (is_string($data)) {
+            return $this->sanitizeUtf8($data);
+        }
+        if (is_array($data)) {
+            $cleaned = [];
+            foreach ($data as $key => $val) {
+                $cleanKey = is_string($key) ? $this->sanitizeUtf8($key) : $key;
+                $cleaned[$cleanKey] = $this->sanitizeUtf8Recursive($val);
+            }
+            return $cleaned;
+        }
+        return $data;
+    }
+
+    /**
      * Normalize and sanitize extracted payload keys
      */
     protected function normalizeExtractedPayload(array $data): array
     {
+        $data = $this->sanitizeUtf8Recursive($data);
+
         if (!isset($data['organisation']) || !is_array($data['organisation'])) {
             $data['organisation'] = [];
         }
@@ -286,8 +361,9 @@ class GeminiOrganisationScraperService
             unset($org);
         }
 
-        // Normalize Campuses
-        foreach ($data['campuses'] as &$c) {
+        // 1. Normalize & Deduplicate Campuses
+        $dedupedCampuses = [];
+        foreach ($data['campuses'] as $c) {
             if (!is_array($c)) continue;
             if (empty($c['campus_name']) && !empty($c['name'])) {
                 $c['campus_name'] = $c['name'];
@@ -295,11 +371,33 @@ class GeminiOrganisationScraperService
             if (empty($c['full_address']) && !empty($c['address'])) {
                 $c['full_address'] = $c['address'];
             }
-        }
-        unset($c);
+            $rawCampus = strtolower($c['campus_name']);
+            $isMain = str_contains($rawCampus, 'main') || strtolower($c['campus_type'] ?? '') === 'main';
+            if ($isMain) {
+                $normName = 'main';
+            } else {
+                $normName = strtolower(trim(preg_replace('/\b(campus|branch|location|centre|center|the|university|college|school)\b/i', '', $c['campus_name'])));
+                $normName = preg_replace('/[^a-z0-9]/', '', $normName);
+            }
+            $normCity = strtolower(trim($c['city'] ?? ''));
+            $key = ($normName !== '' ? $normName : 'campus') . '_' . $normCity;
 
-        // Normalize Departments
-        foreach ($data['departments'] as &$d) {
+            if (!isset($dedupedCampuses[$key])) {
+                $dedupedCampuses[$key] = $c;
+            } else {
+                // Merge richer fields
+                foreach ($c as $k => $val) {
+                    if (!empty($val) && empty($dedupedCampuses[$key][$k])) {
+                        $dedupedCampuses[$key][$k] = $val;
+                    }
+                }
+            }
+        }
+        $data['campuses'] = array_values($dedupedCampuses);
+
+        // 2. Normalize & Deduplicate Departments
+        $dedupedDepts = [];
+        foreach ($data['departments'] as $d) {
             if (!is_array($d)) continue;
             if (empty($d['department_name']) && !empty($d['name'])) {
                 $d['department_name'] = $d['name'];
@@ -307,11 +405,56 @@ class GeminiOrganisationScraperService
             if (empty($d['about_department'])) {
                 $d['about_department'] = $d['description'] ?? $d['overview'] ?? $d['about'] ?? '';
             }
-        }
-        unset($d);
+            if (empty($d['department_name'])) continue;
 
-        // Normalize Courses
-        foreach ($data['courses'] as &$cr) {
+            $rawName = $d['department_name'];
+            $normName = strtolower(trim($rawName));
+            $normName = preg_replace('/\b(department of|dept of|school of|faculty of|centre for|center for|division of|department|dept|school|faculty|centre|center|division)\b/i', '', $normName);
+            $normName = preg_replace('/[^a-z0-9]/', '', $normName);
+            if (empty($normName)) {
+                $normName = strtolower(preg_replace('/[^a-z0-9]/', '', $rawName));
+            }
+
+            if (!isset($dedupedDepts[$normName])) {
+                $dedupedDepts[$normName] = $d;
+            } else {
+                // Merge richer fields into existing
+                $existing = &$dedupedDepts[$normName];
+                if (strlen($d['department_name']) > strlen($existing['department_name'])) {
+                    $existing['department_name'] = $d['department_name'];
+                }
+                if (empty($existing['about_department']) || (strlen($d['about_department'] ?? '') > strlen($existing['about_department']))) {
+                    $existing['about_department'] = $d['about_department'] ?? $existing['about_department'];
+                }
+                if (empty($existing['faculty_count']) && !empty($d['faculty_count'])) {
+                    $existing['faculty_count'] = $d['faculty_count'];
+                }
+                if (empty($existing['department_code']) && !empty($d['department_code'])) {
+                    $existing['department_code'] = $d['department_code'];
+                }
+                if (empty($existing['discipline_area']) && !empty($d['discipline_area'])) {
+                    $existing['discipline_area'] = $d['discipline_area'];
+                }
+                if (!empty($d['specializations_supported'])) {
+                    $existing['specializations_supported'] = array_values(array_unique(array_merge(
+                        (array)($existing['specializations_supported'] ?? []),
+                        (array)$d['specializations_supported']
+                    )));
+                }
+                if (!empty($d['education_levels_supported'])) {
+                    $existing['education_levels_supported'] = array_values(array_unique(array_merge(
+                        (array)($existing['education_levels_supported'] ?? []),
+                        (array)$d['education_levels_supported']
+                    )));
+                }
+                unset($existing);
+            }
+        }
+        $data['departments'] = array_values($dedupedDepts);
+
+        // 3. Normalize & Deduplicate Courses
+        $dedupedCourses = [];
+        foreach ($data['courses'] as $cr) {
             if (!is_array($cr)) continue;
             if (empty($cr['course_name'])) {
                 $cr['course_name'] = $cr['name'] ?? $cr['academic_unit_name'] ?? $cr['program_name'] ?? $cr['title'] ?? 'Course';
@@ -331,19 +474,66 @@ class GeminiOrganisationScraperService
             if (empty($cr['placement_details'])) {
                 $cr['placement_details'] = $cr['placements'] ?? $cr['career_prospects'] ?? '';
             }
+
+            $rawName = $cr['course_name'];
+            $norm = strtolower(trim($rawName));
+            $norm = preg_replace('/\b(b\.?tech|b\.?e\.?|bachelor of engineering)\b/i', 'bachelor of technology', $norm);
+            $norm = preg_replace('/\b(m\.?tech|m\.?e\.?|master of engineering)\b/i', 'master of technology', $norm);
+            $norm = preg_replace('/\b(b\.?sc|bsc)\b/i', 'bachelor of science', $norm);
+            $norm = preg_replace('/\b(m\.?sc|msc)\b/i', 'master of science', $norm);
+            $norm = preg_replace('/\b(bba)\b/i', 'bachelor of business administration', $norm);
+            $norm = preg_replace('/\b(mba)\b/i', 'master of business administration', $norm);
+            $norm = preg_replace('/\b(bca)\b/i', 'bachelor of computer applications', $norm);
+            $norm = preg_replace('/\b(mca)\b/i', 'master of computer applications', $norm);
+            $norm = preg_replace('/\b(b\.?com|bcom)\b/i', 'bachelor of commerce', $norm);
+            $norm = preg_replace('/\b(m\.?com|mcom)\b/i', 'master of commerce', $norm);
+            $norm = preg_replace('/\b(b\.?pharm|bpharm)\b/i', 'bachelor of pharmacy', $norm);
+            $norm = preg_replace('/\b(m\.?pharm|mpharm)\b/i', 'master of pharmacy', $norm);
+            $norm = preg_replace('/\b(b\.?a\.?|ba)\b/i', 'bachelor of arts', $norm);
+            $norm = preg_replace('/\b(m\.?a\.?|ma)\b/i', 'master of arts', $norm);
+            $norm = preg_replace('/\b(ph\.?d\.?|phd)\b/i', 'doctor of philosophy', $norm);
+            $norm = preg_replace('/\b(cse|computer science & engineering|computer science and engineering)\b/i', 'computer science engineering', $norm);
+            $norm = preg_replace('/\b(ece|electronics & communication engineering)\b/i', 'electronics communication engineering', $norm);
+            $norm = preg_replace('/\b(me|mechanical engineering)\b/i', 'mechanical engineering', $norm);
+            $norm = preg_replace('/\b(ce|civil engineering)\b/i', 'civil engineering', $norm);
+            $norm = preg_replace('/\b(ai & ml|ai\/ml|artificial intelligence and machine learning)\b/i', 'artificial intelligence machine learning', $norm);
+            $norm = preg_replace('/\b(in|of|and|&|the|for|with|a|an|program|course|degree|honors|hons)\b/i', '', $norm);
+            $norm = preg_replace('/[^a-z0-9]/', '', $norm);
+
+            $level = strtolower(trim($cr['program_level'] ?? ''));
+            $campus = strtolower(trim($cr['campus_name'] ?? ''));
+            $dept = strtolower(trim($cr['department_name'] ?? ''));
+
+            $key = ($norm !== '' ? $norm : 'course') . '_' . $level . '_' . $campus . '_' . $dept;
+
+            if (!isset($dedupedCourses[$key])) {
+                $dedupedCourses[$key] = $cr;
+            } else {
+                $existing = &$dedupedCourses[$key];
+                if (strlen($cr['course_name']) > strlen($existing['course_name'])) {
+                    $existing['course_name'] = $cr['course_name'];
+                }
+                foreach (['fees', 'total_fees', 'admission_fee', 'annual_fee_range', 'entrance_exams', 'eligibility', 'admission_process', 'placement_details', 'overview', 'rating', 'roi', 'duration', 'mode', 'stream', 'discipline', 'specialization'] as $field) {
+                    if (!empty($cr[$field]) && (empty($existing[$field]) || strlen((string)$cr[$field]) > strlen((string)$existing[$field]))) {
+                        $existing[$field] = $cr[$field];
+                    }
+                }
+                unset($existing);
+            }
         }
-        unset($cr);
+        $data['courses'] = array_values($dedupedCourses);
 
         return $data;
     }
 
     /**
-     * Fetch and clean text and meta images from given URL
+     * Fetch and clean text, meta images, structured academic navigation, and auto-crawl relevant linked sub-pages (fees, eligibility, programs, etc.)
      */
-    protected function fetchUrlContent(string $url): string
+    protected function fetchUrlContent(string $url, string $mode = 'organisation', bool $autoCrawlSubPages = true): string
     {
         try {
-            $response = Http::timeout(15)
+            $response = Http::withoutVerifying()
+                ->timeout(20)
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -363,16 +553,131 @@ class GeminiOrganisationScraperService
                     $imgMeta .= "\n- Detected Campus Cover Image Candidate URL: " . $imgCandidates['cover'];
                 }
 
-                // Remove scripts and styles
-                $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-                $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
-                $cleanText = strip_tags($html);
-                $cleanText = preg_replace('/\s+/', ' ', $cleanText);
-                
-                $result = substr(trim($cleanText), 0, 15000);
-                if (!empty($imgMeta)) {
-                    $result = "PAGE ASSET CANDIDATES:{$imgMeta}\n\n" . $result;
+                // Extract structured academic navigation (departments, courses, academic hubs)
+                $navData = $this->extractAcademicNavigationFromHtml($html, $url);
+                $structureMeta = "";
+                if (!empty($navData['departments'])) {
+                    $structureMeta .= "\n=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE (" . count($navData['departments']) . ") ===\n";
+                    $dIdx = 1;
+                    foreach ($navData['departments'] as $dName => $dUrl) {
+                        $structureMeta .= "{$dIdx}. {$dName} (URL: {$dUrl})\n";
+                        $dIdx++;
+                    }
                 }
+                if (!empty($navData['courses'])) {
+                    $structureMeta .= "\n=== DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE (" . count($navData['courses']) . ") ===\n";
+                    $cIdx = 1;
+                    foreach ($navData['courses'] as $cName => $cUrl) {
+                        $structureMeta .= "{$cIdx}. {$cName} (URL: {$cUrl})\n";
+                        $cIdx++;
+                    }
+                }
+
+                // Remove scripts and styles for primary page
+                $cleanHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+                $cleanHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanHtml);
+                $cleanHtml = preg_replace('/<\/(div|p|tr|li|h[1-6]|table|section|article|header|footer|nav)>/i', "\n", $cleanHtml);
+                $cleanHtml = preg_replace('/<(br|hr)\s*\/?>/i', "\n", $cleanHtml);
+                $cleanHtml = preg_replace('/<\/(td|th)>/i', " \t ", $cleanHtml);
+                $cleanText = strip_tags($cleanHtml);
+                $cleanText = preg_replace('/[ \t]+/', ' ', $cleanText);
+                $cleanText = preg_replace('/\n\s*\n+/', "\n", $cleanText);
+                $cleanText = $this->sanitizeUtf8($cleanText);
+                
+                $result = "";
+                if (!empty($imgMeta)) {
+                    $result .= "PAGE ASSET CANDIDATES:{$imgMeta}\n\n";
+                }
+                if (!empty($structureMeta)) {
+                    $result .= $structureMeta . "\n\n=== MAIN BODY TEXT CONTENT ===\n";
+                }
+                $result .= mb_substr(trim($cleanText), 0, 80000, 'UTF-8');
+
+                // Smart Automatic Linked Sub-page Crawler (Fees, Eligibility, Degree Programs, Placements)
+                if ($autoCrawlSubPages) {
+                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
+                    
+                    if (!empty($subPageCandidates)) {
+                        $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($subPageCandidates) {
+                            $requests = [];
+                            foreach ($subPageCandidates as $idx => $candidate) {
+                                $requests[$idx] = $pool->as((string)$idx)
+                                    ->withoutVerifying()
+                                    ->timeout(15)
+                                    ->withHeaders([
+                                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                                        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                    ])
+                                    ->get($candidate['url']);
+                            }
+                            return $requests;
+                        });
+
+                        $nestedFeeCandidates = [];
+
+                        foreach ($subPageCandidates as $idx => $candidate) {
+                            $res = $responses[(string)$idx] ?? null;
+                            if ($res && $res->successful()) {
+                                $subHtml = $res->body();
+                                
+                                // If this subpage is a course or academic page, check if it links to a specific fee page
+                                if (in_array($mode, ['course', 'department', 'organisation'])) {
+                                    $subNested = $this->discoverRelevantInternalPages($subHtml, $candidate['url'], $mode);
+                                    foreach ($subNested as $sn) {
+                                        if (str_contains(strtolower($sn['type']), 'fee') && !isset($subPageCandidates[$sn['url']])) {
+                                            $nestedFeeCandidates[$sn['url']] = $sn;
+                                        }
+                                    }
+                                }
+
+                                $subClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $subHtml);
+                                $subClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $subClean);
+                                $subClean = strip_tags($subClean);
+                                $subClean = preg_replace('/\s+/', ' ', $subClean);
+                                $subClean = $this->sanitizeUtf8(trim($subClean));
+
+                                if (!empty($subClean)) {
+                                    $result .= "\n\n=== AUTO-FETCHED INTERNAL LINKED PAGE: {$candidate['type']} - '{$candidate['title']}' (URL: {$candidate['url']}) ===\n" . mb_substr($subClean, 0, 15000, 'UTF-8');
+                                }
+                            }
+                        }
+
+                        // If nested fee pages were discovered (e.g. from course page to direct fee structure table), fetch them too
+                        if (!empty($nestedFeeCandidates)) {
+                            $topNested = array_slice(array_values($nestedFeeCandidates), 0, 2);
+                            $nestedResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($topNested) {
+                                $requests = [];
+                                foreach ($topNested as $nIdx => $nCand) {
+                                    $requests[$nIdx] = $pool->as((string)$nIdx)
+                                        ->withoutVerifying()
+                                        ->timeout(15)
+                                        ->withHeaders([
+                                            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                                            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                        ])
+                                        ->get($nCand['url']);
+                                }
+                                return $requests;
+                            });
+
+                            foreach ($topNested as $nIdx => $nCand) {
+                                $nRes = $nestedResponses[(string)$nIdx] ?? null;
+                                if ($nRes && $nRes->successful()) {
+                                    $nHtml = $nRes->body();
+                                    $nClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $nHtml);
+                                    $nClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $nClean);
+                                    $nClean = strip_tags($nClean);
+                                    $nClean = preg_replace('/\s+/', ' ', $nClean);
+                                    $nClean = $this->sanitizeUtf8(trim($nClean));
+                                    if (!empty($nClean)) {
+                                        $result .= "\n\n=== AUTO-FETCHED DEDICATED FEE STRUCTURE PAGE: '{$nCand['title']}' (URL: {$nCand['url']}) ===\n" . mb_substr($nClean, 0, 15000, 'UTF-8');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 return $result;
             }
         } catch (\Exception $e) {
@@ -380,6 +685,331 @@ class GeminiOrganisationScraperService
         }
 
         return "Official Website URL: {$url}";
+    }
+
+    /**
+     * Discover high-value linked internal sub-pages (e.g. Fees, Eligibility, Admissions, Courses, Placements)
+     */
+    protected function discoverRelevantInternalPages(string $html, string $baseUrl, string $mode = 'organisation'): array
+    {
+        $parsedBase = parse_url($baseUrl);
+        $baseHost = strtolower($parsedBase['host'] ?? '');
+        if (empty($baseHost)) {
+            return [];
+        }
+
+        preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+        $candidates = [];
+
+        // Extract specific topic keywords from the URL slug (e.g. "aerospace", "mechanical")
+        $urlPath = strtolower(parse_url($baseUrl, PHP_URL_PATH) ?? '');
+        $urlPathParts = array_filter(explode('/', trim($urlPath, '/')));
+        $genericKeywords = ['department', 'dept', 'course', 'courses', 'programs', 'faculty', 'school', 'academics', 'admissions', 'engineering', 'technology', 'studies', 'management', 'science', 'sciences'];
+        $specificKeywords = [];
+
+        foreach ($urlPathParts as $p) {
+            $pClean = strtolower(trim(str_replace(['-', '_'], ' ', $p)));
+            $words = explode(' ', $pClean);
+            foreach ($words as $w) {
+                $w = trim($w);
+                if (strlen($w) >= 3 && !in_array($w, $genericKeywords)) {
+                    $specificKeywords[] = $w;
+                }
+            }
+        }
+        $specificKeywords = array_unique($specificKeywords);
+
+        foreach ($matches as $m) {
+            $href = trim($m[1]);
+            $rawText = trim(preg_replace('/\s+/', ' ', strip_tags($m[2])));
+
+            if (empty($href) || str_starts_with($href, '#') || str_starts_with($href, 'javascript:') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
+                continue;
+            }
+
+            if (preg_match('/\.(jpg|jpeg|png|gif|svg|webp|mp4|mp3|zip|rar|exe|docx?)$/i', $href)) {
+                continue;
+            }
+
+            $absUrl = $this->resolveAbsoluteUrl($href, $baseUrl);
+            $parsedAbs = parse_url($absUrl);
+            $absHost = strtolower($parsedAbs['host'] ?? '');
+
+            // Only internal links (same host or same subdomain)
+            if ($absHost !== $baseHost && !str_ends_with($absHost, '.' . $baseHost) && !str_ends_with($baseHost, '.' . $absHost)) {
+                continue;
+            }
+
+            $cleanUrl = rtrim(explode('#', $absUrl)[0], '/');
+            $cleanBaseUrl = rtrim(explode('#', $baseUrl)[0], '/');
+            if (strtolower($cleanUrl) === strtolower($cleanBaseUrl)) {
+                continue;
+            }
+
+            $combinedStr = strtolower($rawText . ' ' . $href);
+            $score = 0;
+            $type = 'General Reference';
+
+            $hasSpecificMatch = false;
+            if (!empty($specificKeywords)) {
+                foreach ($specificKeywords as $sk) {
+                    if (str_contains($combinedStr, $sk)) {
+                        $hasSpecificMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            // --- PRIORITY 1: Direct Sub-page / Tab under the same URL path (e.g. /department/cse/faculty, /course/btech/fees) ---
+            $isDirectChild = str_starts_with(strtolower($cleanUrl), strtolower($cleanBaseUrl) . '/');
+            if ($isDirectChild) {
+                if (preg_match('/(faculty|people|staff|teachers|professors|hod|members)/i', $combinedStr)) {
+                    $score += 600;
+                    $type = 'Faculty & Staff Members';
+                } elseif (preg_match('/(course|program|degree|academic|offering|curriculum|syllabus)/i', $combinedStr)) {
+                    $score += 580;
+                    $type = 'Academic Programs & Syllabus';
+                } elseif (preg_match('/(fee|tuition|cost|charge)/i', $combinedStr)) {
+                    $score += 570;
+                    $type = 'Fee Structure & Expenses';
+                } elseif (preg_match('/(lab|facilit|infrastructure|research|project|center)/i', $combinedStr)) {
+                    $score += 540;
+                    $type = 'Laboratories & Facilities';
+                } elseif (preg_match('/(about|overview|vision|mission|introduction|history)/i', $combinedStr)) {
+                    $score += 520;
+                    $type = 'Overview & Profile';
+                } elseif (preg_match('/(admission|eligib|apply|criteria|intake)/i', $combinedStr)) {
+                    $score += 500;
+                    $type = 'Admissions & Eligibility';
+                } elseif (preg_match('/(placement|career|recruiter)/i', $combinedStr)) {
+                    $score += 480;
+                    $type = 'Placements & Careers';
+                } else {
+                    $score += 450;
+                    $type = 'Department / Course Section';
+                }
+            }
+
+            // --- PRIORITY 2: Specific Program / Department Keywords Match ---
+            if ($hasSpecificMatch) {
+                if (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|cost)/i', $combinedStr)) {
+                    $score += 400;
+                    $type = 'Specific Fee Structure';
+                } elseif (preg_match('/(faculty|professors|teachers|people|staff|hod)/i', $combinedStr)) {
+                    $score += 380;
+                    $type = 'Faculty & Staff Directory';
+                } elseif (preg_match('/(\/course\/|\/program\/|b\.?tech|m\.?tech|b\.?sc|m\.?sc|bba|mba|ph\.?d|bca|mca|b\.?com)/i', $combinedStr)) {
+                    $score += 360;
+                    $type = 'Specific Degree Program Page';
+                } elseif (preg_match('/(syllabus|curriculum|scheme|course.*structure)/i', $combinedStr)) {
+                    $score += 340;
+                    $type = 'Syllabus & Course Structure';
+                }
+            }
+
+            // --- PRIORITY 3: General Core Institutional Pages ---
+            if ($score === 0) {
+                if (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|eligibility.*fee|fee.*eligibility|fee.*structure|cost.*study|annual.*fee)/i', $combinedStr)) {
+                    $score += 260;
+                    $type = 'Fee Structure & Tuition';
+                } elseif (preg_match('/(\/faculty|\/people|\/staff-directory|faculty.*members)/i', $combinedStr)) {
+                    $score += ($mode === 'department') ? 290 : 150;
+                    $type = 'Faculty & Staff Directory';
+                } elseif (preg_match('/(eligibility|admission[s]?|how.*to.*apply|admission.*process|entry.*requirement)/i', $combinedStr)) {
+                    $score += 230;
+                    $type = 'Eligibility & Admissions';
+                } elseif (preg_match('/(\/course\/|\/program\/|programs.*offered|courses.*offered|curriculum|syllabus)/i', $combinedStr)) {
+                    $score += ($mode === 'course') ? 280 : 180;
+                    $type = 'Academic Program Details';
+                } elseif (preg_match('/(scholarship|financial.*aid|fee.*concession|kaushal.*jyoti)/i', $combinedStr)) {
+                    $score += 170;
+                    $type = 'Scholarships & Financial Aid';
+                } elseif (preg_match('/(placement[s]?|recruiter[s]?|highest.*package|average.*package)/i', $combinedStr)) {
+                    $score += 160;
+                    $type = 'Placements & Careers';
+                } elseif (preg_match('/(hostel[s]?|infrastructure|campus.*facilit|sports|laborator)/i', $combinedStr)) {
+                    $score += ($mode === 'campus') ? 280 : 140;
+                    $type = 'Campus Facilities & Hostels';
+                } elseif (preg_match('/(\/department[s]?|\/school[s]?|\/faculties|academic.*departments)/i', $combinedStr)) {
+                    $score += ($mode === 'department' || $mode === 'organisation') ? 250 : 120;
+                    $type = 'Academic Faculties & Departments';
+                } elseif (preg_match('/(about.*us|overview|leadership|chancellor|accreditation|naac|nirf)/i', $combinedStr)) {
+                    $score += 110;
+                    $type = 'About & Accreditation';
+                }
+            }
+
+            if ($score > 0) {
+                if (!isset($candidates[$cleanUrl]) || $candidates[$cleanUrl]['score'] < $score) {
+                    $candidates[$cleanUrl] = [
+                        'url' => $cleanUrl,
+                        'title' => $rawText ?: $type,
+                        'type' => $type,
+                        'score' => $score,
+                    ];
+                }
+            }
+        }
+
+        uasort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
+        return array_slice(array_values($candidates), 0, 8);
+    }
+
+    /**
+     * Helper to convert URL slug to human-readable department or academic title
+     */
+    protected function cleanDepartmentSlug(string $slug): string
+    {
+        $slug = trim($slug, '/');
+        $parts = explode('/', $slug);
+        $lastPart = end($parts);
+        $lastPart = explode('?', $lastPart)[0];
+        
+        $title = ucwords(str_replace(['-', '_'], ' ', $lastPart));
+        $title = preg_replace('/\bIt\b/', 'IT', $title);
+        $title = preg_replace('/\bCse\b/', 'CSE', $title);
+        $title = preg_replace('/\bEce\b/', 'ECE', $title);
+        $title = preg_replace('/\bEee\b/', 'EEE', $title);
+        $title = preg_replace('/\bAi\b/', 'AI', $title);
+        $title = preg_replace('/\bMl\b/', 'ML', $title);
+        return $title;
+    }
+
+    /**
+     * Extract structured academic navigation (departments, courses, schools) from HTML
+     */
+    protected function extractAcademicNavigationFromHtml(string $html, string $baseUrl): array
+    {
+        $departmentsByUrl = [];
+        $coursesByUrl = [];
+        $academicHubs = [];
+
+        $genericButtonPattern = '/^(know more|read more|click here|view more|view details|explore|details|learn more|visit|apply now|enquire now|more|link|website|check|view|browse)$/i';
+        $nonAcademicPattern = '/^(home|contact|about|privacy|terms|login|register|portal|gallery|event|news|career|notice|placement|alumni|press|iqac|naac|nirf|grievance|fee|apply|admission|payment|download|blog|faqs?|help|sitemap|search)$/i';
+        $socialPattern = '/(linkedin\.com|facebook\.com|twitter\.com|x\.com|instagram\.com|youtube\.com|pinterest\.com|whatsapp\.com)/i';
+
+        // 1. First: Parse Table Rows (<tr>...<td>Department Name</td>...<td><a href="...">...</a></td>...</tr>)
+        if (preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/is', $html, $trMatches)) {
+            foreach ($trMatches[1] as $tr) {
+                preg_match_all('/<td\b[^>]*>(.*?)<\/td>/is', $tr, $tdMatches);
+                if (!empty($tdMatches[1])) {
+                    $rowTexts = [];
+                    $rowLinks = [];
+                    foreach ($tdMatches[1] as $td) {
+                        if (preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $td, $aMatches, PREG_SET_ORDER)) {
+                            foreach ($aMatches as $am) {
+                                $rowLinks[] = [
+                                    'href' => trim($am[1]),
+                                    'text' => trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($am[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8')))
+                                ];
+                            }
+                        }
+                        $plainCell = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($td), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                        if (!empty($plainCell) && !preg_match($genericButtonPattern, $plainCell)) {
+                            $rowTexts[] = $plainCell;
+                        }
+                    }
+
+                    if (!empty($rowTexts)) {
+                        $possibleDeptName = implode(' - ', $rowTexts);
+                        if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of)/i', $possibleDeptName) ||
+                            preg_match('/(engineering|technology|science|humanities|management|commerce|design|arts|law|medical|health|pharmacy|nursing)/i', $possibleDeptName)) {
+                            
+                            $linkUrl = !empty($rowLinks) ? $this->resolveAbsoluteUrl($rowLinks[0]['href'], $baseUrl) : $baseUrl;
+                            if (!preg_match($socialPattern, $linkUrl)) {
+                                $departmentsByUrl[$linkUrl] = $possibleDeptName;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Second: Parse all <a> tags (cards, list items, navigation links)
+        preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+
+        $parsedBasePath = strtolower(rtrim(parse_url($baseUrl, PHP_URL_PATH) ?? '', '/'));
+
+        foreach ($matches as $m) {
+            $href = trim($m[1]);
+            $rawText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+            if (empty($href) || str_starts_with($href, '#') || str_starts_with($href, 'javascript:') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
+                continue;
+            }
+
+            if (preg_match('/\.(jpg|jpeg|png|gif|svg|webp|pdf|zip|mp4|exe)$/i', $href)) {
+                continue;
+            }
+
+            if (preg_match($socialPattern, $href)) {
+                continue;
+            }
+
+            $absUrl = $this->resolveAbsoluteUrl($href, $baseUrl);
+            $parsedAbsPath = strtolower(rtrim(parse_url($absUrl, PHP_URL_PATH) ?? '', '/'));
+
+            // Ignore links pointing to department list / directory overview pages itself
+            if ($parsedAbsPath === $parsedBasePath || preg_match('/(\/department-list|\/departments-list|\/all-departments|\/faculty-list)$/i', $parsedAbsPath)) {
+                continue;
+            }
+
+            $isGenericButton = preg_match($genericButtonPattern, $rawText);
+
+            // Check if URL indicates a Department / School / Faculty
+            if (preg_match('/(\/department[s]?\/|\/school[s]?\/|\/faculty\/|\/dept[s]?\/|\/centres?\/|\/centers?\/)([a-z0-9\-_]+)/i', $parsedAbsPath, $slugMatch)) {
+                $subSlug = $slugMatch[2];
+                if (!in_array(strtolower($subSlug), ['list', 'all', 'index', 'home', 'overview', 'about', 'department-list'])) {
+                    if (!isset($departmentsByUrl[$absUrl])) {
+                        $deptTitle = '';
+                        if (!$isGenericButton && strlen($rawText) >= 3 && !preg_match($nonAcademicPattern, $rawText) && !preg_match('/(department.*\(a to z\)|placement.*department)/i', $rawText)) {
+                            $deptTitle = $rawText;
+                        } else {
+                            $deptTitle = $this->cleanDepartmentSlug($subSlug);
+                        }
+
+                        if (!empty($deptTitle)) {
+                            $departmentsByUrl[$absUrl] = $deptTitle;
+                        }
+                    }
+                    continue;
+                }
+            }
+
+            if ($isGenericButton || empty($rawText) || strlen($rawText) < 2 || strlen($rawText) > 120) {
+                continue;
+            }
+
+            if (preg_match($nonAcademicPattern, $rawText) || preg_match('/^(departments|department \(a to z\)|training and placement)/i', $rawText)) {
+                continue;
+            }
+
+            if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of)/i', $rawText)) {
+                if (!isset($departmentsByUrl[$absUrl])) {
+                    $departmentsByUrl[$absUrl] = $rawText;
+                }
+            } elseif (preg_match('/^(b\.tech|m\.tech|b\.sc|m\.sc|bca|mca|bba|mba|b\.com|m\.com|b\.a\.|m\.a\.|b\.pharm|m\.pharm|b\.des|m\.des|ph\.d|diploma|bpt|mpt|gnm|bmlt|anm|integrated)/i', $rawText) ||
+                preg_match('/(\/course\/|\/program\/|\/degree\/)/i', $href)) {
+                $coursesByUrl[$absUrl] = $rawText;
+            }
+        }
+
+        // Convert to name => URL map
+        $departments = [];
+        foreach ($departmentsByUrl as $url => $name) {
+            $departments[$name] = $url;
+        }
+
+        $courses = [];
+        foreach ($coursesByUrl as $url => $name) {
+            $courses[$name] = $url;
+        }
+
+        return [
+            'departments' => $departments,
+            'courses' => $courses,
+            'academic_hubs' => $academicHubs,
+        ];
     }
 
     /**
@@ -448,87 +1078,101 @@ class GeminiOrganisationScraperService
         ?\App\Models\Organisation $targetOrg = null,
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        bool $searchGoogle = true
     ): string
     {
         if ($mode === 'campus') {
-            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg);
+            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $searchGoogle);
         }
 
         if ($mode === 'department') {
-            return $this->buildDepartmentOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus);
+            return $this->buildDepartmentOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $searchGoogle);
         }
 
         if ($mode === 'course') {
-            return $this->buildCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment);
+            return $this->buildCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle);
         }
 
         if ($targetOrg) {
-            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg, $searchGoogle);
         }
 
         $titleLower = strtolower($orgTypeTitle);
 
         if (str_contains($titleLower, 'school') || $orgTypeId === 4) {
-            return $this->buildSchoolPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildSchoolPrompt($url, $content, $orgTypeTitle, $referenceUrls, $searchGoogle);
         }
 
         if (str_contains($titleLower, 'exam') || str_contains($titleLower, 'conducting') || $orgTypeId === 5) {
-            return $this->buildExamConductingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildExamConductingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $searchGoogle);
         }
 
         if (str_contains($titleLower, 'counselling') || $orgTypeId === 6) {
-            return $this->buildCounsellingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildCounsellingBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $searchGoogle);
         }
 
         if (str_contains($titleLower, 'regulatory') || str_contains($titleLower, 'agency') || in_array($orgTypeId, [7, 8])) {
-            return $this->buildRegulatoryBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildRegulatoryBodyPrompt($url, $content, $orgTypeTitle, $referenceUrls, $searchGoogle);
         }
 
         if (str_contains($titleLower, 'institute') || $orgTypeId === 3) {
-            return $this->buildInstitutePrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildInstitutePrompt($url, $content, $orgTypeTitle, $referenceUrls, $searchGoogle);
         }
 
         // Default to University / College (Types 1, 2)
-        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls);
+        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $searchGoogle);
     }
 
     /**
-     * Dedicated Prompt for Campus Only Extraction
+     * Dedicated Prompt for Campus Only Extraction (Single Campus based on provided Campus URL)
      */
     public function buildCampusOnlyPrompt(
         string $url,
         string $content,
         array $referenceUrls = [],
-        ?\App\Models\Organisation $targetOrg = null
+        ?\App\Models\Organisation $targetOrg = null,
+        bool $searchGoogle = true
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
         $orgShort = $targetOrg ? $targetOrg->short_name : '';
         $orgSite = $targetOrg ? $targetOrg->official_website : $url;
         $orgId = $targetOrg ? $targetOrg->id : 0;
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
 
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+2. SEARCH GROUNDING & ACCURACY:
+   - Search the official website, Google Maps, NIRF/school inspection reports, and institutional documents for accurate physical addresses, campus acreage, transport hubs, hostel capacities, and sports facilities for this specific campus.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract information STRICTLY AND EXCLUSIVELY from the provided primary campus URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field (e.g. exact acreage, pin code, or contact numbers) is not present in the provided sources, leave it null or empty.
+STRICT_URL_INSTRUCTIONS;
+
         return <<<PROMPT
 You are an expert institutional infrastructure, geography, and campus research AI agent.
-Your EXCLUSIVE MISSION is to perform comprehensive research and extract ALL physical CAMPUSES, BRANCH CENTRES, and SATELLITE LOCATIONS for the institution "{$orgName}".
-DO NOT extract departments, individual courses, or generic organisation overviews. Focus strictly on physical Campuses.
+Your EXCLUSIVE MISSION is to extract exactly ONE specific physical CAMPUS / BRANCH LOCATION for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
+DO NOT extract multiple campuses or all branch centres of the institution. Focus strictly and exclusively on creating this single specific campus / branch.
+(Note: If this institution is a School, extract this specific School branch / campus location).
 
 TARGET INSTITUTION: {$orgName}
+ORGANISATION TYPE: {$orgTypeTitle}
 SHORT NAME: {$orgShort}
 OFFICIAL SITE: {$orgSite}
-PRIMARY URL: {$url}{$refUrlsText}
+CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
 {$cleanContent}
 
 === CRITICAL RESEARCH & EXTRACTION MANDATE ===
-1. EXHAUSTIVE CAMPUS DISCOVERY:
-   - Discover and extract ALL physical campuses (e.g. Main Campus, City Campus, South Campus, Medical College Campus, Off-Campus Research Centre).
-   - If only one campus exists, provide deep and comprehensive infrastructure data for that campus.
+1. SINGLE CAMPUS EXTRACTION:
+   - Extract exactly ONE campus object in the "campuses" array matching the specific campus location given in the URL.
+   - Accurately determine the campus name (e.g. "Main Campus", "South Campus", "Kolkata Campus", "City Campus", etc.), address, city, state, country, pincode, facilities, and contact details.
 
-2. SEARCH GROUNDING & ACCURACY:
-   - Search the official website, Google Maps, NIRF infrastructure reports, and NAAC SSR documents for accurate physical addresses, campus acreage, transport hubs, hostel capacities, and sports facilities.
+{$searchInstructions}
 
-3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE (Single campus in array):
 {
   "target_organisation_id": {$orgId},
   "target_organisation_name": "{$orgName}",
@@ -586,36 +1230,74 @@ PROMPT;
         string $content,
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
-        ?\App\Models\Campus $targetCampus = null
+        ?\App\Models\Campus $targetCampus = null,
+        bool $searchGoogle = true
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
         $orgId = $targetOrg ? $targetOrg->id : 0;
         $campusName = $targetCampus ? $targetCampus->campus_name : 'Main / Selected Campus';
         $campusId = $targetCampus ? $targetCampus->id : null;
         $campusIdJson = $campusId ? json_encode($campusId) : 'null';
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
-        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . mb_substr(trim($content), 0, 80000, 'UTF-8') : "";
+
+        // Check for structured detected departments
+        $detectedDeptText = "";
+        if (preg_match('/=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE \((\d+)\) ===\n(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+            $count = (int)$m[1];
+            $deptList = trim($m[2]);
+            $detectedDeptText = <<<DET_DEPT
+MANDATORY TARGET DEPARTMENTS TO POPULATE ({$count} Departments detected directly from official website navigation):
+{$deptList}
+
+STRICT EXHAUSTIVE RULE:
+- You MUST create an entry in the "departments" array for EVERY SINGLE ONE of the {$count} departments in the list above.
+- DO NOT SKIP, SAMPLE, MERGE, OR TRUNCATE. If {$count} departments are listed, exactly {$count} departmental objects must be returned in the JSON array.
+DET_DEPT;
+        } else {
+            $detectedDeptText = <<<DET_DEPT
+STRICT EXHAUSTIVE RULE:
+- You MUST comprehensively extract all active academic departments, wings, and schools (typically 10 to 30+ departments for universities, or academic wings/subject departments for schools).
+- DO NOT return only 3 or 4 sample departments. Return every single academic department active at the institution (e.g. Science, Mathematics, Humanities, Commerce, Performing Arts, Primary Wing, Secondary Wing, etc.).
+DET_DEPT;
+        }
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+2. SEARCH GROUNDING & ACCURACY:
+   - Search the official website directory, NIRF reports, NAAC self-study reports (SSR), faculty directories, and Wikipedia to verify all active academic departments, faculty names, HOD/Dean names, faculty strengths, and research achievements.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract information STRICTLY AND EXCLUSIVELY from the provided primary department URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not present in the provided sources, leave it null or empty.
+STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
 You are an expert academic faculties, colleges, and university departmental research AI agent.
-Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, and FACULTIES for the institution "{$orgName}" (Campus: {$campusName}).
+Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, WINGS, and FACULTIES for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}, Campus: {$campusName}).
 DO NOT extract general organisation profiles, campuses, or individual courses. ONLY extract Departments.
+(Note: If this institution is a School, extract academic departments / wings such as Primary Wing, Middle Wing, Senior Secondary Wing, Science Department, Performing Arts, Sports, Humanities, etc.).
 
 TARGET INSTITUTION: {$orgName}
+ORGANISATION TYPE: {$orgTypeTitle}
 TARGET CAMPUS: {$campusName}
 PRIMARY URL: {$url}{$refUrlsText}
 {$cleanContent}
 
-=== CRITICAL EXHAUSTIVE EXTRACTION MANDATE ===
-1. COMPREHENSIVELY EXTRACT ALL DEPARTMENTS:
-   - Identify every distinct academic department, school, and faculty (e.g. Department of Computer Science & Engineering, Department of Mechanical Engineering, Department of Electrical & Electronics, Department of Civil Engineering, School of Management Studies, School of Law, Department of Pharmacy, Department of Basic Sciences & Humanities, etc.).
-   - DO NOT omit or merge departments. Return each department as a separate object in the `departments` array.
+=== CRITICAL EXHAUSTIVE & DEDUPLICATION MANDATE ===
+1. EXHAUSTIVE EXTRACTION MANDATE:
+{$detectedDeptText}
 
-2. SEARCH GROUNDING & ACCURACY:
-   - Search the official website directory, NIRF reports, NAAC self-study reports (SSR), faculty directories, and Wikipedia to verify all active academic departments, faculty names, HOD/Dean names, faculty strengths, and research achievements.
+2. STRICT DEDUPLICATION RULE:
+   - NEVER return duplicate or alias departments. Every item in the "departments" array MUST represent a unique academic department/school/wing.
+   - If the sources refer to the same department under multiple variations (e.g. "Department of Physics" and "Physics"), output ONLY ONE canonical entry ("Department of Physics").
+   - Merge all discovered faculty counts, lab numbers, and specializations from all sub-pages into that ONE canonical department object.
 
-3. ORIGINAL & HIGH-QUALITY WRITING:
-   - `about_department`: Write 2 rich, well-crafted, original paragraphs highlighting the department's academic philosophy, curriculum rigor, research thrust areas, state-of-the-art laboratory infrastructure, and faculty qualifications.
+{$searchInstructions}
+
+3. CONCISE & POLISHED WRITING (TO ENSURE ALL DEPARTMENTS FIT IN JSON OUTPUT):
+   - `about_department`: Write a concise, high-impact 1-paragraph summary (2-3 sentences) highlighting the department's core curriculum focus, research labs, and career pathways. (Keep it concise so all departments fit cleanly within the JSON token limit).
 
 4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -630,34 +1312,24 @@ PRIMARY URL: {$url}{$refUrlsText}
       "department_code": "CSE",
       "department_type": "Academic",
       "established_year": 2005,
-      "head_of_department_name": "Dr. Ramesh Kumar, Ph.D.",
-      "head_of_department_designation": "Professor & Head of Department",
-      "hod_appointment_type": "Permanent",
-      "hod_email": "hod.cse@example.edu",
-      "department_office_contact": "+91 80 98765432",
-      "faculty_count": 32,
-      "about_department": "The Department of Computer Science and Engineering is a premier center of technological education and research. It offers world-class academic programs with an industry-aligned curriculum emphasizing Artificial Intelligence, Cloud Computing, Cyber Security, and Software Engineering. With advanced research laboratories and strong corporate ties, the department provides an intellectually stimulating environment for aspiring engineers.",
       "discipline_area": "Engineering & Technology",
       "specializations_supported": [
         "Artificial Intelligence & Machine Learning",
         "Data Science",
         "Cyber Security",
-        "Cloud Computing",
-        "Internet of Things (IoT)"
+        "Cloud Computing"
       ],
       "education_levels_supported": [
         "Undergraduate",
         "Postgraduate",
         "Doctoral (Ph.D)"
       ],
+      "faculty_count": 32,
+      "about_department": "The Department of Computer Science and Engineering offers industry-aligned academic programs emphasizing Artificial Intelligence, Cloud Computing, Cyber Security, and Software Engineering with state-of-the-art laboratory infrastructure.",
       "department_labs_count": 8,
       "specialized_labs_available": true,
-      "research_publications_count": 65,
-      "funded_projects_count": 6,
-      "patents_filed_count": 4,
       "phd_supervision_available": true,
-      "industry_collaboration_supported": true,
-      "is_interdisciplinary": false
+      "industry_collaboration_supported": true
     }
   ]
 }
@@ -673,9 +1345,11 @@ PROMPT;
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        bool $searchGoogle = true
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
+        $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
         $orgId = $targetOrg ? $targetOrg->id : 0;
         $campusName = $targetCampus ? $targetCampus->campus_name : 'Main / Selected Campus';
         $campusId = $targetCampus ? $targetCampus->id : null;
@@ -685,36 +1359,91 @@ PROMPT;
         $deptIdJson = $deptId ? json_encode($deptId) : 'null';
 
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
-        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . substr(trim($content), 0, 60000) : "";
+
+        // Check for structured detected courses
+        $detectedCourseText = "";
+        if (preg_match('/=== DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\) ===\n(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+            $count = (int)$m[1];
+            $courseList = trim(substr($m[2], 0, 5000));
+            $detectedCourseText = <<<DET_COURSE
+DETECTED DEGREE COURSES FROM OFFICIAL WEBSITE NAVIGATION ({$count} Programs detected):
+{$courseList}
+
+STRICT EXHAUSTIVE MULTI-DEGREE EXTRACTION RULE:
+- Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" section very carefully.
+- If this is a Department/Wing page (e.g. {$deptName}), you MUST extract EVERY degree program/curriculum offered by this department across all levels:
+  * Undergraduate / Senior Secondary (e.g. B.Tech / B.Sc / BBA / Class 11-12 Science/Commerce)
+  * Postgraduate / Middle & Secondary (e.g. M.Tech / M.Sc / MBA / Classes 6-10)
+  * Doctoral / Primary / Pre-Primary programs
+  * Diploma / Integrated programs / IB / Cambridge IGCSE
+- NEVER omit programs. Return one distinct object in the `courses` array for EVERY single degree/program offered.
+- DO NOT sample or merge programs.
+DET_COURSE;
+        } else {
+            $detectedCourseText = <<<DET_COURSE
+STRICT EXHAUSTIVE MULTI-DEGREE EXTRACTION RULE:
+- Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" section very carefully.
+- Extract ALL programs and courses offered by "{$orgName}" (Campus: {$campusName}, Department: {$deptName}) across all levels:
+  * For Higher Ed: Undergraduate, Postgraduate, Doctoral (Ph.D), Diploma / Certificate
+  * For Schools: Senior Secondary (Science, Commerce, Humanities), Secondary School, Middle School, Primary Wing, Kindergarten / IB DP / IGCSE
+- Return one distinct object in the `courses` array for EVERY single program/course offered.
+DET_COURSE;
+        }
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+2. SEARCH GROUNDING & ACCURACY:
+   - Actively use Google Search Grounding to verify full course catalogues, official syllabus brochures, fee tables, admission portals, and institutional prospectus PDFs.
+   - If specific fees, eligibility, or entrance exams are not on the primary page, find verified data from the official admission prospectus or reliable institutional portals.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract all course information, fees, entrance exams, eligibility, and placements directly from the provided PRIMARY WEBSITE CONTENT and AUTO-FETCHED LINKED PAGES (including Fee Structure tables and Degree Program pages).
+   - Carefully compute and populate `fees`, `total_fees`, `admission_fee`, `annual_fee_range`, `entrance_exams`, and `placement_details` from the provided tables and pages.
+   - Do NOT leave fee fields or entrance exam fields empty when fee structure tables or details are present in the provided text.
+STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
-You are an expert higher education admissions, academic programs, and degree curriculum research AI agent.
-Your EXCLUSIVE MISSION is to perform an in-depth, exhaustive extraction of ALL DEGREE COURSES, SPECIALIZATIONS, DIPLOMAS, and POSTGRADUATE PROGRAMS offered by "{$orgName}" (Campus: {$campusName}, Department: {$deptName}).
+You are an expert educational admissions, academic programs, and curriculum research AI agent.
+Your EXCLUSIVE MISSION is to perform an in-depth, exhaustive extraction of ALL COURSES, PROGRAMS, SPECIALIZATIONS, and CURRICULA offered by "{$orgName}" (Organisation Type: {$orgTypeTitle}, Campus: {$campusName}, Department: {$deptName}).
 DO NOT extract organisation overviews, campuses, or department profiles. ONLY extract Courses and Programs.
+(Note: If this institution is a School, extract school academic programs, grades/classes, streams, and curriculum offerings such as CBSE Class 11-12 Science/Commerce, IB Diploma Programme, IGCSE, Secondary School).
 
 TARGET INSTITUTION: {$orgName}
+ORGANISATION TYPE: {$orgTypeTitle}
 TARGET CAMPUS: {$campusName}
 TARGET DEPARTMENT: {$deptName}
 PRIMARY URL: {$url}{$refUrlsText}
 {$cleanContent}
 
-=== CRITICAL EXHAUSTIVE EXTRACTION MANDATE ===
-1. EXHAUSTIVE COVERAGE - DO NOT TRUNCATE OR OMIT:
-   - A single department or institution often offers 10, 15, 20, or even 30 distinct degree programs and specialization tracks (e.g., B.Tech in CSE Core, B.Tech CSE with AI & ML, B.Tech CSE with Data Science, B.Tech CSE with Cyber Security, B.Tech CSE with Cloud Computing, M.Tech in Computer Science, BCA, MCA, Integrated MCA, Ph.D. in Computer Science, etc.).
-   - You MUST extract EVERY SINGLE COURSE / SPECIALIZATION PROGRAM separately.
-   - If there are 20 programs offered, return all 20 entries in the `courses` array. Never summarize, group together, or omit any program.
+=== CRITICAL EXHAUSTIVE & DEDUPLICATION MANDATE ===
+1. EXHAUSTIVE COVERAGE - EXTRACT ALL PROGRAM OFFERINGS:
+{$detectedCourseText}
 
-2. SEARCH GROUNDING & ACCURACY:
-   - Actively use Google Search Grounding to verify full course catalogues, official syllabus brochures, NIRF/NAAC documents, admission portals (e.g. Shiksha, Collegedunia, official university brochure PDFs).
-   - If specific fees, eligibility, or entrance exams are not on the primary page, find verified data from the official admission prospectus or reliable institutional portals.
+2. STRICT DEDUPLICATION RULE:
+   - NEVER return duplicate courses or duplicate degree programs. Every item in the "courses" array MUST be unique.
+   - DO NOT create multiple entries for the same degree under different names/abbreviations (e.g., do NOT output both "B.Tech CSE" and "Bachelor of Technology in Computer Science and Engineering" - output only one canonical, fully populated object).
+   - If a course has multiple specializations, output distinct named specialization programs (e.g. "B.Tech CSE (AI & ML)" and "B.Tech CSE (Cyber Security)") or consolidate them cleanly under the canonical program.
 
-3. POLISHED, PROFESSIONAL, ORIGINAL WRITING:
-   - `overview`: Write a high-quality, comprehensive 1-2 paragraph description explaining the course curriculum highlights, industry relevance, modern lab tools taught (e.g. Python, AWS, Docker, TensorFlow, CAD, etc.), and career outcomes.
-   - `eligibility`: State exact entry requirements (e.g. "10+2 with minimum 60% aggregate in Physics, Mathematics, and Chemistry/CS from a recognized board").
-   - `admission_process`: Step-by-step admission pipeline (e.g. "Merit in JEE Main / University Entrance Test -> Counseling -> Seat Allocation -> Document Verification").
-   - `placement_details`: Comprehensive career stats (e.g. "Average Package: ₹ 7.5 LPA, Highest Package: ₹ 32 LPA, 90%+ placement rate. Top Recruiters: Microsoft, Amazon, Google, TCS, Infosys, Deloitte").
+3. FEE STRUCTURE & FINANCIAL EXTRACTION MANDATE:
+   - Carefully inspect all AUTO-FETCHED INTERNAL LINKED PAGES and AUTO-FETCHED DEDICATED FEE STRUCTURE PAGES provided in the scraped context above.
+   - For every course extracted, you MUST populate:
+     * `fees`: Annual or Per-Year Tuition/Academic Fee (e.g. "₹ 2,20,000 / Year" or "₹ 1,40,700 / Semester (₹ 2,81,400 / Year)").
+     * `total_fees`: Numerical integer total course fee for the complete duration (e.g. 880000 or 1125600).
+     * `admission_fee`: One-time admission/enrollment/caution deposit fee (e.g. "25000" or "10000").
+     * `annual_fee_range`: Text range representation (e.g. "₹ 2.5 - 3.0 Lakhs / Year").
+   - If fees vary with 12th/JEE scholarships, use the standard baseline 1st year fee or annual fee before scholarship.
+   - Do NOT leave fee fields blank when fee tables or fee links are present in the provided webpage text or reference sources.
 
-4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{$searchInstructions}
+
+4. CONCISE, PROFESSIONAL WRITING:
+   - `overview`: Write a concise 2-3 sentence overview explaining core curriculum focus, lab tools, and career pathways.
+   - `eligibility`: State entry requirements (e.g. "10+2 with min 60% in PCM/CS").
+   - `admission_process`: Step-by-step admission route.
+   - `placement_details`: Key career stats and top recruiters.
+
+5. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
   "target_organisation_id": {$orgId},
   "target_organisation_name": "{$orgName}",
@@ -770,7 +1499,8 @@ PROMPT;
         string $content,
         string $orgTypeTitle,
         array $referenceUrls = [],
-        ?\App\Models\Organisation $targetOrg = null
+        ?\App\Models\Organisation $targetOrg = null,
+        bool $searchGoogle = true
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Selected Institution';
         $orgShort = $targetOrg ? $targetOrg->short_name : '';
@@ -779,6 +1509,19 @@ PROMPT;
 
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+1. DEEP WEB SEARCH & FACT VERIFICATION:
+   - The institution "{$orgName}" already exists in our database. DO NOT focus on basic organisation identity fields.
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
+   - If courses, fee structures, eligibility criteria, campus details, or department information are missing or incomplete on the provided URLs, actively search Google Search Grounding, official admission portals, academic catalogues, Shiksha, Collegedunia, Wikipedia, and brochure PDFs for "{$orgName}" to discover all available physical campuses, academic faculties, and degree programs.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - The institution "{$orgName}" already exists in our database. DO NOT focus on basic organisation identity fields.
+   - Extract information STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any information is missing from the provided sources, leave it null or empty.
+STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
 You are an expert higher education data extraction and research AI agent.
@@ -792,10 +1535,7 @@ ORGANISATION TYPE: {$orgTypeTitle}
 {$cleanContent}
 
 CRITICAL RESEARCH & WRITING INSTRUCTIONS:
-1. DEEP WEB SEARCH & FACT VERIFICATION:
-   - The institution "{$orgName}" already exists in our database. DO NOT focus on basic organisation identity fields.
-   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
-   - If courses, fee structures, eligibility criteria, campus details, or department information are missing or incomplete on the provided URLs, actively search Google Search Grounding, official admission portals, academic catalogues, Shiksha, Collegedunia, Wikipedia, and brochure PDFs for "{$orgName}" to discover all available physical campuses, academic faculties, and degree programs.
+{$searchInstructions}
 2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
    - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
    - Synthesize, summarize, and write original, clear, informative, professional, and SEO-friendly summaries in your own words for:
@@ -926,10 +1666,23 @@ PROMPT;
         string $content,
         string $orgTypeTitle,
         int $orgTypeId = 1,
-        array $referenceUrls = []
+        array $referenceUrls = [],
+        bool $searchGoogle = true
     ): string {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+1. DEEP WEB SEARCH & FACT VERIFICATION (GOOGLE GROUNDING):
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS (e.g. Wikipedia, NAAC, NIRF) provided above.
+   - If ANY institutional details (e.g. Established year, Ownership Type, University Type, University Category, Levels Offered, UGC/AICTE approval, NAAC grade & cycle, NIRF ranking, Chancellor/VC names, Logo URL, Cover Image URL, managing trust, official contacts) are NOT found in the provided preview text, ACTIVELY USE GOOGLE SEARCH GROUNDING, official regulatory directories (UGC, AICTE, NAAC, NIRF, AISHE), Wikipedia, and authoritative public educational portals to find the real verified facts. DO NOT LEAVE THEM BLANK.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
+   - Extract institutional details STRICTLY AND EXCLUSIVELY from the provided preview text and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided content, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
 You are an expert higher education data extraction and research AI agent.
@@ -942,9 +1695,7 @@ Extract ONLY the institutional profile for the "organisation" object.
 {$cleanContent}
 
 CRITICAL RESEARCH & WRITING INSTRUCTIONS:
-1. DEEP WEB SEARCH & FACT VERIFICATION (GOOGLE GROUNDING):
-   - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS (e.g. Wikipedia, NAAC, NIRF) provided above.
-   - If ANY institutional details (e.g. Established year, Ownership Type, University Type, University Category, Levels Offered, UGC/AICTE approval, NAAC grade & cycle, NIRF ranking, Chancellor/VC names, Logo URL, Cover Image URL, managing trust, official contacts) are NOT found in the provided preview text, ACTIVELY USE GOOGLE SEARCH GROUNDING, official regulatory directories (UGC, AICTE, NAAC, NIRF, AISHE), Wikipedia, and authoritative public educational portals to find the real verified facts. DO NOT LEAVE THEM BLANK.
+{$searchInstructions}
 2. STRICT ENUM VALUE MATCHING (CRITICAL FOR DATABASE MAPPING):
    - `university_type`: STRICT ENUM. Must be EXACTLY ONE of: "Central", "State", "Deemed", "Private", "International".
      * NOTE: If the institution is a Deemed-to-be-University (e.g. Thapar, BITS Pilani, NMIMS, Amrita, Manipal), return "Deemed".
@@ -1042,18 +1793,31 @@ PROMPT;
         string $content,
         string $orgTypeTitle,
         array $referenceUrls = [],
-        ?\App\Models\Organisation $targetOrg = null
+        ?\App\Models\Organisation $targetOrg = null,
+        bool $searchGoogle = true
     ): string
     {
         if ($targetOrg) {
-            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg);
+            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg, $searchGoogle);
         }
-        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, 1, $referenceUrls);
+        return $this->buildOrganisationOnlyPrompt($url, $content, $orgTypeTitle, 1, $referenceUrls, $searchGoogle);
     }
 
-    protected function buildInstitutePrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    protected function buildInstitutePrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+1. Search Google actively based on the institution name and official URL for:
+   - Registration details, legal name, registered entity name, registration number, GST, PAN, ownership type (Private/Trust/LLP/Partnership).
+   - Core details: brand name, short name, established year, head office, central authority, vision, mission, about organisation.
+   - Campuses, departments/divisions, and courses/certifications offered.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract information STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided sources, leave it empty or null.
+STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
 You are an expert institutional data extraction and research AI.
@@ -1064,10 +1828,7 @@ RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 {$content}
 
 IMPORTANT INSTRUCTIONS:
-1. Search Google actively based on the institution name and official URL for:
-   - Registration details, legal name, registered entity name, registration number, GST, PAN, ownership type (Private/Trust/LLP/Partnership).
-   - Core details: brand name, short name, established year, head office, central authority, vision, mission, about organisation.
-   - Campuses, departments/divisions, and courses/certifications offered.
+{$searchInstructions}
 2. If any field cannot be found, return empty string "" or false for booleans, but always include every key in the JSON response.
 3. Return ONLY valid JSON matching EXACTLY this structure:
 
@@ -1162,19 +1923,11 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildSchoolPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    protected function buildSchoolPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
 
-        return <<<PROMPT
-You are an expert K-12 school education data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the School / School Network at PRIMARY URL: {$url}{$refUrlsText}
-Organisation Type: {$orgTypeTitle}
-
-RAW WEBSITE & REFERENCE CONTENT PREVIEW:
-{$content}
-
-IMPORTANT INSTRUCTIONS:
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. Search Google actively for this School or School Chain:
    - Education boards supported (CBSE, ICSE, State Board, IB, IGCSE/Cambridge).
    - Medium of instruction (English, Hindi, Regional languages).
@@ -1187,6 +1940,23 @@ IMPORTANT INSTRUCTIONS:
    - Portals: Official Website, Admission Portal, Parent Portal, Student Portal, Mobile App Available.
    - Reputation: Average rating, total reviews, awards and recognitions, meta title, description.
    - Core details: Brand name, short name, established year, ownership type, managing trust or society name, minority status & type.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract school information STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided content, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
+
+        return <<<PROMPT
+You are an expert K-12 school education data extraction and research AI.
+Extract comprehensive, highly accurate, and verified data for the School / School Network at PRIMARY URL: {$url}{$refUrlsText}
+Organisation Type: {$orgTypeTitle}
+
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
+{$content}
+
+IMPORTANT INSTRUCTIONS:
+{$searchInstructions}
 2. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
 3. Return ONLY valid JSON matching EXACTLY this structure:
 
@@ -1213,6 +1983,8 @@ IMPORTANT INSTRUCTIONS:
     "about_organisation": "Overview of the school...",
     "vision_mission": "Vision & Mission statements...",
     "core_values": ["Integrity", "Excellence", "Compassion", "Inclusivity"],
+    "logo_url": "https://upload.wikimedia.org/.../school_logo.png",
+    "cover_image_url": "https://upload.wikimedia.org/.../school_campus.jpg",
     "education_boards_supported": ["CBSE", "ICSE", "IB"],
     "medium_of_instruction_supported": ["English"],
     "international_curriculum_supported": false,
@@ -1281,19 +2053,11 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildExamConductingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    protected function buildExamConductingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
 
-        return <<<PROMPT
-You are an expert exam authority and testing agency data extraction and research AI.
-Extract comprehensive, highly accurate, and verified data for the Exam Conducting Body at PRIMARY URL: {$url}{$refUrlsText}
-Organisation Type: {$orgTypeTitle}
-
-RAW WEBSITE & REFERENCE CONTENT PREVIEW:
-{$content}
-
-IMPORTANT INSTRUCTIONS:
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. Search Google actively for this Exam Conducting Body (e.g. NTA, UPSC, SSC, CBSE Exam Wing, State Public Service Commission, etc.):
    - Abbreviation, mandate description, public trust score (1-100), focus keywords.
    - Legal status: authority type (Constitutional Body, Statutory Body, Government Agency, Autonomous Body), parent ministry (e.g. Ministry of Education, DoPT, etc.), established by (Act of Parliament, Government Resolution), legal act reference, headquarters location, jurisdiction scope (National, State, Multi-State).
@@ -1307,6 +2071,23 @@ IMPORTANT INSTRUCTIONS:
    - Policies & Data: Result declaration policy, score validity period, re-evaluation allowed, re-evaluation process, data retention policy.
    - Transparency & Support: Grievance redressal mechanism, candidate portal URL, helpdesk contact number, helpdesk email, official notifications URL, FAQ URL, RTI applicable, audit conducted.
    - Reputation: Exam fairness policy, anti-malpractice measures, whistleblower policy, awards/recognition, media mentions.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract exam conducting body information STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided content, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
+
+        return <<<PROMPT
+You are an expert exam authority and testing agency data extraction and research AI.
+Extract comprehensive, highly accurate, and verified data for the Exam Conducting Body at PRIMARY URL: {$url}{$refUrlsText}
+Organisation Type: {$orgTypeTitle}
+
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
+{$content}
+
+IMPORTANT INSTRUCTIONS:
+{$searchInstructions}
 2. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
 3. Return ONLY valid JSON matching EXACTLY this structure:
 
@@ -1377,19 +2158,11 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildCounsellingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    protected function buildCounsellingBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
 
-        return <<<PROMPT
-You are an expert admission counselling and seat allocation authority research AI.
-Extract comprehensive, highly accurate, and verified data for the Counselling Body at PRIMARY URL: {$url}{$refUrlsText}
-Organisation Type: {$orgTypeTitle}
-
-RAW WEBSITE & REFERENCE CONTENT PREVIEW:
-{$content}
-
-IMPORTANT INSTRUCTIONS:
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. Search Google actively for this Counselling Body (e.g. JoSAA, CSAB, MCC, State Counselling Authorities like CET/KEA/UPTAC, etc.):
    - Core identity: Name, short name, abbreviation, established year, about organisation, mandate description.
    - Legal status: authority type (Statutory Body, Government Committee, Autonomous Body), parent ministry or department, established by, legal reference document URL, jurisdiction scope (National, State, Regional), jurisdiction states.
@@ -1405,6 +2178,23 @@ IMPORTANT INSTRUCTIONS:
    - Technical: candidate login system, choice filling system, auto seat allocation engine, API integration, data security standards, institution reporting interface.
    - Reporting & Grievance: document verification mode (Online, Physical, Hybrid), institution confirmation process, mis reporting controls, appeal process summary, grievance contact details, RTI applicable, audit conducted.
    - Support & Scale: candidate support URL, candidate handbook/guidelines URL, helpdesk toll free number, operational hours, email, phone, FAQ, notifications, years of operation, candidate volume estimate, institutions covered, states covered.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract counselling body information STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided content, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
+
+        return <<<PROMPT
+You are an expert admission counselling and seat allocation authority research AI.
+Extract comprehensive, highly accurate, and verified data for the Counselling Body at PRIMARY URL: {$url}{$refUrlsText}
+Organisation Type: {$orgTypeTitle}
+
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
+{$content}
+
+IMPORTANT INSTRUCTIONS:
+{$searchInstructions}
 2. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
 3. Return ONLY valid JSON matching EXACTLY this structure:
 
@@ -1492,19 +2282,11 @@ IMPORTANT INSTRUCTIONS:
 PROMPT;
     }
 
-    protected function buildRegulatoryBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = []): string
+    protected function buildRegulatoryBodyPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
 
-        return <<<PROMPT
-You are an expert regulatory body and government education agency research AI.
-Extract comprehensive, highly accurate, and verified data for the Regulatory Body / Government Agency at PRIMARY URL: {$url}{$refUrlsText}
-Organisation Type: {$orgTypeTitle}
-
-RAW WEBSITE & REFERENCE CONTENT PREVIEW:
-{$content}
-
-IMPORTANT INSTRUCTIONS:
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. Search Google actively for this Regulatory Body / Government Agency (e.g. UGC, AICTE, NMC, PCI, BCI, NCTE, State Education Directorate, etc.):
    - Core identity: Name, abbreviation (e.g. UGC, AICTE), short name, established year, about organisation, mandate description.
    - Legal status: authority type (Statutory Body, Constitutional Body, Government Agency, Autonomous Body), parent ministry or department, established by (Act of Parliament, Government Resolution, Government Notification), legal reference document URL, jurisdiction scope (National, State, Multi-State, Regional), jurisdiction states.
@@ -1515,7 +2297,24 @@ IMPORTANT INSTRUCTIONS:
    - Scope & Scale: Institutions covered count, states covered count, quota types managed, reservation policy reference.
    - Reporting & Grievance: Monitoring/inspection mechanisms, audit conducted, RTI applicable, grievance redressal mechanism, appeal process summary, grievance contact details.
    - Support & Links: Official website, helpdesk email, phone, notifications, FAQ URL, years of operation.
-2. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract regulatory body details STRICTLY AND EXCLUSIVELY from the provided primary URL content and reference sources.
+   - DO NOT search Google or fabricate data. If any field is not found in the provided content, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
+
+        return <<<PROMPT
+You are an expert regulatory body and government education agency research AI.
+Extract comprehensive, highly accurate, and verified data for the Regulatory Body / Government Agency at PRIMARY URL: {$url}{$refUrlsText}
+Organisation Type: {$orgTypeTitle}
+
+RAW WEBSITE & REFERENCE CONTENT PREVIEW:
+{$content}
+
+IMPORTANT INSTRUCTIONS:
+{$searchInstructions}
+2. If any field cannot be found, return empty string "" or false for booleans, but always include every key in the JSON response.
 3. Return ONLY valid JSON matching EXACTLY this structure:
 
 {
@@ -1527,28 +2326,13 @@ IMPORTANT INSTRUCTIONS:
     "established_year": 1956,
     "central_authority": "Government of India / Ministry of Education",
     "head_office_location": "New Delhi",
+    "headquarters_location": "New Delhi",
     "official_website": "{$url}",
-    "about_organisation": "Apex statutory body responsible for standards, coordination, and recognition...",
-    "mandate_description": "Formulation of minimum standards, regulation, inspection, and accreditation...",
+    "mandate_description": "Apex regulatory authority maintaining educational standards...",
     "authority_type": "Statutory Body",
+    "parent_ministry": "Ministry of Education",
     "parent_ministry_or_department": "Ministry of Education",
     "established_by": "Act of Parliament",
-    "legal_reference_document_url": "",
-    "jurisdiction_scope": "National",
-    "jurisdiction_states": "",
-    "functions": ["Policy Making", "Standard Setting", "Accreditation", "Inspection", "Funding", "Curriculum Framework"],
-    "education_domains_supported": ["Higher Education", "Technical", "Vocational"],
-    "counselling_functions": ["Regulation", "Advisory"],
-    "allocation_basis": "Composite Merit",
-    "rank_source_validation_required": true,
-    "multiple_exam_support": true,
-    "seat_matrix_source": "Regulatory Body",
-    "data_security_standards": "ISO 27001",
-    "institutions_covered_count": 1200,
-    "states_covered_count": 36,
-    "quota_types_managed": ["AIQ", "State Quota"],
-    "reservation_policy_reference": "Statutory reservation mandates",
-    "document_verification_mode": "Online",
     "mis_reporting_controls": "Centralized compliance reporting portal",
     "grievance_redressal_mechanism": "Online grievance portal and Ombudsman regulations",
     "appeal_process_summary": "Statutory Appellate Committee review",

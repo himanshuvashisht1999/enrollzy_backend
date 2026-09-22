@@ -484,11 +484,8 @@ class OrganisationImportService
                     $campusName = !empty($cInput['campus_name']) ? $cInput['campus_name'] : ($organisation->name . ' - Campus ' . ($index + 1));
                     $campusSlug = Str::slug($campusName . '-' . Str::random(4));
 
-                    Campus::create([
-                        'id' => (string) Str::uuid(),
-                        'organisation_id' => $organisation->id,
+                    $campusData = [
                         'campus_name' => $campusName,
-                        'slug' => $campusSlug,
                         'campus_type' => in_array($cInput['campus_type'] ?? '', ['Main', 'Regional', 'Satellite']) ? $cInput['campus_type'] : ($index === 0 ? 'Main' : 'Regional'),
                         'established_year' => $this->parseInteger($cInput['established_year'] ?? $organisation->established_year),
                         'city' => $cInput['city'] ?? null,
@@ -524,7 +521,20 @@ class OrganisationImportService
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
                         'status' => true,
-                    ]);
+                    ];
+
+                    $existingCampus = Campus::where('organisation_id', $organisation->id)
+                        ->where('campus_name', $campusName)
+                        ->first();
+
+                    if ($existingCampus) {
+                        $existingCampus->update($campusData);
+                    } else {
+                        $campusData['id'] = (string) Str::uuid();
+                        $campusData['organisation_id'] = $organisation->id;
+                        $campusData['slug'] = $campusSlug;
+                        Campus::create($campusData);
+                    }
                 }
                 return $organisation;
             }
@@ -537,15 +547,12 @@ class OrganisationImportService
                     $deptName = $dInput['department_name'] ?? ('Department ' . ($index + 1));
                     $deptSlug = Str::slug($deptName . '-' . Str::random(4));
 
-                    Department::create([
-                        'id' => (string) Str::uuid(),
-                        'organisation_id' => $organisation->id,
-                        'campus_id' => $targetCampusId,
+                    $deptData = [
                         'department_name' => $deptName,
+                        'campus_id' => $targetCampusId,
                         'department_code' => $dInput['department_code'] ?? null,
                         'department_type' => in_array($dInput['department_type'] ?? '', ['Academic', 'Clinical', 'Research', 'Interdisciplinary']) ? $dInput['department_type'] : 'Academic',
                         'established_year' => $this->parseInteger($dInput['established_year'] ?? null),
-                        'slug' => $deptSlug,
                         'about_department' => $dInput['about_department'] ?? null,
                         'discipline_area' => $dInput['discipline_area'] ?? null,
                         'specializations_supported' => $this->parseArray($dInput['specializations_supported'] ?? null),
@@ -556,17 +563,17 @@ class OrganisationImportService
                         'hod_appointment_type' => in_array($dInput['hod_appointment_type'] ?? '', ['Permanent', 'Acting']) ? $dInput['hod_appointment_type'] : null,
                         'hod_email' => $dInput['hod_email'] ?? null,
                         'department_office_contact' => $dInput['department_office_contact'] ?? null,
-                        'faculty_count' => $this->parseInteger($dInput['faculty_count'] ?? null),
+                        'faculty_count' => $this->parseInteger($dInput['faculty_count'] ?? 0) ?? 0,
                         'curriculum_design_responsibility' => !empty($dInput['curriculum_design_responsibility']),
                         'exam_setting_responsibility' => !empty($dInput['exam_setting_responsibility']),
                         'research_programs_managed' => !empty($dInput['research_programs_managed']),
                         'phd_supervision_available' => !empty($dInput['phd_supervision_available']),
                         'industry_collaboration_supported' => !empty($dInput['industry_collaboration_supported']),
-                        'department_labs_count' => (string)($this->parseInteger($dInput['department_labs_count'] ?? 0) ?? 0),
+                        'department_labs_count' => $this->parseInteger($dInput['department_labs_count'] ?? 0) ?? 0,
                         'specialized_labs_available' => !empty($dInput['specialized_labs_available']),
-                        'research_centers_under_department' => $dInput['research_centers_under_department'] ?? null,
+                        'research_centers_under_department' => $this->parseInteger($dInput['research_centers_under_department'] ?? 0) ?? 0,
                         'department_library_section' => !empty($dInput['department_library_section']),
-                        'classrooms_count' => (string)($this->parseInteger($dInput['classrooms_count'] ?? 0) ?? 0),
+                        'classrooms_count' => $this->parseInteger($dInput['classrooms_count'] ?? 0) ?? 0,
                         'research_publications_count' => $this->parseInteger($dInput['research_publications_count'] ?? 0) ?? 0,
                         'funded_projects_count' => $this->parseInteger($dInput['funded_projects_count'] ?? 0) ?? 0,
                         'patents_filed_count' => $this->parseInteger($dInput['patents_filed_count'] ?? 0) ?? 0,
@@ -576,7 +583,20 @@ class OrganisationImportService
                         'department_notice_board_url' => $dInput['department_notice_board_url'] ?? null,
                         'status' => 'Active',
                         'visibility' => 'Public',
-                    ]);
+                    ];
+
+                    $existingDept = Department::where('organisation_id', $organisation->id)
+                        ->where('department_name', $deptName)
+                        ->first();
+
+                    if ($existingDept) {
+                        $existingDept->update($deptData);
+                    } else {
+                        $deptData['id'] = (string) Str::uuid();
+                        $deptData['organisation_id'] = $organisation->id;
+                        $deptData['slug'] = $deptSlug;
+                        Department::create($deptData);
+                    }
                 }
                 return $organisation;
             }
@@ -633,13 +653,7 @@ class OrganisationImportService
                     $displayCourseName = $masterCourse ? $masterCourse->name : ($courseName ?: 'Academic Program');
                     $rawTotalFees = !empty($cData['total_fees']) ? $cData['total_fees'] : ($cData['fees'] ?? null);
 
-                    OrganisationCourse::create([
-                        'organisation_id' => $organisation->id,
-                        'campus_id' => $targetCampusId,
-                        'department_id' => $targetDeptId,
-                        'course_id' => $masterCourse ? $masterCourse->id : null,
-                        'academic_unit_name' => Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, ''),
-                        'slug' => Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4)),
+                    $orgCourseData = [
                         'mode' => in_array($cData['mode'] ?? '', ['Regular', 'Online', 'Distance', 'Part-time']) ? $cData['mode'] : 'Regular',
                         'duration' => Str::limit($cData['duration'] ?? ($masterCourse->duration ?? '3 Years'), 250, ''),
                         'fees' => !empty($cData['fees']) ? Str::limit((string)$cData['fees'], 250, '') : null,
@@ -664,7 +678,30 @@ class OrganisationImportService
                         'stream_offered_id' => $streamId,
                         'discipline_id' => $disciplineId,
                         'status' => true,
-                    ]);
+                    ];
+
+                    $existingOrgCourse = OrganisationCourse::where('organisation_id', $organisation->id)
+                        ->where('campus_id', $targetCampusId)
+                        ->where('department_id', $targetDeptId)
+                        ->where(function($q) use ($masterCourse, $displayCourseName) {
+                            if ($masterCourse) {
+                                $q->where('course_id', $masterCourse->id);
+                            } else {
+                                $q->where('academic_unit_name', $displayCourseName);
+                            }
+                        })->first();
+
+                    if ($existingOrgCourse) {
+                        $existingOrgCourse->update($orgCourseData);
+                    } else {
+                        $orgCourseData['organisation_id'] = $organisation->id;
+                        $orgCourseData['campus_id'] = $targetCampusId;
+                        $orgCourseData['department_id'] = $targetDeptId;
+                        $orgCourseData['course_id'] = $masterCourse ? $masterCourse->id : null;
+                        $orgCourseData['academic_unit_name'] = Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, '');
+                        $orgCourseData['slug'] = Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4));
+                        OrganisationCourse::create($orgCourseData);
+                    }
                 }
                 return $organisation;
             }
@@ -674,29 +711,21 @@ class OrganisationImportService
                 return $organisation;
             }
 
-            // 3. Create Campuses (Legacy / Campuses and Courses Mode)
+            // 3. Create/Update Campuses (Mode 2)
             $campusMap = []; // Name -> Campus instance
-            if ($targetOrgId && $organisation->relationLoaded('campuses')) {
-                foreach ($organisation->campuses as $existingCampus) {
-                    $campusMap[$existingCampus->campus_name] = $existingCampus;
-                }
+            $existingCampuses = Campus::where('organisation_id', $organisation->id)->get();
+            foreach ($existingCampuses as $ec) {
+                $campusMap[$ec->campus_name] = $ec;
             }
 
             $campusesInput = $data['campuses'] ?? [];
-
             if (!empty($campusesInput)) {
                 foreach ($campusesInput as $index => $cInput) {
                     $campusName = !empty($cInput['campus_name']) ? $cInput['campus_name'] : ($organisation->name . ' - Campus ' . ($index + 1));
-                    if (isset($campusMap[$campusName])) {
-                        continue;
-                    }
                     $campusSlug = Str::slug($campusName . '-' . Str::random(4));
 
-                    $campus = Campus::create([
-                        'id' => (string) Str::uuid(),
-                        'organisation_id' => $organisation->id,
+                    $campusData = [
                         'campus_name' => $campusName,
-                        'slug' => $campusSlug,
                         'campus_type' => in_array($cInput['campus_type'] ?? '', ['Main', 'Regional', 'Satellite']) ? $cInput['campus_type'] : ($index === 0 ? 'Main' : 'Regional'),
                         'established_year' => $this->parseInteger($cInput['established_year'] ?? $organisation->established_year),
                         'city' => $cInput['city'] ?? null,
@@ -732,9 +761,18 @@ class OrganisationImportService
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
                         'status' => true,
-                    ]);
+                    ];
 
-                    $campusMap[$campusName] = $campus;
+                    if (isset($campusMap[$campusName])) {
+                        $campusMap[$campusName]->update($campusData);
+                        $campus = $campusMap[$campusName];
+                    } else {
+                        $campusData['id'] = (string) Str::uuid();
+                        $campusData['organisation_id'] = $organisation->id;
+                        $campusData['slug'] = $campusSlug;
+                        $campus = Campus::create($campusData);
+                        $campusMap[$campusName] = $campus;
+                    }
                     $campusMap[$index] = $campus;
                 }
             }
@@ -742,33 +780,25 @@ class OrganisationImportService
             // Primary campus reference
             $primaryCampus = !empty($campusMap) ? reset($campusMap) : ($organisation->campuses()->first() ?? null);
 
-            // 4. Create Departments
+            // 4. Create/Update Departments (Mode 2)
             $deptMap = []; // Name -> Department instance
-            if ($targetOrgId && $organisation->relationLoaded('departments')) {
-                foreach ($organisation->departments as $existingDept) {
-                    $deptMap[$existingDept->name] = $existingDept;
-                }
+            $existingDepts = Department::where('organisation_id', $organisation->id)->get();
+            foreach ($existingDepts as $ed) {
+                $deptMap[$ed->department_name] = $ed;
             }
 
             $deptsInput = $data['departments'] ?? [];
-
             if (!empty($deptsInput)) {
                 foreach ($deptsInput as $index => $dInput) {
                     $deptName = $dInput['department_name'] ?? ('Department ' . ($index + 1));
-                    if (isset($deptMap[$deptName])) {
-                        continue;
-                    }
                     $deptSlug = Str::slug($deptName . '-' . Str::random(4));
 
-                    $department = Department::create([
-                        'id' => (string) Str::uuid(),
-                        'organisation_id' => $organisation->id,
-                        'campus_id' => $primaryCampus ? $primaryCampus->id : null,
+                    $deptData = [
                         'department_name' => $deptName,
+                        'campus_id' => $primaryCampus ? $primaryCampus->id : null,
                         'department_code' => $dInput['department_code'] ?? null,
                         'department_type' => in_array($dInput['department_type'] ?? '', ['Academic', 'Clinical', 'Research', 'Interdisciplinary']) ? $dInput['department_type'] : 'Academic',
                         'established_year' => $this->parseInteger($dInput['established_year'] ?? null),
-                        'slug' => $deptSlug,
                         'about_department' => $dInput['about_department'] ?? null,
                         'discipline_area' => $dInput['discipline_area'] ?? null,
                         'specializations_supported' => $this->parseArray($dInput['specializations_supported'] ?? null),
@@ -779,17 +809,17 @@ class OrganisationImportService
                         'hod_appointment_type' => in_array($dInput['hod_appointment_type'] ?? '', ['Permanent', 'Acting']) ? $dInput['hod_appointment_type'] : null,
                         'hod_email' => $dInput['hod_email'] ?? null,
                         'department_office_contact' => $dInput['department_office_contact'] ?? null,
-                        'faculty_count' => $this->parseInteger($dInput['faculty_count'] ?? null),
+                        'faculty_count' => $this->parseInteger($dInput['faculty_count'] ?? 0) ?? 0,
                         'curriculum_design_responsibility' => !empty($dInput['curriculum_design_responsibility']),
                         'exam_setting_responsibility' => !empty($dInput['exam_setting_responsibility']),
                         'research_programs_managed' => !empty($dInput['research_programs_managed']),
                         'phd_supervision_available' => !empty($dInput['phd_supervision_available']),
                         'industry_collaboration_supported' => !empty($dInput['industry_collaboration_supported']),
-                        'department_labs_count' => (string)($this->parseInteger($dInput['department_labs_count'] ?? 0) ?? 0),
+                        'department_labs_count' => $this->parseInteger($dInput['department_labs_count'] ?? 0) ?? 0,
                         'specialized_labs_available' => !empty($dInput['specialized_labs_available']),
-                        'research_centers_under_department' => $dInput['research_centers_under_department'] ?? null,
+                        'research_centers_under_department' => $this->parseInteger($dInput['research_centers_under_department'] ?? 0) ?? 0,
                         'department_library_section' => !empty($dInput['department_library_section']),
-                        'classrooms_count' => (string)($this->parseInteger($dInput['classrooms_count'] ?? 0) ?? 0),
+                        'classrooms_count' => $this->parseInteger($dInput['classrooms_count'] ?? 0) ?? 0,
                         'research_publications_count' => $this->parseInteger($dInput['research_publications_count'] ?? 0) ?? 0,
                         'funded_projects_count' => $this->parseInteger($dInput['funded_projects_count'] ?? 0) ?? 0,
                         'patents_filed_count' => $this->parseInteger($dInput['patents_filed_count'] ?? 0) ?? 0,
@@ -799,15 +829,23 @@ class OrganisationImportService
                         'department_notice_board_url' => $dInput['department_notice_board_url'] ?? null,
                         'status' => 'Active',
                         'visibility' => 'Public',
-                    ]);
+                    ];
 
-                    $deptMap[$deptName] = $department;
+                    if (isset($deptMap[$deptName])) {
+                        $deptMap[$deptName]->update($deptData);
+                        $department = $deptMap[$deptName];
+                    } else {
+                        $deptData['id'] = (string) Str::uuid();
+                        $deptData['organisation_id'] = $organisation->id;
+                        $deptData['slug'] = $deptSlug;
+                        $department = Department::create($deptData);
+                        $deptMap[$deptName] = $department;
+                    }
                 }
             }
 
-            // 5. Create Courses & OrganisationCourses (Strictly link to existing Master records, NEVER create new masters)
+            // 5. Create/Update Courses & OrganisationCourses (Mode 2)
             $coursesInput = $data['courses'] ?? [];
-
             if (!empty($coursesInput)) {
                 foreach ($coursesInput as $cData) {
                     $courseName = $cData['course_name'] ?? $cData['name'] ?? null;
@@ -877,17 +915,9 @@ class OrganisationImportService
                     }
 
                     $displayCourseName = $masterCourse ? $masterCourse->name : ($courseName ?: 'Academic Program');
-
                     $rawTotalFees = !empty($cData['total_fees']) ? $cData['total_fees'] : ($cData['fees'] ?? null);
 
-                    // Create Organisation Course
-                    OrganisationCourse::create([
-                        'organisation_id' => $organisation->id,
-                        'campus_id' => $campusId,
-                        'department_id' => $deptId,
-                        'course_id' => $masterCourse ? $masterCourse->id : null,
-                        'academic_unit_name' => Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, ''),
-                        'slug' => Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4)),
+                    $orgCourseData = [
                         'mode' => in_array($cData['mode'] ?? '', ['Regular', 'Online', 'Distance', 'Part-time']) ? $cData['mode'] : 'Regular',
                         'duration' => Str::limit($cData['duration'] ?? ($masterCourse->duration ?? '3 Years'), 250, ''),
                         'fees' => !empty($cData['fees']) ? Str::limit((string)$cData['fees'], 250, '') : null,
@@ -912,7 +942,30 @@ class OrganisationImportService
                         'stream_offered_id' => $streamId,
                         'discipline_id' => $disciplineId,
                         'status' => true,
-                    ]);
+                    ];
+
+                    $existingOrgCourse = OrganisationCourse::where('organisation_id', $organisation->id)
+                        ->where('campus_id', $campusId)
+                        ->where('department_id', $deptId)
+                        ->where(function($q) use ($masterCourse, $displayCourseName) {
+                            if ($masterCourse) {
+                                $q->where('course_id', $masterCourse->id);
+                            } else {
+                                $q->where('academic_unit_name', $displayCourseName);
+                            }
+                        })->first();
+
+                    if ($existingOrgCourse) {
+                        $existingOrgCourse->update($orgCourseData);
+                    } else {
+                        $orgCourseData['organisation_id'] = $organisation->id;
+                        $orgCourseData['campus_id'] = $campusId;
+                        $orgCourseData['department_id'] = $deptId;
+                        $orgCourseData['course_id'] = $masterCourse ? $masterCourse->id : null;
+                        $orgCourseData['academic_unit_name'] = Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, '');
+                        $orgCourseData['slug'] = Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4));
+                        OrganisationCourse::create($orgCourseData);
+                    }
                 }
             }
 

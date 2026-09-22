@@ -94,6 +94,7 @@ class AiOrganisationImportController extends Controller
             'mode' => 'required|in:organisation,campus,department,course',
             'reference_urls' => 'nullable|array',
             'reference_urls.*' => 'nullable|string',
+            'search_google' => 'nullable',
         ];
 
         if ($mode === 'organisation') {
@@ -137,6 +138,8 @@ class AiOrganisationImportController extends Controller
                 }
             }
 
+            $searchGoogle = $request->has('search_google') ? filter_var($request->input('search_google'), FILTER_VALIDATE_BOOLEAN) : true;
+
             $prompt = $this->scraper->buildExtractionPrompt(
                 $url,
                 $orgTypeTitle,
@@ -146,7 +149,8 @@ class AiOrganisationImportController extends Controller
                 '',
                 $mode,
                 $targetCampus,
-                $targetDepartment
+                $targetDepartment,
+                $searchGoogle
             );
 
             return response()->json([
@@ -155,7 +159,8 @@ class AiOrganisationImportController extends Controller
                 'mode' => $mode,
                 'target_organisation_name' => $targetOrg ? $targetOrg->name : null,
                 'target_campus_name' => $targetCampus ? $targetCampus->campus_name : null,
-                'target_department_name' => $targetDepartment ? $targetDepartment->department_name : null
+                'target_department_name' => $targetDepartment ? $targetDepartment->department_name : null,
+                'search_google' => $searchGoogle
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -178,6 +183,7 @@ class AiOrganisationImportController extends Controller
             'reference_urls' => 'nullable|array',
             'reference_urls.*' => 'nullable|string',
             'custom_prompt' => 'nullable|string',
+            'search_google' => 'nullable',
         ];
 
         if ($mode === 'organisation') {
@@ -221,6 +227,7 @@ class AiOrganisationImportController extends Controller
             }
 
             $customPrompt = $request->input('custom_prompt');
+            $searchGoogle = $request->has('search_google') ? filter_var($request->input('search_google'), FILTER_VALIDATE_BOOLEAN) : true;
 
             $data = $this->scraper->extractFromUrl(
                 $request->input('url'),
@@ -231,7 +238,8 @@ class AiOrganisationImportController extends Controller
                 !empty($customPrompt) ? $customPrompt : null,
                 $mode,
                 $targetCampus,
-                $targetDepartment
+                $targetDepartment,
+                $searchGoogle
             );
 
             $data['mode'] = $mode;
@@ -258,8 +266,10 @@ class AiOrganisationImportController extends Controller
                 $data['organisation'] = [];
                 $data['departments'] = [];
                 $data['courses'] = [];
-                if (!isset($data['campuses'])) {
+                if (!isset($data['campuses']) || !is_array($data['campuses'])) {
                     $data['campuses'] = [];
+                } elseif (count($data['campuses']) > 1) {
+                    $data['campuses'] = array_slice($data['campuses'], 0, 1);
                 }
             } elseif ($mode === 'department') {
                 $data['organisation'] = [];
