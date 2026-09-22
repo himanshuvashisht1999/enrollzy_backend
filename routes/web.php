@@ -710,6 +710,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
         // Billing Module
         Route::prefix('billing')->name('billing.')->group(function () {
+            Route::resource('clients', \App\Http\Controllers\Admin\Billing\BillingClientController::class);
             Route::resource('services', \App\Http\Controllers\Admin\Billing\BillingServiceController::class)->middleware('can:home-services-browse');
             Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\BillingInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
             Route::resource('invoices', \App\Http\Controllers\Admin\Billing\BillingInvoiceController::class)->middleware('can:billing-invoices-browse');

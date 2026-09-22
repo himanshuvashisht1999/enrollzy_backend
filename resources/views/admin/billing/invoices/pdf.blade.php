@@ -22,23 +22,6 @@
             position: relative;
         }
 
-        .status-stamp {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 30px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: 2px solid;
-            padding: 5px 15px;
-            border-radius: 4px;
-            transform: rotate(-15deg);
-            opacity: 0.15;
-            z-index: -1;
-        }
-        .status-paid { color: #198754; border-color: #198754; }
-        .status-unpaid { color: #dc3545; border-color: #dc3545; }
-
         .header-table {
             width: 100%;
             border-bottom: 1px solid #dee2e6;
@@ -52,7 +35,7 @@
         }
 
         .company-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #0d6efd;
             margin: 0 0 5px 0;
@@ -185,7 +168,6 @@
     
     <div class="card">
 
-
         <table class="header-table">
             <tr>
                 <!-- Company Details -->
@@ -210,7 +192,49 @@
                 <!-- Billed To -->
                 <td style="padding: 0 10px;">
                     <div class="billed-to-title">Billed To</div>
-                    @if($invoice->campus)
+                    
+                    @if($invoice->client_type === 'client' && $invoice->client)
+                        <!-- Client Details -->
+                        <div class="fw-bold text-dark" style="font-size: 13px; margin-bottom: 3px;">
+                            {{ $invoice->client->name }}
+                            @if($invoice->client->company_type)
+                                <span style="font-size: 10px; color: #6c757d;">({{ $invoice->client->company_type }})</span>
+                            @endif
+                        </div>
+                        <div class="text-muted" style="line-height: 1.3;">
+                            @if($invoice->client->contact_person)
+                                <strong class="text-dark">Attn:</strong> {{ $invoice->client->contact_person }}<br>
+                            @endif
+                            @if($invoice->client->address)
+                                {{ $invoice->client->address }}<br>
+                            @endif
+                            @php
+                                $loc = array_filter([$invoice->client->city, $invoice->client->state, $invoice->client->pincode]);
+                            @endphp
+                            @if(!empty($loc))
+                                {{ implode(', ', $loc) }}<br>
+                            @endif
+                            @if($invoice->client->email)
+                                <strong class="text-dark">Email:</strong> {{ $invoice->client->email }}<br>
+                            @endif
+                            @if($invoice->client->phone)
+                                <strong class="text-dark">Phone:</strong> {{ $invoice->client->phone }}<br>
+                            @endif
+                            @if($invoice->client->gstin)
+                                <strong class="text-dark">GSTIN:</strong> {{ $invoice->client->gstin }}<br>
+                            @endif
+                            @if($invoice->client->tan_number)
+                                <strong class="text-dark">TAN:</strong> {{ $invoice->client->tan_number }}<br>
+                            @endif
+                            @if($invoice->client->pan_number)
+                                <strong class="text-dark">PAN:</strong> {{ $invoice->client->pan_number }}<br>
+                            @endif
+                            @if($invoice->client->cin_number)
+                                <strong class="text-dark">CIN:</strong> {{ $invoice->client->cin_number }}
+                            @endif
+                        </div>
+                    @elseif($invoice->campus)
+                        <!-- Organisation Campus -->
                         <div class="fw-bold text-dark" style="font-size: 13px; margin-bottom: 3px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</div>
                         <div class="text-muted" style="line-height: 1.3;">
                             @if($invoice->campus->full_address)
@@ -224,6 +248,7 @@
                             @endif
                         </div>
                     @else
+                        <!-- Organisation Fallback -->
                         <div class="fw-bold text-dark" style="font-size: 13px; margin-bottom: 3px;">{{ $invoice->organisation->name ?? 'N/A' }}</div>
                         <div class="text-muted" style="line-height: 1.3;">
                             @if($invoice->organisation && $invoice->organisation->address)
@@ -251,12 +276,10 @@
                             <th>Issue Date:</th>
                             <td class="fw-bold text-dark">{{ \Carbon\Carbon::parse($invoice->issue_date)->format('d M, Y') }}</td>
                         </tr>
-                        {{-- 
                         <tr>
                             <th>Due Date:</th>
                             <td class="fw-bold text-dark">{{ \Carbon\Carbon::parse($invoice->due_date)->format('d M, Y') }}</td>
                         </tr>
-                        --}}
                     </table>
                 </td>
             </tr>

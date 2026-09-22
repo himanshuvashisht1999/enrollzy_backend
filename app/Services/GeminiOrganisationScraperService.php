@@ -57,7 +57,7 @@ class GeminiOrganisationScraperService
             $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle);
         }
 
-        // Candidate fallback models in case of high demand
+        // Candidate fallback models in order of speed and stability
         $modelsToTry = array_values(array_filter(array_unique([
             $this->model,
             'gemini-3.6-flash',
@@ -65,14 +65,7 @@ class GeminiOrganisationScraperService
             'gemini-3.1-flash-lite',
         ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
-        // When extracting targeted entities (department, course, campus) and direct website content is rich,
-        // bypass Google search grounding tool to prevent slow responses and 504 Gateway Timeouts
-        $searchGoogleForApi = $searchGoogle;
-        if ($mode !== 'organisation' && !empty($websiteContent) && strlen($websiteContent) > 1000) {
-            $searchGoogleForApi = false;
-        }
-
-        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi);
+        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogle);
     }
 
     /**
@@ -155,6 +148,9 @@ class GeminiOrganisationScraperService
                 'generationConfig' => [
                     'temperature' => 0.1,
                     'maxOutputTokens' => 32768,
+                    'thinkingConfig' => [
+                        'thinkingBudget' => 0,
+                    ],
                 ]
             ];
 
@@ -609,7 +605,7 @@ class GeminiOrganisationScraperService
 
                             foreach ($subPageCandidates as $idx => $candidate) {
                                 $res = $responses[(string)$idx] ?? null;
-                                if ($res && $res->successful()) {
+                                if ($res instanceof \Illuminate\Http\Client\Response && $res->successful()) {
                                     $subHtml = $res->body();
 
                                     // Extract academic navigation from subpage too
@@ -837,47 +833,58 @@ class GeminiOrganisationScraperService
         }
 
         // If candidate list is empty or sparse (e.g. Angular/SPA single-page homepages), probe root domain canonical directories
-        if (count($candidates) < 3) {
+        if (count($candidates) < 2) {
             $parsed = parse_url($baseUrl);
             $host = strtolower($parsed['host'] ?? '');
             $parts = explode('.', $host);
             $rootDomain = (count($parts) >= 2) ? implode('.', array_slice($parts, -2)) : $host;
 
-            $probePaths = [
-                "https://www.{$rootDomain}/course-list.aspx",
-                "https://www.{$rootDomain}/courses",
-                "https://www.{$rootDomain}/department-list",
-                "https://www.{$rootDomain}/departments",
-                "https://www.{$rootDomain}/academics",
-                "https://www.{$rootDomain}/programs",
-                "https://www.{$rootDomain}/schools",
-                "https://www.{$rootDomain}/faculties",
-                "https://{$host}/course-list.aspx",
-                "https://{$host}/departments",
-                "https://{$host}/programs",
-                "https://{$host}/ug",
-                "https://{$host}/pg",
-            ];
+            if ($mode === 'department') {
+                $probePaths = [
+                    "https://www.{$rootDomain}/course-list.aspx",
+                    "https://www.{$rootDomain}/department-list",
+                    "https://www.{$rootDomain}/departments",
+                    "https://www.{$rootDomain}/schools",
+                    "https://www.{$rootDomain}/faculties",
+                    "https://www.{$rootDomain}/institutes.aspx",
+                    "https://www.{$rootDomain}/",
+                    "https://{$host}/departments",
+                ];
+            } elseif ($mode === 'course') {
+                $probePaths = [
+                    "https://www.{$rootDomain}/course-list.aspx",
+                    "https://www.{$rootDomain}/courses",
+                    "https://www.{$rootDomain}/programs",
+                    "https://www.{$rootDomain}/programe-list.aspx",
+                    "https://{$host}/courses",
+                ];
+            } else {
+                $probePaths = [
+                    "https://www.{$rootDomain}/course-list.aspx",
+                    "https://www.{$rootDomain}/department-list",
+                    "https://www.{$rootDomain}/academics",
+                    "https://www.{$rootDomain}/",
+                ];
+            }
 
             $probeResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($probePaths) {
                 $reqs = [];
                 foreach ($probePaths as $idx => $p) {
-                    $reqs[$idx] = $pool->as((string)$idx)->withoutVerifying()->timeout(4)->get($p);
+                    $reqs[$idx] = $pool->as((string)$idx)->withoutVerifying()->timeout(3.5)->get($p);
                 }
                 return $reqs;
             });
 
             foreach ($probePaths as $idx => $p) {
                 $res = $probeResponses[(string)$idx] ?? null;
-                if ($res && $res->successful() && strlen($res->body()) > 2000) {
+                if ($res instanceof \Illuminate\Http\Client\Response && $res->successful() && strlen($res->body()) > 2000) {
                     $cleanP = rtrim($p, '/');
                     $candidates[$cleanP] = [
                         'url' => $cleanP,
                         'title' => 'Official Academic Catalog Directory',
                         'type' => 'Academic Directory Catalog',
-                        'score' => 950,
+                        'score' => 950 - ($idx * 10),
                     ];
-                    break; // Use the first rich catalog found
                 }
             }
         }
@@ -1319,15 +1326,18 @@ STRICT EXHAUSTIVE MANDATE:
 DET_DEPT;
         } else {
             $detectedDeptText = <<<DET_DEPT
-STRICT EXHAUSTIVE MANDATE:
-- You MUST comprehensively extract and return ALL active academic departments, faculties, and institutes (universities typically offer 50 to 100+ departments including Aerospace, Anthropology, Biotechnology, Artificial Intelligence, Forensic Sciences, Psychology, Law, Management, Humanities, etc.).
-- DO NOT return only 15-20 sample departments. Return every single academic department active at the institution.
+STRICT EXHAUSTIVE MANDATE (EXTRACT ALL 50 TO 120+ DEPARTMENTS/SCHOOLS):
+- Large universities and institutions like "{$orgName}" have 50 to 120+ distinct academic departments, institutes, and schools across disciplines (Engineering & Technology, Management, Biotechnology, Law, Applied Sciences, Pharmacy, Architecture, Communication, Arts & Humanities, Commerce, Psychology, Forensic Sciences, Hospitality, Fashion, Nursing, Education, etc.).
+- You MUST exhaustively extract and return EVERY SINGLE active academic department, institute, and faculty.
+- DO NOT limit the output to 10 or 20 items. Output every single department offering programs across the institution.
 DET_DEPT;
         }
 
         $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
-2. SEARCH GROUNDING & ACCURACY:
-   - Search the official website directory, NIRF reports, NAAC self-study reports (SSR), faculty directories, and Wikipedia to verify all active academic departments, faculty names, HOD/Dean names, faculty strengths, and research achievements.
+2. DEEP WEB SEARCH & COMPLETE INSTITUTIONAL AUDIT:
+   - Actively search Google Search Grounding across official institutional directories, "Institutes and Schools of {$orgName}", academic faculties, admission portals, Shiksha, Collegedunia, and NIRF disclosures.
+   - Discover and extract ALL departments and schools across the entire institution.
+   - Return every single discovered department in the "departments" array without skipping or truncating.
 GOOGLE_INSTRUCTIONS
         : <<<STRICT_URL_INSTRUCTIONS
 2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):

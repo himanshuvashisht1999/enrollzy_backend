@@ -1359,7 +1359,7 @@
 
                 
 <!-- wrapped parent #billingMenu -->
-@if($user && method_exists($user, 'canAny') && $user->canAny(['billing-services-browse', 'billing-invoices-browse', 'billing-payments-browse']))
+@if($user && method_exists($user, 'canAny') && $user->canAny(['billing-clients-browse', 'billing-services-browse', 'billing-invoices-browse', 'billing-payments-browse']))
 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.billing.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#billingMenu" role="button"
@@ -1370,6 +1370,8 @@
                     </a>
                     <div class="collapse {{ request()->routeIs('admin.billing.*') ? 'show' : '' }}" id="billingMenu">
                         <ul class="nav flex-column">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.clients.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.clients.index') }}">Clients</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.services.*') ? 'active' : '' }}"
                                     href="{{ route('admin.billing.services.index') }}">Services</a></li>
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.invoices.*') ? 'active' : '' }}"

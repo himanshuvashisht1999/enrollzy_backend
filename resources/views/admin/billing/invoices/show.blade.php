@@ -2,21 +2,29 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="mb-0">Invoice Details</h5>
-    <div>
-        <a href="{{ route('admin.billing.invoices.pdf', $invoice->id) }}" class="btn btn-sm btn-secondary me-1">
-            <i class="fas fa-file-pdf"></i> Download PDF
+    <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 fw-bold">Invoice Details - {{ $invoice->invoice_number }}</h5>
+        @if($invoice->client_type === 'client')
+            <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-user-tie me-1"></i> Client</span>
+        @else
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="fas fa-university me-1"></i> Organisation</span>
+        @endif
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.billing.invoices.edit', $invoice->id) }}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-edit me-1"></i> Edit Invoice
+        </a>
+        <a href="{{ route('admin.billing.invoices.pdf', $invoice->id) }}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-file-pdf me-1"></i> Download PDF
         </a>
         <a href="{{ route('admin.billing.invoices.index') }}" class="btn btn-sm btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back
+            <i class="fas fa-arrow-left me-1"></i> Back
         </a>
     </div>
 </div>
 
 <div class="card border-0 shadow-sm" style="border-top: 3px solid #0056b3 !important; font-size: 0.85rem;">
     <div class="card-body p-3 position-relative">
-        
-
 
         <!-- Header -->
         <div class="row mb-3 border-bottom pb-3">
@@ -40,7 +48,49 @@
             
             <div class="col-4">
                 <h6 class="text-uppercase text-muted border-bottom pb-1 mb-1 fw-bold" style="font-size: 10px;">Billed To</h6>
-                @if($invoice->campus)
+                
+                @if($invoice->client_type === 'client' && $invoice->client)
+                    <!-- Client Recipient -->
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">
+                        {{ $invoice->client->name }}
+                        @if($invoice->client->company_type)
+                            <span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 10px;">{{ $invoice->client->company_type }}</span>
+                        @endif
+                    </h6>
+                    <div class="text-muted lh-sm">
+                        @if($invoice->client->contact_person)
+                            <strong>Attn:</strong> {{ $invoice->client->contact_person }}<br>
+                        @endif
+                        @if($invoice->client->address)
+                            {{ $invoice->client->address }}<br>
+                        @endif
+                        @php
+                            $loc = array_filter([$invoice->client->city, $invoice->client->state, $invoice->client->pincode]);
+                        @endphp
+                        @if(!empty($loc))
+                            {{ implode(', ', $loc) }}<br>
+                        @endif
+                        @if($invoice->client->email)
+                            <strong>Email:</strong> {{ $invoice->client->email }}<br>
+                        @endif
+                        @if($invoice->client->phone)
+                            <strong>Phone:</strong> {{ $invoice->client->phone }}<br>
+                        @endif
+                        @if($invoice->client->gstin)
+                            <strong>GSTIN:</strong> <span class="font-monospace text-dark">{{ $invoice->client->gstin }}</span><br>
+                        @endif
+                        @if($invoice->client->tan_number)
+                            <strong>TAN:</strong> <span class="font-monospace text-dark">{{ $invoice->client->tan_number }}</span><br>
+                        @endif
+                        @if($invoice->client->pan_number)
+                            <strong>PAN:</strong> <span class="font-monospace text-dark">{{ $invoice->client->pan_number }}</span><br>
+                        @endif
+                        @if($invoice->client->cin_number)
+                            <strong>CIN:</strong> <span class="font-monospace text-dark">{{ $invoice->client->cin_number }}</span>
+                        @endif
+                    </div>
+                @elseif($invoice->campus)
+                    <!-- Organisation Campus Recipient -->
                     <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</h6>
                     <div class="text-muted lh-sm">
                         @if($invoice->campus->full_address)
@@ -55,6 +105,7 @@
                         @endif
                     </div>
                 @else
+                    <!-- Fallback Organisation Recipient -->
                     <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
                     <div class="text-muted lh-sm">
                         @if($invoice->organisation && $invoice->organisation->address)

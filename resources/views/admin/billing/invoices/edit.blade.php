@@ -1,16 +1,21 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Create New Invoice')
+@section('title', 'Edit Invoice - ' . $invoice->invoice_number)
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1 text-dark fw-bold">Create New Invoice</h4>
-        <p class="text-muted small mb-0">Generate a billing invoice for an Organisation or Client.</p>
+        <h4 class="mb-1 text-dark fw-bold">Edit Invoice - <span class="text-primary">{{ $invoice->invoice_number }}</span></h4>
+        <p class="text-muted small mb-0">Modify invoice details, recipient (Organisation / Client), and line items.</p>
     </div>
-    <a href="{{ route('admin.billing.invoices.index') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-1"></i> Back to Invoices
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.billing.invoices.show', $invoice->id) }}" class="btn btn-outline-info">
+            <i class="fas fa-eye me-1"></i> View Invoice
+        </a>
+        <a href="{{ route('admin.billing.invoices.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Invoices
+        </a>
+    </div>
 </div>
 
 @if ($errors->any())
@@ -27,8 +32,9 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        <form action="{{ route('admin.billing.invoices.store') }}" method="POST" id="invoiceForm">
+        <form action="{{ route('admin.billing.invoices.update', $invoice->id) }}" method="POST" id="invoiceForm">
             @csrf
+            @method('PUT')
             
             <!-- Recipient Type Switcher -->
             <div class="card bg-light border-0 mb-4">
@@ -36,13 +42,13 @@
                     <label class="form-label fw-bold text-dark mb-2">Invoice To (Recipient Type) <span class="text-danger">*</span></label>
                     <div class="d-flex gap-4">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="client_type" id="typeOrganisation" value="organisation" {{ old('client_type', 'organisation') === 'organisation' ? 'checked' : '' }}>
+                            <input class="form-check-input" type="radio" name="client_type" id="typeOrganisation" value="organisation" {{ old('client_type', $invoice->client_type ?? 'organisation') === 'organisation' ? 'checked' : '' }}>
                             <label class="form-check-label fw-semibold" for="typeOrganisation">
                                 <i class="fas fa-university text-primary me-1"></i> Organisation
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="client_type" id="typeClient" value="client" {{ old('client_type') === 'client' ? 'checked' : '' }}>
+                            <input class="form-check-input" type="radio" name="client_type" id="typeClient" value="client" {{ old('client_type', $invoice->client_type) === 'client' ? 'checked' : '' }}>
                             <label class="form-check-label fw-semibold" for="typeClient">
                                 <i class="fas fa-user-tie text-success me-1"></i> Client
                             </label>
@@ -58,7 +64,7 @@
                     <select name="organisation_id" id="organisation_id" class="form-select @error('organisation_id') is-invalid @enderror">
                         <option value="">Select Organisation...</option>
                         @foreach($organisations as $org)
-                            <option value="{{ $org->id }}" {{ old('organisation_id') == $org->id ? 'selected' : '' }}>
+                            <option value="{{ $org->id }}" {{ old('organisation_id', $invoice->organisation_id) == $org->id ? 'selected' : '' }}>
                                 {{ $org->name }}
                             </option>
                         @endforeach
@@ -68,7 +74,7 @@
                 
                 <div class="col-md-3 mb-3 organisation-field">
                     <label class="form-label fw-semibold">Campus <span class="text-danger">*</span></label>
-                    <select name="campus_id" id="campus_id" class="form-select @error('campus_id') is-invalid @enderror" disabled>
+                    <select name="campus_id" id="campus_id" class="form-select @error('campus_id') is-invalid @enderror">
                         <option value="">Select Campus...</option>
                     </select>
                     @error('campus_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -94,25 +100,24 @@
                                     data-state="{{ $c->state }}"
                                     data-pincode="{{ $c->pincode }}"
                                     data-country="{{ $c->country }}"
-                                    {{ old('billing_client_id') == $c->id ? 'selected' : '' }}>
+                                    {{ old('billing_client_id', $invoice->billing_client_id) == $c->id ? 'selected' : '' }}>
                                 {{ $c->name }} {{ $c->company_type ? '(' . $c->company_type . ')' : '' }}
                             </option>
                         @endforeach
                     </select>
                     @error('billing_client_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    <div class="form-text small"><a href="{{ route('admin.billing.clients.create') }}" target="_blank" class="text-decoration-none"><i class="fas fa-plus-circle me-1"></i>Add New Client</a> (opens in new tab)</div>
                 </div>
 
                 <!-- Dates -->
                 <div class="col-md-3 mb-3">
                     <label class="form-label fw-semibold">Issue Date <span class="text-danger">*</span></label>
-                    <input type="date" name="issue_date" class="form-control @error('issue_date') is-invalid @enderror" value="{{ old('issue_date', date('Y-m-d')) }}" required>
+                    <input type="date" name="issue_date" class="form-control @error('issue_date') is-invalid @enderror" value="{{ old('issue_date', $invoice->issue_date ? $invoice->issue_date->format('Y-m-d') : date('Y-m-d')) }}" required>
                     @error('issue_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 
                 <div class="col-md-3 mb-3">
                     <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
-                    <input type="date" name="due_date" class="form-control @error('due_date') is-invalid @enderror" value="{{ old('due_date', date('Y-m-d', strtotime('+7 days'))) }}" required>
+                    <input type="date" name="due_date" class="form-control @error('due_date') is-invalid @enderror" value="{{ old('due_date', $invoice->due_date ? $invoice->due_date->format('Y-m-d') : date('Y-m-d')) }}" required>
                     @error('due_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -144,8 +149,7 @@
                                 <div class="text-muted small" id="previewClientContact"></div>
                                 <div class="text-muted small" id="previewClientAddress"></div>
                             </div>
-                            <div class="text-end small" id="previewClientTax">
-                            </div>
+                            <div class="text-end small" id="previewClientTax"></div>
                         </div>
                     </div>
                 </div>
@@ -173,52 +177,59 @@
                                 </tr>
                             </thead>
                             <tbody id="invoiceItemsBody">
-                                <!-- Dynamic rows inserted here -->
+                                <!-- Existing / dynamic rows -->
                             </tbody>
                             <tfoot>
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">Subtotal:</td>
-                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="subtotal" id="calcSubtotal" class="form-control text-end bg-light" readonly></td>
+                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="subtotal" id="calcSubtotal" class="form-control text-end bg-light" value="{{ $invoice->subtotal }}" readonly></td>
                                 </tr>
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">Discount:</td>
-                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="discount_amount" id="calcDiscount" class="form-control text-end" value="0.00"></td>
+                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="discount_amount" id="calcDiscount" class="form-control text-end" value="{{ $invoice->discount_amount ?: '0.00' }}"></td>
                                 </tr>
                                 {{-- GST fields --}}
+                                @php
+                                    $hasIgst = $invoice->igst_amount > 0;
+                                    $sub = max(0.01, $invoice->subtotal - $invoice->discount_amount);
+                                    $cgstPct = ($invoice->cgst_amount > 0 && $sub > 0) ? round(($invoice->cgst_amount / $sub) * 100, 2) : 9;
+                                    $sgstPct = ($invoice->sgst_amount > 0 && $sub > 0) ? round(($invoice->sgst_amount / $sub) * 100, 2) : 9;
+                                    $igstPct = ($invoice->igst_amount > 0 && $sub > 0) ? round(($invoice->igst_amount / $sub) * 100, 2) : 18;
+                                @endphp
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
                                             <span class="me-2">CGST (%):</span>
-                                            <input type="number" step="0.01" id="cgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="9">
+                                            <input type="number" step="0.01" id="cgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="{{ $cgstPct }}">
                                         </div>
                                     </td>
-                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="cgst_amount" id="calcCgst" class="form-control text-end bg-light" readonly></td>
+                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="cgst_amount" id="calcCgst" class="form-control text-end bg-light" value="{{ $invoice->cgst_amount ?: '0.00' }}" readonly></td>
                                 </tr>
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
                                             <span class="me-2">SGST (%):</span>
-                                            <input type="number" step="0.01" id="sgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="9">
+                                            <input type="number" step="0.01" id="sgstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="{{ $sgstPct }}">
                                         </div>
                                     </td>
-                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="sgst_amount" id="calcSgst" class="form-control text-end bg-light" readonly></td>
+                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="sgst_amount" id="calcSgst" class="form-control text-end bg-light" value="{{ $invoice->sgst_amount ?: '0.00' }}" readonly></td>
                                 </tr>
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">
                                         <div class="d-flex justify-content-end align-items-center">
-                                            <input class="form-check-input mt-0 me-2" type="checkbox" id="useIgst" aria-label="Use IGST instead of CGST/SGST">
+                                            <input class="form-check-input mt-0 me-2" type="checkbox" id="useIgst" {{ $hasIgst ? 'checked' : '' }} aria-label="Use IGST instead of CGST/SGST">
                                             <span class="me-2">IGST (%):</span>
-                                            <input type="number" step="0.01" id="igstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="18">
+                                            <input type="number" step="0.01" id="igstRate" class="form-control form-control-sm text-end" style="width: 80px;" value="{{ $igstPct }}">
                                         </div>
                                     </td>
                                     <td colspan="2" class="text-end">
-                                        <input type="number" step="0.01" name="igst_amount" id="calcIgst" class="form-control text-end bg-light" value="0.00" readonly>
+                                        <input type="number" step="0.01" name="igst_amount" id="calcIgst" class="form-control text-end bg-light" value="{{ $invoice->igst_amount ?: '0.00' }}" readonly>
                                     </td>
                                 </tr>
-                                <input type="hidden" name="total_tax" id="calcTotalTax">
+                                <input type="hidden" name="total_tax" id="calcTotalTax" value="{{ $invoice->total_tax }}">
                                 <tr class="table-primary">
                                     <td colspan="4" class="text-end fw-bold fs-5">Grand Total:</td>
-                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="total_amount" id="calcTotal" class="form-control text-end fw-bold fs-5 bg-light" readonly></td>
+                                    <td colspan="2" class="text-end"><input type="number" step="0.01" name="total_amount" id="calcTotal" class="form-control text-end fw-bold fs-5 bg-light" value="{{ $invoice->total_amount }}" readonly></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -228,11 +239,11 @@
             
             <div class="mb-4">
                 <label class="form-label fw-semibold">Notes / Terms & Conditions</label>
-                <textarea name="notes" rows="3" class="form-control">Payment is due within 7 days. Late payments may incur additional charges.</textarea>
+                <textarea name="notes" rows="3" class="form-control">{{ old('notes', $invoice->notes) }}</textarea>
             </div>
             
             <div class="text-end">
-                <button type="submit" class="btn btn-primary px-4 py-2" id="saveInvoiceBtn"><i class="fas fa-save me-1"></i> Generate Invoice</button>
+                <button type="submit" class="btn btn-primary px-4 py-2" id="saveInvoiceBtn"><i class="fas fa-save me-1"></i> Update Invoice</button>
             </div>
         </form>
     </div>
@@ -242,6 +253,8 @@
 @section('scripts')
 <script>
     const services = @json($services);
+    const existingItems = @json($invoice->items);
+    const existingCampusId = @json($invoice->campus_id);
     
     document.addEventListener('DOMContentLoaded', function() {
         let rowIndex = 0;
@@ -277,7 +290,7 @@
             toggleRecipientType($(this).val());
         });
 
-        // Initialize state based on checked radio
+        // Initialize recipient type
         toggleRecipientType($('input[name="client_type"]:checked').val());
 
         // Client preview handler
@@ -338,8 +351,7 @@
         $('#billing_client_id').on('change', updateClientPreview);
 
         // Organisation & Campus Ajax
-        $('#organisation_id').on('change', function() {
-            const orgId = $(this).val();
+        function loadCampuses(orgId, selectedCampusId) {
             const $campusSelect = $('#campus_id');
             const $campusPreview = $('#campusDetailsPreview');
             
@@ -359,12 +371,20 @@
                         currentCampuses = data;
                         if(data.length > 0) {
                             data.forEach(campus => {
-                                $campusSelect.append(new Option(campus.campus_name, campus.id));
+                                const isSelected = selectedCampusId && (campus.id == selectedCampusId);
+                                $campusSelect.append(new Option(campus.campus_name, campus.id, isSelected, isSelected));
                             });
                             $campusSelect.prop('disabled', false);
+                            if (selectedCampusId) {
+                                $campusSelect.trigger('change');
+                            }
                         }
                     });
             }
+        }
+
+        $('#organisation_id').on('change', function() {
+            loadCampuses($(this).val(), null);
         });
 
         $('#campus_id').on('change', function() {
@@ -389,20 +409,32 @@
                 $campusPreview.addClass('d-none');
             }
         });
+
+        // Preload campus for initial org
+        const initialOrgId = $('#organisation_id').val();
+        if (initialOrgId) {
+            loadCampuses(initialOrgId, existingCampusId);
+        }
         
-        function addNewRow() {
+        function addNewRow(item = null) {
             const tr = document.createElement('tr');
+            const serviceId = item ? item.billing_service_id : '';
+            const description = item ? item.description : '';
+            const quantity = item ? item.quantity : 1;
+            const unitPrice = item ? parseFloat(item.unit_price).toFixed(2) : '';
+            const total = item ? parseFloat(item.total).toFixed(2) : '';
+
             tr.innerHTML = `
                 <td>
                     <select name="items[${rowIndex}][service_id]" class="form-select service-select" required>
                         <option value="">Select Service...</option>
-                        ${services.map(s => `<option value="${s.id}" data-price="${s.sale_price || s.price}">${s.name}</option>`).join('')}
+                        ${services.map(s => `<option value="${s.id}" data-price="${s.sale_price || s.price}" ${s.id == serviceId ? 'selected' : ''}>${s.name}</option>`).join('')}
                     </select>
                 </td>
-                <td><input type="text" name="items[${rowIndex}][description]" class="form-control item-desc" required></td>
-                <td><input type="number" min="1" name="items[${rowIndex}][quantity]" class="form-control item-qty text-center" value="1" required></td>
-                <td><input type="number" step="0.01" name="items[${rowIndex}][unit_price]" class="form-control item-price text-end" required></td>
-                <td><input type="number" step="0.01" name="items[${rowIndex}][total]" class="form-control item-total text-end bg-light" readonly></td>
+                <td><input type="text" name="items[${rowIndex}][description]" class="form-control item-desc" value="${description}" required></td>
+                <td><input type="number" min="1" name="items[${rowIndex}][quantity]" class="form-control item-qty text-center" value="${quantity}" required></td>
+                <td><input type="number" step="0.01" name="items[${rowIndex}][unit_price]" class="form-control item-price text-end" value="${unitPrice}" required></td>
+                <td><input type="number" step="0.01" name="items[${rowIndex}][total]" class="form-control item-total text-end bg-light" value="${total}" readonly></td>
                 <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="fas fa-times"></i></button></td>
             `;
             tbody.appendChild(tr);
@@ -485,7 +517,7 @@
             document.getElementById('saveInvoiceBtn').disabled = subtotal <= 0;
         }
         
-        addItemBtn.addEventListener('click', addNewRow);
+        addItemBtn.addEventListener('click', () => addNewRow());
         discountInput.addEventListener('input', calculateTotals);
         useIgstCheck.addEventListener('change', calculateTotals);
 
@@ -502,8 +534,12 @@
             }
         });
         
-        // Add first row on start
-        addNewRow();
+        // Populate existing items or add one empty
+        if (existingItems && existingItems.length > 0) {
+            existingItems.forEach(item => addNewRow(item));
+        } else {
+            addNewRow();
+        }
     });
 </script>
 @endsection

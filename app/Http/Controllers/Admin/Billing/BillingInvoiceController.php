@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Admin\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\BillingClient;
 use App\Models\BillingInvoice;
+use App\Models\BillingService;
+use App\Models\Organisation;
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BillingInvoiceController extends Controller
 {
@@ -13,18 +18,34 @@ class BillingInvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        $clientId  = $request->input('client_id');
+        $recipientType = $request->input('recipient_type'); // 'organisation' or 'client'
+        $organisationId = $request->input('organisation_id');
+        $clientId = $request->input('client_id');
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
         $status    = $request->input('status');
 
-        $organisations = \App\Models\Organisation::orderBy('name')->get();
+        $organisations = Organisation::orderBy('name')->get();
+        $clients = BillingClient::orderBy('name')->get();
 
-        $query = BillingInvoice::with('organisation')->latest();
+        $query = BillingInvoice::with(['organisation', 'client', 'campus'])->latest();
+
+        if ($recipientType === 'organisation') {
+            $query->where(function($q) {
+                $q->where('client_type', 'organisation')->orWhereNull('client_type');
+            });
+        } elseif ($recipientType === 'client') {
+            $query->where('client_type', 'client');
+        }
+
+        if ($organisationId) {
+            $query->where('organisation_id', $organisationId);
+        }
 
         if ($clientId) {
-            $query->where('organisation_id', $clientId);
+            $query->where('billing_client_id', $clientId);
         }
+
         if ($startDate) {
             $query->whereDate('issue_date', '>=', $startDate);
         }
@@ -37,21 +58,34 @@ class BillingInvoiceController extends Controller
 
         $invoices = $query->paginate(15)->withQueryString();
 
-        return view('admin.billing.invoices.index', compact('invoices', 'organisations', 'clientId', 'startDate', 'endDate', 'status'));
+        return view('admin.billing.invoices.index', compact(
+            'invoices',
+            'organisations',
+            'clients',
+            'recipientType',
+            'organisationId',
+            'clientId',
+            'startDate',
+            'endDate',
+            'status'
+        ));
     }
 
     public function create()
     {
-        $organisations = \App\Models\Organisation::all();
-        $services = \App\Models\BillingService::where('status', 1)->get();
-        return view('admin.billing.invoices.create', compact('organisations', 'services'));
+        $organisations = Organisation::orderBy('name')->get();
+        $clients = BillingClient::where('status', 1)->orderBy('name')->get();
+        $services = BillingService::where('status', 1)->orderBy('name')->get();
+
+        return view('admin.billing.invoices.create', compact('organisations', 'clients', 'services'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'organisation_id' => 'required|exists:organisations,id',
-            'campus_id' => 'required|exists:campuses,id',
+        $clientType = $request->input('client_type', 'organisation');
+
+        $rules = [
+            'client_type' => 'required|in:organisation,client',
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'items' => 'required|array|min:1',
@@ -61,17 +95,25 @@ class BillingInvoiceController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-        ]);
+        ];
+
+        if ($clientType === 'client') {
+            $rules['billing_client_id'] = 'required|exists:billing_clients,id';
+        } else {
+            $rules['organisation_id'] = 'required|exists:organisations,id';
+            $rules['campus_id'] = 'required';
+        }
+
+        $request->validate($rules);
 
         $subtotal = 0;
-        foreach($request->items as $item) {
+        foreach ($request->items as $item) {
             $row_total = $item['quantity'] * $item['unit_price'];
             $subtotal += $row_total;
         }
 
         $discount = $request->discount_amount ?: 0;
         
-        // Take tax amounts directly from the form so admin can override them
         $cgst = $request->cgst_amount ?: 0;
         $sgst = $request->sgst_amount ?: 0;
         $igst = $request->igst_amount ?: 0;
@@ -84,10 +126,12 @@ class BillingInvoiceController extends Controller
         $nextId = $latestId ? $latestId + 1 : 1;
         $invoiceNumber = 'INV-' . date('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
-        $invoice = BillingInvoice::create([
-            'organisation_id' => $request->organisation_id,
-            'campus_id' => $request->campus_id,
+        $invoiceData = [
             'invoice_number' => $invoiceNumber,
+            'client_type' => $clientType,
+            'billing_client_id' => $clientType === 'client' ? $request->billing_client_id : null,
+            'organisation_id' => $clientType === 'organisation' ? $request->organisation_id : null,
+            'campus_id' => $clientType === 'organisation' ? $request->campus_id : null,
             'issue_date' => $request->issue_date,
             'due_date' => $request->due_date,
             'subtotal' => $subtotal,
@@ -99,9 +143,11 @@ class BillingInvoiceController extends Controller
             'total_amount' => $total_amount,
             'status' => 'unpaid',
             'notes' => $request->notes,
-        ]);
+        ];
 
-        foreach($request->items as $item) {
+        $invoice = BillingInvoice::create($invoiceData);
+
+        foreach ($request->items as $item) {
             $row_total = $item['quantity'] * $item['unit_price'];
             $invoice->items()->create([
                 'billing_service_id' => $item['service_id'],
@@ -119,19 +165,107 @@ class BillingInvoiceController extends Controller
 
     public function show(string $id)
     {
-        $invoice = BillingInvoice::with(['organisation', 'campus', 'items.service', 'payments'])->findOrFail($id);
-        $setting = \App\Models\Setting::first();
+        $invoice = BillingInvoice::with(['organisation', 'client', 'campus', 'items.service', 'payments'])->findOrFail($id);
+        $setting = Setting::first();
         return view('admin.billing.invoices.show', compact('invoice', 'setting'));
     }
 
     public function edit(string $id)
     {
-        // Usually invoices shouldn't be fully edited after creation, but we can allow some edits
+        $invoice = BillingInvoice::with(['organisation', 'client', 'campus', 'items.service'])->findOrFail($id);
+        $organisations = Organisation::orderBy('name')->get();
+        $clients = BillingClient::orderBy('name')->get();
+        $services = BillingService::where('status', 1)->orderBy('name')->get();
+
+        return view('admin.billing.invoices.edit', compact('invoice', 'organisations', 'clients', 'services'));
     }
 
     public function update(Request $request, string $id)
     {
-        //
+        $invoice = BillingInvoice::findOrFail($id);
+
+        $clientType = $request->input('client_type', 'organisation');
+
+        $rules = [
+            'client_type' => 'required|in:organisation,client',
+            'issue_date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:issue_date',
+            'items' => 'required|array|min:1',
+            'items.*.service_id' => 'required|exists:billing_services,id',
+            'items.*.description' => 'required|string',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+        ];
+
+        if ($clientType === 'client') {
+            $rules['billing_client_id'] = 'required|exists:billing_clients,id';
+        } else {
+            $rules['organisation_id'] = 'required|exists:organisations,id';
+            $rules['campus_id'] = 'required';
+        }
+
+        $request->validate($rules);
+
+        $subtotal = 0;
+        foreach ($request->items as $item) {
+            $row_total = $item['quantity'] * $item['unit_price'];
+            $subtotal += $row_total;
+        }
+
+        $discount = $request->discount_amount ?: 0;
+        
+        $cgst = $request->cgst_amount ?: 0;
+        $sgst = $request->sgst_amount ?: 0;
+        $igst = $request->igst_amount ?: 0;
+        $total_tax = $cgst + $sgst + $igst;
+        
+        $total_amount = $subtotal - $discount + $total_tax;
+
+        $invoice->update([
+            'client_type' => $clientType,
+            'billing_client_id' => $clientType === 'client' ? $request->billing_client_id : null,
+            'organisation_id' => $clientType === 'organisation' ? $request->organisation_id : null,
+            'campus_id' => $clientType === 'organisation' ? $request->campus_id : null,
+            'issue_date' => $request->issue_date,
+            'due_date' => $request->due_date,
+            'subtotal' => $subtotal,
+            'discount_amount' => $discount,
+            'total_tax' => $total_tax,
+            'cgst_amount' => $cgst,
+            'sgst_amount' => $sgst,
+            'igst_amount' => $igst,
+            'total_amount' => $total_amount,
+            'notes' => $request->notes,
+        ]);
+
+        // Re-create items
+        $invoice->items()->delete();
+        foreach ($request->items as $item) {
+            $row_total = $item['quantity'] * $item['unit_price'];
+            $invoice->items()->create([
+                'billing_service_id' => $item['service_id'],
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'tax_rate' => 0,
+                'tax_amount' => 0,
+                'total' => $row_total,
+            ]);
+        }
+
+        // Recalculate status based on payments
+        $totalPaid = $invoice->payments()->sum('amount');
+        if ($totalPaid >= $total_amount && $total_amount > 0) {
+            $invoice->update(['status' => 'paid']);
+        } elseif ($totalPaid > 0) {
+            $invoice->update(['status' => 'partial']);
+        } elseif ($invoice->status !== 'cancelled') {
+            $invoice->update(['status' => 'unpaid']);
+        }
+
+        return redirect()->route('admin.billing.invoices.show', $invoice->id)->with('success', 'Invoice updated successfully!');
     }
 
     public function destroy(string $id)
@@ -153,10 +287,10 @@ class BillingInvoiceController extends Controller
 
     public function downloadPdf($id)
     {
-        $invoice = BillingInvoice::with(['organisation', 'campus', 'items.service', 'payments'])->findOrFail($id);
-        $setting = \App\Models\Setting::first();
+        $invoice = BillingInvoice::with(['organisation', 'client', 'campus', 'items.service', 'payments'])->findOrFail($id);
+        $setting = Setting::first();
         
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.billing.invoices.pdf', compact('invoice', 'setting'));
+        $pdf = Pdf::loadView('admin.billing.invoices.pdf', compact('invoice', 'setting'));
         
         return $pdf->download($invoice->invoice_number . '.pdf');
     }
