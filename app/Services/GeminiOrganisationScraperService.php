@@ -65,7 +65,15 @@ class GeminiOrganisationScraperService
             'gemini-3.1-flash-lite',
         ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
-        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogle);
+        $searchGoogleForApi = $searchGoogle;
+        if (!empty($combinedContent) && (
+            ($mode === 'department' && str_contains($combinedContent, '=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE')) ||
+            ($mode === 'course' && str_contains($combinedContent, '=== DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE'))
+        )) {
+            $searchGoogleForApi = false;
+        }
+
+        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi);
     }
 
     /**
@@ -585,7 +593,7 @@ class GeminiOrganisationScraperService
                         $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
                         
                         if (!empty($subPageCandidates)) {
-                            $maxSubpages = ($mode === 'organisation') ? 3 : (($mode === 'course') ? 3 : 2);
+                            $maxSubpages = 5;
                             $subPageCandidates = array_slice($subPageCandidates, 0, $maxSubpages);
 
                             $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($subPageCandidates) {
@@ -1368,8 +1376,9 @@ PRIMARY URL: {$url}{$refUrlsText}
 
 {$searchInstructions}
 
-3. FAST & CONCISE WRITING (TO ENSURE RAPID GENERATION WITHOUT SERVER TIMEOUTS):
-   - `about_department`: Write 1 crisp, high-impact sentence (e.g. "The department provides undergraduate and postgraduate education emphasizing research labs and practical industry training."). Keeping this to 1 sentence guarantees fast completion and avoids server timeouts.
+3. FAST & CONCISE WRITING (TO ENSURE ALL 100+ DEPARTMENTS COMPLETE IN UNDER 20 SECONDS):
+   - `about_department`: 1 short phrase or sentence (e.g. "Offers undergraduate and postgraduate programs with advanced research labs.").
+   - Return all discovered departments in the "departments" array using the compact structure below.
 
 4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -1385,23 +1394,8 @@ PRIMARY URL: {$url}{$refUrlsText}
       "department_type": "Academic",
       "established_year": 2005,
       "discipline_area": "Engineering & Technology",
-      "specializations_supported": [
-        "Artificial Intelligence & Machine Learning",
-        "Data Science",
-        "Cyber Security",
-        "Cloud Computing"
-      ],
-      "education_levels_supported": [
-        "Undergraduate",
-        "Postgraduate",
-        "Doctoral (Ph.D)"
-      ],
       "faculty_count": 32,
-      "about_department": "The Department of Computer Science and Engineering offers industry-aligned academic programs emphasizing Artificial Intelligence, Cloud Computing, Cyber Security, and Software Engineering with state-of-the-art laboratory infrastructure.",
-      "department_labs_count": 8,
-      "specialized_labs_available": true,
-      "phd_supervision_available": true,
-      "industry_collaboration_supported": true
+      "about_department": "Offers industry-aligned undergraduate and postgraduate academic programs with modern laboratory infrastructure."
     }
   ]
 }
