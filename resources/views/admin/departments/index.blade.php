@@ -12,6 +12,8 @@
                                 @if(isset($campus))
                                     <small class="text-muted">for {{ $campus->campus_name }}
                                         ({{ $organisation->name ?? '' }})</small>
+                                @elseif(isset($organisation))
+                                    <small class="text-muted">for {{ $organisation->name }}</small>
                                 @endif
                             </h4>
                         </div>
@@ -22,6 +24,15 @@
                                     <i class="fas fa-arrow-left"></i> Back to Campuses
                                 </a>
                                 <a href="{{ route('admin.departments.create', ['organisation_id' => $organisation->id, 'campus_id' => $campus->id]) }}"
+                                    class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i> Add New Department
+                                </a>
+                            @elseif(isset($organisation))
+                                <a href="{{ route('admin.organisations.index') }}"
+                                    class="btn btn-secondary btn-sm me-2">
+                                    <i class="fas fa-arrow-left"></i> Back to Organisations
+                                </a>
+                                <a href="{{ route('admin.departments.create', ['organisation_id' => $organisation->id]) }}"
                                     class="btn btn-primary btn-sm">
                                     <i class="fas fa-plus"></i> Add New Department
                                 </a>
@@ -57,7 +68,7 @@
                                             <td>{{ $department->department_code }}</td>
                                             <td>{{ $department->department_type }}</td>
                                             <td>{{ $department->organisation->name ?? 'N/A' }}</td>
-                                            <td>{{ $department->campus->campus_name ?? 'N/A' }}</td>
+                                            <td>{{ $department->campus->campus_name ?? 'Direct' }}</td>
                                             <td>
                                                 <span
                                                     class="badge bg-{{ $department->status === 'Active' ? 'success' : ($department->status === 'Inactive' ? 'secondary' : 'warning') }}">
@@ -66,7 +77,7 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex gap-2">
-                                                    <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $department->organisation_id, 'campus_id' => $department->campus_id, 'department_id' => $department->id]) }}"
+                                                    <a href="{{ route('admin.organisation-courses.index', array_filter(['organisation_id' => $department->organisation_id, 'campus_id' => $department->campus_id, 'department_id' => $department->id])) }}"
                                                         class="btn btn-warning btn-sm" title="Manage Courses">
                                                         <i class="fas fa-book"></i>
                                                     </a>

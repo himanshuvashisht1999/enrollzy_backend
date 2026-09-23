@@ -16,7 +16,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap text-white-50 small">
                     <span class="text-white fw-medium"><i class="fas fa-university me-1"></i>{{ $data->organisation->name ?? 'Organisation' }}</span>
                     <span>&middot;</span>
-                    <span class="text-white-75"><i class="fas fa-city me-1"></i>{{ $data->campus->campus_name ?? 'All Campuses' }}</span>
+                    <span class="text-white-75"><i class="fas fa-city me-1"></i>{{ $data->campus->campus_name ?? 'Direct' }}</span>
                 </div>
             </div>
         </div>

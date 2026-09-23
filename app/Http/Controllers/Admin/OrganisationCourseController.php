@@ -90,7 +90,7 @@ class OrganisationCourseController extends Controller
         $rules = [
             'organisation_id' => 'required|exists:organisations,id',
             'status' => 'boolean',
-            'campus_id' => ($typeId == 1 || $typeId == 2) ? 'required|exists:campuses,id' : 'nullable|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
@@ -209,7 +209,7 @@ class OrganisationCourseController extends Controller
         // Base Rules
         $rules = [
             'status' => 'boolean',
-            'campus_id' => ($typeId == 1 || $typeId == 2) ? 'required|exists:campuses,id' : 'nullable|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',

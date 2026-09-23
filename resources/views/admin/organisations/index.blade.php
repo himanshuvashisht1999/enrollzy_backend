@@ -98,6 +98,10 @@
                                                 class="btn btn-sm btn-warning text-dark me-2" title="Campuses">
                                                 <i class="fas fa-city"></i>
                                             </a>
+                                            <a href="{{ route('admin.departments.index', ['organisation_id' => $uni->id]) }}"
+                                                class="btn btn-sm btn-primary text-white me-2" title="Departments">
+                                                <i class="fas fa-building"></i>
+                                            </a>
                                             <a href="{{ route('admin.organisations.edit', $uni->id) }}"
                                                 class="btn btn-sm btn-info text-white me-2" title="Edit">
                                                 <i class="fas fa-edit"></i>

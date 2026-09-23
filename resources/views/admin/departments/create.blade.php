@@ -158,6 +158,26 @@
                                             <input type="hidden" name="organisation_id" value="{{ $selectedOrganisation->id }}">
                                             <input type="hidden" name="campus_id" value="{{ $selectedCampus->id }}">
                                         </div>
+                                    @elseif(isset($selectedOrganisation))
+                                        <div class="col-12">
+                                            <div class="alert alert-soft-primary border-primary d-flex align-items-center"
+                                                role="alert">
+                                                <i class="fas fa-university me-2 fs-4"></i>
+                                                <div>
+                                                    Creating Department under: <strong>{{ $selectedOrganisation->name }}</strong>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" name="organisation_id" value="{{ $selectedOrganisation->id }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                            <select name="campus_id" id="campus_id" class="form-select">
+                                                <option value="">Direct to Organisation (No Campus)</option>
+                                                @foreach($campuses as $campus)
+                                                    <option value="{{ $campus->id }}" {{ (old('campus_id') == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     @else
                                         <div class="col-md-6">
                                             <label class="form-label">Organisation <span class="text-danger">*</span></label>
@@ -169,10 +189,10 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Campus <span class="text-danger">*</span></label>
-                                            <select name="campus_id" id="campus_id" class="form-select" required
+                                            <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                            <select name="campus_id" id="campus_id" class="form-select"
                                                 {{ old('organisation_id') ? '' : 'disabled' }}>
-                                                <option value="">Select Campus</option>
+                                                <option value="">Direct to Organisation (No Campus)</option>
                                                 @if(isset($campuses) && !isset($selectedCampus))
                                                     @foreach($campuses as $campus)
                                                         <option value="{{ $campus->id }}" {{ (old('campus_id') == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
@@ -606,7 +626,7 @@
             @if(!isset($selectedOrganisation))
             $('#organisation_id').on('change', function () {
                 const orgId = $(this).val();
-                $('#campus_id').html('<option value="">Select Campus</option>').prop('disabled', true);
+                $('#campus_id').html('<option value="">Direct to Organisation (No Campus)</option>').prop('disabled', true);
                 if (orgId) {
                     $('#campus_id').prop('disabled', false);
                     $.get(`/admin/organisations/${orgId}/campuses-json`, function (data) {
@@ -685,7 +705,7 @@
                         _token: '{{ csrf_token() }}'
                     };
 
-                    if (!formData.department_name || !formData.organisation_id || !formData.campus_id) return;
+                    if (!formData.department_name || !formData.organisation_id) return;
 
                     isSaving = true;
                     showAutoSaveStatus('saving');

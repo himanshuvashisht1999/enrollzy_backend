@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('organisation_field_configs', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('organisation_type_id')->unique();
-            $table->json('fields_config')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('organisation_field_configs')) {
+            Schema::create('organisation_field_configs', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('organisation_type_id')->unique();
+                $table->json('fields_config')->nullable();
+                $table->timestamps();
 
-            $table->foreign('organisation_type_id')
-                  ->references('id')
-                  ->on('organisation_types')
-                  ->onDelete('cascade');
-        });
+                $table->foreign('organisation_type_id')
+                      ->references('id')
+                      ->on('organisation_types')
+                      ->onDelete('cascade');
+            });
+        }
     }
 
     /**

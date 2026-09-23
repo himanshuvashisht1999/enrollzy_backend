@@ -152,13 +152,26 @@
                                             <i class="fas fa-university me-2 fs-4"></i>
                                             <div>
                                                 Editing Department under:
-                                                <strong>{{ $department->organisation->name ?? 'N/A' }}</strong> -
-                                                <strong>{{ $department->campus->campus_name ?? 'N/A' }}</strong>
+                                                <strong>{{ $department->organisation->name ?? 'N/A' }}</strong>
+                                                @if($department->campus)
+                                                    - <strong>{{ $department->campus->campus_name }}</strong>
+                                                @else
+                                                    - <em>Direct (No Campus)</em>
+                                                @endif
                                             </div>
                                         </div>
                                         <input type="hidden" name="organisation_id"
                                             value="{{ $department->organisation_id }}">
-                                        <input type="hidden" name="campus_id" value="{{ $department->campus_id }}">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                        <select name="campus_id" id="campus_id" class="form-select">
+                                            <option value="">Direct to Organisation (No Campus)</option>
+                                            @foreach($campuses as $campus)
+                                                <option value="{{ $campus->id }}" {{ (old('campus_id', $department->campus_id) == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
                                     <div class="col-md-6">

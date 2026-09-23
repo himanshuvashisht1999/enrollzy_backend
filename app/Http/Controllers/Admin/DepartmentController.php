@@ -55,7 +55,7 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
-            'campus_id' => 'required|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_name' => 'required|string|max:255',
             'department_code' => 'nullable|string|max:50',
             'department_type' => 'required|in:Academic,Clinical,Research,Interdisciplinary',
@@ -136,10 +136,12 @@ class DepartmentController extends Controller
 
         $department = Department::create($request->all());
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $department->organisation_id,
-            'campus_id' => $department->campus_id
-        ])->with('success', 'Department created successfully.');
+        $redirectParams = ['organisation_id' => $department->organisation_id];
+        if ($department->campus_id) {
+            $redirectParams['campus_id'] = $department->campus_id;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department created successfully.');
     }
 
     public function show(Department $department)
@@ -158,7 +160,7 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
-            'campus_id' => 'required|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_name' => 'required|string|max:255',
             'department_code' => 'nullable|string|max:50',
             'department_type' => 'required|in:Academic,Clinical,Research,Interdisciplinary',
@@ -245,10 +247,12 @@ class DepartmentController extends Controller
 
         $department->update($data);
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $department->organisation_id,
-            'campus_id' => $department->campus_id
-        ])->with('success', 'Department updated successfully.');
+        $redirectParams = ['organisation_id' => $department->organisation_id];
+        if ($department->campus_id) {
+            $redirectParams['campus_id'] = $department->campus_id;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department updated successfully.');
     }
 
     public function destroy(Department $department)
@@ -257,17 +261,19 @@ class DepartmentController extends Controller
         $campusId = $department->campus_id;
         $department->delete();
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $orgId,
-            'campus_id' => $campusId
-        ])->with('success', 'Department deleted successfully.');
+        $redirectParams = ['organisation_id' => $orgId];
+        if ($campusId) {
+            $redirectParams['campus_id'] = $campusId;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department deleted successfully.');
     }
 
     public function storeDraft(Request $request)
     {
         $request->validate([
             'organisation_id' => 'required',
-            'campus_id' => 'required',
+            'campus_id' => 'nullable',
             'department_name' => 'required',
         ]);
 
