@@ -200,11 +200,11 @@ class AiOrganisationImportController extends Controller
             $rules['target_organisation_id'] = 'required|exists:organisations,id';
         } elseif ($mode === 'department') {
             $rules['target_organisation_id'] = 'required|exists:organisations,id';
-            $rules['target_campus_id'] = 'required|exists:campuses,id';
+            $rules['target_campus_id'] = 'nullable|exists:campuses,id';
         } elseif ($mode === 'course') {
             $rules['target_organisation_id'] = 'required|exists:organisations,id';
-            $rules['target_campus_id'] = 'required|exists:campuses,id';
-            $rules['target_department_id'] = 'required|exists:departments,id';
+            $rules['target_campus_id'] = 'nullable|exists:campuses,id';
+            $rules['target_department_id'] = 'nullable|exists:departments,id';
         }
 
         $request->validate($rules);
@@ -217,6 +217,11 @@ class AiOrganisationImportController extends Controller
             $targetOrgId = $request->input('target_organisation_id');
             $targetOrg = $targetOrgId ? \App\Models\Organisation::find($targetOrgId) : null;
             $targetCampus = $request->filled('target_campus_id') ? \App\Models\Campus::find($request->input('target_campus_id')) : null;
+            if (!$targetCampus && $targetOrg) {
+                $targetCampus = \App\Models\Campus::where('organisation_id', $targetOrg->id)->where('campus_type', 'Main')->first()
+                    ?: \App\Models\Campus::where('organisation_id', $targetOrg->id)->first();
+            }
+
             $targetDepartment = $request->filled('target_department_id') ? \App\Models\Department::find($request->input('target_department_id')) : null;
 
             if ($targetOrg && $targetOrg->organisationType) {

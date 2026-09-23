@@ -176,7 +176,7 @@
                 <div class="col-12 mt-2">
                     <div class="card bg-light border-0 shadow-none p-2 rounded-3">
                         <div class="form-check form-switch d-flex align-items-center gap-2 mb-0 ps-0">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="aiSearchGoogleCheck" checked style="width: 2.3em; height: 1.25em; cursor: pointer;">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="aiSearchGoogleCheck" style="width: 2.3em; height: 1.25em; cursor: pointer;">
                             <div>
                                 <label class="form-check-label fw-bold text-dark small mb-0" for="aiSearchGoogleCheck" style="cursor: pointer;">
                                     <i class="fab fa-google text-primary me-1"></i> Search Google for missing/additional details
@@ -874,15 +874,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        const searchGoogleCheck = document.getElementById('aiSearchGoogleCheck');
-        if (searchGoogleCheck) {
-            if (mode === 'organisation') {
-                searchGoogleCheck.checked = true;
-            } else {
-                searchGoogleCheck.checked = false;
-            }
-        }
-
         fetchAndRefreshPrompt(false);
     }
 
@@ -1039,7 +1030,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
         const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
         const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
-        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 1;
+        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 0;
+        const btnExtract = document.getElementById('btnRunAiExtraction');
 
         // Update badge immediately
         if (badgePromptMode) {
@@ -1072,6 +1064,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (promptLoadingSpinner) promptLoadingSpinner.classList.remove('d-none');
+        if (btnExtract) {
+            btnExtract.disabled = true;
+            btnExtract.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading Prompt...';
+        }
 
         clearTimeout(promptFetchDebounce);
         promptFetchDebounce = setTimeout(function () {
@@ -1100,6 +1096,10 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(result => {
                 if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
+                if (btnExtract) {
+                    btnExtract.disabled = false;
+                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                }
                 if (result && result.success && result.prompt) {
                     if (aiCustomPrompt) {
                         aiCustomPrompt.value = result.prompt;
@@ -1109,6 +1109,10 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(() => {
                 if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
+                if (btnExtract) {
+                    btnExtract.disabled = false;
+                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                }
             });
         }, 150);
     }
@@ -1184,18 +1188,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if ((mode === 'department' || mode === 'course') && !targetCampusId) {
-            alert('Please select a Target Campus before proceeding.');
-            document.getElementById('aiInputTargetCampus').focus();
-            return;
-        }
-
-        if (mode === 'course' && !targetDeptId) {
-            alert('Please select a Target Department before proceeding.');
-            document.getElementById('aiInputTargetDept').focus();
-            return;
-        }
-
         const referenceUrls = [];
         document.querySelectorAll('#referenceUrlsContainer .ref-url-input').forEach(input => {
             const val = input.value.trim();
@@ -1212,13 +1204,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const orgName = selOrg ? selOrg.name : 'the organisation';
 
             if (mode === 'campus') {
-                loadingStatusEl.innerText = `Extracting campus details for '${orgName}'... Please wait.`;
+                loadingStatusEl.innerText = `Deep-scanning campus infrastructure and locations for '${orgName}'... Please wait.`;
             } else if (mode === 'department') {
-                loadingStatusEl.innerText = `Extracting academic faculties and departments for '${orgName}'... Please wait.`;
+                loadingStatusEl.innerText = `Deep-crawling website navigation, schools, and academic directories for '${orgName}'... Please wait.`;
             } else if (mode === 'course') {
-                loadingStatusEl.innerText = `Extracting degrees and matching master programs for '${orgName}'... Please wait.`;
+                loadingStatusEl.innerText = `Deep-crawling program catalogs, fees, and matching degree masters for '${orgName}'... Please wait.`;
             } else {
-                loadingStatusEl.innerText = 'Extracting institutional identity profile... Please wait.';
+                loadingStatusEl.innerText = 'Extracting institutional identity profile and accreditations... Please wait.';
             }
         }
 

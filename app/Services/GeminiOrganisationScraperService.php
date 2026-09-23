@@ -66,12 +66,6 @@ class GeminiOrganisationScraperService
         ]), fn($m) => !empty($m) && !in_array($m, ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'])));
 
         $searchGoogleForApi = $searchGoogle;
-        if (!empty($combinedContent) && (
-            ($mode === 'department' && str_contains($combinedContent, '=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE')) ||
-            ($mode === 'course' && str_contains($combinedContent, '=== DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE'))
-        )) {
-            $searchGoogleForApi = false;
-        }
 
         return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi);
     }
@@ -537,18 +531,65 @@ class GeminiOrganisationScraperService
         return $data;
     }
 
+    public function getBrowserHeaders(): array
+    {
+        return [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language' => 'en-US,en;q=0.9',
+            'Accept-Encoding' => 'gzip, deflate, br',
+            'Cache-Control' => 'no-cache',
+            'Pragma' => 'no-cache',
+            'Sec-Ch-Ua' => '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+            'Sec-Ch-Ua-Mobile' => '?0',
+            'Sec-Ch-Ua-Platform' => '"Windows"',
+            'Sec-Fetch-Dest' => 'document',
+            'Sec-Fetch-Mode' => 'navigate',
+            'Sec-Fetch-Site' => 'none',
+            'Sec-Fetch-User' => '?1',
+            'Upgrade-Insecure-Requests' => '1',
+        ];
+    }
+
     /**
-     * Fetch and clean text, meta images, structured academic navigation, and auto-crawl relevant linked sub-pages (fees, eligibility, programs, etc.)
+     * Retrieve live database taxonomy knowledge (Disciplines, Streams, Program Levels, Sample Depts & Courses)
+     */
+    public function getDatabaseTaxonomyKnowledge(): array
+    {
+        try {
+            $disciplines = \App\Models\Discipline::where('status', true)->pluck('title')->toArray();
+            $streams = \App\Models\StreamOffered::where('status', true)->pluck('title')->toArray();
+            $programLevels = \App\Models\ProgramLevel::where('status', true)->pluck('title')->toArray();
+            $sampleDepts = \App\Models\Department::select('department_name')->distinct()->limit(60)->pluck('department_name')->toArray();
+            
+            return [
+                'disciplines' => !empty($disciplines) ? $disciplines : [],
+                'streams' => !empty($streams) ? $streams : [],
+                'program_levels' => !empty($programLevels) ? $programLevels : [],
+                'sample_departments' => !empty($sampleDepts) ? $sampleDepts : [],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'disciplines' => [],
+                'streams' => [],
+                'program_levels' => [],
+                'sample_departments' => [],
+            ];
+        }
+    }
+
+    /**
+     * Fetch and clean text, meta images, structured academic navigation, and deep-crawl relevant linked sub-pages without restrictive limits
      */
     protected function fetchUrlContent(string $url, string $mode = 'organisation', bool $autoCrawlSubPages = true): string
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         try {
             $response = Http::withoutVerifying()
-                ->timeout(10)
-                ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                ])
+                ->timeout(15)
+                ->withHeaders($this->getBrowserHeaders())
                 ->get($url);
 
             if ($response->successful()) {
@@ -564,8 +605,9 @@ class GeminiOrganisationScraperService
                     $imgMeta .= "\n- Detected Campus Cover Image Candidate URL: " . $imgCandidates['cover'];
                 }
 
-                // Extract structured academic navigation (departments, courses, academic hubs)
+                // Extract structured academic navigation (departments, schools, faculties, institutes, courses)
                 $navData = $this->extractAcademicNavigationFromHtml($html, $url);
+
                 // Remove scripts and styles for primary page
                 $cleanHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
                 $cleanHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanHtml);
@@ -583,54 +625,57 @@ class GeminiOrganisationScraperService
                 }
                 $result .= "=== MAIN BODY TEXT CONTENT ===\n" . mb_substr(trim($cleanText), 0, 70000, 'UTF-8');
 
-                // Smart Automatic Linked Sub-page Crawler (Fast concurrent fetch with 5s timeout)
+                // Smart Automatic Linked Sub-page Crawler (Multi-batch parallel concurrent fetch with extended capacity)
                 if ($autoCrawlSubPages) {
-                    // If this is a dedicated department list page or course list page where we already have navigation entries, skip crawling to stay fast
-                    $hasRichDirectNav = ($mode === 'department' && count($navData['departments'] ?? []) >= 15)
-                                     || ($mode === 'course' && count($navData['courses'] ?? []) >= 20);
+                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
+                    
+                    if (!empty($subPageCandidates)) {
+                        // In department mode, fetch up to 25 academic/school subpages in parallel batches
+                        $maxSubpages = ($mode === 'department') ? 25 : (($mode === 'course') ? 15 : 8);
+                        $subPageCandidates = array_slice($subPageCandidates, 0, $maxSubpages);
 
-                    if (!$hasRichDirectNav) {
-                        $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
+                        $headers = $this->getBrowserHeaders();
                         
-                        if (!empty($subPageCandidates)) {
-                            $maxSubpages = 5;
-                            $subPageCandidates = array_slice($subPageCandidates, 0, $maxSubpages);
-
-                            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($subPageCandidates) {
+                        // Process in chunks of 10 to avoid socket exhaustion while maximizing throughput
+                        $chunks = array_chunk($subPageCandidates, 10, true);
+                        foreach ($chunks as $chunk) {
+                            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($chunk, $headers) {
                                 $requests = [];
-                                foreach ($subPageCandidates as $idx => $candidate) {
+                                foreach ($chunk as $idx => $candidate) {
                                     $requests[$idx] = $pool->as((string)$idx)
                                         ->withoutVerifying()
-                                        ->timeout(6)
-                                        ->withHeaders([
-                                            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                                            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                        ])
+                                        ->timeout(12)
+                                        ->withHeaders($headers)
                                         ->get($candidate['url']);
                                 }
                                 return $requests;
                             });
 
-                            foreach ($subPageCandidates as $idx => $candidate) {
+                            foreach ($chunk as $idx => $candidate) {
                                 $res = $responses[(string)$idx] ?? null;
                                 if ($res instanceof \Illuminate\Http\Client\Response && $res->successful()) {
                                     $subHtml = $res->body();
 
-                                    // Extract academic navigation from subpage too
+                                    // Extract academic navigation from each subpage (e.g. from School of Engineering, extract all engineering departments)
                                     $subNav = $this->extractAcademicNavigationFromHtml($subHtml, $candidate['url']);
                                     if (!empty($subNav['departments'])) {
                                         foreach ($subNav['departments'] as $dName => $dUrl) {
-                                            $navData['departments'][$dName] = $dUrl;
+                                            if (!isset($navData['departments'][$dName])) {
+                                                $navData['departments'][$dName] = $dUrl;
+                                            }
                                         }
                                     }
                                     if (!empty($subNav['courses'])) {
                                         foreach ($subNav['courses'] as $cName => $cUrl) {
-                                            $navData['courses'][$cName] = $cUrl;
+                                            if (!isset($navData['courses'][$cName])) {
+                                                $navData['courses'][$cName] = $cUrl;
+                                            }
                                         }
                                     }
 
                                     $subClean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $subHtml);
                                     $subClean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $subClean);
+                                    $subClean = preg_replace('/<\/(div|p|tr|li|h[1-6]|table|section|article|header|footer|nav)>/i', "\n", $subClean);
                                     $subClean = strip_tags($subClean);
                                     $subClean = preg_replace('/\s+/', ' ', $subClean);
                                     $subClean = $this->sanitizeUtf8(trim($subClean));
@@ -644,10 +689,10 @@ class GeminiOrganisationScraperService
                     }
                 }
 
-                // Re-build structureMeta with all merged departments & courses
+                // Re-build structureMeta with all merged departments & academic units
                 $structureMeta = "";
                 if (!empty($navData['departments'])) {
-                    $structureMeta .= "\n=== DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE (" . count($navData['departments']) . ") ===\n";
+                    $structureMeta .= "\n=== DETECTED OFFICIAL DEPARTMENTS, SCHOOLS & ACADEMIC UNITS ON WEBSITE (" . count($navData['departments']) . ") ===\n";
                     $dIdx = 1;
                     foreach ($navData['departments'] as $dName => $dUrl) {
                         $structureMeta .= "{$dIdx}. {$dName} (URL: {$dUrl})\n";
@@ -663,7 +708,7 @@ class GeminiOrganisationScraperService
                     }
                 }
 
-                if (!empty($structureMeta) && !str_contains($result, '=== DETECTED OFFICIAL DEPARTMENTS')) {
+                if (!empty($structureMeta)) {
                     $result = $structureMeta . "\n\n" . $result;
                 }
 
@@ -677,7 +722,7 @@ class GeminiOrganisationScraperService
     }
 
     /**
-     * Discover high-value linked internal sub-pages (e.g. Fees, Eligibility, Admissions, Courses, Placements)
+     * Discover high-value linked internal sub-pages (Schools, Faculties, Institutes, Departments, Academics, Programs)
      */
     protected function discoverRelevantInternalPages(string $html, string $baseUrl, string $mode = 'organisation'): array
     {
@@ -690,23 +735,8 @@ class GeminiOrganisationScraperService
         preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
         $candidates = [];
 
-        // Extract specific topic keywords from the URL slug (e.g. "aerospace", "mechanical")
-        $urlPath = strtolower(parse_url($baseUrl, PHP_URL_PATH) ?? '');
-        $urlPathParts = array_filter(explode('/', trim($urlPath, '/')));
-        $genericKeywords = ['department', 'dept', 'course', 'courses', 'programs', 'faculty', 'school', 'academics', 'admissions', 'engineering', 'technology', 'studies', 'management', 'science', 'sciences'];
-        $specificKeywords = [];
-
-        foreach ($urlPathParts as $p) {
-            $pClean = strtolower(trim(str_replace(['-', '_'], ' ', $p)));
-            $words = explode(' ', $pClean);
-            foreach ($words as $w) {
-                $w = trim($w);
-                if (strlen($w) >= 3 && !in_array($w, $genericKeywords)) {
-                    $specificKeywords[] = $w;
-                }
-            }
-        }
-        $specificKeywords = array_unique($specificKeywords);
+        // Specific academic keyword detector
+        $academicDisciplinePattern = '/(engineering|technology|computing|computer|sciences?|management|business|commerce|economics|humanities|arts|law|legal|pharmacy|pharmaceutical|nursing|physiotherapy|medical|dental|health|architecture|design|agriculture|biotechnology|education|hospitality|tourism|journalism|media|languages?)/i';
 
         foreach ($matches as $m) {
             $href = trim($m[1]);
@@ -739,92 +769,38 @@ class GeminiOrganisationScraperService
             $score = 0;
             $type = 'General Reference';
 
-            $hasSpecificMatch = false;
-            if (!empty($specificKeywords)) {
-                foreach ($specificKeywords as $sk) {
-                    if (str_contains($combinedStr, $sk)) {
-                        $hasSpecificMatch = true;
-                        break;
-                    }
+            if ($mode === 'department') {
+                // --- PRIORITY 1 FOR DEPARTMENT MODE: Academic Directory Catalogs & Main Hubs ---
+                if (preg_match('/(\/departments|\/department-list|\/all-departments|\/schools-departments|\/schools|\/faculties|\/institutes|\/colleges|\/academic-departments|\/academics|\/academic-units|\/disciplines|\/programmes|\/courses|\/program-offered)/i', $combinedStr)) {
+                    $score += 850;
+                    $type = 'Academic Directory & Department List';
                 }
-            }
 
-            // --- PRIORITY 1: Direct Sub-page / Tab under the same URL path (e.g. /department/cse/faculty, /course/btech/fees) ---
-            $isDirectChild = str_starts_with(strtolower($cleanUrl), strtolower($cleanBaseUrl) . '/');
-            if ($isDirectChild) {
-                if (preg_match('/(faculty|people|staff|teachers|professors|hod|members)/i', $combinedStr)) {
-                    $score += 600;
-                    $type = 'Faculty & Staff Members';
-                } elseif (preg_match('/(course|program|degree|academic|offering|curriculum|syllabus)/i', $combinedStr)) {
-                    $score += 580;
-                    $type = 'Academic Programs & Syllabus';
-                } elseif (preg_match('/(fee|tuition|cost|charge)/i', $combinedStr)) {
-                    $score += 570;
-                    $type = 'Fee Structure & Expenses';
-                } elseif (preg_match('/(lab|facilit|infrastructure|research|project|center)/i', $combinedStr)) {
-                    $score += 540;
-                    $type = 'Laboratories & Facilities';
-                } elseif (preg_match('/(about|overview|vision|mission|introduction|history)/i', $combinedStr)) {
-                    $score += 520;
-                    $type = 'Overview & Profile';
-                } elseif (preg_match('/(admission|eligib|apply|criteria|intake)/i', $combinedStr)) {
-                    $score += 500;
-                    $type = 'Admissions & Eligibility';
-                } elseif (preg_match('/(placement|career|recruiter)/i', $combinedStr)) {
-                    $score += 480;
-                    $type = 'Placements & Careers';
-                } else {
-                    $score += 450;
-                    $type = 'Department / Course Section';
-                }
-            }
-
-            // --- PRIORITY 2: Specific Program / Department Keywords Match ---
-            if ($hasSpecificMatch) {
-                if (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|cost)/i', $combinedStr)) {
+                // --- PRIORITY 2: Individual School / Faculty / Institute / College Links ---
+                if (preg_match('/(\/school\/|\/schools\/|\/faculty\/|\/faculties\/|\/institute\/|\/institutes\/|\/college\/|\/colleges\/|\/dept\/|\/department\/|\/centres?\/|\/centers?\/)/i', $href) ||
+                    preg_match('/^(school of|faculty of|institute of|college of|centre for|center for|division of|department of|dept of|dept\. of)/i', $rawText) ||
+                    preg_match('/(school of|faculty of|institute of|college of|centre for|center for|division of|department of)/i', $rawText)) {
+                    $score += 800;
+                    $type = 'School / Faculty / Academic Hub Page';
+                } elseif (preg_match($academicDisciplinePattern, $rawText) && (strlen($rawText) <= 60)) {
+                    $score += 650;
+                    $type = 'Academic Discipline / School Link';
+                } elseif (preg_match('/(faculty|professors|teachers|hod|members)/i', $combinedStr)) {
                     $score += 400;
-                    $type = 'Specific Fee Structure';
-                } elseif (preg_match('/(faculty|professors|teachers|people|staff|hod)/i', $combinedStr)) {
-                    $score += 380;
                     $type = 'Faculty & Staff Directory';
-                } elseif (preg_match('/(\/course\/|\/program\/|b\.?tech|m\.?tech|b\.?sc|m\.?sc|bba|mba|ph\.?d|bca|mca|b\.?com)/i', $combinedStr)) {
-                    $score += 360;
-                    $type = 'Specific Degree Program Page';
-                } elseif (preg_match('/(syllabus|curriculum|scheme|course.*structure)/i', $combinedStr)) {
-                    $score += 340;
-                    $type = 'Syllabus & Course Structure';
                 }
-            }
-
-            // --- PRIORITY 3: General Core Institutional Pages ---
-            if ($score === 0) {
-                if (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|eligibility.*fee|fee.*eligibility|fee.*structure|cost.*study|annual.*fee)/i', $combinedStr)) {
-                    $score += 260;
+            } elseif ($mode === 'course') {
+                if (preg_match('/(\/courses|\/programs|\/programmes|\/admission|\/degree|\/curriculum|\/syllabus|\/program-offered)/i', $combinedStr)) {
+                    $score += 800;
+                    $type = 'Degree & Program Offerings';
+                } elseif (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|cost)/i', $combinedStr)) {
+                    $score += 750;
                     $type = 'Fee Structure & Tuition';
-                } elseif (preg_match('/(\/faculty|\/people|\/staff-directory|faculty.*members)/i', $combinedStr)) {
-                    $score += ($mode === 'department') ? 290 : 150;
-                    $type = 'Faculty & Staff Directory';
-                } elseif (preg_match('/(eligibility|admission[s]?|how.*to.*apply|admission.*process|entry.*requirement)/i', $combinedStr)) {
-                    $score += 230;
-                    $type = 'Eligibility & Admissions';
-                } elseif (preg_match('/(\/course\/|\/program\/|programs.*offered|courses.*offered|curriculum|syllabus)/i', $combinedStr)) {
-                    $score += ($mode === 'course') ? 280 : 180;
-                    $type = 'Academic Program Details';
-                } elseif (preg_match('/(scholarship|financial.*aid|fee.*concession|kaushal.*jyoti)/i', $combinedStr)) {
-                    $score += 170;
-                    $type = 'Scholarships & Financial Aid';
-                } elseif (preg_match('/(placement[s]?|recruiter[s]?|highest.*package|average.*package)/i', $combinedStr)) {
-                    $score += 160;
-                    $type = 'Placements & Careers';
-                } elseif (preg_match('/(hostel[s]?|infrastructure|campus.*facilit|sports|laborator)/i', $combinedStr)) {
-                    $score += ($mode === 'campus') ? 280 : 140;
-                    $type = 'Campus Facilities & Hostels';
-                } elseif (preg_match('/(\/department[s]?|\/school[s]?|\/faculties|academic.*departments)/i', $combinedStr)) {
-                    $score += ($mode === 'department' || $mode === 'organisation') ? 250 : 120;
-                    $type = 'Academic Faculties & Departments';
-                } elseif (preg_match('/(about.*us|overview|leadership|chancellor|accreditation|naac|nirf)/i', $combinedStr)) {
-                    $score += 110;
-                    $type = 'About & Accreditation';
+                }
+            } else {
+                if (preg_match('/(\/about|\/overview|\/leadership|\/academics|\/admissions|\/campuses|\/facilities)/i', $combinedStr)) {
+                    $score += 500;
+                    $type = 'Institutional Profile Page';
                 }
             }
 
@@ -840,45 +816,37 @@ class GeminiOrganisationScraperService
             }
         }
 
-        // If candidate list is empty or sparse (e.g. Angular/SPA single-page homepages), probe root domain canonical directories
-        if (count($candidates) < 2) {
+        // Automatic Root & Host Probing for Department Mode if list has few entries
+        if ($mode === 'department' || count($candidates) < 3) {
             $parsed = parse_url($baseUrl);
             $host = strtolower($parsed['host'] ?? '');
             $parts = explode('.', $host);
             $rootDomain = (count($parts) >= 2) ? implode('.', array_slice($parts, -2)) : $host;
 
-            if ($mode === 'department') {
-                $probePaths = [
-                    "https://www.{$rootDomain}/course-list.aspx",
-                    "https://www.{$rootDomain}/department-list",
-                    "https://www.{$rootDomain}/departments",
-                    "https://www.{$rootDomain}/schools",
-                    "https://www.{$rootDomain}/faculties",
-                    "https://www.{$rootDomain}/institutes.aspx",
-                    "https://www.{$rootDomain}/",
-                    "https://{$host}/departments",
-                ];
-            } elseif ($mode === 'course') {
-                $probePaths = [
-                    "https://www.{$rootDomain}/course-list.aspx",
-                    "https://www.{$rootDomain}/courses",
-                    "https://www.{$rootDomain}/programs",
-                    "https://www.{$rootDomain}/programe-list.aspx",
-                    "https://{$host}/courses",
-                ];
-            } else {
-                $probePaths = [
-                    "https://www.{$rootDomain}/course-list.aspx",
-                    "https://www.{$rootDomain}/department-list",
-                    "https://www.{$rootDomain}/academics",
-                    "https://www.{$rootDomain}/",
-                ];
-            }
+            $probePaths = [
+                "https://{$host}/departments",
+                "https://{$host}/schools",
+                "https://{$host}/faculties",
+                "https://{$host}/institutes",
+                "https://{$host}/academics",
+                "https://{$host}/colleges",
+                "https://{$host}/academic-departments",
+                "https://{$host}/department-list",
+                "https://{$host}/schools-departments",
+                "https://{$host}/program-offered",
+                "https://www.{$rootDomain}/departments",
+                "https://www.{$rootDomain}/schools",
+                "https://www.{$rootDomain}/faculties",
+                "https://www.{$rootDomain}/academics",
+                "https://www.{$rootDomain}/institutes",
+                "https://www.{$rootDomain}/course-list.aspx",
+                "https://www.{$rootDomain}/program-offered",
+            ];
 
             $probeResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($probePaths) {
                 $reqs = [];
                 foreach ($probePaths as $idx => $p) {
-                    $reqs[$idx] = $pool->as((string)$idx)->withoutVerifying()->timeout(3.5)->get($p);
+                    $reqs[$idx] = $pool->as((string)$idx)->withoutVerifying()->timeout(4.0)->get($p);
                 }
                 return $reqs;
             });
@@ -887,18 +855,20 @@ class GeminiOrganisationScraperService
                 $res = $probeResponses[(string)$idx] ?? null;
                 if ($res instanceof \Illuminate\Http\Client\Response && $res->successful() && strlen($res->body()) > 2000) {
                     $cleanP = rtrim($p, '/');
-                    $candidates[$cleanP] = [
-                        'url' => $cleanP,
-                        'title' => 'Official Academic Catalog Directory',
-                        'type' => 'Academic Directory Catalog',
-                        'score' => 950 - ($idx * 10),
-                    ];
+                    if (!isset($candidates[$cleanP])) {
+                        $candidates[$cleanP] = [
+                            'url' => $cleanP,
+                            'title' => 'Official Academic Catalog Directory',
+                            'type' => 'Academic Directory Catalog',
+                            'score' => 900 - ($idx * 5),
+                        ];
+                    }
                 }
             }
         }
 
         uasort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
-        return array_slice(array_values($candidates), 0, 8);
+        return array_values($candidates);
     }
 
     /**
@@ -922,7 +892,7 @@ class GeminiOrganisationScraperService
     }
 
     /**
-     * Extract structured academic navigation (departments, courses, schools) from HTML
+     * Extract structured academic navigation (departments, schools, faculties, institutes, colleges, courses) from HTML
      */
     protected function extractAcademicNavigationFromHtml(string $html, string $baseUrl): array
     {
@@ -930,11 +900,65 @@ class GeminiOrganisationScraperService
         $coursesByUrl = [];
         $academicHubs = [];
 
-        $genericButtonPattern = '/^(know more|read more|click here|view more|view details|explore|details|learn more|visit|apply now|enquire now|more|link|website|check|view|browse)$/i';
-        $nonAcademicPattern = '/^(home|contact|about|privacy|terms|login|register|portal|gallery|event|news|career|notice|placement|alumni|press|iqac|naac|nirf|grievance|fee|apply|admission|payment|download|blog|faqs?|help|sitemap|search)$/i';
+        $genericButtonPattern = '/^(know more|read more|click here|view more|view details|explore|details|learn more|visit|apply now|enquire now|more|link|website|check|view|browse|download|submit|close|open)$/i';
+        $nonAcademicPattern = '/^(home|contact|contact us|about|about us|privacy|terms|terms & conditions|login|register|portal|gallery|photo gallery|events?|news|careers?|notices?|placements?|alumni|press|iqac|naac|nirf|grievance|fee|fees|apply|admission|admissions|payment|download|blog|faqs?|help|sitemap|search|cookie policy|disclaimer)$/i';
         $socialPattern = '/(linkedin\.com|facebook\.com|twitter\.com|x\.com|instagram\.com|youtube\.com|pinterest\.com|whatsapp\.com)/i';
 
-        // 1. First: Parse Table Rows (<tr>...<td>Department Name</td>...<td><a href="...">...</a></td>...</tr>)
+        // Comprehensive discipline keywords list (augmented with common variations)
+        $disciplineKeywords = [
+            'computer science', 'information technology', 'software engineering', 'artificial intelligence', 'data science',
+            'cyber security', 'cloud computing', 'machine learning', 'electronics & communication', 'electronics and communication',
+            'electrical & electronics', 'electrical and electronics', 'electrical engineering', 'mechanical engineering',
+            'mechatronics', 'automobile engineering', 'automotive engineering', 'robotics', 'automation', 'production engineering',
+            'manufacturing engineering', 'industrial engineering', 'civil engineering', 'structural engineering',
+            'environmental engineering', 'chemical engineering', 'petroleum engineering', 'petrochemical', 'polymer',
+            'materials science', 'metallurgy', 'mining engineering', 'biotechnology', 'bioinformatics', 'biomedical engineering',
+            'food technology', 'dairy technology', 'aerospace engineering', 'aeronautical engineering', 'marine engineering',
+            'textile technology', 'nanotechnology', 'physics', 'applied physics', 'chemistry', 'applied chemistry',
+            'mathematics', 'applied mathematics', 'statistics', 'botany', 'zoology', 'life sciences', 'biological sciences',
+            'microbiology', 'biochemistry', 'genetics', 'environmental science', 'geology', 'earth sciences', 'forensic science',
+            'management studies', 'business administration', 'business management', 'marketing', 'finance', 'human resource',
+            'commerce', 'accounting', 'economics', 'hotel management', 'hospitality', 'tourism', 'culinary arts',
+            'law', 'legal studies', 'corporate law', 'constitutional law', 'medicine', 'surgery', 'dentistry', 'pharmacy',
+            'pharmaceutical sciences', 'nursing', 'physiotherapy', 'allied health', 'medical laboratory technology', 'optometry',
+            'public health', 'ayurveda', 'homeopathy', 'english', 'languages', 'linguistics', 'literature', 'hindi',
+            'sanskrit', 'foreign languages', 'history', 'political science', 'sociology', 'social work', 'psychology',
+            'philosophy', 'journalism', 'mass communication', 'media studies', 'visual communication', 'animation',
+            'architecture', 'planning', 'urban planning', 'interior design', 'product design', 'fashion design',
+            'fine arts', 'visual arts', 'performing arts', 'music', 'dance', 'theatre', 'education', 'physical education',
+            'sports sciences', 'agriculture', 'agronomy', 'horticulture', 'forestry', 'fisheries', 'ocean engineering',
+            'naval architecture', 'aviation', 'sericulture', 'yoga', 'naturopathy', 'social sciences', 'humanities'
+        ];
+
+        // Helper to verify if candidate string is a valid academic unit / department / school
+        $isAcademicUnit = function(string $text) use ($disciplineKeywords, $genericButtonPattern, $nonAcademicPattern): bool {
+            $text = trim($text);
+            $len = strlen($text);
+            if ($len < 3 || $len > 120) return false;
+            if (preg_match($genericButtonPattern, $text) || preg_match($nonAcademicPattern, $text)) return false;
+
+            // 1. Matches Unit Prefix (Department of, School of, Faculty of, Institute of, College of, Centre for, Division of, Wing)
+            if (preg_match('/^(department of|dept\.? of|school of|faculty of|institute of|college of|centre for|center for|division of|discipline of|wing)/i', $text)) {
+                return true;
+            }
+
+            // 2. Matches Unit Suffix (... School, ... Faculty, ... Institute, ... Department, ... College, ... Centre, ... Division)
+            if (preg_match('/\b(department|school|faculty|institute|college|centre|center|division)\b$/i', $text) && !preg_match('/^(about|contact|photo|news|event|sports)/i', $text)) {
+                return true;
+            }
+
+            // 3. Matches Discipline Names
+            $lower = strtolower($text);
+            foreach ($disciplineKeywords as $kw) {
+                if (str_contains($lower, $kw)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // 1. Parse Table Rows (<tr>...<td>Department/School Name</td>...<td><a href="...">...</a></td>...</tr>)
         if (preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/is', $html, $trMatches)) {
             foreach ($trMatches[1] as $tr) {
                 preg_match_all('/<td\b[^>]*>(.*?)<\/td>/is', $tr, $tdMatches);
@@ -957,13 +981,12 @@ class GeminiOrganisationScraperService
                     }
 
                     if (!empty($rowTexts)) {
-                        $possibleDeptName = implode(' - ', $rowTexts);
-                        if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of)/i', $possibleDeptName) ||
-                            preg_match('/(engineering|technology|science|humanities|management|commerce|design|arts|law|medical|health|pharmacy|nursing)/i', $possibleDeptName)) {
-                            
-                            $linkUrl = !empty($rowLinks) ? $this->resolveAbsoluteUrl($rowLinks[0]['href'], $baseUrl) : $baseUrl;
-                            if (!preg_match($socialPattern, $linkUrl)) {
-                                $departmentsByUrl[$linkUrl] = $possibleDeptName;
+                        foreach ($rowTexts as $cellText) {
+                            if ($isAcademicUnit($cellText)) {
+                                $linkUrl = !empty($rowLinks) ? $this->resolveAbsoluteUrl($rowLinks[0]['href'], $baseUrl) : $baseUrl;
+                                if (!preg_match($socialPattern, $linkUrl)) {
+                                    $departmentsByUrl[$linkUrl] = $cellText;
+                                }
                             }
                         }
                     }
@@ -971,14 +994,14 @@ class GeminiOrganisationScraperService
             }
         }
 
-        // 2. Parse Select Dropdowns (Discipline, Department, Faculty, School options)
-        if (preg_match_all('/<select\b[^>]*(?:name|id|class)=["\'][^"\']*(?:discipline|department|faculty|school|institute|branch|academic)[^"\']*["\'][^>]*>(.*?)<\/select>/is', $html, $selectMatches)) {
+        // 2. Parse Select Dropdowns (Discipline, Department, Faculty, School, Institute options)
+        if (preg_match_all('/<select\b[^>]*(?:name|id|class)=["\'][^"\']*(?:discipline|department|faculty|school|institute|branch|academic|stream)[^"\']*["\'][^>]*>(.*?)<\/select>/is', $html, $selectMatches)) {
             foreach ($selectMatches[1] as $optionsBlock) {
                 if (preg_match_all('/<option\s+[^>]*value=["\']([^"\']*)["\'][^>]*>(.*?)<\/option>/is', $optionsBlock, $optMatches, PREG_SET_ORDER)) {
                     foreach ($optMatches as $om) {
                         $val = trim($om[1]);
                         $label = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($om[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-                        if (!empty($label) && $val !== '0' && $val !== '' && !preg_match('/^(select|all|choose|--|program type|program level)/i', $label) && strlen($label) >= 3 && strlen($label) <= 100) {
+                        if (!empty($label) && $val !== '0' && $val !== '' && !preg_match('/^(select|all|choose|--|program type|program level|all departments|all schools)/i', $label) && strlen($label) >= 3 && strlen($label) <= 100) {
                             $optUrl = $baseUrl . (str_contains($baseUrl, '?') ? '&' : '?') . 'discipline=' . urlencode($label);
                             if (!isset($departmentsByUrl[$optUrl])) {
                                 $departmentsByUrl[$optUrl] = $label;
@@ -989,9 +1012,20 @@ class GeminiOrganisationScraperService
             }
         }
 
-        // 3. Third: Parse all <a> tags (cards, list items, navigation links, query parameters)
-        preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+        // 3. Parse Headings (<h3>, <h4>, <h5>) & Card Titles inside Academic/Department Grids & Accordions
+        if (preg_match_all('/<(?:h[2-6]|div|span|p|button|a)\b[^>]*(?:class|id|data-target|data-bs-target)=["\'][^"\']*(?:dept|department|school|faculty|institute|academic-title|course-box|title|card-title|item-title|accordion-button|accordion-header|nav-link)[^"\']*["\'][^>]*>(.*?)<\/(?:h[2-6]|div|span|p|button|a)>/is', $html, $cardMatches)) {
+            foreach ($cardMatches[1] as $cardHtml) {
+                $candidateText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($cardHtml), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                if ($isAcademicUnit($candidateText)) {
+                    if (!isset($departmentsByUrl[$baseUrl])) {
+                        $departmentsByUrl[$baseUrl . '#dept-' . md5($candidateText)] = $candidateText;
+                    }
+                }
+            }
+        }
 
+        // 4. Parse all <a> links across navigation, mega menus, grids, lists
+        preg_match_all('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
         $parsedBasePath = strtolower(rtrim(parse_url($baseUrl, PHP_URL_PATH) ?? '', '/'));
 
         foreach ($matches as $m) {
@@ -1013,8 +1047,8 @@ class GeminiOrganisationScraperService
             $absUrl = $this->resolveAbsoluteUrl($href, $baseUrl);
             $parsedAbsPath = strtolower(rtrim(parse_url($absUrl, PHP_URL_PATH) ?? '', '/'));
 
-            // Check if link contains department or discipline query parameters (e.g. fd=Aerospace, dept=Biotech, discipline=Law)
-            if (preg_match('/(?:[?&])(?:fd|dept|department|discipline|faculty)=([^&"\'\s]+)/i', $href, $paramMatch)) {
+            // Check if link contains department or discipline query parameters
+            if (preg_match('/(?:[?&])(?:fd|dept|department|discipline|faculty|school|institute|branch)=([^&"\'\s]+)/i', $href, $paramMatch)) {
                 $paramVal = urldecode($paramMatch[1]);
                 $deptNameCandidate = (!empty($rawText) && !preg_match($genericButtonPattern, $rawText) && !preg_match($nonAcademicPattern, $rawText) && strlen($rawText) >= 3) ? $rawText : $paramVal;
                 if (!empty($deptNameCandidate) && !in_array(strtolower($deptNameCandidate), ['all', 'select', '0', 'all programs', 'program type']) && strlen($deptNameCandidate) >= 3 && strlen($deptNameCandidate) <= 100) {
@@ -1025,15 +1059,15 @@ class GeminiOrganisationScraperService
                 }
             }
 
-            // Ignore links pointing to department list / directory overview pages itself
+            // Ignore links pointing to the root department list / overview index itself
             if ($parsedAbsPath === $parsedBasePath || preg_match('/(\/department-list|\/departments-list|\/all-departments|\/faculty-list)$/i', $parsedAbsPath)) {
                 continue;
             }
 
             $isGenericButton = preg_match($genericButtonPattern, $rawText);
 
-            // Check if URL indicates a Department / School / Faculty
-            if (preg_match('/(\/department[s]?\/|\/school[s]?\/|\/faculty\/|\/dept[s]?\/|\/centres?\/|\/centers?\/)([a-z0-9\-_]+)/i', $parsedAbsPath, $slugMatch)) {
+            // Check if URL indicates a Department / School / Faculty / Institute / College
+            if (preg_match('/(\/department[s]?\/|\/school[s]?\/|\/faculty\/|\/faculties\/|\/institute[s]?\/|\/college[s]?\/|\/dept[s]?\/|\/centres?\/|\/centers?\/)([a-z0-9\-_]+)/i', $parsedAbsPath, $slugMatch)) {
                 $subSlug = $slugMatch[2];
                 if (!in_array(strtolower($subSlug), ['list', 'all', 'index', 'home', 'overview', 'about', 'department-list'])) {
                     if (!isset($departmentsByUrl[$absUrl])) {
@@ -1060,8 +1094,8 @@ class GeminiOrganisationScraperService
                 continue;
             }
 
-            if (preg_match('/^(department of|school of|faculty of|centre for|center for|division of|institute of)/i', $rawText) ||
-                preg_match('/(school of [a-z\s]+|institute of [a-z\s]+|faculty of [a-z\s]+)/i', $rawText)) {
+            // Academic Unit / Department / School / Faculty match
+            if ($isAcademicUnit($rawText)) {
                 if (!isset($departmentsByUrl[$absUrl])) {
                     $departmentsByUrl[$absUrl] = $rawText;
                 }
@@ -1300,7 +1334,7 @@ PROMPT;
     }
 
     /**
-     * Dedicated Prompt for Department Only Extraction
+     * Dedicated Prompt for Department Only Extraction with Database Taxonomy Knowledge Injection
      */
     public function buildDepartmentOnlyPrompt(
         string $url,
@@ -1319,32 +1353,39 @@ PROMPT;
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . mb_substr(trim($content), 0, 80000, 'UTF-8') : "";
 
+        // Inject Database Taxonomy Knowledge
+        $taxonomy = $this->getDatabaseTaxonomyKnowledge();
+        $disciplinesList = !empty($taxonomy['disciplines']) ? implode(', ', array_slice($taxonomy['disciplines'], 0, 40)) : 'Engineering, Computer Science, Management, Commerce, Science, Law, Pharmacy, Humanities, Medical, Education';
+        $streamsList = !empty($taxonomy['streams']) ? implode(', ', $taxonomy['streams']) : 'Engineering & Technology, Business & Management, Sciences, Humanities & Social Sciences, Commerce & Finance, Law, Medicine';
+
         // Check for structured detected departments
         $detectedDeptText = "";
-        if (preg_match('/===\s*DETECTED OFFICIAL DEPARTMENTS & SCHOOLS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+        if (preg_match('/===\s*DETECTED OFFICIAL DEPARTMENTS, SCHOOLS & ACADEMIC UNITS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
             $count = (int)$m[1];
             $deptList = trim($m[2]);
             $detectedDeptText = <<<DET_DEPT
-MANDATORY TARGET DEPARTMENTS TO POPULATE ({$count} Departments detected directly from official website navigation):
+MANDATORY TARGET ACADEMIC DEPARTMENTS / SCHOOLS / FACULTIES TO POPULATE ({$count} Academic Units detected from official website navigation):
 {$deptList}
 
 STRICT EXHAUSTIVE MANDATE:
-- You MUST create an entry in the "departments" array for EVERY SINGLE ONE of the {$count} departments in the list above (including Aerospace, Anthropology, Biotechnology, Architecture, Artificial Intelligence, Forensic Sciences, Psychology, Law, etc.).
-- DO NOT SKIP, SAMPLE, MERGE, OR STOP AT 20. If {$count} departments are listed, exactly {$count} distinct departmental objects must be returned in the JSON array.
+- Institutions organize their academic units under various names: **Departments**, **Schools**, **Faculties**, **Institutes**, **Colleges**, **Centres**, **Divisions**, or direct **Academic Disciplines / Branches** (e.g. "School of Engineering & Technology", "Department of Computer Science", "Faculty of Law", "Institute of Biotechnology", "Civil Engineering", "Applied Mathematics").
+- You MUST create a distinct entry in the "departments" array for EVERY SINGLE ONE of the {$count} academic units listed above.
+- DO NOT SKIP, SAMPLE, MERGE, OR STOP EARLY. If {$count} academic units are detected, return all of them as distinct departmental objects.
 DET_DEPT;
         } else {
             $detectedDeptText = <<<DET_DEPT
-STRICT EXHAUSTIVE MANDATE (EXTRACT ALL 50 TO 120+ DEPARTMENTS/SCHOOLS):
-- Large universities and institutions like "{$orgName}" have 50 to 120+ distinct academic departments, institutes, and schools across disciplines (Engineering & Technology, Management, Biotechnology, Law, Applied Sciences, Pharmacy, Architecture, Communication, Arts & Humanities, Commerce, Psychology, Forensic Sciences, Hospitality, Fashion, Nursing, Education, etc.).
-- You MUST exhaustively extract and return EVERY SINGLE active academic department, institute, and faculty.
+STRICT EXHAUSTIVE MANDATE (EXTRACT ALL 40 TO 100+ DEPARTMENTS/SCHOOLS):
+- Institutions organize their academic units under various names: **Departments**, **Schools**, **Faculties**, **Institutes**, **Colleges**, **Centres**, **Divisions**, or direct **Academic Disciplines / Branches** (e.g. "School of Engineering", "Department of Physics", "Faculty of Law", "Institute of Biotechnology", "Civil Engineering", "Business Analytics").
+- Large universities and institutions like "{$orgName}" offer programs across 40 to 100+ distinct departments and schools across all disciplines (Engineering & Technology, Management & Commerce, Basic & Applied Sciences, Law, Pharmacy, Nursing, Allied Health, Architecture, Design, Arts & Humanities, Media & Mass Communication, Agriculture, Education, etc.).
+- You MUST exhaustively extract and return EVERY SINGLE active academic department, institute, school, faculty, and discipline.
 - DO NOT limit the output to 10 or 20 items. Output every single department offering programs across the institution.
 DET_DEPT;
         }
 
         $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 2. DEEP WEB SEARCH & COMPLETE INSTITUTIONAL AUDIT:
-   - Actively search Google Search Grounding across official institutional directories, "Institutes and Schools of {$orgName}", academic faculties, admission portals, Shiksha, Collegedunia, and NIRF disclosures.
-   - Discover and extract ALL departments and schools across the entire institution.
+   - Actively search Google Search Grounding across official institutional directories, "Institutes and Schools of {$orgName}", academic faculties, admission portals, Shiksha, Collegedunia, AISHE, and NIRF disclosures.
+   - Discover and extract ALL departments, schools, faculties, and institutes across the entire institution.
    - Return every single discovered department in the "departments" array without skipping or truncating.
 GOOGLE_INSTRUCTIONS
         : <<<STRICT_URL_INSTRUCTIONS
@@ -1354,15 +1395,20 @@ GOOGLE_INSTRUCTIONS
 STRICT_URL_INSTRUCTIONS;
 
         return <<<PROMPT
-You are an expert academic faculties, colleges, and university departmental research AI agent.
-Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, WINGS, and FACULTIES for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}, Campus: {$campusName}).
+You are an expert academic faculties, colleges, schools, and university departmental research AI agent.
+Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, FACULTIES, INSTITUTES, CENTRES, DIVISIONS, and DISCIPLINES for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}, Campus: {$campusName}).
+(Note: Institutions may call their units Departments, Schools, Faculties, Institutes, Colleges, Centres, Divisions, Wings, or direct Subject names. Extract ALL of them into the "departments" array).
 DO NOT extract general organisation profiles, campuses, or individual courses. ONLY extract Departments.
-(Note: If this institution is a School, extract academic departments / wings such as Primary Wing, Middle Wing, Senior Secondary Wing, Science Department, Performing Arts, Sports, Humanities, etc.).
 
 TARGET INSTITUTION: {$orgName}
 ORGANISATION TYPE: {$orgTypeTitle}
 TARGET CAMPUS: {$campusName}
 PRIMARY URL: {$url}{$refUrlsText}
+
+=== PLATFORM DATABASE DOMAIN KNOWLEDGE & TAXONOMY ===
+Our database contains the following standard Streams and Disciplines. Use this domain knowledge to recognize and categorize departments even if the website uses alternative phrasing:
+- KNOWN STREAMS: {$streamsList}
+- KNOWN DISCIPLINES: {$disciplinesList}
 {$cleanContent}
 
 === CRITICAL EXHAUSTIVE & DEDUPLICATION MANDATE ===
@@ -1376,8 +1422,8 @@ PRIMARY URL: {$url}{$refUrlsText}
 
 {$searchInstructions}
 
-3. FAST & CONCISE WRITING (TO ENSURE ALL 100+ DEPARTMENTS COMPLETE IN UNDER 20 SECONDS):
-   - `about_department`: 1 short phrase or sentence (e.g. "Offers undergraduate and postgraduate programs with advanced research labs.").
+3. FAST & CONCISE WRITING (TO ENSURE ALL 100+ DEPARTMENTS COMPLETE WITHOUT TRUNCATION):
+   - `about_department`: 1 short phrase or sentence (e.g. "Offers undergraduate and postgraduate programs with advanced research laboratories.").
    - Return all discovered departments in the "departments" array using the compact structure below.
 
 4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
@@ -1403,7 +1449,7 @@ PROMPT;
     }
 
     /**
-     * Dedicated Prompt for Course Only Extraction
+     * Dedicated Prompt for Course Only Extraction with Database Taxonomy Knowledge Injection
      */
     public function buildCourseOnlyPrompt(
         string $url,
@@ -1427,6 +1473,12 @@ PROMPT;
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . substr(trim($content), 0, 60000) : "";
 
+        // Inject Database Taxonomy Knowledge
+        $taxonomy = $this->getDatabaseTaxonomyKnowledge();
+        $disciplinesList = !empty($taxonomy['disciplines']) ? implode(', ', array_slice($taxonomy['disciplines'], 0, 40)) : 'Computer science and Engineering, Mechanical engineering, Civil Engineering, Electrical Engineering, Business Administration, Commerce, Biotechnology, Physics, Chemistry, Mathematics, Law';
+        $streamsList = !empty($taxonomy['streams']) ? implode(', ', $taxonomy['streams']) : 'Engineering and Technology, Business & Management, Sciences, Humanities & Social Sciences, Commerce & Finance, Law, Medicine';
+        $programLevelsList = !empty($taxonomy['program_levels']) ? implode(', ', $taxonomy['program_levels']) : 'Undergraduate (UG), Postgraduate (PG), Diploma, Ph.D, Certificate';
+
         // Check for structured detected courses
         $detectedCourseText = "";
         if (preg_match('/===\s*DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
@@ -1439,10 +1491,10 @@ DETECTED DEGREE COURSES FROM OFFICIAL WEBSITE NAVIGATION ({$count} Programs dete
 STRICT EXHAUSTIVE MULTI-DEGREE EXTRACTION RULE:
 - Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" section very carefully.
 - If this is a Department/Wing page (e.g. {$deptName}), you MUST extract EVERY degree program/curriculum offered by this department across all levels:
-  * Undergraduate / Senior Secondary (e.g. B.Tech / B.Sc / BBA / Class 11-12 Science/Commerce)
-  * Postgraduate / Middle & Secondary (e.g. M.Tech / M.Sc / MBA / Classes 6-10)
-  * Doctoral / Primary / Pre-Primary programs
-  * Diploma / Integrated programs / IB / Cambridge IGCSE
+  * Undergraduate (e.g. B.Tech / B.Sc / BBA / B.Com / B.A. / MBBS / B.Pharm)
+  * Postgraduate (e.g. M.Tech / M.Sc / MBA / M.Com / M.A. / MD / M.Pharm)
+  * Doctoral / Ph.D programs
+  * Diploma / Integrated programs / Certificate courses
 - NEVER omit programs. Return one distinct object in the `courses` array for EVERY single degree/program offered.
 - DO NOT sample or merge programs.
 DET_COURSE;
@@ -1480,6 +1532,12 @@ ORGANISATION TYPE: {$orgTypeTitle}
 TARGET CAMPUS: {$campusName}
 TARGET DEPARTMENT: {$deptName}
 PRIMARY URL: {$url}{$refUrlsText}
+
+=== PLATFORM DATABASE DOMAIN KNOWLEDGE & TAXONOMY ===
+Map each extracted course to our platform standard taxonomies:
+- PROGRAM LEVELS: {$programLevelsList}
+- STREAMS: {$streamsList}
+- DISCIPLINES: {$disciplinesList}
 {$cleanContent}
 
 === CRITICAL EXHAUSTIVE & DEDUPLICATION MANDATE ===
@@ -1523,8 +1581,8 @@ PRIMARY URL: {$url}{$refUrlsText}
       "course_name": "Bachelor of Technology in Computer Science and Engineering (Artificial Intelligence & Machine Learning)",
       "short_name": "B.Tech CSE (AI & ML)",
       "program_level": "Undergraduate",
-      "stream": "Engineering",
-      "discipline": "Computer Science & Engineering",
+      "stream": "Engineering and Technology",
+      "discipline": "Computer science and Engineering",
       "specialization": "Artificial Intelligence & Machine Learning",
       "duration": "4 Years",
       "mode": "Regular",
