@@ -51,6 +51,12 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// ✅ Public Digital Card Routes
+Route::get('/card/{slug}.vcf', [\App\Http\Controllers\PublicDigitalCardController::class, 'vcard'])->name('digital-cards.vcf');
+Route::get('/card/{slug}/vcard', [\App\Http\Controllers\PublicDigitalCardController::class, 'vcard'])->name('digital-cards.vcard');
+Route::get('/card/{slug}', [\App\Http\Controllers\PublicDigitalCardController::class, 'show'])->name('digital-cards.show');
+Route::get('/api/card/{slug}', [\App\Http\Controllers\PublicDigitalCardController::class, 'apiShow'])->name('digital-cards.api');
+
 // ✅ Admin Auth Routes
 Route::get('/admin/login', [AuthController::class, 'showAdminLoginForm'])->name('login');
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
@@ -59,6 +65,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ✅ Admin Routes
 Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    // Digital Business Cards Module
+    Route::post('/admin/digital-cards/{id}/toggle-status', [\App\Http\Controllers\Admin\DigitalCardController::class, 'toggleStatus'])->name('admin.digital-cards.toggle-status');
+    Route::get('/admin/digital-cards/{id}/duplicate', [\App\Http\Controllers\Admin\DigitalCardController::class, 'duplicate'])->name('admin.digital-cards.duplicate');
+    Route::resource('/admin/digital-cards', \App\Http\Controllers\Admin\DigitalCardController::class)->names('admin.digital-cards');
 
     // Mega Menu Management
     Route::resource('/admin/mega-menu', MegaMenuController::class)->names('admin.mega-menu')->middleware('can:department-browse');

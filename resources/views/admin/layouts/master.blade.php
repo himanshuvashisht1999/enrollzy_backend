@@ -281,6 +281,14 @@
             @if($isAdmin)
                 <div class="sidebar-heading px-3 text-uppercase fw-bold">Core Management</div>
 
+                {{-- Digital Cards --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.digital-cards.*') ? 'active' : '' }}"
+                        href="{{ route('admin.digital-cards.index') }}">
+                        <i class="fas fa-id-card text-warning"></i> Digital Cards
+                    </a>
+                </li>
+
                 {{-- Academics Group --}}
                 
 <!-- wrapped parent #academicsMenu -->
