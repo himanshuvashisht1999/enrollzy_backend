@@ -10,6 +10,7 @@ use App\Models\Course;
 use Illuminate\Support\Str;
 use App\Models\Exam; // Import Exam
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrganisationCourseController extends Controller
 {
@@ -111,6 +112,10 @@ class OrganisationCourseController extends Controller
         } elseif ($typeId == 4) {
             // School
             $rules['academic_unit_name'] = 'required|string|max:255';
+        } elseif ($typeId == 9) {
+            // E-Learning Platform: Direct Course
+            $rules['course_id'] = 'required|exists:courses,id';
+            $rules['sort_order'] = 'required|integer';
         }
 
         $request->validate($rules);
@@ -227,6 +232,9 @@ class OrganisationCourseController extends Controller
             $rules['course_id'] = 'required|exists:courses,id';
         } elseif ($typeId == 4) {
             $rules['academic_unit_name'] = 'required|string|max:255';
+        } elseif ($typeId == 9) {
+            $rules['course_id'] = 'required|exists:courses,id';
+            $rules['sort_order'] = 'required|integer';
         }
 
         $request->validate($rules);
@@ -300,6 +308,45 @@ class OrganisationCourseController extends Controller
             'campus_id' => $campusId,
             'department_id' => $departmentId
         ])->with('success', 'Deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        if ($request->boolean('delete_all_for_department') && $request->filled('department_id')) {
+            $departmentId = $request->input('department_id');
+            $count = OrganisationCourse::where('department_id', $departmentId)->count();
+
+            if ($count === 0) {
+                return redirect()->back()->with('warning', 'No courses found to delete for this department.');
+            }
+
+            DB::transaction(function () use ($departmentId) {
+                OrganisationCourse::where('department_id', $departmentId)->delete();
+            });
+
+            return redirect()->back()->with('success', "All {$count} course(s) in this department were deleted successfully.");
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $count = count($ids);
+
+        if ($count === 0) {
+            return redirect()->back()->with('warning', 'No courses selected to delete.');
+        }
+
+        DB::transaction(function () use ($ids) {
+            OrganisationCourse::whereIn('id', $ids)->delete();
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')->whereIn('id', $ids)->delete();
+            }
+        });
+
+        return redirect()->back()->with('success', "{$count} course(s) deleted successfully.");
     }
 
     public function duplicate($id)

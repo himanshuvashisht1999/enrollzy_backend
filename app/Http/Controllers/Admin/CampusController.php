@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -16,7 +17,7 @@ class CampusController extends Controller
      */
     public function index(Organisation $organisation)
     {
-        $campuses = $organisation->campuses()->latest()->get();
+        $campuses = $organisation->campuses()->withCount(['departments', 'courses'])->latest()->get();
         return view('admin.organisations.campuses.index', compact('organisation', 'campuses'));
     }
 
@@ -118,9 +119,12 @@ class CampusController extends Controller
      */
     public function destroy(Organisation $organisation, Campus $campus)
     {
-        $campus->delete();
+        DB::transaction(function () use ($campus) {
+            $campus->delete();
+        });
+
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
-            ->with('success', 'Campus deleted successfully');
+            ->with('success', 'Campus and all associated departments and courses deleted successfully.');
     }
 
     /**

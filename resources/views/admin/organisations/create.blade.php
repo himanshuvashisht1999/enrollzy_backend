@@ -63,6 +63,8 @@
                                                     $category = 'counselling';
                                                 } elseif (str_contains($title, 'regulatory') || $type->id == 7) {
                                                     $category = 'regulatory';
+                                                } elseif (str_contains($title, 'e-learning') || str_contains($title, 'elearning') || $type->id == 9) {
+                                                    $category = 'elearning';
                                                 }
                                             @endphp
                                             <option value="{{ $type->id }}" data-category="{{ $category }}"
@@ -1655,6 +1657,9 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- E-Learning Platform Fields --}}
+                    @include('admin.organisations.partials.elearning_fields')
                 </div> <!-- End Row -->
 
                 <div class="col-12 mt-4 mb-4 text-end">
@@ -1699,7 +1704,8 @@
                         'school': 'school-fields',
                         'ecb': 'exam-conducting-body-fields',
                         'counselling': 'counselling-body-fields',
-                        'regulatory': 'regulatory-body-fields'
+                        'regulatory': 'regulatory-body-fields',
+                        'elearning': 'elearning-fields'
                     };
 
                     // Determine active section
@@ -1711,6 +1717,7 @@
                         else if (title.includes('exam') || title.includes('conducting')) activeSectionId = 'exam-conducting-body-fields';
                         else if (title.includes('counselling') || val == '6') activeSectionId = 'counselling-body-fields';
                         else if (title.includes('regulatory') || val == '7') activeSectionId = 'regulatory-body-fields';
+                        else if (title.includes('e-learning') || title.includes('elearning') || val == '9') activeSectionId = 'elearning-fields';
                     }
 
                     const sections = [
@@ -1719,7 +1726,8 @@
                         'school-fields',
                         'exam-conducting-body-fields',
                         'counselling-body-fields',
-                        'regulatory-body-fields'
+                        'regulatory-body-fields',
+                        'elearning-fields'
                     ];
 
                     sections.forEach(id => {
@@ -1913,8 +1921,14 @@
                     setTimeout(() => statusDiv.innerHTML = '', 3000);
                 }
 
+                let isCreatingDraft = false;
+
                 function tryCreateDraft() {
-                    if (!orgIdInput.value && nameInput.value && typeInput.value) {
+                    if (isCreatingDraft || orgIdInput.value) {
+                        return;
+                    }
+                    if (nameInput.value && typeInput.value) {
+                        isCreatingDraft = true;
                         showStatus('Creating Draft...', 'warning');
                         fetch("{{ route('admin.organisations.store-draft') }}", {
                             method: 'POST',
@@ -1924,17 +1938,22 @@
                             },
                             body: JSON.stringify({
                                 name: nameInput.value,
-                                organisation_type_id: typeInput.value
+                                organisation_type_id: typeInput.value,
+                                organisation_id: orgIdInput.value || null
                             })
                         })
                             .then(response => response.json())
                             .then(data => {
+                                isCreatingDraft = false;
                                 if (data.status === 'success') {
                                     orgIdInput.value = data.organisation_id;
                                     showStatus('Draft Created', 'success');
                                 }
                             })
-                            .catch(err => console.error(err));
+                            .catch(err => {
+                                isCreatingDraft = false;
+                                console.error(err);
+                            });
                     }
                 }
 
@@ -1999,6 +2018,29 @@
                         }
                     });
                 });
+
+                // Prevent double submissions and wait for pending draft creation
+                const form = document.querySelector('form[action="{{ route('admin.organisations.store') }}"]');
+                if (form) {
+                    form.addEventListener('submit', function (e) {
+                        if (isCreatingDraft) {
+                            e.preventDefault();
+                            showStatus('Saving draft first, please wait...', 'warning');
+                            const checkInterval = setInterval(() => {
+                                if (!isCreatingDraft) {
+                                    clearInterval(checkInterval);
+                                    form.submit();
+                                }
+                            }, 100);
+                            return;
+                        }
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving Organisation...';
+                        }
+                    });
+                }
             });
 
         </script>

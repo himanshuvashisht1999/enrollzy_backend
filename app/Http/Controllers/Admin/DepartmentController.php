@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Organisation;
 use App\Models\Campus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DepartmentController extends Controller
 {
@@ -18,7 +19,7 @@ class DepartmentController extends Controller
         $organisationId = $request->query('organisation_id');
         $campusId = $request->query('campus_id');
 
-        $query = Department::with(['organisation', 'campus'])->latest();
+        $query = Department::with(['organisation', 'campus'])->withCount('courses')->latest();
 
         if ($organisationId) {
             $query->where('organisation_id', $organisationId);
@@ -259,14 +260,59 @@ class DepartmentController extends Controller
     {
         $orgId = $department->organisation_id;
         $campusId = $department->campus_id;
-        $department->delete();
+
+        DB::transaction(function () use ($department) {
+            $department->delete();
+        });
 
         $redirectParams = ['organisation_id' => $orgId];
         if ($campusId) {
             $redirectParams['campus_id'] = $campusId;
         }
 
-        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department deleted successfully.');
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department and all associated courses deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        if ($request->boolean('delete_all_for_campus') && $request->filled('campus_id')) {
+            $campusId = $request->input('campus_id');
+            $departments = Department::where('campus_id', $campusId)->get();
+            $count = $departments->count();
+
+            if ($count === 0) {
+                return redirect()->back()->with('warning', 'No departments found to delete.');
+            }
+
+            DB::transaction(function () use ($departments) {
+                $departments->each(function ($department) {
+                    $department->delete();
+                });
+            });
+
+            return redirect()->back()->with('success', "All {$count} department(s) and their associated courses in this campus were deleted successfully.");
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|string',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $departments = Department::whereIn('id', $ids)->get();
+        $count = $departments->count();
+
+        if ($count === 0) {
+            return redirect()->back()->with('warning', 'No matching departments found to delete.');
+        }
+
+        DB::transaction(function () use ($departments) {
+            $departments->each(function ($department) {
+                $department->delete();
+            });
+        });
+
+        return redirect()->back()->with('success', "{$count} department(s) and their associated courses were successfully deleted.");
     }
 
     public function storeDraft(Request $request)

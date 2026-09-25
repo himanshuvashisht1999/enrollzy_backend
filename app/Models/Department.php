@@ -107,6 +107,10 @@ class Department extends Model
                 $model->slug = static::generateUniqueSlug($model->department_name, $model->id);
             }
         });
+
+        static::deleting(function ($department) {
+            $department->organisationCourses()->delete();
+        });
     }
 
     /**

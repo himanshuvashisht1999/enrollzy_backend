@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class OrganisationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Organisation::query();
+        $query = Organisation::query()->withCount(['campuses', 'departments', 'courses']);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -266,9 +267,35 @@ class OrganisationController extends Controller
             ];
         }
 
+        // Type 9: E-Learning Platform
+        if ($request->organisation_type_id == 9) {
+            $rules += [
+                'logo_url' => 'nullable|image|max:2048',
+                'cover_image_url' => 'nullable|image|max:2048',
+                'established_year' => 'nullable|integer',
+                'official_website' => 'nullable|url',
+                'average_rating' => 'nullable|numeric|between:0,5',
+                'total_reviews' => 'nullable|integer',
+                'schema_type' => 'nullable|string',
+                'meta_title' => 'nullable|string|max:255',
+                'meta_description' => 'nullable|string',
+                'canonical_url' => 'nullable|url',
+                'focus_keywords' => 'nullable|string',
+                'data_source' => 'nullable|string',
+                'confidence_score' => 'nullable|integer',
+                'verification_status' => 'nullable|string|in:Pending,Verified,Rejected',
+                'status' => 'nullable|string|in:Active,Inactive,Archived',
+                'core_values' => 'nullable|array',
+            ];
+        }
+
         $request->validate($rules);
 
-        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token']);
+        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token', 'organisation_id']);
+
+        if ($request->has('core_values') && is_array($request->core_values)) {
+            $data['core_values'] = array_values(array_filter($request->core_values, fn($val) => !is_null($val) && trim($val) !== ''));
+        }
 
         if (isset($data['status'])) {
             $data['status'] = $data['status'] === 'Active' ? 1 : ($data['status'] === 'Archived' ? 2 : 0);
@@ -301,11 +328,12 @@ class OrganisationController extends Controller
         // Handle Single File Uploads
         if ($request->hasFile('logo_url')) {
             $name = time() . '_logo.' . $request->logo_url->extension();
-            $path = match ($request->organisation_type_id) {
+            $path = match ((string) $request->organisation_type_id) {
                 '3' => 'media/institutes',
                 '4' => 'media/schools',
                 '6' => 'media/counselling_bodies',
                 '7' => 'media/regulatory_bodies',
+                '9' => 'media/elearning',
                 default => 'media/universities'
             };
             $request->logo_url->move(public_path($path), $name);
@@ -314,11 +342,12 @@ class OrganisationController extends Controller
 
         if ($request->hasFile('cover_image_url')) {
             $name = time() . '_cover.' . $request->cover_image_url->extension();
-            $path = match ($request->organisation_type_id) {
+            $path = match ((string) $request->organisation_type_id) {
                 '3' => 'media/institutes',
                 '4' => 'media/schools',
                 '6' => 'media/counselling_bodies',
                 '7' => 'media/regulatory_bodies',
+                '9' => 'media/elearning',
                 default => 'media/universities'
             };
             $request->cover_image_url->move(public_path($path), $name);
@@ -351,13 +380,20 @@ class OrganisationController extends Controller
 
         
 
-        $organisation = Organisation::create($data);
+        if ($request->filled('organisation_id') && ($existingOrg = Organisation::find($request->organisation_id))) {
+            $existingOrg->update($data);
+            $organisation = $existingOrg;
+        } else {
+            $organisation = Organisation::create($data);
+        }
+        $this->syncElearningDetails($request, $organisation);
 
         return redirect()->route('admin.organisations.edit', $organisation->id)->with('success', 'Organisation added successfully.');
     }
 
     public function edit(Organisation $organisation)
     {
+        $organisation->load(['elearning', 'partners', 'instructors', 'leaders', 'elearningDomains']);
         $organisationTypes = \App\Models\OrganisationType::where('status', true)->get();
         $brandTypes = Organisation::BRAND_TYPES;
         $campusTypeNews = \App\Models\CampusTypeNew::where('status', true)->orderBy('sort_order')->get();
@@ -592,9 +628,35 @@ class OrganisationController extends Controller
             ];
         }
 
+        // Type 9: E-Learning Platform
+        if ($request->organisation_type_id == 9) {
+            $rules += [
+                'logo_url' => 'nullable|image|max:2048',
+                'cover_image_url' => 'nullable|image|max:2048',
+                'established_year' => 'nullable|integer',
+                'official_website' => 'nullable|url',
+                'average_rating' => 'nullable|numeric|between:0,5',
+                'total_reviews' => 'nullable|integer',
+                'schema_type' => 'nullable|string',
+                'meta_title' => 'nullable|string|max:255',
+                'meta_description' => 'nullable|string',
+                'canonical_url' => 'nullable|url',
+                'focus_keywords' => 'nullable|string',
+                'data_source' => 'nullable|string',
+                'confidence_score' => 'nullable|integer',
+                'verification_status' => 'nullable|string|in:Pending,Verified,Rejected',
+                'status' => 'nullable|string|in:Active,Inactive,Archived',
+                'core_values' => 'nullable|array',
+            ];
+        }
+
         $request->validate($rules);
 
         $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token', '_method']);
+
+        if ($request->has('core_values') && is_array($request->core_values)) {
+            $data['core_values'] = array_values(array_filter($request->core_values, fn($val) => !is_null($val) && trim($val) !== ''));
+        }
 
         if (isset($data['status'])) {
             $data['status'] = $data['status'] === 'Active' ? 1 : ($data['status'] === 'Archived' ? 2 : 0);
@@ -606,11 +668,12 @@ class OrganisationController extends Controller
                 @unlink(public_path($organisation->logo_url));
             }
             $name = time() . '_logo.' . $request->logo_url->extension();
-            $path = match ($request->organisation_type_id) {
+            $path = match ((string) $request->organisation_type_id) {
                 '3' => 'media/institutes',
                 '4' => 'media/schools',
                 '6' => 'media/counselling_bodies',
                 '7' => 'media/regulatory_bodies',
+                '9' => 'media/elearning',
                 default => 'media/universities'
             };
             $request->logo_url->move(public_path($path), $name);
@@ -622,11 +685,12 @@ class OrganisationController extends Controller
                 @unlink(public_path($organisation->cover_image_url));
             }
             $name = time() . '_cover.' . $request->cover_image_url->extension();
-            $path = match ($request->organisation_type_id) {
+            $path = match ((string) $request->organisation_type_id) {
                 '3' => 'media/institutes',
                 '4' => 'media/schools',
                 '6' => 'media/counselling_bodies',
                 '7' => 'media/regulatory_bodies',
+                '9' => 'media/elearning',
                 default => 'media/universities'
             };
             $request->cover_image_url->move(public_path($path), $name);
@@ -682,14 +746,18 @@ class OrganisationController extends Controller
         }
 
         $organisation->update($data);
+        $this->syncElearningDetails($request, $organisation);
 
         return redirect()->route('admin.organisations.index')->with('success', 'Organisation updated successfully.');
     }
 
     public function destroy(Organisation $organisation)
     {
-        $organisation->delete();
-        return redirect()->route('admin.organisations.index')->with('success', 'Organisation deleted successfully.');
+        DB::transaction(function () use ($organisation) {
+            $organisation->delete();
+        });
+
+        return redirect()->route('admin.organisations.index')->with('success', 'Organisation and all associated campuses, departments, and courses deleted successfully.');
     }
 
     public function storeDraft(Request $request)
@@ -698,6 +766,22 @@ class OrganisationController extends Controller
             'name' => 'required|string|max:255',
             'organisation_type_id' => 'required|exists:organisation_types,id',
         ]);
+
+        if ($request->filled('organisation_id')) {
+            $organisation = Organisation::find($request->organisation_id);
+            if ($organisation) {
+                $organisation->update([
+                    'name' => $request->name,
+                    'organisation_type_id' => $request->organisation_type_id,
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'organisation_id' => $organisation->id,
+                    'message' => 'Draft updated successfully'
+                ]);
+            }
+        }
 
         $organisation = Organisation::create([
             'name' => $request->name,
@@ -728,10 +812,33 @@ class OrganisationController extends Controller
                 '4' => 'media/schools',
                 '6' => 'media/counselling_bodies',
                 '7' => 'media/regulatory_bodies',
+                '9' => 'media/elearning',
                 default => 'media/universities'
             };
             $file->move(public_path($path), $name);
             $value = $path . '/' . $name;
+        }
+
+        $elearningFields = [
+            'tagline', 'legal_name', 'parent_organisation_name', 'organisation_model',
+            'platform_types', 'target_audiences', 'credential_types_offered', 'provides_own_programs',
+            'program_provider_model', 'delivery_modes', 'learning_features', 'platform_features',
+            'career_services', 'career_stats', 'learner_stats', 'geographic_reach',
+            'instruction_languages', 'business_model', 'pricing_options', 'has_enterprise_offering',
+            'corporate_services', 'third_party_ratings', 'industry_recognitions', 'promotional_video_url',
+            'contact_details', 'social_media_links', 'app_details', 'community_details',
+            'financial_aid_details', 'enrollment_details', 'document_urls'
+        ];
+
+        if (in_array($field, $elearningFields)) {
+            try {
+                $elearning = $organisation->elearning()->firstOrCreate(['organisation_id' => $organisation->id]);
+                $elearning->update([$field => $value]);
+                return response()->json(['status' => 'success', 'field' => $field, 'value' => $value]);
+            } catch (\Exception $e) {
+                \Log::error('Autosave error for elearning field ' . $field . ': ' . $e->getMessage());
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
+            }
         }
 
         // Handle Array Fields for Autosave
@@ -803,7 +910,8 @@ class OrganisationController extends Controller
             'seat_matrix_management', 'seat_conversion_rules_supported', 'choice_locking_mandatory',
             'seat_upgradation_allowed', 'counselling_fee_collection_supported', 'security_deposit_handling',
             'candidate_login_system_available', 'choice_filling_system_available', 'auto_seat_allocation_engine',
-            'api_integration_supported', 'institution_reporting_interface_available'
+            'api_integration_supported', 'institution_reporting_interface_available',
+            'has_enterprise_offering'
         ];
 
         foreach ($booleans as $field) {
@@ -812,6 +920,121 @@ class OrganisationController extends Controller
                 $request->merge([$field => (in_array($val, ['on', 1, '1', true, 'true', 'yes'], true))]);
             } else {
                 $request->merge([$field => false]);
+            }
+        }
+    }
+
+    protected function syncElearningDetails(Request $request, Organisation $organisation)
+    {
+        if ($organisation->organisation_type_id != 9) {
+            return;
+        }
+
+        $elearningFields = [
+            'tagline', 'legal_name', 'parent_organisation_name', 'organisation_model',
+            'platform_types', 'target_audiences', 'credential_types_offered', 'provides_own_programs',
+            'program_provider_model', 'delivery_modes', 'learning_features', 'platform_features',
+            'career_services', 'career_stats', 'learner_stats', 'geographic_reach',
+            'instruction_languages', 'business_model', 'pricing_options', 'has_enterprise_offering',
+            'corporate_services', 'third_party_ratings', 'industry_recognitions', 'promotional_video_url',
+            'contact_details', 'social_media_links', 'app_details', 'community_details',
+            'financial_aid_details', 'enrollment_details', 'document_urls'
+        ];
+
+        $elearningData = [];
+        foreach ($elearningFields as $f) {
+            if ($request->has($f)) {
+                $elearningData[$f] = $request->input($f);
+            }
+        }
+
+        if (!empty($elearningData)) {
+            $organisation->elearning()->updateOrCreate(
+                ['organisation_id' => $organisation->id],
+                $elearningData
+            );
+        }
+
+        // Domains
+        if ($request->has('elearning_domains')) {
+            $organisation->elearningDomains()->delete();
+            $domains = $request->input('elearning_domains', []);
+            if (is_array($domains)) {
+                foreach ($domains as $order => $domain) {
+                    if (!empty($domain['name'])) {
+                        $organisation->elearningDomains()->create([
+                            'domain_name' => $domain['name'],
+                            'is_primary' => !empty($domain['is_primary']),
+                            'sort_order' => $order,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Partners
+        if ($request->has('partners')) {
+            $organisation->partners()->delete();
+            $partners = $request->input('partners', []);
+            if (is_array($partners)) {
+                foreach ($partners as $order => $partner) {
+                    if (!empty($partner['partner_name'])) {
+                        $organisation->partners()->create([
+                            'partner_type' => $partner['partner_type'] ?? 'University',
+                            'partner_name' => $partner['partner_name'],
+                            'partner_logo' => $partner['partner_logo'] ?? null,
+                            'partner_website' => $partner['partner_website'] ?? null,
+                            'relationship_type' => $partner['relationship_type'] ?? null,
+                            'co_branded_credential' => !empty($partner['co_branded_credential']),
+                            'programs_count' => $partner['programs_count'] ?? 0,
+                            'description' => $partner['description'] ?? null,
+                            'sort_order' => $order,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Instructors
+        if ($request->has('instructors')) {
+            $organisation->instructors()->delete();
+            $instructors = $request->input('instructors', []);
+            if (is_array($instructors)) {
+                foreach ($instructors as $order => $inst) {
+                    if (!empty($inst['name'])) {
+                        $organisation->instructors()->create([
+                            'name' => $inst['name'],
+                            'designation' => $inst['designation'] ?? null,
+                            'current_company_or_institution' => $inst['current_company_or_institution'] ?? null,
+                            'experience_years' => $inst['experience_years'] ?? null,
+                            'linkedin_url' => $inst['linkedin_url'] ?? null,
+                            'bio' => $inst['bio'] ?? null,
+                            'rating' => $inst['rating'] ?? null,
+                            'sort_order' => $order,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Leaders
+        if ($request->has('leaders')) {
+            $organisation->leaders()->delete();
+            $leaders = $request->input('leaders', []);
+            if (is_array($leaders)) {
+                foreach ($leaders as $order => $ldr) {
+                    if (!empty($ldr['name'])) {
+                        $organisation->leaders()->create([
+                            'name' => $ldr['name'],
+                            'designation' => $ldr['designation'] ?? null,
+                            'photo_url' => $ldr['photo_url'] ?? null,
+                            'bio' => $ldr['bio'] ?? null,
+                            'linkedin_url' => $ldr['linkedin_url'] ?? null,
+                            'is_founder' => !empty($ldr['is_founder']),
+                            'sort_order' => $order,
+                        ]);
+                    }
+                }
             }
         }
     }

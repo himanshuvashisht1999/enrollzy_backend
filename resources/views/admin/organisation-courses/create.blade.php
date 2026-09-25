@@ -596,6 +596,143 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            {{-- ========================================== --}}
+            {{-- E-LEARNING PLATFORM (Type 9) DIRECT COURSE --}}
+            {{-- ========================================== --}}
+            @elseif($typeId == 9)
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-laptop-code me-2"></i>E-Learning Course Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Select Master Course <span class="text-danger">*</span></label>
+                                    <select name="course_id" class="form-select select2" required>
+                                        <option value="">-- Select Master Course --</option>
+                                        @foreach($masterCourses as $master)
+                                            <option value="{{ $master->id }}" {{ old('course_id') == $master->id ? 'selected' : '' }}>
+                                                {{ $master->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">If not listed, add to <a href="{{ route('admin.courses.index') }}" target="_blank">Master Course List</a>.</div>
+                                    <div class="card mt-2 border-0 shadow-sm bg-light d-none course-details-card">
+                                        <div class="card-body p-3">
+                                            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-book-open me-2"></i>Course Details</h6>
+                                            <div class="small text-muted">
+                                                <div class="row g-2">
+                                                    <div class="col-6"><strong>Program Level:</strong> <span class="program-level">-</span></div>
+                                                    <div class="col-6"><strong>Stream:</strong> <span class="stream">-</span></div>
+                                                    <div class="col-6"><strong>Discipline:</strong> <span class="discipline">-</span></div>
+                                                    <div class="col-6"><strong>Duration:</strong> <span class="duration">-</span> Years</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Delivery Mode</label>
+                                    <select name="mode" class="form-select">
+                                        <option value="">Select Mode</option>
+                                        @foreach(['100% Online', 'Live Online Classes', 'Self-Paced Learning', 'Cohort-Based Live', 'Blended / Hybrid'] as $m)
+                                            <option value="{{ $m }}" {{ old('mode') == $m ? 'selected' : '' }}>{{ $m }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Duration</label>
+                                    <input type="text" name="duration" class="form-control" value="{{ old('duration') }}" placeholder="e.g. 6 Months / 2 Years / 12 Weeks">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Program Fees (₹ / $)</label>
+                                    <input type="number" step="0.01" name="total_fees" class="form-control" value="{{ old('total_fees') }}" placeholder="e.g. 150000">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Specialization Area (Multiple)</label>
+                                    <select name="specialization_ids[]" class="form-select select2" multiple data-placeholder="Select specializations">
+                                        @foreach($specializations as $spec)
+                                            <option value="{{ $spec->id }}" {{ in_array($spec->id, old('specialization_ids', [])) ? 'selected' : '' }}>
+                                                {{ $spec->title }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Course Languages (Multiple)</label>
+                                    <select name="course_languages[]" class="form-select select2" multiple data-placeholder="Select languages">
+                                        @foreach($languages as $lang)
+                                            <option value="{{ $lang->id }}" {{ in_array($lang->id, old('course_languages', [])) ? 'selected' : '' }}>
+                                                {{ $lang->title }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Rating (0 - 5.0)</label>
+                                    <input type="number" step="0.1" min="0" max="5" name="rating" class="form-control" value="{{ old('rating', '4.8') }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">ROI Category</label>
+                                    <select name="roi" class="form-select">
+                                        <option value="">Select ROI</option>
+                                        <option value="High" {{ old('roi') == 'High' ? 'selected' : '' }}>High</option>
+                                        <option value="Medium" {{ old('roi') == 'Medium' ? 'selected' : '' }}>Medium</option>
+                                        <option value="Low" {{ old('roi') == 'Low' ? 'selected' : '' }}>Low</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Sort Order</label>
+                                    <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', 0) }}" required>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status" id="el_status" value="1" checked>
+                                        <label class="form-check-label" for="el_status">Active / Published</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-file-alt me-2"></i>Curriculum & Admissions Details</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Eligibility Criteria</label>
+                                    <textarea name="eligibility" class="form-control editor" rows="3">{{ old('eligibility') }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Curriculum & Syllabus Highlights</label>
+                                    <textarea name="curriculum" class="form-control editor" rows="4">{{ old('curriculum') }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Career Prospects & Outcomes</label>
+                                    <textarea name="career_prospects" class="form-control" rows="3">{{ old('career_prospects') }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Fees Breakdown & EMI Structure</label>
+                                    <textarea name="fees_structure" class="form-control" rows="3">{{ old('fees_structure') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
 
                 <div class="col-12 text-end">

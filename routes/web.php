@@ -210,6 +210,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/organisations/{organisation}/campuses/{campus}/autosave-tab', [\App\Http\Controllers\Admin\CampusController::class, 'autosaveTab'])->name('admin.organisations.campuses.autosave-tab');
 
     // Departments (Nested under Campuses contextually, but flat resource for now)
+    Route::post('/admin/departments/bulk-destroy', [DepartmentController::class, 'bulkDestroy'])->name('admin.departments.bulk-destroy')->middleware('can:department-browse');
     Route::resource('/admin/departments', DepartmentController::class)->names('admin.departments')->middleware('can:department-browse');
     Route::post('/admin/departments/store-draft', [DepartmentController::class, 'storeDraft'])->name('admin.departments.store-draft');
     Route::post('/admin/departments/{department}/autosave-tab', [DepartmentController::class, 'autosaveTab'])->name('admin.departments.autosave-tab');
@@ -371,6 +372,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::resource('/admin/noteworthy-mentions', NoteworthyMentionController::class)->names('admin.noteworthy-mentions')->middleware('can:department-browse');
 
     // Organisation Courses
+    Route::post('/admin/organisation-courses/bulk-destroy', [OrganisationCourseController::class, 'bulkDestroy'])->name('admin.organisation-courses.bulk-destroy');
     Route::resource('/admin/organisation-courses', OrganisationCourseController::class)->names([
         'index' => 'admin.organisation-courses.index',
         'create' => 'admin.organisation-courses.create',

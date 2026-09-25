@@ -57,6 +57,8 @@
                                                 $category = 'counselling';
                                             } elseif (str_contains($title, 'regulatory') || $type->id == 7) {
                                                 $category = 'regulatory';
+                                            } elseif (str_contains($title, 'e-learning') || str_contains($title, 'elearning') || $type->id == 9) {
+                                                $category = 'elearning';
                                             }
                                         @endphp
                                         <option value="{{ $type->id }}" data-category="{{ $category }}" data-title="{{ $type->title }}" {{ old('organisation_type_id', $organisation->organisation_type_id) == $type->id ? 'selected' : '' }}>{{ $type->title }} (ID: {{ $type->id }})</option>
@@ -1553,6 +1555,9 @@
                                 </div>
                             </div>
 
+                            {{-- E-Learning Platform Fields --}}
+                            @include('admin.organisations.partials.elearning_fields')
+
                             <div class="col-12 mt-4 text-end">
                                 <button type="submit" class="btn btn-primary">Update Organisation</button>
                             </div>
@@ -1610,7 +1615,8 @@
                 'school-fields': [4],
                 'exam-conducting-body-fields': [5],
                 'counselling-body-fields': [6],
-                'regulatory-body-fields': [7]
+                'regulatory-body-fields': [7],
+                'elearning-fields': [9]
             };
 
             // Hide all first and show selected

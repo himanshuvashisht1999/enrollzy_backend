@@ -63,6 +63,25 @@ class Campus extends Model
         static::saving(function ($campus) {
             // Basic verification logic if needed
         });
+
+        static::deleting(function ($campus) {
+            if ($campus->isForceDeleting()) {
+                $campus->departments()->withTrashed()->get()->each(function ($department) {
+                    $department->forceDelete();
+                });
+            } else {
+                $campus->departments()->get()->each(function ($department) {
+                    $department->delete();
+                });
+            }
+            $campus->organisationCourses()->delete();
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')
+                    ->where('campus_id', $campus->id)
+                    ->delete();
+            }
+        });
     }
 
     public function scopeOrdered($query)

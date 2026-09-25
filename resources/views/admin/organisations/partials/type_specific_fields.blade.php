@@ -1415,3 +1415,6 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{-- E-Learning Platform Fields --}}
+                            @include('admin.organisations.partials.elearning_fields')

@@ -341,6 +341,64 @@ class Organisation extends Model
                 $organisation->counselling_body_id = (string) \Illuminate\Support\Str::uuid();
             }
         });
+
+        static::deleting(function ($organisation) {
+            // 1. Delete all campuses (withTrashed so soft-deleted ones are fully purged, which also cascades to their departments & courses)
+            $organisation->campuses()->withTrashed()->get()->each(function ($campus) {
+                $campus->forceDelete();
+            });
+
+            // 2. Delete any departments directly under this organisation that didn't have a campus or were missed
+            $organisation->departments()->withTrashed()->get()->each(function ($department) {
+                $department->forceDelete();
+            });
+
+            // 3. Delete any remaining organisation courses directly under this organisation
+            $organisation->organisationCourses()->delete();
+
+            // 4. Delete any organisation school courses
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')
+                    ->where('organisation_id', $organisation->id)
+                    ->delete();
+            }
+
+            // 5. Clean up auxiliary tables
+            if (method_exists($organisation, 'awards')) {
+                $organisation->awards()->delete();
+            }
+            if (method_exists($organisation, 'sports')) {
+                $organisation->sports()->delete();
+            }
+            if (method_exists($organisation, 'academicResults')) {
+                $organisation->academicResults()->delete();
+            }
+            if (method_exists($organisation, 'feeStructures')) {
+                $organisation->feeStructures()->delete();
+            }
+            if (method_exists($organisation, 'admissionRoutes')) {
+                $organisation->admissionRoutes()->delete();
+            }
+            if (method_exists($organisation, 'accreditations')) {
+                $organisation->accreditations()->detach();
+            }
+            // E-Learning Clean up
+            if (method_exists($organisation, 'elearning') && $organisation->elearning) {
+                $organisation->elearning()->delete();
+            }
+            if (method_exists($organisation, 'partners')) {
+                $organisation->partners()->delete();
+            }
+            if (method_exists($organisation, 'instructors')) {
+                $organisation->instructors()->delete();
+            }
+            if (method_exists($organisation, 'leaders')) {
+                $organisation->leaders()->delete();
+            }
+            if (method_exists($organisation, 'elearningDomains')) {
+                $organisation->elearningDomains()->delete();
+            }
+        });
     }
 
     public function scopeOrdered($query)
@@ -411,5 +469,30 @@ class Organisation extends Model
     public function campuses()
     {
         return $this->hasMany(Campus::class)->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
+    }
+
+    public function elearning()
+    {
+        return $this->hasOne(OrganisationElearning::class);
+    }
+
+    public function partners()
+    {
+        return $this->hasMany(OrganisationPartner::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function instructors()
+    {
+        return $this->hasMany(OrganisationInstructor::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function leaders()
+    {
+        return $this->hasMany(OrganisationLeader::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function elearningDomains()
+    {
+        return $this->hasMany(OrganisationDomain::class)->orderBy('sort_order', 'asc');
     }
 }
