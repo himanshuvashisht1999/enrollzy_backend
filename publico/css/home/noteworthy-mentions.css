@@ -1,0 +1,60 @@
+.noteworthy-mentions {
+  /* -----------------------------
+     Cards Wrapper
+  ------------------------------*/
+}
+.noteworthy-mentions .info-card {
+  background: var(--gradient1);
+  border-radius: 14px;
+  padding: 1rem;
+  height: 100%;
+  transition: all 0.3s ease;
+  animation: fadeUp 0.6s ease both;
+}
+.noteworthy-mentions .info-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+.noteworthy-mentions .info-card .card-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.noteworthy-mentions .info-card .card-sub span {
+  font-size: 0.8rem;
+  color: var(--themeninthclr);
+}
+.noteworthy-mentions .info-card .card-sub .extra {
+  color: var(--themefourthclr);
+}
+.noteworthy-mentions .info-card img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  -o-object-fit: cover;
+     object-fit: cover;
+}
+.noteworthy-mentions .anim-card {
+  background-color: var(--plainclr);
+  padding: 0.7rem;
+  border-radius: 6px;
+  /* smooth animation */
+  transition: box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+}
+.noteworthy-mentions .anim-card:hover {
+  box-shadow: var(--shadow1);
+  transform: translateY(-3px);
+}
+
+/* -----------------------------
+   Animation
+------------------------------*/
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}/*# sourceMappingURL=noteworthy-mentions.css.map */

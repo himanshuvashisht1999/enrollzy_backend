@@ -1,0 +1,205 @@
+.register-section {
+  background: var(--gradient1);
+  overflow: hidden;
+  /* Illustration */
+  /* Floating animation */
+  /* Register Card */
+  /* Inputs */
+  /* Mobile number */
+  /* Checkbox */
+  /* Buttons */
+  /* Divider */
+  /* Footer text */
+  /* Fade animation */
+}
+
+.register-section .register-illustration {
+  max-width: 420px;
+}
+
+.register-section .register-illustration img {
+  width: 100%;
+  -o-object-fit: contain;
+  object-fit: contain;
+}
+
+.register-section .floating {
+  animation: floatY 4s ease-in-out infinite;
+}
+
+@keyframes floatY {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.register-section .register-card {
+  background: var(--plainclr);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  animation: fadeUp 0.6s ease;
+  overflow: hidden;
+}
+
+.register-section .register-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: linear-gradient(120deg, transparent, rgba(133, 9, 145, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.register-section .register-card:hover::before {
+  opacity: 1;
+}
+
+.register-section .form-control {
+  height: 48px;
+  border-radius: 50px;
+  border: 1px solid var(--borderclr);
+  padding: 8px 16px;
+  background: var(--bgclr);
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.register-section .form-control:focus {
+  border-color: var(--themeprimaryclr);
+  box-shadow: 0 0 0 3px rgba(133, 9, 145, 0.15);
+  background: var(--plainclr);
+}
+
+.register-section .form-control.muted {
+  background: var(--gray-100);
+}
+
+.register-section .mobile-group {
+  display: flex;
+  border-radius: 50px;
+  overflow: hidden;
+  border: 1px solid var(--borderclr);
+  background: var(--bgclr);
+  margin-bottom: 15px;
+  position: relative;
+  z-index: 1;
+}
+
+.register-section .mobile-group .country-code {
+  padding: 8px 16px;
+  background: var(--themeprimaryclr);
+  color: var(--plainclr);
+  font-weight: 600;
+}
+
+.register-section .mobile-group input {
+  flex: 1;
+  border: none;
+  padding: 8px 16px;
+  outline: none;
+  background: transparent;
+}
+
+.register-section .form-check {
+  font-size: 14px;
+  z-index: 1;
+  position: relative;
+}
+
+.register-section .form-check a {
+  color: var(--themeprimaryclr);
+  font-weight: 600;
+}
+
+.register-section .btn-theme-one {
+  z-index: 1;
+  position: relative;
+}
+
+.register-section .btn-gmail {
+  border-radius: 50px;
+  height: 48px;
+  background: var(--darkclr);
+  color: var(--plainclr);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-section .btn-gmail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--themeprimaryclr);
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.register-section .btn-gmail:hover {
+  transform: translateY(-3px);
+}
+
+.register-section .btn-gmail:hover::after {
+  opacity: 1;
+  z-index: -1;
+}
+
+.register-section .divider {
+  text-align: center;
+  font-size: 14px;
+  color: var(--linkclr);
+  margin: 10px 0;
+}
+
+.register-section .register-footer {
+  text-align: center;
+  font-size: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.register-section .register-footer a {
+  color: var(--themeprimaryclr);
+  font-weight: 600;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .register-card {
+    padding: 28px;
+  }
+}
+
+/* Hide header/footer for auth */
+header,
+footer {
+  display: none;
+}
+
+/*# sourceMappingURL=register.css.map */

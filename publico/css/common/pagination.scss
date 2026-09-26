@@ -1,0 +1,35 @@
+.demo-pagination {
+    margin-top: 10px;
+
+    .pagination {
+        gap: 8px;
+    }
+
+    .page-link {
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 14px;
+        color: var(--textclr);
+        border: 1px solid var(--borderclr);
+        background: var(--plainclr);
+        transition: all 0.3s ease;
+
+        &:hover {
+            background: var(--themeprimaryclr);
+            color: var(--plainclr);
+            border-color: var(--themeprimaryclr);
+        }
+    }
+
+    .page-item.active .page-link {
+        background: var(--themeprimaryclr);
+        color: var(--plainclr);
+        border-color: var(--themeprimaryclr);
+        font-weight: 600;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+}

@@ -1,0 +1,112 @@
+.college-faq-section {
+  background: var(--gradient1);
+}
+.college-faq-section .faq-heading {
+  max-width: 720px;
+  margin: auto;
+}
+.college-faq-section .faq-heading .faq-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--light-primaryclr);
+  color: var(--themeprimaryclr);
+  margin-bottom: 12px;
+}
+.college-faq-section .faq-heading h2 {
+  color: var(--headingclr);
+  font-weight: 700;
+}
+.college-faq-section .faq-heading p {
+  color: var(--mainclr);
+  margin-top: 8px;
+}
+.college-faq-section .faq-accordion {
+  max-width: 820px;
+  margin: auto;
+}
+.college-faq-section .accordion-item {
+  border: none;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--plainclr);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: all 0.35s ease;
+}
+.college-faq-section .accordion-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.college-faq-section .accordion-button {
+  background: transparent;
+  font-weight: 600;
+  padding: 1.25rem 1.5rem;
+  color: var(--headingclr);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+.college-faq-section .accordion-button::after {
+  display: none;
+}
+.college-faq-section .accordion-button .faq-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--light-primaryclr);
+  position: relative;
+  flex-shrink: 0;
+}
+.college-faq-section .accordion-button .faq-icon::before, .college-faq-section .accordion-button .faq-icon::after {
+  content: "";
+  position: absolute;
+  background: var(--themeprimaryclr);
+  transition: all 0.3s ease;
+}
+.college-faq-section .accordion-button .faq-icon::before {
+  width: 12px;
+  height: 2px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.college-faq-section .accordion-button .faq-icon::after {
+  width: 2px;
+  height: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.college-faq-section .accordion-button:not(.collapsed) {
+  background: var(--light-primaryclr);
+  color: var(--themeprimaryclr);
+}
+.college-faq-section .accordion-button:not(.collapsed) .faq-icon::after {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+.college-faq-section .accordion-button:focus {
+  box-shadow: none;
+}
+.college-faq-section .accordion-body {
+  padding: 1.2rem 1.5rem 1.4rem;
+  color: var(--bodyclr);
+  line-height: 1.7;
+  animation: faqFade 0.4s ease;
+}
+
+/* Content animation */
+@keyframes faqFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}/*# sourceMappingURL=faqs.css.map */

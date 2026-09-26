@@ -1,0 +1,42 @@
+.browse-section {
+  
+    .section-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 18px;
+    }
+
+    .browse-card {
+        display: flex;
+        align-items: center;
+        height: 80px;
+        padding: 20px;
+        border-radius: 10px;
+        background: #f2f7ff;
+        color: var(--textclr);
+        font-weight: 600;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+
+        /* subtle curve bg */
+        &::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            bottom: -40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 90, 255, 0.08);
+            border-radius: 50%;
+        }
+
+        &:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            color: var(--themeprimaryclr);
+        }
+    }
+}

@@ -1,0 +1,188 @@
+.community-posts {
+  padding: 60px 0;
+}
+.community-posts .post-card {
+  background: var(--plainclr);
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 30px;
+}
+.community-posts .post-header {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.community-posts .post-header .avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}
+.community-posts .post-header h6 {
+  margin: 0;
+  font-weight: 600;
+}
+.community-posts .post-header span {
+  font-size: 12px;
+  color: var(--linkclr);
+}
+.community-posts .post-text {
+  margin: 15px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--themeprimaryclr);
+}
+.community-posts .review {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--themeprimaryclr);
+}
+.community-posts .post-img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.community-posts .post-actions {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--borderclr);
+  padding-top: 10px;
+}
+.community-posts .post-actions button {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+.community-posts .comments {
+  margin-top: 15px;
+}
+.community-posts .comments .comment {
+  background: var(--bgclr);
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.community-posts .comments .comment .reply {
+  margin-left: 20px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.community-posts .comment-item {
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  position: relative;
+}
+.community-posts .comment-item .replies {
+  margin-top: 8px;
+}
+.community-posts:nth-child(1) .comment-item {
+  padding: 10px 14px;
+}
+.community-posts .reply-btn {
+  margin-left: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--themeprimaryclr);
+}
+.community-posts .community-sidebar {
+  position: sticky;
+  top: 10%;
+  /* Contributors */
+  /* Applications */
+  /* Filters */
+}
+.community-posts .community-sidebar .sidebar-card {
+  background: var(--plainclr);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.community-posts .community-sidebar .sidebar-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.community-posts .community-sidebar .contributors-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.community-posts .community-sidebar .contributors-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borderclr);
+}
+.community-posts .community-sidebar .contributors-list li:last-child {
+  border-bottom: none;
+}
+.community-posts .community-sidebar .contributors-list li img,
+.community-posts .community-sidebar .contributors-list li .avatar-text {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bgclr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.community-posts .community-sidebar .contributors-list li span {
+  display: block;
+  font-size: 12px;
+  color: var(--linkclr);
+}
+.community-posts .community-sidebar .application-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.community-posts .community-sidebar .application-item img {
+  width: 40px;
+}
+.community-posts .community-sidebar .application-item .info {
+  flex: 1;
+}
+.community-posts .community-sidebar .application-item .info p {
+  font-size: 12px;
+  margin: 0;
+  color: var(--linkclr);
+}
+.community-posts .community-sidebar .application-item .btn-apply {
+  background: var(--themeprimaryclr);
+  color: #fff;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+.community-posts .community-sidebar .filter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.community-posts .community-sidebar .filter-head a {
+  font-size: 13px;
+  color: var(--themeprimaryclr);
+}
+.community-posts .community-sidebar .filter-tags {
+  margin-top: 12px;
+}
+.community-posts .community-sidebar .filter-tags span {
+  display: inline-block;
+  background: var(--bgclr);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.community-posts .community-sidebar .filter-tags span:hover {
+  background: var(--themeprimaryclr);
+  color: #fff;
+}/*# sourceMappingURL=post.css.map */

@@ -46,6 +46,47 @@ class AiOrganisationImportController extends Controller
     }
 
     /**
+     * Dedicated view for AI Targeted Incremental Add (Campus, Department, Course)
+     */
+    public function targetedAdd(Request $request)
+    {
+        // Only University, College, School organisations as requested
+        $allowedTypeIds = \App\Models\OrganisationType::whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(title)'), ['university', 'college', 'school'])->pluck('id')->toArray();
+        if (empty($allowedTypeIds)) {
+            $allowedTypeIds = [1, 2, 4];
+        }
+
+        $organisations = \App\Models\Organisation::whereIn('organisation_type_id', $allowedTypeIds)
+            ->select('id', 'name', 'organisation_type_id', 'short_name', 'official_website')
+            ->orderBy('name')
+            ->get();
+
+        $programLevels = \App\Models\ProgramLevel::where('status', true)->orderBy('title')->get();
+        $streams = \App\Models\StreamOffered::where('status', true)->orderBy('title')->get();
+        $disciplines = \App\Models\Discipline::where('status', true)->orderBy('title')->get();
+        $courses = \App\Models\Course::select('id', 'name', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration')->orderBy('name')->get();
+        $organisationTypes = \App\Models\OrganisationType::whereIn('id', $allowedTypeIds)->get();
+
+        $preSelectedOrgId = $request->query('organisation_id');
+        $preSelectedCampusId = $request->query('campus_id');
+        $preSelectedDeptId = $request->query('department_id');
+        $preSelectedMode = $request->query('mode', 'campus');
+
+        return view('admin.organisations.ai_targeted_add', compact(
+            'organisations',
+            'organisationTypes',
+            'programLevels',
+            'streams',
+            'disciplines',
+            'courses',
+            'preSelectedOrgId',
+            'preSelectedCampusId',
+            'preSelectedDeptId',
+            'preSelectedMode'
+        ));
+    }
+
+    /**
      * AJAX endpoint to get cascading options for Campuses and Departments
      */
     public function cascadingOptions(Request $request)
@@ -142,6 +183,16 @@ class AiOrganisationImportController extends Controller
                 }
             }
 
+            $targetNames = [];
+            if ($request->has('target_names') && is_array($request->input('target_names'))) {
+                foreach ($request->input('target_names') as $tName) {
+                    $cleanT = trim((string)$tName);
+                    if (!empty($cleanT)) {
+                        $targetNames[] = $cleanT;
+                    }
+                }
+            }
+
             $searchGoogle = $request->has('search_google') ? filter_var($request->input('search_google'), FILTER_VALIDATE_BOOLEAN) : true;
 
             $prompt = $this->scraper->buildExtractionPrompt(
@@ -154,7 +205,8 @@ class AiOrganisationImportController extends Controller
                 $mode,
                 $targetCampus,
                 $targetDepartment,
-                $searchGoogle
+                $searchGoogle,
+                $targetNames
             );
 
             return response()->json([
@@ -242,6 +294,16 @@ class AiOrganisationImportController extends Controller
             $customPrompt = $request->input('custom_prompt');
             $searchGoogle = $request->has('search_google') ? filter_var($request->input('search_google'), FILTER_VALIDATE_BOOLEAN) : true;
 
+            $targetNames = [];
+            if ($request->has('target_names') && is_array($request->input('target_names'))) {
+                foreach ($request->input('target_names') as $tName) {
+                    $cleanT = trim((string)$tName);
+                    if (!empty($cleanT)) {
+                        $targetNames[] = $cleanT;
+                    }
+                }
+            }
+
             $data = $this->scraper->extractFromUrl(
                 $request->input('url'),
                 $orgTypeTitle,
@@ -252,7 +314,8 @@ class AiOrganisationImportController extends Controller
                 $mode,
                 $targetCampus,
                 $targetDepartment,
-                $searchGoogle
+                $searchGoogle,
+                $targetNames
             );
 
             $data['mode'] = $mode;

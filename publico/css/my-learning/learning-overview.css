@@ -1,0 +1,50 @@
+.learning-overview {
+  padding: 70px 0;
+}
+.learning-overview .section-subtitle {
+  max-width: 650px;
+  margin: 12px auto 0;
+  font-size: 15px;
+  color: var(--textclr);
+}
+.learning-overview .overview-card {
+  background: var(--plainclr);
+  border-radius: 20px;
+  padding: 24px;
+  height: 100%;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.35s ease;
+}
+.learning-overview .overview-card:hover {
+  transform: translateY(-8px);
+}
+.learning-overview .overview-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, rgba(133, 9, 145, 0.15), rgba(0, 123, 255, 0.15));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.learning-overview .overview-content h4 {
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 2px;
+  color: var(--themeprimaryclr);
+}
+.learning-overview .overview-content .title {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+.learning-overview .overview-content .desc {
+  font-size: 13px;
+  color: var(--linkclr);
+  margin: 0;
+}/*# sourceMappingURL=learning-overview.css.map */

@@ -1,0 +1,24 @@
+.trending-section {
+  /* -----------------------------
+     Trending Pills
+  ------------------------------*/
+}
+.trending-section h2 {
+  font-weight: 600;
+  color: var(--darkclr);
+  margin-bottom: 1.5rem;
+}
+.trending-section .skill-pill {
+  background: var(--themeseventhclr);
+  border-radius: 999px;
+  padding: 0.18rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid #cdcdcd;
+  transition: all 0.25s ease;
+}
+.trending-section .skill-pill:hover {
+  background: var(--themeprimaryclr);
+  color: var(--plainclr);
+  transform: translateY(-2px);
+}/*# sourceMappingURL=trending-skills.css.map */

@@ -1,0 +1,76 @@
+.my-courses {
+    // padding: 50px 0;
+    background: var(--plainclr);
+
+    .section-subtitle {
+        max-width: 650px;
+        margin: 12px auto 0;
+        font-size: 15px;
+        color: var(--textclr);
+    }
+
+    .course-card {
+        background: var(--bgclr);
+        border-radius: 20px;
+        padding: 24px;
+        height: 100%;
+        box-shadow: var(--shadow-lg);
+        transition: all 0.35s ease;
+        position: relative;
+
+        &:hover {
+            transform: translateY(-8px);
+        }
+    }
+
+    .course-header {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+
+    .course-status {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+
+        &.in-progress {
+            background: rgba(255, 193, 7, 0.15);
+            color: #c69500;
+        }
+
+        &.almost-done {
+            background: rgba(40, 167, 69, 0.15);
+            color: #1e7e34;
+        }
+
+        &.completed {
+            background: rgba(13, 110, 253, 0.15);
+            color: #0d6efd;
+        }
+    }
+
+    h5 {
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .semester {
+        font-size: 13px;
+        color: var(--linkclr);
+        margin-bottom: 12px;
+    }
+
+    .progress {
+        height: 8px;
+        background: var(--plainclr);
+        border-radius: 10px;
+        overflow: hidden;
+
+        .progress-bar {
+            background: var(--themeprimaryclr);
+            transition: width 0.4s ease;
+        }
+    }
+}

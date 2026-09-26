@@ -14,6 +14,9 @@
                             <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
                                 <i class="fas fa-magic me-1"></i> Auto-Create via AI
                             </a>
+                            <a href="{{ route('admin.ai-organisations.targeted-add') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); border: none;" title="Targeted incremental addition of Campuses, Departments, or Courses">
+                                <i class="fas fa-layer-group me-1"></i> Add via AI
+                            </a>
                             <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
                         </div>
                     </div>

@@ -1,0 +1,54 @@
+.career-section {
+  /* Highlight Salary Card */
+}
+.career-section .section-subtitle {
+  max-width: 720px;
+  margin: 14px auto 0;
+  font-size: 15px;
+  color: var(--textclr);
+}
+.career-section .career-card {
+  background: var(--plainclr);
+  border-radius: 20px;
+  padding: 26px 22px;
+  height: 100%;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.4s ease;
+  text-align: center;
+  position: relative;
+}
+.career-section .career-card:hover {
+  transform: translateY(-10px);
+  background: linear-gradient(135deg, rgba(133, 9, 145, 0.12), rgba(0, 123, 255, 0.12));
+}
+.career-section .career-card .icon {
+  font-size: 34px;
+  margin-bottom: 14px;
+}
+.career-section .career-card h5 {
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.career-section .career-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+}
+.career-section .career-card ul li {
+  margin-bottom: 8px;
+  color: var(--textclr);
+}
+.career-section .career-card.highlight {
+  background: linear-gradient(135deg, rgba(133, 9, 145, 0.12), rgba(0, 123, 255, 0.12));
+}
+.career-section .career-card.highlight .salary {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--themeprimaryclr);
+  margin: 18px 0 6px;
+}
+.career-section .career-card.highlight .salary-note {
+  font-size: 13px;
+  color: var(--linkclr);
+}/*# sourceMappingURL=career-options.css.map */

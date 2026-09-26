@@ -1,0 +1,506 @@
+[16-Apr-2026 12:50:01 UTC] PHP Fatal error:  Trait "Spatie\Permission\Traits\HasRoles" not found in /home/enrollzy/crm.enrollzy.com_public_html/app/Models/Admin.php on line 11
+[16-Apr-2026 12:51:20 UTC] PHP Fatal error:  Trait "Spatie\Permission\Traits\HasRoles" not found in /home/enrollzy/crm.enrollzy.com_public_html/app/Models/Admin.php on line 11
+[16-Apr-2026 12:51:41 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:41 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:41 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:42 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:42 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:42 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:45 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:51:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:26 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:26 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:26 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:27 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:27 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 12:54:27 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 13:03:29 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 13:03:29 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 13:03:29 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../yajra/laravel-datatables-oracle/src/helper.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 13:09:15 UTC] PHP Warning:  require_once(/home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.4/apache.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/apache.php on line 13
+[16-Apr-2026 13:09:15 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.4/apache.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/apache.php:13
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#4 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/apache.php on line 13
+[16-Apr-2026 13:23:51 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:23:51 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:23:51 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:23:51 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 13:23:51 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 13:34:20 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 13:34:20 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 13:34:20 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:13:39 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:39 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:39 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:39 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:13:39 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:13:41 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:41 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:41 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:13:41 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:13:41 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:24:13 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:24:13 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:24:13 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:24:13 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:24:13 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:25:08 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function dd() in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php on line 2
+[16-Apr-2026 14:25:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function dd() in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php on line 2
+[16-Apr-2026 14:25:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function dd() in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php on line 2
+[16-Apr-2026 14:25:23 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function dd() in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/public/index.php on line 2
+[16-Apr-2026 14:28:08 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:08 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:08 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:08 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:28:08 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:28:10 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:10 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:10 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:10 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:28:10 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:28:11 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:11 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:11 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:28:11 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:28:11 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:29:01 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:01 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:01 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:01 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:29:01 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:29:02 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:02 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:02 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:02 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:29:02 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:29:17 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:17 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:17 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:29:17 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:29:17 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:31:28 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:28 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:28 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:28 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:31:28 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:31:29 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:29 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:29 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:31:29 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:31:29 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:32:39 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:39 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:39 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:39 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:32:39 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:32:40 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:40 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:40 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:40 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:32:40 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:32:43 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:43 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:43 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:32:43 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:32:43 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:36:05 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:36:05 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:36:05 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:36:05 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:36:05 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:38:49 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:38:49 UTC] PHP Warning:  include(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:38:49 UTC] PHP Warning:  include(): Failed opening '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../sabberworm/php-css-parser/src/CSSElement.php' for inclusion (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php on line 576
+[16-Apr-2026 14:38:49 UTC] PHP Warning:  Class "Sabberworm\CSS\Property\Declaration" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php on line 17
+[16-Apr-2026 14:38:49 UTC] PHP Fatal error:  Uncaught Error: Interface "Sabberworm\CSS\CSSElement" not found in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php:27
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(576): include()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/ClassLoader.php(427): {closure:Composer\Autoload\ClassLoader::initializeIncludeClosure():575}()
+#2 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#3 /home/enrollzy/crm.enrollzy.com_public_html/vendor/thecodingmachine/safe/generated/8.1/classobj.php(17): class_alias()
+#4 /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Rule/Rule.php(16): Safe\class_alias()
+#5 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(41): require('...')
+#6 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#7 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#8 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#9 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/sabberworm/php-css-parser/src/Property/Declaration.php on line 27
+[16-Apr-2026 14:40:49 UTC] PHP Warning:  require_once(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php on line 20
+[16-Apr-2026 14:40:49 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php:20
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require()
+#1 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php on line 20
+[16-Apr-2026 14:40:52 UTC] PHP Warning:  require_once(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php on line 20
+[16-Apr-2026 14:40:52 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php:20
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require()
+#1 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php on line 20
+[16-Apr-2026 14:49:32 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../symfony/string/Resources/functions.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 14:49:32 UTC] PHP Warning:  require(/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../symfony/string/Resources/functions.php): Failed to open stream: No such file or directory in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41
+[16-Apr-2026 14:49:32 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/../symfony/string/Resources/functions.php' (include_path='.:/opt/remi/php84/root/usr/share/pear:/opt/remi/php84/root/usr/share/php:/usr/share/pear:/usr/share/php') in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader():37}()
+#1 /home/enrollzy/crm.enrollzy.com_public_html/vendor/autoload.php(22): ComposerAutoloaderInit70e7f855c3bee7111ad6bcb1d4b88e6a::getLoader()
+#2 /home/enrollzy/crm.enrollzy.com_public_html/public/index.php(14): require('...')
+#3 {main}
+  thrown in /home/enrollzy/crm.enrollzy.com_public_html/vendor/composer/autoload_real.php on line 41

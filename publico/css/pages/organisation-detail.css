@@ -1,0 +1,150 @@
+.org-hero {
+    height: 400px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 50px;
+}
+
+.org-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
+}
+
+.org-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.org-logo-wrapper {
+    background: white;
+    padding: 15px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.org-detail-nav {
+    background: white;
+    border-bottom: 1px solid #eee;
+    padding: 0;
+    margin-bottom: 30px;
+    position: sticky;
+    top: 70px;
+    /* Adjust based on header height */
+    z-index: 100;
+}
+
+.nav-link-custom {
+    padding: 15px 25px;
+    font-weight: 600;
+    color: var(--bodyclr);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.nav-link-custom:hover,
+.nav-link-custom.active {
+    color: var(--themeprimaryclr);
+    border-bottom-color: var(--themeprimaryclr);
+}
+
+.sidebar-wrapper {
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.sidebar-title {
+    background: var(--themeprimaryclr);
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+    background: #e9ecef;
+    color: var(--themeprimaryclr);
+    font-weight: 600;
+}
+
+.detail-card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.campus-grid-card {
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.campus-grid-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .org-detail-nav {
+        top: 60px;
+    }
+
+    .nav-link-custom {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .org-hero {
+        height: auto;
+        padding-top: 100px;
+    }
+
+    .org-hero-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .org-logo-lg {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+/* Fix for nav-pills active state text color */
+.nav-pills .nav-link.active,
+.nav-pills .show>.nav-link {
+    color: #fff !important;
+    background-color: var(--themeprimaryclr, #0d6efd);
+}
+
+.nav-pills .nav-link {
+    color: var(--bodyclr);
+}

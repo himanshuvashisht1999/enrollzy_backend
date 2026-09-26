@@ -29,7 +29,8 @@ class GeminiOrganisationScraperService
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
         ?\App\Models\Department $targetDepartment = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): array
     {
         if (empty($this->apiKey)) {
@@ -40,7 +41,7 @@ class GeminiOrganisationScraperService
             $prompt = $this->sanitizeUtf8($customPrompt);
         } else {
             // 1. Fetch initial content from the main URL (with smart automatic linked sub-page discovery)
-            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment);
+            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment, $targetNames);
 
             // 2. Fetch and combine content from any additional reference URLs
             $combinedContent = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
@@ -48,13 +49,13 @@ class GeminiOrganisationScraperService
                 $combinedContent .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
                 foreach ($referenceUrls as $idx => $refUrl) {
                     $refNum = $idx + 1;
-                    $refContent = $this->fetchUrlContent($refUrl, $mode, false);
+                    $refContent = $this->fetchUrlContent($refUrl, $mode, false, null, null, $targetNames);
                     $combinedContent .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . mb_substr($refContent, 0, 10000, 'UTF-8');
                 }
             }
 
             // 3. Build structured extraction prompt tailored to the selected Entity Mode
-            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle);
+            $prompt = $this->buildPrompt($url, $combinedContent, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle, $targetNames);
         }
 
         // Candidate fallback models in order of speed and stability
@@ -83,21 +84,22 @@ class GeminiOrganisationScraperService
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
         ?\App\Models\Department $targetDepartment = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string {
         if (empty($content) && !empty($url) && filter_var($url, FILTER_VALIDATE_URL) && !str_contains($url, 'example.edu')) {
-            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment);
+            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment, $targetNames);
             $content = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
             if (!empty($referenceUrls)) {
                 $content .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
                 foreach ($referenceUrls as $idx => $refUrl) {
                     $refNum = $idx + 1;
-                    $refContent = $this->fetchUrlContent($refUrl, $mode, false);
+                    $refContent = $this->fetchUrlContent($refUrl, $mode, false, null, null, $targetNames);
                     $content .= "\n\n--- REFERENCE SOURCE #{$refNum}: {$refUrl} ---\n" . mb_substr($refContent, 0, 10000, 'UTF-8');
                 }
             }
         }
-        return $this->sanitizeUtf8($this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle));
+        return $this->sanitizeUtf8($this->buildPrompt($url, $content, $orgTypeTitle, $orgTypeId, $referenceUrls, $targetOrg, $mode, $targetCampus, $targetDepartment, $searchGoogle, $targetNames));
     }
 
     /**
@@ -589,7 +591,8 @@ class GeminiOrganisationScraperService
         string $mode = 'organisation',
         bool $autoCrawlSubPages = true,
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        array $targetNames = []
     ): string
     {
         @set_time_limit(300);
@@ -636,7 +639,7 @@ class GeminiOrganisationScraperService
 
                 // Smart Automatic Linked Sub-page Crawler (Multi-batch parallel concurrent fetch with extended capacity)
                 if ($autoCrawlSubPages) {
-                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode, $targetCampus, $targetDepartment);
+                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode, $targetCampus, $targetDepartment, $targetNames);
                     
                     if (!empty($subPageCandidates)) {
                         // In course mode, fetch up to 35 catalog and departmental subpages; department mode up to 25
@@ -738,7 +741,8 @@ class GeminiOrganisationScraperService
         string $baseUrl,
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
-        ?\App\Models\Department $targetDepartment = null
+        ?\App\Models\Department $targetDepartment = null,
+        array $targetNames = []
     ): array
     {
         $parsedBase = parse_url($baseUrl);
@@ -799,6 +803,26 @@ class GeminiOrganisationScraperService
             $combinedStr = strtolower($rawText . ' ' . $href);
             $score = 0;
             $type = 'General Reference';
+
+            // High Priority Match for User-Specified Target Names
+            if (!empty($targetNames)) {
+                foreach ($targetNames as $tName) {
+                    $cleanTarget = strtolower(trim($tName));
+                    if (empty($cleanTarget)) continue;
+                    if (str_contains($combinedStr, $cleanTarget)) {
+                        $score += 3500;
+                        $type = "Specific Target Match: {$tName}";
+                        break;
+                    }
+                    $tokens = array_filter(explode(' ', preg_replace('/[^a-z0-9]/', ' ', $cleanTarget)), fn($t) => strlen($t) >= 4);
+                    foreach ($tokens as $tok) {
+                        if (str_contains($combinedStr, $tok)) {
+                            $score += 1500;
+                            $type = "Target Keyword Match: {$tok}";
+                        }
+                    }
+                }
+            }
 
             if ($mode === 'department') {
                 // --- PRIORITY 1 FOR DEPARTMENT MODE: Academic Directory Catalogs & Main Hubs ---
@@ -1288,19 +1312,20 @@ class GeminiOrganisationScraperService
         string $mode = 'organisation',
         ?\App\Models\Campus $targetCampus = null,
         ?\App\Models\Department $targetDepartment = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string
     {
         if ($mode === 'campus') {
-            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $searchGoogle);
+            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $searchGoogle, $targetNames);
         }
 
         if ($mode === 'department') {
-            return $this->buildDepartmentOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $searchGoogle);
+            return $this->buildDepartmentOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $searchGoogle, $targetNames);
         }
 
         if ($mode === 'course') {
-            return $this->buildCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle);
+            return $this->buildCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle, $targetNames);
         }
 
         if ($targetOrg) {
@@ -1341,7 +1366,8 @@ class GeminiOrganisationScraperService
         string $content,
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
         $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
@@ -1375,11 +1401,28 @@ STRICT_URL_INSTRUCTIONS;
 SCHOOL_CAMPUS_INSTR
         : '';
 
+        $targetCampusesMandate = "";
+        if (!empty($targetNames)) {
+            $formattedNames = implode("\n", array_map(fn($n, $i) => "   " . ($i + 1) . ". \"" . trim($n) . "\"", $targetNames, array_keys($targetNames)));
+            $targetCampusesMandate = <<<TARGETED_CAMPUSES
+=============================================================================
+CRITICAL MANDATE - SPECIFIED TARGET CAMPUSES TO EXTRACT:
+The user explicitly specified to extract ONLY the following campus branch(es):
+{$formattedNames}
+
+STRICT INSTRUCTIONS:
+- You MUST extract and return JSON objects in the "campuses" array ONLY for the campus names specified above.
+- DO NOT return any other campuses not on this list.
+- For each requested campus, extract its full address, city, state, facilities, labs, and amenities.
+=============================================================================
+TARGETED_CAMPUSES;
+        }
+
         return <<<PROMPT
 You are an expert institutional infrastructure, geography, and campus research AI agent.
-Your EXCLUSIVE MISSION is to extract exactly ONE specific physical CAMPUS / BRANCH LOCATION for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
-DO NOT extract multiple campuses or all branch centres of the institution. Focus strictly and exclusively on creating this single specific campus / branch.
-(Note: If this institution is a School, extract this specific School branch / campus location).
+Your EXCLUSIVE MISSION is to extract physical CAMPUS / BRANCH LOCATION(S) for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
+{$targetCampusesMandate}
+(Note: If this institution is a School, extract School branch / campus locations).
 
 TARGET INSTITUTION: {$orgName}
 ORGANISATION TYPE: {$orgTypeTitle}
@@ -1389,9 +1432,9 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
 {$cleanContent}
 
 === CRITICAL RESEARCH & EXTRACTION MANDATE ===
-1. SINGLE CAMPUS EXTRACTION:
-   - Extract exactly ONE campus object in the "campuses" array matching the specific campus location given in the URL.
-   - Accurately determine the campus name (e.g. "Main Campus", "South Campus", "Kolkata Campus", "City Campus", etc.), address, city, state, country, pincode, facilities, and contact details.
+1. CAMPUS EXTRACTION:
+   - Extract campus objects in the "campuses" array matching the requested campus locations.
+   - Accurately determine the campus name, address, city, state, country, pincode, facilities, and contact details.
 {$schoolInstructions}
 
 {$searchInstructions}
@@ -1462,7 +1505,8 @@ PROMPT;
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
         ?\App\Models\Campus $targetCampus = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
         $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
@@ -1480,7 +1524,21 @@ PROMPT;
 
         // Check for structured detected departments
         $detectedDeptText = "";
-        if (preg_match('/===\s*DETECTED OFFICIAL DEPARTMENTS, SCHOOLS & ACADEMIC UNITS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+        if (!empty($targetNames)) {
+            $formattedNames = implode("\n", array_map(fn($n, $i) => "   " . ($i + 1) . ". \"" . trim($n) . "\"", $targetNames, array_keys($targetNames)));
+            $detectedDeptText = <<<TARGETED_DEPTS
+=============================================================================
+CRITICAL MANDATE - SPECIFIED TARGET DEPARTMENTS TO EXTRACT:
+The user explicitly specified to extract ONLY the following department(s) / academic faculties:
+{$formattedNames}
+
+STRICT INSTRUCTIONS:
+- You MUST create a distinct JSON object in the "departments" array ONLY for the department names listed above.
+- DO NOT return or extract any other departments or schools. Return ONLY the requested items!
+- For each requested department, thoroughly research and populate its details (HOD, contact, faculty count, labs, specs, etc.).
+=============================================================================
+TARGETED_DEPTS;
+        } elseif (preg_match('/===\s*DETECTED OFFICIAL DEPARTMENTS, SCHOOLS & ACADEMIC UNITS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
             $count = (int)$m[1];
             $deptList = trim($m[2]);
             $detectedDeptText = <<<DET_DEPT
@@ -1596,7 +1654,8 @@ PROMPT;
         ?\App\Models\Organisation $targetOrg = null,
         ?\App\Models\Campus $targetCampus = null,
         ?\App\Models\Department $targetDepartment = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
         $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
@@ -1611,7 +1670,7 @@ PROMPT;
         $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
 
         if ($isSchool) {
-            return $this->buildSchoolCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle);
+            return $this->buildSchoolCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle, $targetNames);
         }
 
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
@@ -1625,7 +1684,24 @@ PROMPT;
 
         // Check for structured detected courses from crawling
         $detectedCourseText = "";
-        if (preg_match('/===\s*DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
+        if (!empty($targetNames)) {
+            $formattedNames = implode("\n", array_map(fn($n, $i) => "   " . ($i + 1) . ". \"" . trim($n) . "\"", $targetNames, array_keys($targetNames)));
+            $detectedCourseText = <<<TARGETED_COURSES
+=============================================================================
+CRITICAL MANDATE - SPECIFIED TARGET COURSES TO EXTRACT:
+The user explicitly specified to extract ONLY the following course(s) / degree program(s):
+{$formattedNames}
+
+STRICT INSTRUCTIONS:
+- You MUST create a distinct JSON object in the "courses" array ONLY for the course names listed above.
+- DO NOT return or extract any other courses not on this list. Return ONLY the requested items!
+- For each requested course, thoroughly research and extract: exact course name, duration, annual fees, total fees, admission fee, eligibility criteria, admission process, entrance exams, program level, stream, and discipline.
+- Every course object in the "courses" array MUST have:
+  * "department_name": "{$deptName}"
+  * "campus_name": "{$campusName}"
+=============================================================================
+TARGETED_COURSES;
+        } elseif (preg_match('/===\s*DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
             $totalCount = (int)$m[1];
             $rawList = trim($m[2]);
             $lines = array_values(array_filter(array_map('trim', explode("\n", $rawList))));
@@ -1810,7 +1886,8 @@ PROMPT;
         ?\App\Models\Organisation $targetOrg = null,
         ?\App\Models\Campus $targetCampus = null,
         ?\App\Models\Department $targetDepartment = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        array $targetNames = []
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target School';
         $orgTypeTitle = 'School';
@@ -1836,9 +1913,26 @@ GOOGLE_INSTRUCTIONS
    - Do NOT search Google or fabricate data. If any field is not found, leave it empty/null/false.
 STRICT_URL_INSTRUCTIONS;
 
+        $targetSchoolClassesMandate = "";
+        if (!empty($targetNames)) {
+            $formattedNames = implode("\n", array_map(fn($n, $i) => "   " . ($i + 1) . ". \"" . trim($n) . "\"", $targetNames, array_keys($targetNames)));
+            $targetSchoolClassesMandate = <<<TARGETED_SCHOOL_CLASSES
+=============================================================================
+CRITICAL MANDATE - SPECIFIED TARGET SCHOOL CLASSES / CURRICULUMS TO EXTRACT:
+The user explicitly specified to extract ONLY the following class(es) / curriculum program(s):
+{$formattedNames}
+
+STRICT INSTRUCTIONS:
+- You MUST create a distinct JSON object in the "courses" array ONLY for the school classes/curriculums listed above.
+- DO NOT return any other classes. Return ONLY the requested items!
+=============================================================================
+TARGETED_SCHOOL_CLASSES;
+        }
+
         return <<<PROMPT
 You are an expert K-12 school curriculum and admissions research AI agent.
-Your EXCLUSIVE MISSION is to perform an in-depth extraction of ALL SCHOOL ACADEMIC PROGRAMS, CLASSES, GRADES, and CURRICULUMS offered by "{$orgName}" (Campus: {$campusName}, Wing: {$deptName}).
+Your EXCLUSIVE MISSION is to perform an in-depth extraction of SCHOOL ACADEMIC PROGRAMS, CLASSES, GRADES, and CURRICULUMS offered by "{$orgName}" (Campus: {$campusName}, Wing: {$deptName}).
+{$targetSchoolClassesMandate}
 
 TARGET SCHOOL: {$orgName}
 TARGET CAMPUS: {$campusName}
@@ -1847,7 +1941,7 @@ PRIMARY URL: {$url}{$refUrlsText}
 {$cleanContent}
 
 === CRITICAL RESEARCH & EXTRACTION MANDATE ===
-1. EXHAUSTIVE SCHOOL ACADEMIC PROGRAMS COVERAGE:
+1. SCHOOL ACADEMIC PROGRAMS COVERAGE:
 - Inspect the webpage for all grades, classes, and academic streams offered:
   * Pre-Primary (Nursery, LKG, UKG / Early Years / Kindergarten)
   * Primary School (Classes 1 to 5 / PYP)
