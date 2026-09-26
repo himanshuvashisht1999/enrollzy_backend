@@ -40,7 +40,7 @@ class GeminiOrganisationScraperService
             $prompt = $this->sanitizeUtf8($customPrompt);
         } else {
             // 1. Fetch initial content from the main URL (with smart automatic linked sub-page discovery)
-            $websiteContent = $this->fetchUrlContent($url, $mode, true);
+            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment);
 
             // 2. Fetch and combine content from any additional reference URLs
             $combinedContent = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
@@ -86,7 +86,7 @@ class GeminiOrganisationScraperService
         bool $searchGoogle = true
     ): string {
         if (empty($content) && !empty($url) && filter_var($url, FILTER_VALIDATE_URL) && !str_contains($url, 'example.edu')) {
-            $websiteContent = $this->fetchUrlContent($url, $mode, true);
+            $websiteContent = $this->fetchUrlContent($url, $mode, true, $targetCampus, $targetDepartment);
             $content = "=== PRIMARY OFFICIAL WEBSITE URL: {$url} ===\n" . $websiteContent;
             if (!empty($referenceUrls)) {
                 $content .= "\n\n=== ADDITIONAL REFERENCE SOURCES PROVIDED BY ADMIN ===";
@@ -505,11 +505,14 @@ class GeminiOrganisationScraperService
             $norm = preg_replace('/\b(in|of|and|&|the|for|with|a|an|program|course|degree|honors|hons)\b/i', '', $norm);
             $norm = preg_replace('/[^a-z0-9]/', '', $norm);
 
+            $spec = strtolower(trim($cr['specialization'] ?? ''));
+            $specNorm = preg_replace('/[^a-z0-9]/', '', $spec);
+
             $level = strtolower(trim($cr['program_level'] ?? ''));
             $campus = strtolower(trim($cr['campus_name'] ?? ''));
             $dept = strtolower(trim($cr['department_name'] ?? ''));
 
-            $key = ($norm !== '' ? $norm : 'course') . '_' . $level . '_' . $campus . '_' . $dept;
+            $key = ($norm !== '' ? $norm : 'course') . '__' . ($specNorm !== '' ? $specNorm : 'none') . '__' . $level . '__' . $campus . '__' . $dept;
 
             if (!isset($dedupedCourses[$key])) {
                 $dedupedCourses[$key] = $cr;
@@ -537,7 +540,7 @@ class GeminiOrganisationScraperService
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language' => 'en-US,en;q=0.9',
-            'Accept-Encoding' => 'gzip, deflate, br',
+            'Accept-Encoding' => 'gzip, deflate',
             'Cache-Control' => 'no-cache',
             'Pragma' => 'no-cache',
             'Sec-Ch-Ua' => '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
@@ -581,7 +584,13 @@ class GeminiOrganisationScraperService
     /**
      * Fetch and clean text, meta images, structured academic navigation, and deep-crawl relevant linked sub-pages without restrictive limits
      */
-    protected function fetchUrlContent(string $url, string $mode = 'organisation', bool $autoCrawlSubPages = true): string
+    protected function fetchUrlContent(
+        string $url,
+        string $mode = 'organisation',
+        bool $autoCrawlSubPages = true,
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
+    ): string
     {
         @set_time_limit(300);
         @ini_set('max_execution_time', '300');
@@ -627,11 +636,11 @@ class GeminiOrganisationScraperService
 
                 // Smart Automatic Linked Sub-page Crawler (Multi-batch parallel concurrent fetch with extended capacity)
                 if ($autoCrawlSubPages) {
-                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode);
+                    $subPageCandidates = $this->discoverRelevantInternalPages($html, $url, $mode, $targetCampus, $targetDepartment);
                     
                     if (!empty($subPageCandidates)) {
-                        // In department mode, fetch up to 25 academic/school subpages in parallel batches
-                        $maxSubpages = ($mode === 'department') ? 25 : (($mode === 'course') ? 15 : 8);
+                        // In course mode, fetch up to 35 catalog and departmental subpages; department mode up to 25
+                        $maxSubpages = ($mode === 'course') ? 35 : (($mode === 'department') ? 25 : 8);
                         $subPageCandidates = array_slice($subPageCandidates, 0, $maxSubpages);
 
                         $headers = $this->getBrowserHeaders();
@@ -724,7 +733,13 @@ class GeminiOrganisationScraperService
     /**
      * Discover high-value linked internal sub-pages (Schools, Faculties, Institutes, Departments, Academics, Programs)
      */
-    protected function discoverRelevantInternalPages(string $html, string $baseUrl, string $mode = 'organisation'): array
+    protected function discoverRelevantInternalPages(
+        string $html,
+        string $baseUrl,
+        string $mode = 'organisation',
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null
+    ): array
     {
         $parsedBase = parse_url($baseUrl);
         $baseHost = strtolower($parsedBase['host'] ?? '');
@@ -737,6 +752,22 @@ class GeminiOrganisationScraperService
 
         // Specific academic keyword detector
         $academicDisciplinePattern = '/(engineering|technology|computing|computer|sciences?|management|business|commerce|economics|humanities|arts|law|legal|pharmacy|pharmaceutical|nursing|physiotherapy|medical|dental|health|architecture|design|agriculture|biotechnology|education|hospitality|tourism|journalism|media|languages?)/i';
+
+        // Extract Department Keywords if targetDepartment is specified
+        $deptKeywords = [];
+        $deptSlug = '';
+        if ($targetDepartment && !empty($targetDepartment->department_name)) {
+            $rawDept = strtolower($targetDepartment->department_name);
+            $cleanedDept = preg_replace('/\b(department|school|faculty|institute|college|centre|center|division|of|and|&|the|in|studies|program|programs)\b/i', ' ', $rawDept);
+            $tokens = array_filter(array_map('trim', explode(' ', $cleanedDept)), fn($w) => strlen($w) >= 3);
+            $deptKeywords = array_values($tokens);
+            if (str_contains($rawDept, 'agri')) {
+                $deptKeywords[] = 'agri';
+                $deptKeywords[] = 'horticult';
+                $deptKeywords[] = 'agronom';
+            }
+            $deptSlug = \Illuminate\Support\Str::slug($cleanedDept);
+        }
 
         foreach ($matches as $m) {
             $href = trim($m[1]);
@@ -790,12 +821,36 @@ class GeminiOrganisationScraperService
                     $type = 'Faculty & Staff Directory';
                 }
             } elseif ($mode === 'course') {
-                if (preg_match('/(\/courses|\/programs|\/programmes|\/admission|\/degree|\/curriculum|\/syllabus|\/program-offered)/i', $combinedStr)) {
-                    $score += 800;
-                    $type = 'Degree & Program Offerings';
+                $isTargetDeptMatch = false;
+                if (!empty($deptKeywords)) {
+                    foreach ($deptKeywords as $dkw) {
+                        if (str_contains($combinedStr, $dkw)) {
+                            $isTargetDeptMatch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($isTargetDeptMatch) {
+                    $score += 2500;
+                    $type = 'Target Department Course Hub';
+                }
+
+                if (preg_match('/(\/courses?|\/programs?|\/programmes?|\/degrees?|\/curriculum|\/syllabus|\/program-offered|\/programs-offered|\/courses-offered|\/all-courses|\/all-programmes|\/academic-programs|\/list-of-programme)/i', $combinedStr)) {
+                    $score += 1500;
+                    if ($type === 'General Reference') {
+                        $type = 'Degree & Program Catalog';
+                    }
                 } elseif (preg_match('/(fee[s]?[\s_\-\/\.]|fee-structure|tuition|cost)/i', $combinedStr)) {
-                    $score += 750;
-                    $type = 'Fee Structure & Tuition';
+                    $score += 900;
+                    if ($type === 'General Reference') {
+                        $type = 'Fee Structure & Tuition';
+                    }
+                } elseif (preg_match('/(\/academics|\/admission|\/admissions)/i', $combinedStr)) {
+                    $score += 600;
+                    if ($type === 'General Reference') {
+                        $type = 'Academics & Admissions';
+                    }
                 }
             } else {
                 if (preg_match('/(\/about|\/overview|\/leadership|\/academics|\/admissions|\/campuses|\/facilities)/i', $combinedStr)) {
@@ -816,24 +871,37 @@ class GeminiOrganisationScraperService
             }
         }
 
-        // Automatic Root & Host Probing for Department Mode if list has few entries
-        if ($mode === 'department' || count($candidates) < 3) {
+        // Automatic Root & Host Probing for Department/Course Mode or if candidate list is small
+        if ($mode === 'department' || $mode === 'course' || count($candidates) < 5) {
             $parsed = parse_url($baseUrl);
             $host = strtolower($parsed['host'] ?? '');
             $parts = explode('.', $host);
             $rootDomain = (count($parts) >= 2) ? implode('.', array_slice($parts, -2)) : $host;
 
             $probePaths = [
+                "https://{$host}/list-of-programmes.html",
+                "https://{$host}/list-of-programmes",
+                "https://{$host}/programmes",
+                "https://{$host}/programs",
+                "https://{$host}/courses",
+                "https://{$host}/all-courses",
+                "https://{$host}/all-programmes",
+                "https://{$host}/programs-offered",
+                "https://{$host}/courses-offered",
+                "https://{$host}/academics",
+                "https://{$host}/fee-structure",
                 "https://{$host}/departments",
                 "https://{$host}/schools",
                 "https://{$host}/faculties",
                 "https://{$host}/institutes",
-                "https://{$host}/academics",
                 "https://{$host}/colleges",
                 "https://{$host}/academic-departments",
                 "https://{$host}/department-list",
                 "https://{$host}/schools-departments",
                 "https://{$host}/program-offered",
+                "https://www.{$rootDomain}/list-of-programmes.html",
+                "https://www.{$rootDomain}/programmes",
+                "https://www.{$rootDomain}/courses",
                 "https://www.{$rootDomain}/departments",
                 "https://www.{$rootDomain}/schools",
                 "https://www.{$rootDomain}/faculties",
@@ -842,6 +910,17 @@ class GeminiOrganisationScraperService
                 "https://www.{$rootDomain}/course-list.aspx",
                 "https://www.{$rootDomain}/program-offered",
             ];
+
+            if ($targetDepartment && !empty($deptSlug)) {
+                $probePaths[] = "https://{$host}/{$deptSlug}";
+                $probePaths[] = "https://{$host}/{$deptSlug}/programmes";
+                $probePaths[] = "https://{$host}/{$deptSlug}/courses";
+                $probePaths[] = "https://{$host}/faculty-of-{$deptSlug}";
+                $probePaths[] = "https://{$host}/school-of-{$deptSlug}";
+                $probePaths[] = "https://{$host}/department-of-{$deptSlug}";
+                $probePaths[] = "https://{$host}/departments/{$deptSlug}";
+                $probePaths[] = "https://{$host}/faculties/{$deptSlug}";
+            }
 
             $probeResponses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($probePaths) {
                 $reqs = [];
@@ -856,11 +935,12 @@ class GeminiOrganisationScraperService
                 if ($res instanceof \Illuminate\Http\Client\Response && $res->successful() && strlen($res->body()) > 2000) {
                     $cleanP = rtrim($p, '/');
                     if (!isset($candidates[$cleanP])) {
+                        $isDeptProbe = ($targetDepartment && !empty($deptSlug) && str_contains($cleanP, $deptSlug));
                         $candidates[$cleanP] = [
                             'url' => $cleanP,
-                            'title' => 'Official Academic Catalog Directory',
-                            'type' => 'Academic Directory Catalog',
-                            'score' => 900 - ($idx * 5),
+                            'title' => $isDeptProbe ? "Target Department Hub ({$targetDepartment->department_name})" : 'Official Academic Catalog Directory',
+                            'type' => $isDeptProbe ? 'Target Department Course Hub' : 'Academic Directory Catalog',
+                            'score' => $isDeptProbe ? 2600 : (1600 - ($idx * 5)),
                         ];
                     }
                 }
@@ -870,6 +950,7 @@ class GeminiOrganisationScraperService
         uasort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
         return array_values($candidates);
     }
+
 
     /**
      * Helper to convert URL slug to human-readable department or academic title
@@ -1095,13 +1176,30 @@ class GeminiOrganisationScraperService
             }
 
             // Academic Unit / Department / School / Faculty match
+            $isDegreeText = (bool)preg_match('/^(b\.?\s*tech|m\.?\s*tech|b\.?\s*sc|m\.?\s*sc|bca|mca|bba|mba|b\.?\s*com|m\.?\s*com|b\.?\s*a\b|m\.?\s*a\b|b\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|b\.?\s*des|m\.?\s*des|ph\.?\s*d|diploma|post\s*graduate\s*diploma|pg\s*diploma|bpt|mpt|gnm|bmlt|anm|integrated|bachelor|master|doctor|phd|certificate|executive|fellowship|ll\.?b|ll\.?m|bams|bhms|mbbs|bds|md\b|ms\b|b\.?arch|m\.?arch|b\.?ed|m\.?ed|b\.?voc|m\.?voc)/i', $rawText);
+            $isCourseUrl = (bool)preg_match('/(\/courses?\/|\/programmes?\/|\/programs?\/|\/degrees?\/|\/curriculum\/|\/syllabus\/)/i', $href);
+
+            $isSingleCategoryWord = (bool)preg_match('/^(bachelor|master|doctor|diploma|doctorate|degree|degrees|programs?|programmes?|courses?|all|overview|index|curriculum|syllabus)$/i', $rawText);
+
             if ($isAcademicUnit($rawText)) {
                 if (!isset($departmentsByUrl[$absUrl])) {
                     $departmentsByUrl[$absUrl] = $rawText;
                 }
-            } elseif (preg_match('/^(b\.tech|m\.tech|b\.sc|m\.sc|bca|mca|bba|mba|b\.com|m\.com|b\.a\.|m\.a\.|b\.pharm|m\.pharm|b\.des|m\.des|ph\.d|diploma|bpt|mpt|gnm|bmlt|anm|integrated)/i', $rawText) ||
-                preg_match('/(\/course\/|\/program\/|\/degree\/)/i', $href)) {
+            } elseif (!$isSingleCategoryWord && ($isDegreeText || ($isCourseUrl && strlen($rawText) >= 4 && strlen($rawText) <= 120 && !preg_match($genericButtonPattern, $rawText) && !preg_match($nonAcademicPattern, $rawText)))) {
                 $coursesByUrl[$absUrl] = $rawText;
+            }
+        }
+
+        // 5. Parse <li> tags for degree programs listed in bullets/catalogs
+        if (preg_match_all('/<li\b[^>]*>(.*?)<\/li>/is', $html, $liMatches)) {
+            foreach ($liMatches[1] as $li) {
+                $liText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($li), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                $isSingleCategoryLi = (bool)preg_match('/^(bachelor|master|doctor|diploma|doctorate|degree|degrees|programs?|programmes?|courses?|all|overview|index|curriculum|syllabus)$/i', $liText);
+                if (!$isSingleCategoryLi && strlen($liText) >= 5 && strlen($liText) <= 120 && preg_match('/^(b\.?\s*tech|m\.?\s*tech|b\.?\s*sc|m\.?\s*sc|bca|mca|bba|mba|b\.?\s*com|m\.?\s*com|b\.?\s*a\b|m\.?\s*a\b|b\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|b\.?\s*des|m\.?\s*des|ph\.?\s*d|diploma|bpt|mpt|gnm|bmlt|anm|integrated|bachelor|master|doctor|phd)/i', $liText)) {
+                    if (!isset($coursesByUrl[$baseUrl . '#course-' . md5($liText)])) {
+                        $coursesByUrl[$baseUrl . '#course-' . md5($liText)] = $liText;
+                    }
+                }
             }
         }
 
@@ -1263,6 +1361,20 @@ GOOGLE_INSTRUCTIONS
    - DO NOT search Google or fabricate data. If any field (e.g. exact acreage, pin code, or contact numbers) is not present in the provided sources, leave it null or empty.
 STRICT_URL_INSTRUCTIONS;
 
+        $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
+        $schoolInstructions = $isSchool ? <<<SCHOOL_CAMPUS_INSTR
+- THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location.
+- Specifically discover and extract school-specific infrastructure:
+  * science_labs_available: true/false (Physics, Chemistry, Biology labs)
+  * computer_labs_available: true/false (Computer and coding laboratories)
+  * playground_available: true/false (Outdoor playground, athletics, or sports ground)
+  * gps_enabled_buses: true/false (School buses with GPS tracking)
+  * bus_fleet_size: integer count of school buses
+  * visitor_management_system: true/false (Gate security visitor check-in)
+  * school_type: "Day School" | "Boarding School" | "Day-cum-Boarding"
+SCHOOL_CAMPUS_INSTR
+        : '';
+
         return <<<PROMPT
 You are an expert institutional infrastructure, geography, and campus research AI agent.
 Your EXCLUSIVE MISSION is to extract exactly ONE specific physical CAMPUS / BRANCH LOCATION for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
@@ -1280,6 +1392,7 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
 1. SINGLE CAMPUS EXTRACTION:
    - Extract exactly ONE campus object in the "campuses" array matching the specific campus location given in the URL.
    - Accurately determine the campus name (e.g. "Main Campus", "South Campus", "Kolkata Campus", "City Campus", etc.), address, city, state, country, pincode, facilities, and contact details.
+{$schoolInstructions}
 
 {$searchInstructions}
 
@@ -1292,6 +1405,7 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
+      "school_type": "Day School",
       "established_year": 2005,
       "city": "Bengaluru",
       "state": "Karnataka",
@@ -1305,6 +1419,9 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
       "classrooms_count": 80,
       "smart_classrooms": true,
       "laboratories_count": 35,
+      "science_labs_available": true,
+      "computer_labs_available": true,
+      "playground_available": true,
       "library_available": true,
       "digital_library_access": true,
       "hostel_available": true,
@@ -1320,8 +1437,11 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
         "Badminton Arena"
       ],
       "transport_available": true,
+      "gps_enabled_buses": true,
+      "bus_fleet_size": 25,
       "cctv_coverage": true,
       "fire_safety_certified": true,
+      "visitor_management_system": true,
       "campus_email": "campus@example.edu.in",
       "campus_contact_numbers": [
         "+91 80 4619 9000",
@@ -1394,6 +1514,23 @@ GOOGLE_INSTRUCTIONS
    - DO NOT search Google or fabricate data. If any field is not present in the provided sources, leave it null or empty.
 STRICT_URL_INSTRUCTIONS;
 
+        $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
+        $schoolDeptInstructions = $isSchool ? <<<SCHOOL_DEPT_INSTR
+- THIS INSTITUTION IS A SCHOOL (K-12). In schools, academic units are organized into:
+  * Academic Wings / Levels: "Pre-Primary Wing / Kindergarten", "Primary Wing (Classes 1-5)", "Middle School Wing (Classes 6-8)", "Secondary Wing (Classes 9-10)", "Senior Secondary Wing (Classes 11-12)".
+  * Subject & Activity Departments: "Department of Science", "Department of Mathematics", "Department of Social Sciences", "Department of Languages & English", "Physical Education & Sports Department", "Arts & Performing Arts Department", "Special Education & Counseling Cell".
+  * For each wing/department, extract:
+    - department_name (e.g. "Primary Wing", "Senior Secondary Wing", "Department of Science")
+    - department_code (e.g. "PRI", "SR-SEC", "SCI", "MATH")
+    - department_type ("Academic")
+    - head_of_department_name (e.g. Headmistress, Wing Coordinator, or HOD)
+    - head_of_department_designation (e.g. "Headmistress / Primary Wing Coordinator", "Vice Principal / Senior Wing Head")
+    - faculty_count (Teacher count assigned to this wing)
+    - education_levels_supported (e.g. ["Pre-Primary"], ["Primary"], ["Middle"], ["Secondary"], ["Senior Secondary"])
+    - specializations_supported (e.g. ["Science", "Commerce", "Humanities"] for Senior Secondary)
+SCHOOL_DEPT_INSTR
+        : '';
+
         return <<<PROMPT
 You are an expert academic faculties, colleges, schools, and university departmental research AI agent.
 Your EXCLUSIVE MISSION is to research and extract ALL academic DEPARTMENTS, SCHOOLS, FACULTIES, INSTITUTES, CENTRES, DIVISIONS, and DISCIPLINES for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}, Campus: {$campusName}).
@@ -1414,6 +1551,7 @@ Our database contains the following standard Streams and Disciplines. Use this d
 === CRITICAL EXHAUSTIVE & DEDUPLICATION MANDATE ===
 1. EXHAUSTIVE EXTRACTION MANDATE:
 {$detectedDeptText}
+{$schoolDeptInstructions}
 
 2. STRICT DEDUPLICATION RULE:
    - NEVER return duplicate or alias departments. Every item in the "departments" array MUST represent a unique academic department/school/wing.
@@ -1470,8 +1608,14 @@ PROMPT;
         $deptId = $targetDepartment ? $targetDepartment->id : null;
         $deptIdJson = $deptId ? json_encode($deptId) : 'null';
 
+        $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
+
+        if ($isSchool) {
+            return $this->buildSchoolCourseOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $targetCampus, $targetDepartment, $searchGoogle);
+        }
+
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
-        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . substr(trim($content), 0, 60000) : "";
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . mb_substr(trim($content), 0, 250000, 'UTF-8') : "";
 
         // Inject Database Taxonomy Knowledge
         $taxonomy = $this->getDatabaseTaxonomyKnowledge();
@@ -1479,33 +1623,81 @@ PROMPT;
         $streamsList = !empty($taxonomy['streams']) ? implode(', ', $taxonomy['streams']) : 'Engineering and Technology, Business & Management, Sciences, Humanities & Social Sciences, Commerce & Finance, Law, Medicine';
         $programLevelsList = !empty($taxonomy['program_levels']) ? implode(', ', $taxonomy['program_levels']) : 'Undergraduate (UG), Postgraduate (PG), Diploma, Ph.D, Certificate';
 
-        // Check for structured detected courses
+        // Check for structured detected courses from crawling
         $detectedCourseText = "";
         if (preg_match('/===\s*DETECTED OFFICIAL DEGREE COURSES & PROGRAMS ON WEBSITE \((\d+)\)\s*===\s*(.*?)(?=\n===|\nPRIMARY|\nPAGE ASSET|$)/s', $content, $m)) {
-            $count = (int)$m[1];
-            $courseList = trim(substr($m[2], 0, 5000));
-            $detectedCourseText = <<<DET_COURSE
-DETECTED DEGREE COURSES FROM OFFICIAL WEBSITE NAVIGATION ({$count} Programs detected):
-{$courseList}
+            $totalCount = (int)$m[1];
+            $rawList = trim($m[2]);
+            $lines = array_values(array_filter(array_map('trim', explode("\n", $rawList))));
 
-STRICT EXHAUSTIVE MULTI-DEGREE EXTRACTION RULE:
-- Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" section very carefully.
-- If this is a Department/Wing page (e.g. {$deptName}), you MUST extract EVERY degree program/curriculum offered by this department across all levels:
-  * Undergraduate (e.g. B.Tech / B.Sc / BBA / B.Com / B.A. / MBBS / B.Pharm)
-  * Postgraduate (e.g. M.Tech / M.Sc / MBA / M.Com / M.A. / MD / M.Pharm)
-  * Doctoral / Ph.D programs
-  * Diploma / Integrated programs / Certificate courses
-- NEVER omit programs. Return one distinct object in the `courses` array for EVERY single degree/program offered.
-- DO NOT sample or merge programs.
+            $deptKeywords = [];
+            if ($targetDepartment && !empty($targetDepartment->department_name)) {
+                $rawD = strtolower($targetDepartment->department_name);
+                $cleanD = preg_replace('/\b(department|school|faculty|institute|college|centre|center|division|of|and|&|the|in|studies|program|programs)\b/i', ' ', $rawD);
+                $deptKeywords = array_values(array_filter(array_map('trim', explode(' ', $cleanD)), fn($w) => strlen($w) >= 3));
+                if (str_contains($rawD, 'agri')) {
+                    $deptKeywords[] = 'agri';
+                    $deptKeywords[] = 'horticult';
+                    $deptKeywords[] = 'agronom';
+                }
+            }
+
+            $targetDeptCourses = [];
+            $otherCourses = [];
+            foreach ($lines as $line) {
+                $isDeptMatch = false;
+                if (!empty($deptKeywords)) {
+                    $lowerLine = strtolower($line);
+                    foreach ($deptKeywords as $kw) {
+                        if (str_contains($lowerLine, $kw)) {
+                            $isDeptMatch = true;
+                            break;
+                        }
+                    }
+                }
+                if ($isDeptMatch) {
+                    $targetDeptCourses[] = $line;
+                } else {
+                    $otherCourses[] = $line;
+                }
+            }
+
+            $detectedCourseText = "DETECTED DEGREE COURSES FROM OFFICIAL WEBSITE CRAWL ({$totalCount} Total Programs Discovered across site):\n";
+            if (!empty($targetDeptCourses)) {
+                $detectedCourseText .= "--- SPECIFIC TO TARGET DEPARTMENT '{$deptName}' (" . count($targetDeptCourses) . " Programs) ---\n" . implode("\n", array_slice($targetDeptCourses, 0, 80)) . "\n\n";
+            }
+            if (!empty($otherCourses)) {
+                $detectedCourseText .= "--- OTHER ACADEMIC OFFERINGS ON WEBSITE (" . count($otherCourses) . " Programs) ---\n" . implode("\n", array_slice($otherCourses, 0, 100)) . "\n";
+            }
+
+            $detectedCourseText .= <<<DET_COURSE
+
+MANDATORY COMPLETE & EXHAUSTIVE COURSE GENERATION MANDATE:
+- Target Department: "{$deptName}" (Organisation: "{$orgName}", Campus: "{$campusName}").
+- If this department/faculty offers 20, 30, 40, 50, 60 or more distinct degrees, streams, programs, or specializations across Undergraduate (UG), Postgraduate (PG), Doctoral (Ph.D.), and Diploma/Certificate levels:
+  YOU MUST EXTRACT AND GENERATE A SEPARATE JSON OBJECT IN THE "courses" ARRAY FOR EVERY SINGLE ONE!
+- DO NOT STOP AT 15 OR 20 COURSES. If there are 40 or 50 courses, return ALL 40 or 50 courses!
+- DO NOT summarize, combine, or group distinct specializations (e.g. M.Sc. Agronomy, M.Sc. Soil Science, M.Sc. Plant Pathology, Ph.D. Agronomy, Ph.D. Horticulture MUST EACH BE SEPARATE JSON OBJECTS).
+- DO NOT use ellipsis (...) or omit programs.
+- To ensure all 50+ courses fit comfortably within output limits, write concise 2-3 sentence overviews and eligibility summaries for each course.
+- Every course object in the "courses" array MUST belong to:
+  * "department_name": "{$deptName}"
+  * "campus_name": "{$campusName}"
 DET_COURSE;
         } else {
             $detectedCourseText = <<<DET_COURSE
-STRICT EXHAUSTIVE MULTI-DEGREE EXTRACTION RULE:
-- Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" section very carefully.
+MANDATORY COMPLETE & EXHAUSTIVE COURSE GENERATION MANDATE:
+- Target Department: "{$deptName}" (Organisation: "{$orgName}", Campus: "{$campusName}").
+- Inspect the webpage's "Programs Offered", "Courses Offered", or "Academics" sections very carefully.
 - Extract ALL programs and courses offered by "{$orgName}" (Campus: {$campusName}, Department: {$deptName}) across all levels:
-  * For Higher Ed: Undergraduate, Postgraduate, Doctoral (Ph.D), Diploma / Certificate
-  * For Schools: Senior Secondary (Science, Commerce, Humanities), Secondary School, Middle School, Primary Wing, Kindergarten / IB DP / IGCSE
-- Return one distinct object in the `courses` array for EVERY single program/course offered.
+  * Undergraduate (UG): B.Sc / B.Tech / BBA / B.Com / B.A. / MBBS / etc.
+  * Postgraduate (PG): M.Sc / M.Tech / MBA / M.Com / M.A. / MD / etc. (every distinct specialization must be a separate object)
+  * Doctoral (Ph.D): every distinct discipline/research area must be a separate object
+  * Diplomas & Certificates: every distinct program
+- If there are 25, 30, 40, 50 or more programs, output EVERY SINGLE ONE. DO NOT STOP AT 15 OR 20.
+- Every course object in the "courses" array MUST have:
+  * "department_name": "{$deptName}"
+  * "campus_name": "{$campusName}"
 DET_COURSE;
         }
 
@@ -1547,7 +1739,8 @@ Map each extracted course to our platform standard taxonomies:
 2. STRICT DEDUPLICATION RULE:
    - NEVER return duplicate courses or duplicate degree programs. Every item in the "courses" array MUST be unique.
    - DO NOT create multiple entries for the same degree under different names/abbreviations (e.g., do NOT output both "B.Tech CSE" and "Bachelor of Technology in Computer Science and Engineering" - output only one canonical, fully populated object).
-   - If a course has multiple specializations, output distinct named specialization programs (e.g. "B.Tech CSE (AI & ML)" and "B.Tech CSE (Cyber Security)") or consolidate them cleanly under the canonical program.
+   - If a degree offers multiple specializations (e.g. "M.Sc. Ag. (Agronomy)" and "M.Sc. Ag. (Soil Science)"), output each distinct specialization as its own separate JSON object so no specialization is lost.
+
 
 3. FEE STRUCTURE & FINANCIAL EXTRACTION MANDATE:
    - Carefully inspect all AUTO-FETCHED INTERNAL LINKED PAGES and AUTO-FETCHED DEDICATED FEE STRUCTURE PAGES provided in the scraped context above.
@@ -1601,6 +1794,158 @@ Map each extracted course to our platform standard taxonomies:
       "refund_policy_available": true,
       "provisional_admission": true,
       "overview": "The B.Tech in Computer Science and Engineering with specialization in AI & ML is a 4-year undergraduate program designed to equip students with deep knowledge of machine learning algorithms, deep learning, neural networks, natural language processing, and big data technologies. Students gain practical experience through dedicated AI research labs and capstone industry projects."
+    }
+  ]
+}
+PROMPT;
+    }
+
+    /**
+     * Dedicated Prompt for School Course / Class / Program Only Extraction
+     */
+    public function buildSchoolCourseOnlyPrompt(
+        string $url,
+        string $content,
+        array $referenceUrls = [],
+        ?\App\Models\Organisation $targetOrg = null,
+        ?\App\Models\Campus $targetCampus = null,
+        ?\App\Models\Department $targetDepartment = null,
+        bool $searchGoogle = true
+    ): string {
+        $orgName = $targetOrg ? $targetOrg->name : 'the Target School';
+        $orgTypeTitle = 'School';
+        $orgId = $targetOrg ? $targetOrg->id : 0;
+        $campusName = $targetCampus ? $targetCampus->campus_name : 'Main / Selected School Campus';
+        $campusId = $targetCampus ? $targetCampus->id : null;
+        $campusIdJson = $campusId ? json_encode($campusId) : 'null';
+        $deptName = $targetDepartment ? $targetDepartment->department_name : 'All Wings / Selected Wing';
+        $deptId = $targetDepartment ? $targetDepartment->id : null;
+        $deptIdJson = $deptId ? json_encode($deptId) : 'null';
+
+        $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & STRUCTURED DIRECTORY:\n" . substr(trim($content), 0, 60000) : "";
+
+        $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
+2. SEARCH GROUNDING & ACCURACY:
+   - Actively use Google Search Grounding to verify full school curriculum brochures, fee structure tables, admission guides, and school disclosure documents for "{$orgName}".
+   - Extract verified annual fees, admission fees, student-teacher ratios, boards, and grade ranges.
+GOOGLE_INSTRUCTIONS
+        : <<<STRICT_URL_INSTRUCTIONS
+2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
+   - Extract all academic offerings, grades, and classes directly from the provided PRIMARY WEBSITE CONTENT.
+   - Do NOT search Google or fabricate data. If any field is not found, leave it empty/null/false.
+STRICT_URL_INSTRUCTIONS;
+
+        return <<<PROMPT
+You are an expert K-12 school curriculum and admissions research AI agent.
+Your EXCLUSIVE MISSION is to perform an in-depth extraction of ALL SCHOOL ACADEMIC PROGRAMS, CLASSES, GRADES, and CURRICULUMS offered by "{$orgName}" (Campus: {$campusName}, Wing: {$deptName}).
+
+TARGET SCHOOL: {$orgName}
+TARGET CAMPUS: {$campusName}
+TARGET WING: {$deptName}
+PRIMARY URL: {$url}{$refUrlsText}
+{$cleanContent}
+
+=== CRITICAL RESEARCH & EXTRACTION MANDATE ===
+1. EXHAUSTIVE SCHOOL ACADEMIC PROGRAMS COVERAGE:
+- Inspect the webpage for all grades, classes, and academic streams offered:
+  * Pre-Primary (Nursery, LKG, UKG / Early Years / Kindergarten)
+  * Primary School (Classes 1 to 5 / PYP)
+  * Middle School (Classes 6 to 8 / MYP)
+  * Secondary School (Classes 9 and 10 - CBSE, ICSE, or State Board)
+  * Senior Secondary (Classes 11 and 12 - Science Stream, Commerce Stream, Humanities / Arts Stream)
+  * International programs (IB Diploma Programme, Cambridge IGCSE, Cambridge Primary/Lower Secondary)
+- Return distinct objects in the "courses" array for EACH unique curriculum / class / stream offering.
+
+2. DETAILED SCHOOL & FEE ATTRIBUTES:
+- academic_unit_name: Full descriptive class/program name (e.g. "CBSE Senior Secondary (Classes 11 & 12 - Science Stream)")
+- course_name: Same as academic_unit_name
+- school_type: "Day School" | "Boarding School" | "Day-cum-Boarding"
+- education_board: "CBSE" | "ICSE" | "State Board" | "IB" | "IGCSE" | "Cambridge" | "Other"
+- board_affiliation_number: string or empty
+- grade_range: string (e.g. "Class 11 to 12", "Pre-Primary to Class 5", "Class 6 to 10")
+- medium_of_instruction: string (e.g. "English")
+- streams_offered: array of strings (e.g. ["Science"], ["Commerce"], ["Humanities"])
+- fees: Annual or Per-Year Tuition Fee (e.g. "₹ 1,10,000 / Year")
+- total_fees: Integer annual or full-level tuition fee (e.g. 110000)
+- annual_fee_range: string (e.g. "₹ 1.0 - 1.2 Lakhs / Year")
+- admission_fee: string one-time admission charge (e.g. "25000")
+- fee_payment_frequency: "Quarterly" | "Monthly" | "Annually" | "Half-Yearly"
+- student_strength: string total students (e.g. "350 Students")
+- total_teachers: string count of teachers
+- student_teacher_ratio: string (e.g. "15:1")
+- average_class_size: string (e.g. "30")
+- average_board_result_percentage: string (e.g. "95.5%")
+- highest_score: string (e.g. "99.2%")
+- distinction_percentage: string (e.g. "70%")
+- remedial_classes_available: boolean
+- special_educator_available: boolean
+- school_counsellor_available: boolean
+- olympiad_participation: boolean
+- competitive_exam_preparation_support: boolean
+- parent_app_available: boolean
+- attendance_tracking_available: boolean
+- arts_music_programs_available: boolean
+- transport_available: boolean
+- transport_fee: boolean
+- hostel_available: boolean
+- hostel_fee: boolean
+- installment_available: boolean
+- scholarship_available: boolean
+- eligibility: entry requirements
+- admission_process: registration and assessment process
+- overview: concise 2-3 sentence overview of academic focus and activities
+
+{$searchInstructions}
+
+3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "target_campus_id": {$campusIdJson},
+  "target_campus_name": "{$campusName}",
+  "target_department_id": {$deptIdJson},
+  "target_department_name": "{$deptName}",
+  "mode": "course",
+  "courses": [
+    {
+      "academic_unit_name": "CBSE Senior Secondary (Classes 11 & 12 - Science Stream)",
+      "course_name": "CBSE Senior Secondary (Classes 11 & 12 - Science Stream)",
+      "school_type": "Day School",
+      "education_board": "CBSE",
+      "board_affiliation_number": "",
+      "grade_range": "Class 11 to 12",
+      "medium_of_instruction": "English",
+      "streams_offered": ["Science"],
+      "fees": "₹ 1,10,000 / Year",
+      "total_fees": 220000,
+      "annual_fee_range": "₹ 1.0 - 1.2 Lakhs / Year",
+      "admission_fee": "25000",
+      "fee_payment_frequency": "Quarterly",
+      "student_strength": "300",
+      "total_teachers": "18",
+      "student_teacher_ratio": "16:1",
+      "average_class_size": "30",
+      "average_board_result_percentage": "95.5%",
+      "highest_score": "98.8%",
+      "distinction_percentage": "70%",
+      "remedial_classes_available": true,
+      "special_educator_available": true,
+      "school_counsellor_available": true,
+      "olympiad_participation": true,
+      "competitive_exam_preparation_support": true,
+      "parent_app_available": true,
+      "attendance_tracking_available": true,
+      "arts_music_programs_available": true,
+      "transport_available": true,
+      "transport_fee": true,
+      "hostel_available": false,
+      "hostel_fee": false,
+      "installment_available": true,
+      "scholarship_available": true,
+      "eligibility": "Pass in Class 10 with minimum 75% aggregate in Science and Mathematics.",
+      "admission_process": "Online registration, document evaluation, entrance aptitude test and interview.",
+      "overview": "Senior Secondary Science stream with Physics, Chemistry, Mathematics, Biology, and Computer Science preparing students for CBSE Board exams, JEE, and NEET."
     }
   ]
 }
@@ -2149,6 +2494,7 @@ IMPORTANT INSTRUCTIONS:
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
+      "school_type": "Day School",
       "established_year": 1995,
       "city": "",
       "state": "",
@@ -2161,18 +2507,139 @@ IMPORTANT INSTRUCTIONS:
       "classrooms_count": 50,
       "smart_classrooms": true,
       "laboratories_count": 6,
+      "science_labs_available": true,
+      "computer_labs_available": true,
+      "playground_available": true,
       "library_available": true,
+      "digital_library_access": true,
       "hostel_available": false,
+      "hostel_type": "",
+      "hostel_capacity": 0,
       "sports_facilities": ["Playground", "Basketball Court", "Skating Rink", "Swimming Pool"],
       "transport_available": true,
+      "gps_enabled_buses": true,
+      "bus_fleet_size": 20,
       "cctv_coverage": true,
       "fire_safety_certified": true,
+      "visitor_management_system": true,
       "campus_email": "",
       "campus_contact_numbers": []
     }
   ],
-  "departments": [],
-  "courses": []
+  "departments": [
+    {
+      "department_name": "Senior Secondary Wing",
+      "department_code": "SR-SEC",
+      "department_type": "Academic",
+      "established_year": 1995,
+      "head_of_department_name": "",
+      "head_of_department_designation": "Vice Principal / Senior Wing Head",
+      "hod_email": "",
+      "faculty_count": 25,
+      "discipline_area": "Senior Secondary Education",
+      "specializations_supported": ["Science", "Commerce", "Humanities"],
+      "education_levels_supported": ["Senior Secondary"],
+      "classrooms_count": 12,
+      "department_labs_count": 4,
+      "about_department": "Comprehensive senior secondary wing offering CBSE/ICSE curriculum across Science, Commerce, and Humanities streams."
+    },
+    {
+      "department_name": "Primary Wing",
+      "department_code": "PRI",
+      "department_type": "Academic",
+      "established_year": 1995,
+      "head_of_department_name": "",
+      "head_of_department_designation": "Headmistress / Primary Wing Coordinator",
+      "hod_email": "",
+      "faculty_count": 30,
+      "discipline_area": "Primary Education",
+      "specializations_supported": ["Foundational Learning", "Activity-Based Pedagogy"],
+      "education_levels_supported": ["Primary"],
+      "classrooms_count": 20,
+      "department_labs_count": 2,
+      "about_department": "Primary wing focusing on experiential learning, foundational literacy and numeracy, and holistic development."
+    }
+  ],
+  "courses": [
+    {
+      "academic_unit_name": "CBSE Senior Secondary (Classes 11 & 12 - Science Stream)",
+      "course_name": "CBSE Senior Secondary (Classes 11 & 12 - Science Stream)",
+      "school_type": "Day School",
+      "education_board": "CBSE",
+      "board_affiliation_number": "",
+      "grade_range": "Class 11 to 12",
+      "medium_of_instruction": "English",
+      "streams_offered": ["Science"],
+      "fees": "₹ 1,10,000 / Year",
+      "total_fees": 220000,
+      "annual_fee_range": "₹ 1.0 - 1.2 Lakhs / Year",
+      "admission_fee": "25000",
+      "fee_payment_frequency": "Quarterly",
+      "student_strength": "300",
+      "total_teachers": "18",
+      "student_teacher_ratio": "16:1",
+      "average_class_size": "30",
+      "average_board_result_percentage": "95.5%",
+      "highest_score": "98.8%",
+      "distinction_percentage": "70%",
+      "remedial_classes_available": true,
+      "special_educator_available": true,
+      "school_counsellor_available": true,
+      "olympiad_participation": true,
+      "competitive_exam_preparation_support": true,
+      "parent_app_available": true,
+      "attendance_tracking_available": true,
+      "arts_music_programs_available": true,
+      "transport_available": true,
+      "transport_fee": true,
+      "hostel_available": false,
+      "hostel_fee": false,
+      "installment_available": true,
+      "scholarship_available": true,
+      "eligibility": "Pass in Class 10 with minimum 75% aggregate in Science and Mathematics.",
+      "admission_process": "Online registration, document evaluation, entrance aptitude test and interview.",
+      "overview": "Senior Secondary Science stream with Physics, Chemistry, Mathematics, Biology, and Computer Science preparing students for CBSE Board exams, JEE, and NEET."
+    },
+    {
+      "academic_unit_name": "CBSE Senior Secondary (Classes 11 & 12 - Commerce Stream)",
+      "course_name": "CBSE Senior Secondary (Classes 11 & 12 - Commerce Stream)",
+      "school_type": "Day School",
+      "education_board": "CBSE",
+      "board_affiliation_number": "",
+      "grade_range": "Class 11 to 12",
+      "medium_of_instruction": "English",
+      "streams_offered": ["Commerce"],
+      "fees": "₹ 95,000 / Year",
+      "total_fees": 190000,
+      "annual_fee_range": "₹ 90,000 - 1.0 Lakh / Year",
+      "admission_fee": "25000",
+      "fee_payment_frequency": "Quarterly",
+      "student_strength": "200",
+      "total_teachers": "12",
+      "student_teacher_ratio": "16:1",
+      "average_class_size": "30",
+      "average_board_result_percentage": "93.0%",
+      "highest_score": "97.5%",
+      "distinction_percentage": "65%",
+      "remedial_classes_available": true,
+      "special_educator_available": true,
+      "school_counsellor_available": true,
+      "olympiad_participation": true,
+      "competitive_exam_preparation_support": true,
+      "parent_app_available": true,
+      "attendance_tracking_available": true,
+      "arts_music_programs_available": true,
+      "transport_available": true,
+      "transport_fee": true,
+      "hostel_available": false,
+      "hostel_fee": false,
+      "installment_available": true,
+      "scholarship_available": true,
+      "eligibility": "Pass in Class 10 with minimum 65% aggregate.",
+      "admission_process": "Online application, review of Class 10 results and personal interaction.",
+      "overview": "Commerce curriculum including Accountancy, Business Studies, Economics, and Applied Mathematics."
+    }
+  ]
 }
 PROMPT;
     }

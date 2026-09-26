@@ -272,9 +272,9 @@ class AiOrganisationImportController extends Controller
                     $data['organisation']['organisation_type_id'] = $orgType->id;
                     $data['organisation']['organisation_type'] = $orgType->title;
                 }
-                $data['campuses'] = [];
-                $data['departments'] = [];
-                $data['courses'] = [];
+                if (!isset($data['campuses'])) $data['campuses'] = [];
+                if (!isset($data['departments'])) $data['departments'] = [];
+                if (!isset($data['courses'])) $data['courses'] = [];
             } elseif ($mode === 'campus') {
                 $data['organisation'] = [];
                 $data['departments'] = [];

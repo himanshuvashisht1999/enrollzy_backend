@@ -17,6 +17,12 @@ class CampusController extends Controller
      */
     public function index(Organisation $organisation)
     {
+        $typeTitle = strtolower($organisation->organisationType->title ?? '');
+        if ($organisation->organisation_type_id == 9 || str_contains($typeTitle, 'e-learning') || str_contains($typeTitle, 'elearning')) {
+            return redirect()->route('admin.organisations.edit', $organisation->id)
+                ->with('info', 'E-Learning Platforms do not have physical campuses.');
+        }
+
         $campuses = $organisation->campuses()->withCount(['departments', 'courses'])->latest()->get();
         return view('admin.organisations.campuses.index', compact('organisation', 'campuses'));
     }

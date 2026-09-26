@@ -33,28 +33,47 @@
         </div>
     </div>
 
+    @php
+        $isELearning = ($data->organisation_type_id == 9) || (isset($data->organisationType) && (str_contains(strtolower($data->organisationType->title), 'e-learning') || str_contains(strtolower($data->organisationType->title), 'elearning')));
+    @endphp
+
     <!-- Quick Metrics Counter Strip -->
     <div class="row g-2 mb-3">
-        <div class="col-4">
-            <div class="p-2.5 rounded-3 bg-light border text-center">
-                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Campuses</div>
-                <div class="fs-4 fw-bold text-dark">{{ $data->campuses->count() }}</div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="p-2.5 rounded-3 bg-light border text-center">
-                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Departments</div>
-                <div class="fs-4 fw-bold text-primary">
-                    {{ $data->campuses->sum(function($c) { return $c->departments->count(); }) }}
+        @if(!$isELearning)
+            <div class="col-4">
+                <div class="p-2.5 rounded-3 bg-light border text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Campuses</div>
+                    <div class="fs-4 fw-bold text-dark">{{ $data->campuses->count() }}</div>
                 </div>
             </div>
-        </div>
-        <div class="col-4">
-            <div class="p-2.5 rounded-3 bg-light border text-center">
-                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Offered Courses</div>
-                <div class="fs-4 fw-bold text-success">{{ $data->courses->count() }}</div>
+            <div class="col-4">
+                <div class="p-2.5 rounded-3 bg-light border text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Departments</div>
+                    <div class="fs-4 fw-bold text-primary">
+                        {{ $data->campuses->sum(function($c) { return $c->departments->count(); }) }}
+                    </div>
+                </div>
             </div>
-        </div>
+            <div class="col-4">
+                <div class="p-2.5 rounded-3 bg-light border text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Offered Courses</div>
+                    <div class="fs-4 fw-bold text-success">{{ $data->courses->count() }}</div>
+                </div>
+            </div>
+        @else
+            <div class="col-6">
+                <div class="p-2.5 rounded-3 bg-light border text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Platform Type</div>
+                    <div class="fs-5 fw-bold text-primary">E-Learning</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2.5 rounded-3 bg-light border text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Offered Courses / Programs</div>
+                    <div class="fs-4 fw-bold text-success">{{ $data->courses->count() }}</div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- Details Grid -->
@@ -90,6 +109,7 @@
         </div>
     </div>
 
+    @if(!$isELearning)
     <!-- Campuses List Accordion/List -->
     <div class="card border mb-3 shadow-none">
         <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
@@ -123,14 +143,17 @@
             @endif
         </div>
     </div>
+    @endif
 
     <!-- Modal Footer Actions -->
     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
         <button type="button" class="btn btn-light border px-3" data-bs-dismiss="modal">Close</button>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.organisations.campuses.index', $data->id) }}" class="btn btn-info text-white">
-                <i class="fas fa-city me-1"></i>Manage Campuses
-            </a>
+            @if(!$isELearning)
+                <a href="{{ route('admin.organisations.campuses.index', $data->id) }}" class="btn btn-info text-white">
+                    <i class="fas fa-city me-1"></i>Manage Campuses
+                </a>
+            @endif
             <a href="{{ route('admin.organisations.edit', $data->id) }}" class="btn btn-primary">
                 <i class="fas fa-edit me-1"></i>Edit Organisation
             </a>

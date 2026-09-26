@@ -269,11 +269,13 @@ class AcademicDirectoryController extends Controller
                 return "<span class='text-muted small'>—</span>";
             })
             ->addColumn('hierarchy_chips', function ($row) {
+                $typeTitle = strtolower($row->organisationType->title ?? '');
+                $isELearning = ($row->organisation_type_id == 9) || str_contains($typeTitle, 'e-learning') || str_contains($typeTitle, 'elearning');
                 $campuses = $row->campuses_count;
                 $depts = $row->departments_count;
                 $courses = $row->courses_count;
 
-                $cChip = "<a href='javascript:void(0)' class='stat-chip chip-cyan switch-to-tab' data-tab='campuses' data-org-id='{$row->id}' title='View all campuses of {$row->name}'><i class='fas fa-city me-1'></i>{$campuses} Campuses</a>";
+                $cChip = $isELearning ? "" : "<a href='javascript:void(0)' class='stat-chip chip-cyan switch-to-tab' data-tab='campuses' data-org-id='{$row->id}' title='View all campuses of {$row->name}'><i class='fas fa-city me-1'></i>{$campuses} Campuses</a>";
                 $dChip = "<a href='javascript:void(0)' class='stat-chip chip-indigo switch-to-tab' data-tab='departments' data-org-id='{$row->id}' title='View all departments of {$row->name}'><i class='fas fa-building me-1'></i>{$depts} Depts</a>";
                 $crsChip = "<a href='javascript:void(0)' class='stat-chip chip-emerald switch-to-tab' data-tab='courses' data-org-id='{$row->id}' title='View all courses of {$row->name}'><i class='fas fa-graduation-cap me-1'></i>{$courses} Courses</a>";
 
@@ -286,9 +288,11 @@ class AcademicDirectoryController extends Controller
                 return "<span class='status-pill status-draft'><span class='status-dot'></span>Draft</span>";
             })
             ->addColumn('action', function ($row) {
+                $typeTitle = strtolower($row->organisationType->title ?? '');
+                $isELearning = ($row->organisation_type_id == 9) || str_contains($typeTitle, 'e-learning') || str_contains($typeTitle, 'elearning');
                 $quickViewBtn = "<button type='button' class='action-btn action-view view-quick-drawer' data-type='organisation' data-id='{$row->id}' title='Quick Inspect'><i class='fas fa-eye'></i></button>";
                 $campusesUrl = route('admin.organisations.campuses.index', $row->id);
-                $campusesBtn = "<a href='{$campusesUrl}' class='action-btn action-campus' title='Manage Campuses'><i class='fas fa-city'></i></a>";
+                $campusesBtn = $isELearning ? "" : "<a href='{$campusesUrl}' class='action-btn action-campus' title='Manage Campuses'><i class='fas fa-city'></i></a>";
                 $editUrl = route('admin.organisations.edit', $row->id);
                 $editBtn = "<a href='{$editUrl}' class='action-btn action-edit' title='Edit Organisation'><i class='fas fa-pen'></i></a>";
 

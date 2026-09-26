@@ -8,7 +8,16 @@
                 <div class="card-header">
                     <h4 class="card-title">Edit Organisation</h4>
                     <div class="float-end">
-                        <a href="{{ route('admin.organisations.campuses.index', $organisation->id) }}" class="btn btn-info btn-sm me-2">Manage Campuses</a>
+                        @php
+                            $isELearning = false;
+                            if ($organisation->organisationType) {
+                                $typeTitle = strtolower($organisation->organisationType->title ?? '');
+                                $isELearning = ($organisation->organisation_type_id == 9) || str_contains($typeTitle, 'e-learning') || str_contains($typeTitle, 'elearning');
+                            } elseif ($organisation->organisation_type_id == 9) {
+                                $isELearning = true;
+                            }
+                        @endphp
+                        <a href="{{ route('admin.organisations.campuses.index', $organisation->id) }}" id="btnManageCampuses" class="btn btn-info btn-sm me-2" style="{{ $isELearning ? 'display: none;' : '' }}">Manage Campuses</a>
                         <a href="{{ route('admin.organisations.index') }}" class="btn btn-secondary btn-sm">Back</a>
                     </div>
                 </div>
@@ -1640,6 +1649,16 @@
                 campusTypeWrapper.style.display = isSchool ? '' : 'none';
                 // NOTE: Do NOT disable the select — disabling breaks autosave listeners.
                 // Hidden via display:none is enough to prevent form submission confusion.
+            }
+
+            // Toggle Manage Campuses button (No need for E-Learning Platform)
+            const btnManageCampuses = document.getElementById('btnManageCampuses');
+            if (btnManageCampuses) {
+                const selectedOpt = typeSelect.options[typeSelect.selectedIndex];
+                const cat = selectedOpt ? selectedOpt.getAttribute('data-category') : '';
+                const title = selectedOpt ? (selectedOpt.getAttribute('data-title') || selectedOpt.text || '') : '';
+                const isELearning = parseInt(val) === 9 || cat === 'elearning' || /e-learning|elearning/i.test(title);
+                btnManageCampuses.style.display = isELearning ? 'none' : '';
             }
         }
 

@@ -83,7 +83,10 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if($uni->organisation_type_id == 9)
+                                            @php
+                                                $isELearningOrg = ($uni->organisation_type_id == 9) || (isset($uni->organisationType) && (str_contains(strtolower($uni->organisationType->title), 'e-learning') || str_contains(strtolower($uni->organisationType->title), 'elearning')));
+                                            @endphp
+                                            @if($isELearningOrg)
                                                 <span class="text-muted">-</span>
                                             @else
                                                 <a href="{{ route('admin.organisations.campuses.index', $uni->id) }}"
@@ -93,7 +96,7 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if($uni->organisation_type_id == 9)
+                                            @if($isELearningOrg)
                                                 <span class="text-muted">-</span>
                                             @else
                                                 <a href="{{ route('admin.departments.index', ['organisation_id' => $uni->id]) }}"

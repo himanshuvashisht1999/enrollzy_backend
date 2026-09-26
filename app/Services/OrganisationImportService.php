@@ -517,6 +517,12 @@ class OrganisationImportService
                         'security_staff_count' => $this->parseInteger($cInput['security_staff_count'] ?? 0) ?? 0,
                         'fire_safety_certified' => !empty($cInput['fire_safety_certified']),
                         'disaster_management_plan' => !empty($cInput['disaster_management_plan']),
+                        'science_labs_available' => !empty($cInput['science_labs_available']),
+                        'computer_labs_available' => !empty($cInput['computer_labs_available']),
+                        'playground_available' => !empty($cInput['playground_available']),
+                        'gps_enabled_buses' => !empty($cInput['gps_enabled_buses']),
+                        'bus_fleet_size' => $this->parseInteger($cInput['bus_fleet_size'] ?? 0) ?? 0,
+                        'visitor_management_system' => !empty($cInput['visitor_management_system']),
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
@@ -678,16 +684,48 @@ class OrganisationImportService
                         'stream_offered_id' => $streamId,
                         'discipline_id' => $disciplineId,
                         'status' => true,
+
+                        // School specific fields
+                        'academic_unit_name' => Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, ''),
+                        'school_type' => $cData['school_type'] ?? null,
+                        'education_board' => $cData['education_board'] ?? null,
+                        'board_affiliation_number' => $cData['board_affiliation_number'] ?? null,
+                        'medium_of_instruction' => $cData['medium_of_instruction'] ?? null,
+                        'grade_range' => $cData['grade_range'] ?? null,
+                        'streams_offered' => $this->parseArray($cData['streams_offered'] ?? null),
+                        'student_strength' => !empty($cData['student_strength']) ? Str::limit((string)$cData['student_strength'], 250, '') : null,
+                        'total_teachers' => !empty($cData['total_teachers']) ? Str::limit((string)$cData['total_teachers'], 250, '') : null,
+                        'student_teacher_ratio' => !empty($cData['student_teacher_ratio']) ? Str::limit((string)$cData['student_teacher_ratio'], 250, '') : null,
+                        'average_class_size' => !empty($cData['average_class_size']) ? Str::limit((string)$cData['average_class_size'], 250, '') : null,
+                        'average_board_result_percentage' => !empty($cData['average_board_result_percentage']) ? Str::limit((string)$cData['average_board_result_percentage'], 250, '') : null,
+                        'highest_score' => !empty($cData['highest_score']) ? Str::limit((string)$cData['highest_score'], 250, '') : null,
+                        'distinction_percentage' => !empty($cData['distinction_percentage']) ? Str::limit((string)$cData['distinction_percentage'], 250, '') : null,
+                        'fee_payment_frequency' => $cData['fee_payment_frequency'] ?? null,
+                        'remedial_classes_available' => !empty($cData['remedial_classes_available']),
+                        'special_educator_available' => !empty($cData['special_educator_available']),
+                        'school_counsellor_available' => !empty($cData['school_counsellor_available']),
+                        'olympiad_participation' => !empty($cData['olympiad_participation']),
+                        'competitive_exam_preparation_support' => !empty($cData['competitive_exam_preparation_support']),
+                        'parent_app_available' => !empty($cData['parent_app_available']),
+                        'attendance_tracking_available' => !empty($cData['attendance_tracking_available']),
+                        'arts_music_programs_available' => !empty($cData['arts_music_programs_available']),
+                        'transport_fee' => !empty($cData['transport_fee']) || !empty($cData['transport_available']),
+                        'hostel_fee' => !empty($cData['hostel_fee']) || !empty($cData['hostel_available']),
+                        'course_languages' => $this->parseArray($cData['course_languages'] ?? null),
                     ];
+
+                    $specificCourseName = $cData['academic_unit_name'] ?? $cData['course_name'] ?? $cData['name'] ?? ($masterCourse ? $masterCourse->name : 'Academic Program');
 
                     $existingOrgCourse = OrganisationCourse::where('organisation_id', $organisation->id)
                         ->where('campus_id', $targetCampusId)
                         ->where('department_id', $targetDeptId)
-                        ->where(function($q) use ($masterCourse, $displayCourseName) {
+                        ->where(function($q) use ($masterCourse, $specificCourseName) {
+                            $q->where('academic_unit_name', $specificCourseName);
                             if ($masterCourse) {
-                                $q->where('course_id', $masterCourse->id);
-                            } else {
-                                $q->where('academic_unit_name', $displayCourseName);
+                                $q->orWhere(function($subQ) use ($masterCourse, $specificCourseName) {
+                                    $subQ->where('course_id', $masterCourse->id)
+                                         ->where('academic_unit_name', $specificCourseName);
+                                });
                             }
                         })->first();
 
@@ -698,16 +736,16 @@ class OrganisationImportService
                         $orgCourseData['campus_id'] = $targetCampusId;
                         $orgCourseData['department_id'] = $targetDeptId;
                         $orgCourseData['course_id'] = $masterCourse ? $masterCourse->id : null;
-                        $orgCourseData['academic_unit_name'] = Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, '');
-                        $orgCourseData['slug'] = Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4));
+                        $orgCourseData['academic_unit_name'] = Str::limit($specificCourseName, 250, '');
+                        $orgCourseData['slug'] = Str::slug(Str::limit($specificCourseName, 100, '') . '-' . Str::random(4));
                         OrganisationCourse::create($orgCourseData);
                     }
                 }
                 return $organisation;
             }
 
-            // --- MODE: ORGANISATION ONLY ---
-            if ($mode === 'organisation' || empty($data['campuses'])) {
+            // --- MODE: ORGANISATION ONLY (when no child entities were provided) ---
+            if ($mode === 'organisation' && empty($data['campuses']) && empty($data['departments']) && empty($data['courses'])) {
                 return $organisation;
             }
 
@@ -757,6 +795,12 @@ class OrganisationImportService
                         'security_staff_count' => $this->parseInteger($cInput['security_staff_count'] ?? 0) ?? 0,
                         'fire_safety_certified' => !empty($cInput['fire_safety_certified']),
                         'disaster_management_plan' => !empty($cInput['disaster_management_plan']),
+                        'science_labs_available' => !empty($cInput['science_labs_available']),
+                        'computer_labs_available' => !empty($cInput['computer_labs_available']),
+                        'playground_available' => !empty($cInput['playground_available']),
+                        'gps_enabled_buses' => !empty($cInput['gps_enabled_buses']),
+                        'bus_fleet_size' => $this->parseInteger($cInput['bus_fleet_size'] ?? 0) ?? 0,
+                        'visitor_management_system' => !empty($cInput['visitor_management_system']),
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
@@ -937,21 +981,52 @@ class OrganisationImportService
                         'placement_details' => $cData['placement_details'] ?? null,
                         'rating' => $this->parseFloat($cData['rating'] ?? null, 0.0, 9.9),
                         'industrial_collaboration' => $cData['industrial_collaboration'] ?? null,
-                        'internship_ranking' => $cData['internship_ranking'] ?? null,
                         'program_level_id' => $programLevelId,
                         'stream_offered_id' => $streamId,
                         'discipline_id' => $disciplineId,
                         'status' => true,
+
+                        // School specific fields
+                        'academic_unit_name' => Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, ''),
+                        'school_type' => $cData['school_type'] ?? null,
+                        'education_board' => $cData['education_board'] ?? null,
+                        'board_affiliation_number' => $cData['board_affiliation_number'] ?? null,
+                        'medium_of_instruction' => $cData['medium_of_instruction'] ?? null,
+                        'grade_range' => $cData['grade_range'] ?? null,
+                        'streams_offered' => $this->parseArray($cData['streams_offered'] ?? null),
+                        'student_strength' => !empty($cData['student_strength']) ? Str::limit((string)$cData['student_strength'], 250, '') : null,
+                        'total_teachers' => !empty($cData['total_teachers']) ? Str::limit((string)$cData['total_teachers'], 250, '') : null,
+                        'student_teacher_ratio' => !empty($cData['student_teacher_ratio']) ? Str::limit((string)$cData['student_teacher_ratio'], 250, '') : null,
+                        'average_class_size' => !empty($cData['average_class_size']) ? Str::limit((string)$cData['average_class_size'], 250, '') : null,
+                        'average_board_result_percentage' => !empty($cData['average_board_result_percentage']) ? Str::limit((string)$cData['average_board_result_percentage'], 250, '') : null,
+                        'highest_score' => !empty($cData['highest_score']) ? Str::limit((string)$cData['highest_score'], 250, '') : null,
+                        'distinction_percentage' => !empty($cData['distinction_percentage']) ? Str::limit((string)$cData['distinction_percentage'], 250, '') : null,
+                        'fee_payment_frequency' => $cData['fee_payment_frequency'] ?? null,
+                        'remedial_classes_available' => !empty($cData['remedial_classes_available']),
+                        'special_educator_available' => !empty($cData['special_educator_available']),
+                        'school_counsellor_available' => !empty($cData['school_counsellor_available']),
+                        'olympiad_participation' => !empty($cData['olympiad_participation']),
+                        'competitive_exam_preparation_support' => !empty($cData['competitive_exam_preparation_support']),
+                        'parent_app_available' => !empty($cData['parent_app_available']),
+                        'attendance_tracking_available' => !empty($cData['attendance_tracking_available']),
+                        'arts_music_programs_available' => !empty($cData['arts_music_programs_available']),
+                        'transport_fee' => !empty($cData['transport_fee']) || !empty($cData['transport_available']),
+                        'hostel_fee' => !empty($cData['hostel_fee']) || !empty($cData['hostel_available']),
+                        'course_languages' => $this->parseArray($cData['course_languages'] ?? null),
                     ];
+
+                    $specificCourseName = $cData['academic_unit_name'] ?? $cData['course_name'] ?? $cData['name'] ?? ($masterCourse ? $masterCourse->name : 'Academic Program');
 
                     $existingOrgCourse = OrganisationCourse::where('organisation_id', $organisation->id)
                         ->where('campus_id', $campusId)
                         ->where('department_id', $deptId)
-                        ->where(function($q) use ($masterCourse, $displayCourseName) {
+                        ->where(function($q) use ($masterCourse, $specificCourseName) {
+                            $q->where('academic_unit_name', $specificCourseName);
                             if ($masterCourse) {
-                                $q->where('course_id', $masterCourse->id);
-                            } else {
-                                $q->where('academic_unit_name', $displayCourseName);
+                                $q->orWhere(function($subQ) use ($masterCourse, $specificCourseName) {
+                                    $subQ->where('course_id', $masterCourse->id)
+                                         ->where('academic_unit_name', $specificCourseName);
+                                });
                             }
                         })->first();
 
@@ -962,8 +1037,8 @@ class OrganisationImportService
                         $orgCourseData['campus_id'] = $campusId;
                         $orgCourseData['department_id'] = $deptId;
                         $orgCourseData['course_id'] = $masterCourse ? $masterCourse->id : null;
-                        $orgCourseData['academic_unit_name'] = Str::limit($cData['academic_unit_name'] ?? $displayCourseName, 250, '');
-                        $orgCourseData['slug'] = Str::slug(Str::limit($displayCourseName, 100, '') . '-' . Str::random(4));
+                        $orgCourseData['academic_unit_name'] = Str::limit($specificCourseName, 250, '');
+                        $orgCourseData['slug'] = Str::slug(Str::limit($specificCourseName, 100, '') . '-' . Str::random(4));
                         OrganisationCourse::create($orgCourseData);
                     }
                 }
