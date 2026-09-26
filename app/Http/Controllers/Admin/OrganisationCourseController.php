@@ -41,8 +41,10 @@ class OrganisationCourseController extends Controller
         $department = $departmentId ? \App\Models\Department::find($departmentId) : null;
         $campus = $campusId ? \App\Models\Campus::find($campusId) : null;
         $allSpecializations = \App\Models\Specialization::pluck('title', 'id');
+        $allCampuses = $organisation->campuses()->where('status', true)->orderBy('campus_name')->get();
+        $allDepartments = $organisation->departments()->where('status', 'Active')->orderBy('department_name')->get();
 
-        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus', 'allSpecializations'));
+        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus', 'allSpecializations', 'allCampuses', 'allDepartments'));
     }
 
     public function create(Request $request)

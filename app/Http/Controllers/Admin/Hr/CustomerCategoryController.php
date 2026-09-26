@@ -32,12 +32,12 @@ class CustomerCategoryController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     $btn = '<div class="btn-group">';
-                    $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-category" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>';
-                    $btn .= '<form action="'.route('admin.customer-categories.destroy', $row->id).'" method="POST" class="ms-1 delete-form">
-                                '.csrf_field().'
-                                '.method_field('DELETE').'
-                                <button type="button" class="btn btn-sm btn-soft-danger delete-btn"><i class="fas fa-trash"></i></button>
-                            </form>';
+                    $btn .= '<button type="button" class="btn btn-sm btn-soft-primary edit-category" data-id="'.$row->id.'" title="Edit"><i class="fas fa-edit"></i></button>';
+                    if ($row->customers_count > 0) {
+                        $btn .= '<button type="button" class="btn btn-sm btn-soft-secondary ms-1 disabled-delete-btn" data-count="'.$row->customers_count.'" title="Cannot delete: contains '.$row->customers_count.' student(s)" style="opacity: 0.5; cursor: not-allowed;"><i class="fas fa-trash"></i></button>';
+                    } else {
+                        $btn .= '<button type="button" class="btn btn-sm btn-soft-danger ms-1 delete-category" data-id="'.$row->id.'" data-name="'.e($row->name).'" data-url="'.route('admin.customer-categories.destroy', $row->id).'" title="Delete"><i class="fas fa-trash"></i></button>';
+                    }
                     $btn .= '</div>';
                     return $btn;
                 })
@@ -115,10 +115,35 @@ class CustomerCategoryController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $category = CustomerCategory::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
+        $organization_id = auth()->user()->organization_id;
+        $categoryQuery = CustomerCategory::where('id', $id);
+        if ($organization_id) {
+            $categoryQuery->where('organization_id', $organization_id);
+        }
+        $category = $categoryQuery->firstOrFail();
+
+        $studentCount = $category->customers()->count();
+        if ($studentCount > 0) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => "Cannot delete category '{$category->name}' because it contains {$studentCount} student(s). Only categories with 0 students can be deleted."
+                ], 422);
+            }
+            return redirect()->back()->with('error', "Cannot delete category '{$category->name}' because it contains {$studentCount} student(s). Only categories with 0 students can be deleted.");
+        }
+
         $category->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Category deleted successfully'
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Category deleted successfully');
     }
 

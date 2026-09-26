@@ -410,6 +410,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'update' => 'admin.courses.update',
         'destroy' => 'admin.courses.destroy',
     ]);
+    Route::post('/admin/courses/fetch-bot-data', [CourseController::class, 'fetchBotData'])
+        ->name('admin.courses.fetch-bot-data');
     Route::get('admin/courses/{course}/duplicate', [CourseController::class, 'duplicate'])
         ->name('admin.courses.duplicate');
 

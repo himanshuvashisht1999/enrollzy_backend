@@ -69,6 +69,44 @@
         <div id="bulkDeleteCoursesIdsContainer"></div>
     </form>
 
+    {{-- ===================== FILTERS (CAMPUS & DEPARTMENT) ===================== --}}
+    @if($organisationTypeId != 9 && ((isset($allDepartments) && $allDepartments->count() > 0) || (isset($allCampuses) && $allCampuses->count() > 0)))
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-2 px-3">
+                <form method="GET" action="{{ route('admin.organisation-courses.index') }}" class="row g-2 align-items-center">
+                    <input type="hidden" name="organisation_id" value="{{ $organisation->id }}">
+                    @if(isset($allCampuses) && $allCampuses->count() > 0)
+                        <div class="col-md-3 col-sm-6">
+                            <select name="campus_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">-- All Campuses --</option>
+                                @foreach($allCampuses as $c)
+                                    <option value="{{ $c->id }}" {{ $campusId == $c->id ? 'selected' : '' }}>{{ $c->campus_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+                    @if(isset($allDepartments) && $allDepartments->count() > 0)
+                        <div class="col-md-4 col-sm-6">
+                            <select name="department_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">-- All Departments --</option>
+                                @foreach($allDepartments as $d)
+                                    <option value="{{ $d->id }}" {{ $departmentId == $d->id ? 'selected' : '' }}>{{ $d->department_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+                    @if($campusId || $departmentId)
+                        <div class="col-auto">
+                            <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $organisation->id]) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> Clear Filters
+                            </a>
+                        </div>
+                    @endif
+                </form>
+            </div>
+        </div>
+    @endif
+
     {{-- ========================================================= --}}
     {{-- UNIVERSITY / COLLEGE / INSTITUTE / E-LEARNING (TYPE 1,2,3,9) --}}
     {{-- ========================================================= --}}
@@ -86,6 +124,9 @@
                                 <th>Course Name</th>
                                 <th>Specialization Area</th>
                                 <th>Campus</th>
+                                @if($organisationTypeId != 9)
+                                    <th>Department</th>
+                                @endif
                                 <th>Mode</th>
                                 <th>Fees</th>
                                 <th>Duration</th>
@@ -123,6 +164,17 @@
                                             <span class="badge bg-secondary">All Campuses</span>
                                         @endif
                                     </td>
+                                    @if($organisationTypeId != 9)
+                                        <td>
+                                            @if($course->department)
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                    {{ $course->department->department_name }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted small">No Department</span>
+                                            @endif
+                                        </td>
+                                    @endif
                                     <td>{{ $course->mode }}</td>
                                     <td class="text-primary fw-bold">{{ $course->total_fees ?? $course->fees }}</td>
                                     <td>{{ $course->duration ?? ($course->course->duration ?? 'N/A') }}</td>
@@ -154,7 +206,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center py-5 text-muted">
+                                    <td colspan="{{ $organisationTypeId != 9 ? '11' : '10' }}" class="text-center py-5 text-muted">
                                         No courses found.
                                     </td>
                                 </tr>

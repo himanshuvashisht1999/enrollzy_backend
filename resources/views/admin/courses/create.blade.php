@@ -22,12 +22,23 @@
 
                             {{-- Course Name --}}
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Course Name</label>
-                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                                    value="{{ old('name') }}" placeholder="e.g. MBA, BBA, MCA" required>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-bold mb-0">Course Name <span class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" id="btn-fetch-course-bot" title="Auto-fill all course fields using AI Bot">
+                                        <i class="fas fa-robot me-1"></i> Fetch Data By bot
+                                    </button>
+                                </div>
+                                <input type="text"
+                                       name="name"
+                                       id="course_name_input"
+                                       class="form-control @error('name') is-invalid @enderror"
+                                       value="{{ old('name') }}"
+                                       placeholder="e.g. MBA, BBA, MCA"
+                                       required>
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <div id="bot-fetch-status" class="mt-2" style="display: none;"></div>
                             </div>
 
                             {{-- Slug --}}
@@ -175,49 +186,49 @@
                             {{-- Overview --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Overview</label>
-                                <textarea name="overview" class="form-control editor">{{ old('overview') }}</textarea>
+                                <textarea id="course_overview" name="overview" class="form-control editor">{{ old('overview') }}</textarea>
                             </div>
 
                             {{-- Generic Eligibility --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Generic Eligibility</label>
-                                <textarea name="generic_eligibility" class="form-control editor">{{ old('generic_eligibility') }}</textarea>
+                                <textarea id="course_generic_eligibility" name="generic_eligibility" class="form-control editor">{{ old('generic_eligibility') }}</textarea>
                             </div>
 
                             {{-- Core Curriculum --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Core Curriculum / Subjects</label>
-                                <textarea name="core_curriculum" class="form-control editor">{{ old('core_curriculum') }}</textarea>
+                                <textarea id="course_core_curriculum" name="core_curriculum" class="form-control editor">{{ old('core_curriculum') }}</textarea>
                             </div>
 
                             {{-- Skills Gained --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Skills Gained</label>
-                                <textarea name="skills_gained" class="form-control editor">{{ old('skills_gained') }}</textarea>
+                                <textarea id="course_skills_gained" name="skills_gained" class="form-control editor">{{ old('skills_gained') }}</textarea>
                             </div>
 
                             {{-- Career Scope --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Career Scope & Job Roles</label>
-                                <textarea name="career_scope" class="form-control editor">{{ old('career_scope') }}</textarea>
+                                <textarea id="course_career_scope" name="career_scope" class="form-control editor">{{ old('career_scope') }}</textarea>
                             </div>
 
                             {{-- Higher Education Options --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Higher Education Options</label>
-                                <textarea name="higher_education_options" class="form-control editor">{{ old('higher_education_options') }}</textarea>
+                                <textarea id="course_higher_education_options" name="higher_education_options" class="form-control editor">{{ old('higher_education_options') }}</textarea>
                             </div>
 
                             {{-- Course Comparison --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Course Comparison</label>
-                                <textarea name="course_comparison" class="form-control editor">{{ old('course_comparison') }}</textarea>
+                                <textarea id="course_course_comparison" name="course_comparison" class="form-control editor">{{ old('course_comparison') }}</textarea>
                             </div>
 
                             {{-- Pros & Cons --}}
                             <div class="col-12">
                                 <label class="form-label fw-bold">Pros & Cons / Who Should Take This</label>
-                                <textarea name="pros_cons" class="form-control editor">{{ old('pros_cons') }}</textarea>
+                                <textarea id="course_pros_cons" name="pros_cons" class="form-control editor">{{ old('pros_cons') }}</textarea>
                             </div>
 
                             {{-- Course FAQs Section --}}
@@ -400,6 +411,133 @@
             $(this).closest('.faq-item-card').fadeOut(150, function() {
                 $(this).remove();
                 updateFaqNumbers();
+            });
+        });
+
+        // Set TinyMCE content safely
+        function setTinyMceContent(id, content) {
+            if (content === undefined || content === null) return;
+            const editor = (typeof tinymce !== 'undefined') ? tinymce.get(id) : null;
+            if (editor) {
+                editor.setContent(content);
+                editor.save();
+            } else {
+                const el = document.getElementById(id);
+                if (el) el.value = content;
+            }
+        }
+
+        // Fetch Data By Bot logic
+        $('#btn-fetch-course-bot').on('click', function () {
+            const courseName = $('#course_name_input').val().trim();
+            if (!courseName) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Course Name Required',
+                        text: 'Please enter a course name first.',
+                    });
+                } else {
+                    alert('Please enter a course name first.');
+                }
+                return;
+            }
+
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Fetching by bot...');
+            $('#bot-fetch-status').show().html('<div class="alert alert-info py-2 px-3 small mb-0"><i class="fas fa-robot me-1"></i> Researching course curriculum, eligibility, salary & FAQs via Google Gemini... Please wait a moment.</div>');
+
+            $.ajax({
+                url: "{{ route('admin.courses.fetch-bot-data') }}",
+                type: "POST",
+                data: {
+                    course_name: courseName,
+                    _token: "{{ csrf_token() }}"
+                },
+                timeout: 120000,
+                success: function (res) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    $('#bot-fetch-status').html('<div class="alert alert-success py-2 px-3 small mb-0"><i class="fas fa-check-circle me-1"></i> Course details auto-filled successfully!</div>');
+                    setTimeout(() => { $('#bot-fetch-status').fadeOut(); }, 5000);
+
+                    if (res.status === 'success' && res.data) {
+                        const d = res.data;
+
+                        // 1. Text Inputs
+                        if (d.slug) $('input[name="slug"]').val(d.slug);
+                        if (d.full_form) $('input[name="full_form"]').val(d.full_form);
+                        if (d.duration) $('input[name="duration"]').val(d.duration);
+                        if (d.average_salary_range) $('input[name="average_salary_range"]').val(d.average_salary_range);
+
+                        // 2. Single Select2 Dropdowns
+                        if (d.program_level_id) $('select[name="program_level_id"]').val(d.program_level_id).trigger('change');
+                        if (d.stream_offered_id) $('select[name="stream_offered_id"]').val(d.stream_offered_id).trigger('change');
+                        if (d.discipline_id) $('select[name="discipline_id"]').val(d.discipline_id).trigger('change');
+                        if (d.course_type_id) $('select[name="course_type_id"]').val(d.course_type_id).trigger('change');
+
+                        // 3. Multi-Select2 Dropdowns
+                        if (d.program_types && d.program_types.length) {
+                            $('select[name="program_types[]"]').val(d.program_types).trigger('change');
+                        }
+                        if (d.common_entrance_exams && d.common_entrance_exams.length) {
+                            $('select[name="common_entrance_exams[]"]').val(d.common_entrance_exams).trigger('change');
+                        }
+                        if (d.common_specializations && d.common_specializations.length) {
+                            $('select[name="common_specializations[]"]').val(d.common_specializations).trigger('change');
+                        }
+                        if (d.related_courses && d.related_courses.length) {
+                            $('select[name="related_courses[]"]').val(d.related_courses).trigger('change');
+                        }
+
+                        // 4. TinyMCE Editors
+                        setTinyMceContent('course_overview', d.overview);
+                        setTinyMceContent('course_generic_eligibility', d.generic_eligibility);
+                        setTinyMceContent('course_core_curriculum', d.core_curriculum);
+                        setTinyMceContent('course_skills_gained', d.skills_gained);
+                        setTinyMceContent('course_career_scope', d.career_scope);
+                        setTinyMceContent('course_higher_education_options', d.higher_education_options);
+                        setTinyMceContent('course_course_comparison', d.course_comparison);
+                        setTinyMceContent('course_pros_cons', d.pros_cons);
+
+                        // 5. FAQs
+                        if (d.faqs && Array.isArray(d.faqs) && d.faqs.length > 0) {
+                            $('#course_faqs_container').empty();
+                            faqIndex = 0;
+                            d.faqs.forEach(faq => {
+                                addFaqRow(faq.question, faq.answer);
+                            });
+                            updateFaqNumbers();
+                        }
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Course Details Auto-Filled!',
+                                text: 'All fields have been filled using Google Gemini AI. Please review and click Create Course to save.',
+                                timer: 3500,
+                                showConfirmButton: false
+                            });
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    let msg = 'Failed to fetch course data from AI bot.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    $('#bot-fetch-status').html('<div class="alert alert-danger py-2 px-3 small mb-0"><i class="fas fa-exclamation-triangle me-1"></i> ' + msg + '</div>');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Fetch Failed',
+                            text: msg,
+                        });
+                    } else {
+                        alert(msg);
+                    }
+                }
             });
         });
     });

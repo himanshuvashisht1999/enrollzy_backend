@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Services\GeminiCourseBotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -215,6 +216,34 @@ class CourseController extends Controller
 
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course duplicated successfully. Please review and update.');
+    }
+
+    /**
+     * AJAX endpoint to fetch and research course details via Gemini Bot
+     */
+    public function fetchBotData(Request $request, GeminiCourseBotService $botService)
+    {
+        @set_time_limit(180);
+        @ini_set('max_execution_time', '180');
+
+        $request->validate([
+            'course_name' => 'required|string|max:255',
+        ]);
+
+        try {
+            $data = $botService->fetchCourseData($request->input('course_name'));
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Course details fetched successfully.',
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching course data by bot: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
 }

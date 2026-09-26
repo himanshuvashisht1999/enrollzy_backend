@@ -213,6 +213,59 @@
                 }
             });
         });
+
+        // Disabled delete button click (when total students > 0)
+        $(document).on('click', '.disabled-delete-btn', function() {
+            const count = $(this).data('count');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cannot Delete Category',
+                text: 'This category has ' + count + ' student(s) associated with it. Only categories with 0 students can be deleted.',
+            });
+        });
+
+        // Delete category confirmation and AJAX call (when total students == 0)
+        $(document).on('click', '.delete-category', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const url = $(this).data('url');
+
+            Swal.fire({
+                title: 'Delete Category?',
+                text: 'Are you sure you want to delete "' + name + '"?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        data: {
+                            _method: 'DELETE',
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(res) {
+                            if (res.status == 1) {
+                                table.ajax.reload();
+                                Swal.fire('Deleted!', res.message, 'success');
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            let msg = 'Failed to delete category.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Swal.fire('Error', msg, 'error');
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush
