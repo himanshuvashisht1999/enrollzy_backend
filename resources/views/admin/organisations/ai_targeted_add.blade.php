@@ -28,6 +28,33 @@
 .target-name-row {
     animation: fadeIn 0.2s ease-in-out;
 }
+/* Select2 inside input-group for repeater rows */
+.target-name-row .select2-container {
+    flex: 1 1 auto !important;
+    width: 1% !important;
+}
+.target-name-row .select2-container .select2-selection--single {
+    height: 38px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    background-color: #fff !important;
+}
+.target-name-row .select2-container .select2-selection--single .select2-selection__rendered {
+    line-height: 36px !important;
+    padding-left: 12px !important;
+    color: #333 !important;
+    font-size: 0.9rem !important;
+}
+.target-name-row .select2-container .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+    right: 8px !important;
+}
+.target-name-row .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -179,7 +206,7 @@
                         </div>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-success fw-bold" id="btnAddTargetName">
-                        <i class="fas fa-plus me-1"></i> Add More Name
+                        <i class="fas fa-plus me-1"></i> <span id="btnAddTargetNameText">Add More Name</span>
                     </button>
                 </div>
 
@@ -187,7 +214,18 @@
                     <!-- Row 1 (Default) -->
                     <div class="input-group target-name-row">
                         <span class="input-group-text bg-light text-muted fw-bold row-index-badge">1</span>
-                        <input type="text" class="form-control target-name-input" placeholder="Enter name (e.g. North Campus / Faculty of Nursing / B.Tech Robotics)" required>
+                        @if(($preSelectedMode ?? 'campus') === 'course')
+                            <select class="form-select target-name-input select2-target-course" required>
+                                <option value="">-- Select Master Course --</option>
+                                @if(isset($courses))
+                                    @foreach($courses as $c)
+                                        <option value="{{ $c->name }}" data-course-id="{{ $c->id }}">{{ $c->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        @else
+                            <input type="text" class="form-control target-name-input" placeholder="Enter name (e.g. North Campus / Faculty of Nursing / B.Tech Robotics)" required>
+                        @endif
                         <button type="button" class="btn btn-outline-danger btn-remove-target-name" title="Remove Name">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -601,6 +639,121 @@ document.addEventListener('DOMContentLoaded', function () {
         return false;
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function initTargetCourseSelect2($select) {
+        if (!window.jQuery || !$.fn.select2) return;
+        if (!$select.data('select2')) {
+            $select.select2({
+                placeholder: '-- Select Master Course --',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    }
+
+    function createTargetNameRow(index, value = '', mode = null) {
+        if (!mode) mode = getSelectedEntityMode();
+        const isSchool = isCurrentEntitySchool();
+        const isCourseMode = (mode === 'course' && !isSchool);
+
+        const row = document.createElement('div');
+        row.className = 'input-group target-name-row';
+
+        let inputHtml = '';
+        if (isCourseMode) {
+            let optionsHtml = '<option value="">-- Select Master Course --</option>';
+            if (globalMasters && Array.isArray(globalMasters.courses)) {
+                globalMasters.courses.forEach(c => {
+                    const isSel = (value && (String(c.name) === String(value) || String(c.id) === String(value)));
+                    optionsHtml += `<option value="${escapeHtml(c.name)}" data-course-id="${c.id}" ${isSel ? 'selected' : ''}>${escapeHtml(c.name)}</option>`;
+                });
+            }
+            inputHtml = `
+                <select class="form-select target-name-input select2-target-course" required>
+                    ${optionsHtml}
+                </select>
+            `;
+        } else {
+            let placeholder = 'Enter name';
+            if (mode === 'campus') {
+                placeholder = isSchool ? 'e.g. Junior Wing Campus / Main School Branch' : 'e.g. South Campus / Medical City Branch';
+            } else if (mode === 'department') {
+                placeholder = isSchool ? 'e.g. Primary Wing / Senior Wing / Department of Science' : 'e.g. Faculty of Allied Health Sciences / Department of Law';
+            } else if (mode === 'course' && isSchool) {
+                placeholder = 'e.g. Class XI-XII (CBSE - Science), Nursery - KG';
+            }
+            inputHtml = `
+                <input type="text" class="form-control target-name-input" placeholder="${placeholder}" value="${escapeHtml(value)}" required>
+            `;
+        }
+
+        const removeTitle = isCourseMode ? 'Remove Course' : 'Remove Name';
+        row.innerHTML = `
+            <span class="input-group-text bg-light text-muted fw-bold row-index-badge">${index}</span>
+            ${inputHtml}
+            <button type="button" class="btn btn-outline-danger btn-remove-target-name" title="${removeTitle}">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+
+        return row;
+    }
+
+    function syncTargetNameRowsMode(mode, isSchool) {
+        if (!targetNamesContainer) return;
+        const shouldBeSelect = (mode === 'course' && !isSchool);
+        const rows = targetNamesContainer.querySelectorAll('.target-name-row');
+
+        rows.forEach((row, idx) => {
+            const hasSelect = row.querySelector('select.target-name-input') !== null;
+            const currentInput = row.querySelector('.target-name-input');
+            const currentValue = currentInput ? currentInput.value : '';
+
+            if (shouldBeSelect && !hasSelect) {
+                // Switching from text to select
+                const newRow = createTargetNameRow(idx + 1, currentValue, 'course');
+                row.replaceWith(newRow);
+                const $sel = $(newRow).find('.select2-target-course');
+                if ($sel.length) initTargetCourseSelect2($sel);
+            } else if (!shouldBeSelect && hasSelect) {
+                // Switching from select to text
+                if (window.jQuery && $(currentInput).data('select2')) {
+                    $(currentInput).select2('destroy');
+                }
+                const newRow = createTargetNameRow(idx + 1, currentValue, mode);
+                row.replaceWith(newRow);
+            } else if (shouldBeSelect && hasSelect) {
+                // Already select, ensure select2 is initialized
+                const $sel = $(row).find('.select2-target-course');
+                if ($sel.length && !$sel.data('select2')) {
+                    initTargetCourseSelect2($sel);
+                }
+            } else if (!shouldBeSelect && !hasSelect) {
+                // Update placeholder for text input
+                if (currentInput) {
+                    if (mode === 'campus') {
+                        currentInput.placeholder = isSchool ? 'e.g. Junior Wing Campus / Main School Branch' : 'e.g. South Campus / Medical City Branch';
+                    } else if (mode === 'department') {
+                        currentInput.placeholder = isSchool ? 'e.g. Primary Wing / Senior Wing / Department of Science' : 'e.g. Faculty of Allied Health Sciences / Department of Law';
+                    } else if (mode === 'course' && isSchool) {
+                        currentInput.placeholder = 'e.g. Class XI-XII (CBSE - Science), Nursery - KG';
+                    }
+                }
+            }
+        });
+
+        updateTargetNameIndices();
+    }
+
     // Dynamic Cascading Dropdowns UI & Labels
     function handleEntityModeChange() {
         const mode = getSelectedEntityMode();
@@ -616,6 +769,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const aiInputUrl = document.getElementById('aiInputUrl');
         const labelTargetNamesSection = document.getElementById('labelTargetNamesSection');
         const subLabelTargetNamesSection = document.getElementById('subLabelTargetNamesSection');
+        const btnAddTargetNameText = document.getElementById('btnAddTargetNameText');
 
         if (labelTargetOrg) {
             labelTargetOrg.innerHTML = isSchool ? 'Target School <span class="text-danger">*</span>' : 'Target Organisation <span class="text-danger">*</span>';
@@ -634,6 +788,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/branch/junior-wing' : 'https://www.example.edu.in/campuses';
             if (labelTargetNamesSection) labelTargetNamesSection.innerText = isSchool ? 'Names of School Campuses / Branches to Add' : 'Names of Campuses / Locations to Add';
             if (subLabelTargetNamesSection) subLabelTargetNamesSection.innerText = 'Enter names of the specific campuses to add (e.g. North Campus, City Centre Campus). AI will extract address, labs, and facilities for each.';
+            if (btnAddTargetNameText) btnAddTargetNameText.innerText = isSchool ? 'Add More Branch' : 'Add More Campus';
         } else if (mode === 'department') {
             if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
             if (groupTargetDept) groupTargetDept.classList.add('d-none');
@@ -641,14 +796,19 @@ document.addEventListener('DOMContentLoaded', function () {
             if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/academics' : 'https://www.example.edu.in/departments';
             if (labelTargetNamesSection) labelTargetNamesSection.innerText = isSchool ? 'Names of Academic Wings / Departments to Add' : 'Names of Departments / Faculties to Add';
             if (subLabelTargetNamesSection) subLabelTargetNamesSection.innerText = 'Enter names of the specific departments to add (e.g. Faculty of Law, Dept of Computer Science). AI will extract HOD, faculty count, and labs for each.';
+            if (btnAddTargetNameText) btnAddTargetNameText.innerText = isSchool ? 'Add More Wing' : 'Add More Department';
         } else if (mode === 'course') {
             if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
             if (groupTargetDept) groupTargetDept.classList.remove('d-none');
             if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'Curriculum / Classes / Admissions URL <span class="text-danger">*</span>' : 'Course Catalog / Admissions Webpage URL <span class="text-danger">*</span>';
             if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/admissions/curriculum' : 'https://www.example.edu.in/programmes';
             if (labelTargetNamesSection) labelTargetNamesSection.innerText = isSchool ? 'Names of Classes / Curriculums to Add' : 'Names of Courses / Degrees to Add';
-            if (subLabelTargetNamesSection) subLabelTargetNamesSection.innerText = 'Enter names of the specific courses to add (e.g. B.Tech in Artificial Intelligence, MBA in Finance). AI will extract fees, duration, and match master degree.';
+            if (subLabelTargetNamesSection) subLabelTargetNamesSection.innerText = isSchool ? 'Enter names of the specific classes/curriculums to add (e.g. Class 1-10, Class 11-12 CBSE).' : 'Select master courses to add. AI will extract fees, duration, and match master degree.';
+            if (btnAddTargetNameText) btnAddTargetNameText.innerText = isSchool ? 'Add More Class' : 'Add More Course';
         }
+
+        // Synchronize repeater rows for mode
+        syncTargetNameRowsMode(mode, isSchool);
     }
 
     document.querySelectorAll('.entity-mode-radio').forEach(radio => {
@@ -753,36 +913,40 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnAddTargetName && targetNamesContainer) {
         btnAddTargetName.addEventListener('click', function () {
             const mode = getSelectedEntityMode();
-            let placeholder = 'Enter name';
-            if (mode === 'campus') placeholder = 'e.g. South Campus / Medical City Branch';
-            else if (mode === 'department') placeholder = 'e.g. Faculty of Allied Health Sciences';
-            else if (mode === 'course') placeholder = 'e.g. Master of Business Administration (Data Analytics)';
-
-            const row = document.createElement('div');
-            row.className = 'input-group target-name-row';
-            row.innerHTML = `
-                <span class="input-group-text bg-light text-muted fw-bold row-index-badge"></span>
-                <input type="text" class="form-control target-name-input" placeholder="${placeholder}" required>
-                <button type="button" class="btn btn-outline-danger btn-remove-target-name" title="Remove Name">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            `;
-            targetNamesContainer.appendChild(row);
+            const currentCount = targetNamesContainer.querySelectorAll('.target-name-row').length;
+            const newRow = createTargetNameRow(currentCount + 1, '', mode);
+            targetNamesContainer.appendChild(newRow);
             updateTargetNameIndices();
-            const input = row.querySelector('.target-name-input');
-            if (input) input.focus();
+
+            const $newSelect = $(newRow).find('.select2-target-course');
+            if ($newSelect.length) {
+                initTargetCourseSelect2($newSelect);
+                $newSelect.select2('open');
+            } else {
+                const input = newRow.querySelector('.target-name-input');
+                if (input) input.focus();
+            }
         });
 
         targetNamesContainer.addEventListener('click', function (e) {
             const removeBtn = e.target.closest('.btn-remove-target-name');
             if (removeBtn) {
                 const row = removeBtn.closest('.target-name-row');
-                if (targetNamesContainer.querySelectorAll('.target-name-row').length > 1) {
+                const totalRows = targetNamesContainer.querySelectorAll('.target-name-row').length;
+                const input = row.querySelector('.target-name-input');
+
+                if (totalRows > 1) {
+                    if (window.jQuery && $(input).data('select2')) {
+                        $(input).select2('destroy');
+                    }
                     row.remove();
                     updateTargetNameIndices();
                 } else {
-                    const input = row.querySelector('.target-name-input');
-                    if (input) input.value = '';
+                    if (window.jQuery && $(input).data('select2')) {
+                        $(input).val('').trigger('change');
+                    } else if (input) {
+                        input.value = '';
+                    }
                 }
             }
         });
@@ -906,17 +1070,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Collect Target Names from dynamic repeater
         const targetNames = [];
+        const targetMasterCourseMap = {};
         document.querySelectorAll('#targetNamesContainer .target-name-input').forEach(input => {
             const val = input.value.trim();
             if (val && !targetNames.includes(val)) {
                 targetNames.push(val);
+                if (input.tagName === 'SELECT') {
+                    const opt = input.options[input.selectedIndex];
+                    const cId = opt ? opt.getAttribute('data-course-id') : null;
+                    if (cId) {
+                        targetMasterCourseMap[val] = cId;
+                    }
+                }
             }
         });
+        window.selectedTargetMasterCourseMap = targetMasterCourseMap;
 
         if (targetNames.length === 0) {
-            alert('Please enter at least one target name to add.');
+            const isCourseMode = (mode === 'course' && !isCurrentEntitySchool());
+            alert(isCourseMode ? 'Please select at least one master course to add.' : 'Please enter at least one target name to add.');
             const firstInput = document.querySelector('#targetNamesContainer .target-name-input');
-            if (firstInput) firstInput.focus();
+            if (firstInput) {
+                if (window.jQuery && $(firstInput).data('select2')) {
+                    $(firstInput).select2('open');
+                } else {
+                    firstInput.focus();
+                }
+            }
             return;
         }
 
@@ -1449,7 +1629,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const rawAiStream = cr.stream || '';
             const rawAiDiscipline = cr.discipline || '';
 
-            const matchedCourse = findBestCourseMatch(rawAiName, rawAiShort, rawAiLevel, rawAiStream, rawAiDiscipline);
+            let explicitMasterId = (window.selectedTargetMasterCourseMap && (window.selectedTargetMasterCourseMap[rawAiName] || window.selectedTargetMasterCourseMap[rawAiShort])) || null;
+            if (!explicitMasterId && window.selectedTargetMasterCourseMap) {
+                const key = Object.keys(window.selectedTargetMasterCourseMap).find(k => k.toLowerCase() === (rawAiName || '').toLowerCase());
+                if (key) explicitMasterId = window.selectedTargetMasterCourseMap[key];
+            }
+            let explicitCourse = explicitMasterId ? (globalMasters.courses || []).find(c => String(c.id) === String(explicitMasterId)) : null;
+            const matchedCourse = explicitCourse || findBestCourseMatch(rawAiName, rawAiShort, rawAiLevel, rawAiStream, rawAiDiscipline);
             const selectedCourseId = matchedCourse ? matchedCourse.id : (cr.course_id || '');
 
             const defaultLevelId = matchedCourse && matchedCourse.program_level_id 
