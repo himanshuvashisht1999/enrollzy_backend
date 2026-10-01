@@ -30,6 +30,32 @@
     padding: 0.22em 0.55em !important;
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
+/* Inner campus tabs matching Edit Campus page */
+.campus-inner-tabs .nav-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 14px;
+    transition: all 0.2s ease-in-out;
+}
+.campus-inner-tabs .nav-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+}
+.campus-inner-tabs .nav-link.active {
+    color: #0d6efd !important;
+    border-bottom: 2px solid #0d6efd;
+    background: none;
+    font-weight: 700;
+}
+.facility-select-card {
+    transition: all 0.2s ease-in-out;
+}
+.facility-select-card:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
 </style>
 <div class="container-fluid">
     <!-- Page Header -->
@@ -458,7 +484,10 @@ document.addEventListener('DOMContentLoaded', function () {
         program_levels: @json($programLevels ?? []),
         streams: @json($streams ?? []),
         disciplines: @json($disciplines ?? []),
-        organisation_types: @json($organisationTypes ?? [])
+        organisation_types: @json($organisationTypes ?? []),
+        school_types: @json($schoolTypes ?? []),
+        brand_types: @json($brandTypes ?? []),
+        facilities: @json($facilitiesMaster ?? [])
     };
 
     function normalizeStr(str) {
@@ -808,6 +837,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (aiOrgTypeMaster) {
         aiOrgTypeMaster.addEventListener('change', function () {
             toggleOrgTypeFields(this.value);
+            handleEntityModeChange();
         });
     }
 
@@ -830,8 +860,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
             return false;
         } else {
-            const targetOrgId = currentTargetOrgId || $('#aiInputTargetOrg').val();
-            if (!targetOrgId) return false;
+            const targetOrgId = currentTargetOrgId || $('#aiInputTargetOrg').val() || (currentExtractedData?.target_organisation_id) || (currentExtractedData?.organisation?.id);
+            if (!targetOrgId) {
+                if (currentExtractedData?.organisation?.organisation_type_id == 4) return true;
+                return false;
+            }
             const org = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
             if (org) {
                 if (org.organisation_type_id == 4) return true;
@@ -865,6 +898,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (labelTargetDept) {
             labelTargetDept.innerHTML = isSchool ? 'Target Academic Wing / Dept <span class="text-danger">*</span>' : 'Target Department <span class="text-danger">*</span>';
         }
+
+        const tabCampusesTitle = document.getElementById('tab-campuses-title');
+        const headerCampusesSection = document.getElementById('headerCampusesSection');
+        const subHeaderCampusesSection = document.getElementById('subHeaderCampusesSection');
+        if (tabCampusesTitle) tabCampusesTitle.innerText = isSchool ? 'Campuses / Branches' : 'Campuses';
+        if (headerCampusesSection) headerCampusesSection.innerText = isSchool ? 'School Campuses & Branches' : 'Physical Campuses & Branches';
+        if (subHeaderCampusesSection) subHeaderCampusesSection.innerText = isSchool ? 'Manage school campus details according to school campus master profile.' : 'Manage campus locations, infrastructure, and facilities.';
 
         if (mode === 'organisation') {
             if (groupOrgType) groupOrgType.classList.remove('d-none');
@@ -910,6 +950,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 badgePromptMode.innerText = isSchool ? 'School Class / Curriculum Only' : 'Course / Program Only';
                 badgePromptMode.className = 'badge bg-success-subtle text-success border border-success ms-1 fw-normal';
             }
+        }
+
+        // Auto-refresh rendered campus cards if type toggled
+        const campusesContainer = document.getElementById('campusesContainer');
+        if (campusesContainer) {
+            const cards = Array.from(campusesContainer.querySelectorAll('.campus-item'));
+            cards.forEach((card, i) => {
+                const isCardSchool = card.classList.contains('campus-item-school') || !!card.querySelector('.c-school-types');
+                if (isCardSchool !== isSchool) {
+                    const data = collectCampusItemData(card) || {};
+                    card.remove();
+                    appendCampusCard(data, Date.now() + i);
+                }
+            });
         }
 
         fetchAndRefreshPrompt(false);
@@ -1913,170 +1967,591 @@ document.addEventListener('DOMContentLoaded', function () {
     function appendCampusCard(c = {}, idx = Date.now()) {
         const isSchool = isCurrentEntitySchool();
         const div = document.createElement('div');
-        div.className = 'card border mb-3 campus-item';
-        div.innerHTML = `
-            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                <span class="fw-bold"><i class="fas fa-map-marker-alt text-primary me-2"></i>${isSchool ? 'School Campus / Branch' : 'Campus'}: <span class="campus-title-preview">${c.campus_name || (isSchool ? 'School Branch' : 'Campus')}</span></span>
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-campus">
-                    <i class="fas fa-trash me-1"></i> Remove
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold small">Campus / Branch Name</label>
-                        <input type="text" class="form-control c-name" value="${c.campus_name || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Campus Type</label>
-                        <select class="form-select c-type">
-                            <option value="Main" ${c.campus_type === 'Main' ? 'selected' : ''}>Main Campus</option>
-                            <option value="Regional" ${c.campus_type === 'Regional' ? 'selected' : ''}>Regional / Branch</option>
-                            <option value="Satellite" ${c.campus_type === 'Satellite' ? 'selected' : ''}>Satellite Branch</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small">Established Year</label>
-                        <input type="number" class="form-control c-est" value="${c.established_year || ''}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small">Area (Acres)</label>
-                        <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
-                    </div>
+        div.className = 'card border mb-3 campus-item' + (isSchool ? ' campus-item-school' : '');
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">City</label>
-                        <input type="text" class="form-control c-city" value="${c.city || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">State</label>
-                        <input type="text" class="form-control c-state" value="${c.state || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Country</label>
-                        <input type="text" class="form-control c-country" value="${c.country || 'India'}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Pincode</label>
-                        <input type="text" class="form-control c-pincode" value="${c.pincode || ''}">
-                    </div>
+        if (isSchool) {
+            // Options for School Types
+            const schoolTypes = globalMasters.school_types || [];
+            let selectedSchoolTypeIds = [];
+            if (Array.isArray(c.campus_type_new_id)) {
+                selectedSchoolTypeIds = c.campus_type_new_id.map(String);
+            } else if (c.campus_type_new_id) {
+                selectedSchoolTypeIds = [String(c.campus_type_new_id)];
+            } else if (c.school_type) {
+                const stTitles = Array.isArray(c.school_type) ? c.school_type : [c.school_type];
+                schoolTypes.forEach(st => {
+                    if (stTitles.some(t => normalizeStr(t) === normalizeStr(st.title))) {
+                        selectedSchoolTypeIds.push(String(st.id));
+                    }
+                });
+            }
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small">Full Address</label>
-                        <input type="text" class="form-control c-address" value="${c.full_address || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Nearest Transport Hub</label>
-                        <input type="text" class="form-control c-hub" value="${c.nearest_transport_hub || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Google Maps URL</label>
-                        <input type="url" class="form-control c-map" value="${c.google_map_url || ''}">
-                    </div>
+            const schoolTypesOptions = schoolTypes.map(st => `
+                <option value="${st.id}" ${selectedSchoolTypeIds.includes(String(st.id)) ? 'selected' : ''}>${st.title}</option>
+            `).join('');
 
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small">Classrooms Count</label>
-                        <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small">Academic Blocks</label>
-                        <input type="number" class="form-control c-blocks" value="${c.academic_blocks_count || ''}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small">Labs Count</label>
-                        <input type="number" class="form-control c-labs" value="${c.laboratories_count || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Hostel Type</label>
-                        <select class="form-select c-hostel-type">
-                            <option value="">None / Not specified</option>
-                            <option value="Both" ${c.hostel_type === 'Both' ? 'selected' : ''}>Both (Boys & Girls)</option>
-                            <option value="Boys" ${c.hostel_type === 'Boys' ? 'selected' : ''}>Boys Only</option>
-                            <option value="Girls" ${c.hostel_type === 'Girls' ? 'selected' : ''}>Girls Only</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Hostel Capacity</label>
-                        <input type="number" class="form-control c-hostel-cap" value="${c.hostel_capacity || ''}">
-                    </div>
+            // Options for Brand Type
+            const brandTypes = (globalMasters.brand_types && globalMasters.brand_types.length > 0)
+                ? globalMasters.brand_types
+                : ['Independent', 'Chain', 'Franchise'];
+            const brandTypesOptions = brandTypes.map(b => `
+                <option value="${b}" ${c.brand_type === b ? 'selected' : ''}>${b}</option>
+            `).join('');
 
-                    <!-- Campus Amenities & Facilities Switches (includes School Labs, Playground, GPS Buses, Gate System) -->
-                    <div class="col-12 py-2 px-3 border rounded bg-light my-2">
-                        <div class="d-flex flex-wrap gap-4">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-smart-class" type="checkbox" ${c.smart_classrooms ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Smart Classrooms</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-library" type="checkbox" ${c.library_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Library Available</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-digital-lib" type="checkbox" ${c.digital_library_access ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Digital Library</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-science-labs" type="checkbox" ${c.science_labs_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Science Labs</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-comp-labs" type="checkbox" ${c.computer_labs_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Computer Labs</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-playground" type="checkbox" ${c.playground_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Playground / Sports Ground</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-gps-buses" type="checkbox" ${c.gps_enabled_buses ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">GPS-Enabled Buses</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-visitor-sys" type="checkbox" ${c.visitor_management_system ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Visitor Gate System</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-hostel-avail" type="checkbox" ${c.hostel_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Hostel Available</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-transport" type="checkbox" ${c.transport_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Transport Available</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-medical" type="checkbox" ${c.medical_facility_available ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Medical Facility</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-cctv" type="checkbox" ${c.cctv_coverage ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">CCTV Coverage</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input c-fire" type="checkbox" ${c.fire_safety_certified ? 'checked' : ''}>
-                                <label class="form-check-label small fw-bold">Fire Safety Certified</label>
+            // Options for Target Classes (Classes 6 to 12 + Dropper, matching edit page)
+            const selectedClasses = Array.isArray(c.target_classes) ? c.target_classes.map(String) : [];
+            let targetClassesOptions = '';
+            for (let i = 6; i <= 12; i++) {
+                targetClassesOptions += `<option value="${i}" ${selectedClasses.includes(String(i)) ? 'selected' : ''}>Class ${i}</option>`;
+            }
+            targetClassesOptions += `<option value="Dropper" ${selectedClasses.includes('Dropper') ? 'selected' : ''}>Dropper</option>`;
+
+            // Options for Facilities
+            const facilitiesList = globalMasters.facilities || [];
+            const selectedFacilities = Array.isArray(c.facilities) ? c.facilities.map(String) : [];
+            const facilitiesHtml = facilitiesList.length > 0 ? facilitiesList.map(f => {
+                const isChecked = selectedFacilities.includes(String(f.id));
+                return `
+                    <div class="col-md-3 col-sm-4 col-6">
+                        <div class="border rounded p-2 text-center h-100 facility-select-card" style="cursor: pointer; background: ${isChecked ? '#f0fdf4' : '#fff'}; border-color: ${isChecked ? '#22c55e' : '#e5e7eb'} !important;">
+                            <div class="form-check form-check-inline m-0 d-flex flex-column align-items-center">
+                                <input class="form-check-input c-facility-check mb-1" type="checkbox" value="${f.id}" ${isChecked ? 'checked' : ''}>
+                                <i class="${f.icon || 'fas fa-building'} fa-lg text-secondary my-1"></i>
+                                <span class="small fw-semibold text-truncate" style="max-width: 130px;" title="${f.name}">${f.name}</span>
                             </div>
                         </div>
                     </div>
+                `;
+            }).join('') : '<div class="col-12 text-muted small">No master facilities configured.</div>';
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Bus Fleet Size</label>
-                        <input type="number" class="form-control c-bus-fleet" value="${c.bus_fleet_size || ''}" placeholder="e.g. 25">
+            // Bus Routes
+            const busRoutes = Array.isArray(c.bus_routes) && c.bus_routes.length > 0 ? c.bus_routes : [''];
+            const busRoutesHtml = busRoutes.map(route => `
+                <div class="input-group input-group-sm mb-2 bus-route-row">
+                    <span class="input-group-text"><i class="fas fa-route text-muted"></i></span>
+                    <input type="text" class="form-control c-bus-route-input" value="${route || ''}" placeholder="Enter bus route / stops">
+                    <button type="button" class="btn btn-outline-danger btn-remove-route" title="Remove Route">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            // Class Profile
+            const classProfiles = Array.isArray(c.class_profile) && c.class_profile.length > 0 
+                ? c.class_profile 
+                : [{ year: '', total_students: '', total_faculty: '', total_male_students: '', total_female_students: '', total_outside_state: '' }];
+            
+            const classProfileHtml = classProfiles.map(stat => `
+                <div class="c-class-profile-item border p-3 rounded position-relative bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-primary"><i class="fas fa-calendar-alt me-1"></i>Academic Year Stats</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-stat" title="Remove Year Stats">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Sports Facilities</label>
-                        <input type="text" class="form-control c-sports" value="${toCsv(c.sports_facilities)}" placeholder="Cricket, Football, Basketball...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Campus Email</label>
-                        <input type="email" class="form-control c-email" value="${c.campus_email || ''}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Campus Contact Numbers</label>
-                        <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Year</label>
+                            <input type="number" class="form-control form-control-sm cp-year" value="${stat.year || ''}" placeholder="e.g. 2024">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-students" value="${stat.total_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Faculty</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-faculty" value="${stat.total_faculty || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Male Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-male" value="${stat.total_male_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Female Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-female" value="${stat.total_female_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students Outside State</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-outside" value="${stat.total_outside_state || ''}" placeholder="0">
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `).join('');
+
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold"><i class="fas fa-school text-primary me-2"></i>School Campus: <span class="campus-title-preview">${c.campus_name || 'Main School Campus'}</span></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-campus">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- 9 Tabs matching School Edit Campus page -->
+                    <ul class="nav nav-tabs campus-inner-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-identity" type="button" role="tab">Identity</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-location" type="button" role="tab">Location</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-infra" type="button" role="tab">Infrastructure</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-academic" type="button" role="tab">Academic Focus</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-facilities" type="button" role="tab">Facilities</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-transport" type="button" role="tab">Transport</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-safety" type="button" role="tab">Safety</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-contact" type="button" role="tab">Contact</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-class-profile" type="button" role="tab">Class Profile</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 1. Identity -->
+                        <div class="tab-pane fade show active" id="c-tab-${idx}-identity" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control c-name" value="${c.campus_name || ''}" placeholder="e.g. Main School Campus" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">School Type</label>
+                                    <select class="form-select select2 c-school-types" multiple data-placeholder="Select School Type(s)">
+                                        ${schoolTypesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">Established Year</label>
+                                    <input type="number" class="form-control c-est" value="${c.established_year || ''}" placeholder="e.g. 1995">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">Brand Type</label>
+                                    <select class="form-select c-brand-type">
+                                        <option value="">Select Brand Type</option>
+                                        ${brandTypesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input c-status" type="checkbox" id="c_status_${idx}" ${(c.status !== false && c.status !== 0 && c.status !== '0') ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="c_status_${idx}">Active Status</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Location -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-location" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">Pincode</label>
+                                    <input type="text" class="form-control c-pincode" value="${c.pincode || ''}" placeholder="e.g. 160022">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">City</label>
+                                    <input type="text" class="form-control c-city" value="${c.city || ''}" placeholder="e.g. Chandigarh">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">State</label>
+                                    <input type="text" class="form-control c-state" value="${c.state || ''}" placeholder="e.g. Punjab">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Full Address</label>
+                                    <textarea class="form-control c-address" rows="2" placeholder="Full postal address">${c.full_address || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Infrastructure -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-infra" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Area</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" class="form-control c-acres" value="${c.campus_area_acres || ''}" placeholder="e.g. 25.00">
+                                        <select class="form-select c-area-unit" style="max-width: 140px;">
+                                            <option value="Acres" ${(!c.campus_area_unit || c.campus_area_unit === 'Acres') ? 'selected' : ''}>Acres</option>
+                                            <option value="Square Yard" ${c.campus_area_unit === 'Square Yard' ? 'selected' : ''}>Sq Yard</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Classrooms Count</label>
+                                    <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}" placeholder="e.g. 50">
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input c-smart-class" type="checkbox" id="smart_class_${idx}" ${c.smart_classrooms ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="smart_class_${idx}">Smart Classrooms Available</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Academic Focus -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-academic" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Target Classes</label>
+                                    <select class="form-select select2 c-target-classes" multiple data-placeholder="Select Target Classes">
+                                        ${targetClassesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">About Campus</label>
+                                    <textarea class="form-control c-about-institute" rows="4" placeholder="Overview of the school campus, curriculum and academic focus...">${c.about_institute || c.about || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Facilities -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-facilities" role="tabpanel">
+                            <p class="text-muted small mb-3">Select the facilities available at this campus.</p>
+                            <div class="row g-2">
+                                ${facilitiesHtml}
+                            </div>
+                        </div>
+
+                        <!-- 6. Transport -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-transport" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input c-transport" type="checkbox" id="transport_sw_${idx}" ${c.transport_available ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="transport_sw_${idx}">Transport Available</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 c-bus-routes-box" style="display: ${c.transport_available ? 'block' : 'none'};">
+                                    <label class="form-label fw-bold small">Bus Routes</label>
+                                    <div class="c-bus-routes-container d-flex flex-column gap-2 mb-2">
+                                        ${busRoutesHtml}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-add-route">
+                                        <i class="fas fa-plus me-1"></i> Add Route
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Safety -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-safety" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input c-cctv" type="checkbox" id="cctv_${idx}" ${c.cctv_coverage ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="cctv_${idx}">CCTV Coverage</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Contact -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-contact" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Email</label>
+                                    <input type="email" class="form-control c-email" value="${c.campus_email || ''}" placeholder="e.g. principal@school.edu.in">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Contact Numbers (Comma separated)</label>
+                                    <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}" placeholder="e.g. 0172-123456, 9876543210">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9. Class Profile -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-class-profile" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-primary mb-0 fw-bold small"><i class="fas fa-users me-1"></i> Class Profile</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-stat">
+                                    <i class="fas fa-plus me-1"></i> Add Year Stats
+                                </button>
+                            </div>
+                            <div class="c-class-profile-container d-flex flex-column gap-3">
+                                ${classProfileHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Event handlers for School Campus
+            div.querySelector('.btn-add-route')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-bus-routes-container');
+                const row = document.createElement('div');
+                row.className = 'input-group input-group-sm mb-2 bus-route-row';
+                row.innerHTML = `
+                    <span class="input-group-text"><i class="fas fa-route text-muted"></i></span>
+                    <input type="text" class="form-control c-bus-route-input" placeholder="Enter bus route / stops">
+                    <button type="button" class="btn btn-outline-danger btn-remove-route" title="Remove Route">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                row.querySelector('.btn-remove-route').addEventListener('click', function () { row.remove(); });
+                container.appendChild(row);
+            });
+
+            div.querySelectorAll('.btn-remove-route').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.bus-route-row').remove();
+                });
+            });
+
+            div.querySelectorAll('.facility-select-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    if (e.target.tagName.toLowerCase() === 'input') return;
+                    const chk = this.querySelector('.c-facility-check');
+                    if (chk) {
+                        chk.checked = !chk.checked;
+                        chk.dispatchEvent(new Event('change'));
+                    }
+                });
+                const chk = card.querySelector('.c-facility-check');
+                if (chk) {
+                    chk.addEventListener('change', function () {
+                        if (this.checked) {
+                            card.style.background = '#f0fdf4';
+                            card.style.borderColor = '#22c55e';
+                        } else {
+                            card.style.background = '#fff';
+                            card.style.borderColor = '#e5e7eb';
+                        }
+                    });
+                }
+            });
+
+            div.querySelector('.btn-add-stat')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-class-profile-container');
+                const statDiv = document.createElement('div');
+                statDiv.className = 'c-class-profile-item border p-3 rounded position-relative bg-light';
+                statDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-primary"><i class="fas fa-calendar-alt me-1"></i>Academic Year Stats</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-stat" title="Remove Year Stats">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Year</label>
+                            <input type="number" class="form-control form-control-sm cp-year" placeholder="e.g. 2024">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-students" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Faculty</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-faculty" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Male Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-male" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Female Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-female" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students Outside State</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-outside" placeholder="0">
+                        </div>
+                    </div>
+                `;
+                statDiv.querySelector('.btn-remove-stat').addEventListener('click', function () { statDiv.remove(); });
+                container.appendChild(statDiv);
+            });
+
+            div.querySelectorAll('.btn-remove-stat').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.c-class-profile-item').remove();
+                });
+            });
+
+            const transportSw = div.querySelector('.c-transport');
+            const routesBox = div.querySelector('.c-bus-routes-box');
+            if (transportSw && routesBox) {
+                transportSw.addEventListener('change', function () {
+                    routesBox.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        } else {
+            // University / College Campus Layout
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold"><i class="fas fa-map-marker-alt text-primary me-2"></i>Campus: <span class="campus-title-preview">${c.campus_name || 'Campus'}</span></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-campus">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small">Campus / Branch Name</label>
+                            <input type="text" class="form-control c-name" value="${c.campus_name || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Type</label>
+                            <select class="form-select c-type">
+                                <option value="Main" ${c.campus_type === 'Main' ? 'selected' : ''}>Main Campus</option>
+                                <option value="Regional" ${c.campus_type === 'Regional' ? 'selected' : ''}>Regional / Branch</option>
+                                <option value="Satellite" ${c.campus_type === 'Satellite' ? 'selected' : ''}>Satellite Branch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Established Year</label>
+                            <input type="number" class="form-control c-est" value="${c.established_year || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Area (Acres)</label>
+                            <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">City</label>
+                            <input type="text" class="form-control c-city" value="${c.city || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">State</label>
+                            <input type="text" class="form-control c-state" value="${c.state || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Country</label>
+                            <input type="text" class="form-control c-country" value="${c.country || 'India'}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Pincode</label>
+                            <input type="text" class="form-control c-pincode" value="${c.pincode || ''}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Full Address</label>
+                            <input type="text" class="form-control c-address" value="${c.full_address || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Nearest Transport Hub</label>
+                            <input type="text" class="form-control c-hub" value="${c.nearest_transport_hub || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Google Maps URL</label>
+                            <input type="url" class="form-control c-map" value="${c.google_map_url || ''}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Classrooms Count</label>
+                            <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Academic Blocks</label>
+                            <input type="number" class="form-control c-blocks" value="${c.academic_blocks_count || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Labs Count</label>
+                            <input type="number" class="form-control c-labs" value="${c.laboratories_count || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Hostel Type</label>
+                            <select class="form-select c-hostel-type">
+                                <option value="">None / Not specified</option>
+                                <option value="Both" ${c.hostel_type === 'Both' ? 'selected' : ''}>Both (Boys & Girls)</option>
+                                <option value="Boys" ${c.hostel_type === 'Boys' ? 'selected' : ''}>Boys Only</option>
+                                <option value="Girls" ${c.hostel_type === 'Girls' ? 'selected' : ''}>Girls Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Hostel Capacity</label>
+                            <input type="number" class="form-control c-hostel-cap" value="${c.hostel_capacity || ''}">
+                        </div>
+
+                        <!-- Campus Amenities & Facilities Switches -->
+                        <div class="col-12 py-2 px-3 border rounded bg-light my-2">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-smart-class" type="checkbox" ${c.smart_classrooms ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Smart Classrooms</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-library" type="checkbox" ${c.library_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Library Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-digital-lib" type="checkbox" ${c.digital_library_access ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Digital Library</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-science-labs" type="checkbox" ${c.science_labs_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Science Labs</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-comp-labs" type="checkbox" ${c.computer_labs_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Computer Labs</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-playground" type="checkbox" ${c.playground_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Playground / Sports Ground</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-gps-buses" type="checkbox" ${c.gps_enabled_buses ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">GPS-Enabled Buses</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-visitor-sys" type="checkbox" ${c.visitor_management_system ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Visitor Gate System</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-hostel-avail" type="checkbox" ${c.hostel_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Hostel Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-transport" type="checkbox" ${c.transport_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Transport Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-medical" type="checkbox" ${c.medical_facility_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Medical Facility</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-cctv" type="checkbox" ${c.cctv_coverage ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">CCTV Coverage</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-fire" type="checkbox" ${c.fire_safety_certified ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Fire Safety Certified</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Bus Fleet Size</label>
+                            <input type="number" class="form-control c-bus-fleet" value="${c.bus_fleet_size || ''}" placeholder="e.g. 25">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Sports Facilities</label>
+                            <input type="text" class="form-control c-sports" value="${toCsv(c.sports_facilities)}" placeholder="Cricket, Football, Basketball...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Email</label>
+                            <input type="email" class="form-control c-email" value="${c.campus_email || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Contact Numbers</label>
+                            <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         div.querySelector('.btn-remove-campus').addEventListener('click', function () {
             div.remove();
@@ -2230,6 +2705,79 @@ document.addEventListener('DOMContentLoaded', function () {
     function collectCampusItemData(el) {
         const name = el.querySelector('.c-name')?.value.trim();
         if (!name) return null;
+
+        // Check if this is a School Campus Card
+        if (el.querySelector('.c-school-types') || el.classList.contains('campus-item-school')) {
+            const schoolTypeSelect = el.querySelector('.c-school-types');
+            let schoolTypeIds = [];
+            if (schoolTypeSelect) {
+                schoolTypeIds = Array.from(schoolTypeSelect.selectedOptions).map(o => parseInt(o.value) || o.value).filter(Boolean);
+            }
+
+            const targetClassesSelect = el.querySelector('.c-target-classes');
+            let targetClasses = [];
+            if (targetClassesSelect) {
+                targetClasses = Array.from(targetClassesSelect.selectedOptions).map(o => o.value).filter(Boolean);
+            }
+
+            const facilityChecks = el.querySelectorAll('.c-facility-check:checked');
+            const facilities = Array.from(facilityChecks).map(chk => chk.value).filter(Boolean);
+
+            const busRouteInputs = el.querySelectorAll('.c-bus-route-input');
+            const busRoutes = Array.from(busRouteInputs).map(inp => inp.value.trim()).filter(Boolean);
+
+            const phoneStr = el.querySelector('.c-phones')?.value || '';
+            const contactNumbers = phoneStr.split(',').map(s => s.trim()).filter(Boolean);
+
+            const classProfileItems = [];
+            el.querySelectorAll('.c-class-profile-item').forEach(item => {
+                const year = item.querySelector('.cp-year')?.value.trim();
+                const totalStudents = item.querySelector('.cp-total-students')?.value.trim();
+                const totalFaculty = item.querySelector('.cp-total-faculty')?.value.trim();
+                const totalMale = item.querySelector('.cp-total-male')?.value.trim();
+                const totalFemale = item.querySelector('.cp-total-female')?.value.trim();
+                const totalOutside = item.querySelector('.cp-total-outside')?.value.trim();
+
+                if (year || totalStudents || totalFaculty || totalMale || totalFemale || totalOutside) {
+                    classProfileItems.push({
+                        year: year ? parseInt(year) : null,
+                        total_students: totalStudents ? parseInt(totalStudents) : 0,
+                        total_faculty: totalFaculty ? parseInt(totalFaculty) : 0,
+                        total_male_students: totalMale ? parseInt(totalMale) : 0,
+                        total_female_students: totalFemale ? parseInt(totalFemale) : 0,
+                        total_outside_state: totalOutside ? parseInt(totalOutside) : 0
+                    });
+                }
+            });
+
+            return {
+                campus_name: name,
+                campus_type: 'Main',
+                campus_type_new_id: schoolTypeIds,
+                established_year: el.querySelector('.c-est')?.value.trim() || null,
+                brand_type: el.querySelector('.c-brand-type')?.value || null,
+                status: el.querySelector('.c-status')?.checked ? 1 : 0,
+                pincode: el.querySelector('.c-pincode')?.value.trim() || null,
+                city: el.querySelector('.c-city')?.value.trim() || null,
+                state: el.querySelector('.c-state')?.value.trim() || null,
+                full_address: el.querySelector('.c-address')?.value.trim() || null,
+                campus_area_acres: el.querySelector('.c-acres')?.value.trim() || null,
+                campus_area_unit: el.querySelector('.c-area-unit')?.value || 'Acres',
+                classrooms_count: el.querySelector('.c-classrooms')?.value.trim() || null,
+                smart_classrooms: el.querySelector('.c-smart-class')?.checked ? 1 : 0,
+                target_classes: targetClasses,
+                about_institute: el.querySelector('.c-about-institute')?.value.trim() || null,
+                facilities: facilities,
+                transport_available: el.querySelector('.c-transport')?.checked ? 1 : 0,
+                bus_routes: busRoutes,
+                cctv_coverage: el.querySelector('.c-cctv')?.checked ? 1 : 0,
+                campus_email: el.querySelector('.c-email')?.value.trim() || null,
+                campus_contact_numbers: contactNumbers,
+                class_profile: classProfileItems
+            };
+        }
+
+        // University / College Campus Card
         return {
             campus_name: name,
             campus_type: el.querySelector('.c-type')?.value || 'Main',

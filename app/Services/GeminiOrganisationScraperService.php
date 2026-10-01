@@ -1389,15 +1389,22 @@ STRICT_URL_INSTRUCTIONS;
 
         $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
         $schoolInstructions = $isSchool ? <<<SCHOOL_CAMPUS_INSTR
-- THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location.
-- Specifically discover and extract school-specific infrastructure:
-  * science_labs_available: true/false (Physics, Chemistry, Biology labs)
-  * computer_labs_available: true/false (Computer and coding laboratories)
-  * playground_available: true/false (Outdoor playground, athletics, or sports ground)
-  * gps_enabled_buses: true/false (School buses with GPS tracking)
-  * bus_fleet_size: integer count of school buses
-  * visitor_management_system: true/false (Gate security visitor check-in)
-  * school_type: "Day School" | "Boarding School" | "Day-cum-Boarding"
+- THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location according to the School Campus profile:
+  * school_type: ["Day School", "Boarding School", "Day-cum-Boarding", etc.]
+  * brand_type: "Independent" | "Chain" | "Franchise"
+  * established_year: integer
+  * city, state, country, pincode, full_address
+  * campus_area_acres: float (e.g. 15.5)
+  * campus_area_unit: "Acres" or "Square Yard"
+  * classrooms_count: count of classrooms
+  * smart_classrooms: true/false
+  * target_classes: array of classes e.g. ["6", "7", "8", "9", "10", "11", "12"]
+  * about_institute: campus overview and educational philosophy
+  * transport_available: true/false
+  * bus_routes: array of bus routes / stops
+  * cctv_coverage: true/false
+  * campus_email: email address
+  * campus_contact_numbers: array of phone numbers
 SCHOOL_CAMPUS_INSTR
         : '';
 
@@ -1449,6 +1456,7 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
       "campus_name": "Main Campus",
       "campus_type": "Main",
       "school_type": "Day School",
+      "brand_type": "Independent",
       "established_year": 2005,
       "city": "Bengaluru",
       "state": "Karnataka",
@@ -1458,9 +1466,14 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
       "google_map_url": "https://maps.google.com/?q=Alliance+University+Bangalore",
       "nearest_transport_hub": "Chandapura Railway Station (3 km) / Electronic City Metro (10 km)",
       "campus_area_acres": 55.5,
-      "academic_blocks_count": 6,
+      "campus_area_unit": "Acres",
       "classrooms_count": 80,
       "smart_classrooms": true,
+      "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
+      "about_institute": "Overview of the school campus and curriculum focus",
+      "transport_available": true,
+      "bus_routes": ["Route 1 - North Sector", "Route 2 - City Center"],
+      "cctv_coverage": true,
       "laboratories_count": 35,
       "science_labs_available": true,
       "computer_labs_available": true,
@@ -2589,6 +2602,7 @@ IMPORTANT INSTRUCTIONS:
       "campus_name": "Main Campus",
       "campus_type": "Main",
       "school_type": "Day School",
+      "brand_type": "Independent",
       "established_year": 1995,
       "city": "",
       "state": "",
@@ -2598,8 +2612,13 @@ IMPORTANT INSTRUCTIONS:
       "google_map_url": "",
       "nearest_transport_hub": "",
       "campus_area_acres": 15,
+      "campus_area_unit": "Acres",
       "classrooms_count": 50,
       "smart_classrooms": true,
+      "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
+      "about_institute": "Overview of school branch and pedagogical approach",
+      "transport_available": true,
+      "bus_routes": ["Route 1", "Route 2"],
       "laboratories_count": 6,
       "science_labs_available": true,
       "computer_labs_available": true,

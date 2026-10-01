@@ -33,6 +33,9 @@ class AiOrganisationImportController extends Controller
         $disciplines = \App\Models\Discipline::where('status', true)->orderBy('title')->get();
         $courses = \App\Models\Course::select('id', 'name', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration')->orderBy('name')->get();
         $organisation = new \App\Models\Organisation();
+        $schoolTypes = \App\Models\CampusTypeNew::where('status', 1)->orderBy('sort_order')->orderBy('title')->get();
+        $brandTypes = \App\Models\Organisation::BRAND_TYPES;
+        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
 
         return view('admin.organisations.ai_create', compact(
             'organisation',
@@ -41,7 +44,10 @@ class AiOrganisationImportController extends Controller
             'programLevels',
             'streams',
             'disciplines',
-            'courses'
+            'courses',
+            'schoolTypes',
+            'brandTypes',
+            'facilitiesMaster'
         ));
     }
 
@@ -369,6 +375,9 @@ class AiOrganisationImportController extends Controller
                 'streams' => \App\Models\StreamOffered::select('id', 'title')->orderBy('title')->get(),
                 'disciplines' => \App\Models\Discipline::select('id', 'title')->orderBy('title')->get(),
                 'organisation_types' => \App\Models\OrganisationType::select('id', 'title')->orderBy('title')->get(),
+                'school_types' => \App\Models\CampusTypeNew::where('status', 1)->orderBy('sort_order')->orderBy('title')->get(),
+                'brand_types' => \App\Models\Organisation::BRAND_TYPES,
+                'facilities' => \App\Models\Facility::where('status', 1)->orderBy('name')->get(['id', 'name', 'icon']),
             ];
 
             return response()->json([

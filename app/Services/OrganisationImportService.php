@@ -523,11 +523,31 @@ class OrganisationImportService
                         'gps_enabled_buses' => !empty($cInput['gps_enabled_buses']),
                         'bus_fleet_size' => $this->parseInteger($cInput['bus_fleet_size'] ?? 0) ?? 0,
                         'visitor_management_system' => !empty($cInput['visitor_management_system']),
+                        'campus_type_new_id' => isset($cInput['campus_type_new_id']) ? (is_array($cInput['campus_type_new_id']) ? array_values(array_filter($cInput['campus_type_new_id'])) : [$cInput['campus_type_new_id']]) : null,
+                        'brand_type' => $cInput['brand_type'] ?? null,
+                        'campus_area_unit' => $cInput['campus_area_unit'] ?? 'Acres',
+                        'target_classes' => isset($cInput['target_classes']) ? (is_array($cInput['target_classes']) ? array_values(array_filter($cInput['target_classes'])) : [$cInput['target_classes']]) : null,
+                        'about_institute' => $cInput['about_institute'] ?? null,
+                        'facilities' => isset($cInput['facilities']) ? (is_array($cInput['facilities']) ? array_values(array_filter($cInput['facilities'])) : [$cInput['facilities']]) : null,
+                        'bus_routes' => isset($cInput['bus_routes']) ? (is_array($cInput['bus_routes']) ? array_values(array_filter($cInput['bus_routes'])) : [$cInput['bus_routes']]) : null,
+                        'class_profile' => isset($cInput['class_profile']) ? (is_array($cInput['class_profile']) ? $cInput['class_profile'] : null) : null,
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
-                        'status' => true,
+                        'status' => isset($cInput['status']) ? (bool)$cInput['status'] : true,
                     ];
+
+                    if (empty($campusData['campus_type_new_id']) && !empty($cInput['school_type'])) {
+                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : [$cInput['school_type']];
+                        $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
+                            foreach ($stTitles as $title) {
+                                $q->orWhere('title', 'LIKE', '%' . trim($title) . '%');
+                            }
+                        })->pluck('id')->toArray();
+                        if (!empty($matchedIds)) {
+                            $campusData['campus_type_new_id'] = $matchedIds;
+                        }
+                    }
 
                     $existingCampus = Campus::where('organisation_id', $organisation->id)
                         ->where('campus_name', $campusName)
@@ -801,11 +821,31 @@ class OrganisationImportService
                         'gps_enabled_buses' => !empty($cInput['gps_enabled_buses']),
                         'bus_fleet_size' => $this->parseInteger($cInput['bus_fleet_size'] ?? 0) ?? 0,
                         'visitor_management_system' => !empty($cInput['visitor_management_system']),
+                        'campus_type_new_id' => isset($cInput['campus_type_new_id']) ? (is_array($cInput['campus_type_new_id']) ? array_values(array_filter($cInput['campus_type_new_id'])) : [$cInput['campus_type_new_id']]) : null,
+                        'brand_type' => $cInput['brand_type'] ?? null,
+                        'campus_area_unit' => $cInput['campus_area_unit'] ?? 'Acres',
+                        'target_classes' => isset($cInput['target_classes']) ? (is_array($cInput['target_classes']) ? array_values(array_filter($cInput['target_classes'])) : [$cInput['target_classes']]) : null,
+                        'about_institute' => $cInput['about_institute'] ?? null,
+                        'facilities' => isset($cInput['facilities']) ? (is_array($cInput['facilities']) ? array_values(array_filter($cInput['facilities'])) : [$cInput['facilities']]) : null,
+                        'bus_routes' => isset($cInput['bus_routes']) ? (is_array($cInput['bus_routes']) ? array_values(array_filter($cInput['bus_routes'])) : [$cInput['bus_routes']]) : null,
+                        'class_profile' => isset($cInput['class_profile']) ? (is_array($cInput['class_profile']) ? $cInput['class_profile'] : null) : null,
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
                         'campus_website' => $cInput['campus_website'] ?? ($organisation->official_website ?? null),
                         'campus_contact_numbers' => $this->parseArray($cInput['campus_contact_numbers'] ?? null),
-                        'status' => true,
+                        'status' => isset($cInput['status']) ? (bool)$cInput['status'] : true,
                     ];
+
+                    if (empty($campusData['campus_type_new_id']) && !empty($cInput['school_type'])) {
+                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : [$cInput['school_type']];
+                        $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
+                            foreach ($stTitles as $title) {
+                                $q->orWhere('title', 'LIKE', '%' . trim($title) . '%');
+                            }
+                        })->pluck('id')->toArray();
+                        if (!empty($matchedIds)) {
+                            $campusData['campus_type_new_id'] = $matchedIds;
+                        }
+                    }
 
                     if (isset($campusMap[$campusName])) {
                         $campusMap[$campusName]->update($campusData);
