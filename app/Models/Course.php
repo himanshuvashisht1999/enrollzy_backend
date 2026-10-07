@@ -83,4 +83,16 @@ class Course extends Model
     {
         return $this->belongsTo(CourseType::class, 'course_type_id');
     }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyCourseMapping::class, 'course_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_course_mapping', 'course_id', 'faculty_id')
+                    ->withPivot('subject_name', 'academic_year', 'semester', 'role', 'status');
+    }
 }
+

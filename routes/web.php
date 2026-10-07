@@ -216,6 +216,23 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/departments/store-draft', [DepartmentController::class, 'storeDraft'])->name('admin.departments.store-draft');
     Route::post('/admin/departments/{department}/autosave-tab', [DepartmentController::class, 'autosaveTab'])->name('admin.departments.autosave-tab');
 
+    // Faculty Module (Academics)
+    Route::post('/admin/faculties/bulk-destroy', [\App\Http\Controllers\Admin\FacultyController::class, 'bulkDestroy'])->name('admin.faculties.bulk-destroy');
+    Route::patch('/admin/faculties/{faculty}/toggle-status', [\App\Http\Controllers\Admin\FacultyController::class, 'toggleStatus'])->name('admin.faculties.toggle-status');
+    Route::post('/admin/faculties/{faculty}/verification', [\App\Http\Controllers\Admin\FacultyController::class, 'updateVerification'])->name('admin.faculties.verification');
+    Route::get('/admin/faculties/ajax/campuses/{organisationId}', [\App\Http\Controllers\Admin\FacultyController::class, 'getCampusesByOrganisation'])->name('admin.faculties.ajax.campuses');
+    Route::get('/admin/faculties/ajax/departments', [\App\Http\Controllers\Admin\FacultyController::class, 'getDepartmentsByCampus'])->name('admin.faculties.ajax.departments');
+    Route::get('/admin/faculties/ajax/courses', [\App\Http\Controllers\Admin\FacultyController::class, 'getCoursesByOrganisationOrDepartment'])->name('admin.faculties.ajax.courses');
+    Route::resource('/admin/faculties', \App\Http\Controllers\Admin\FacultyController::class)->names('admin.faculties');
+
+    // Faculty Masters (Academics)
+    Route::patch('/admin/faculty-designations/{facultyDesignation}/toggle-status', [\App\Http\Controllers\Admin\FacultyDesignationController::class, 'toggleStatus'])->name('admin.faculty-designations.toggle-status');
+    Route::resource('/admin/faculty-designations', \App\Http\Controllers\Admin\FacultyDesignationController::class)->names('admin.faculty-designations');
+
+    Route::patch('/admin/faculty-types/{facultyType}/toggle-status', [\App\Http\Controllers\Admin\FacultyTypeController::class, 'toggleStatus'])->name('admin.faculty-types.toggle-status');
+    Route::resource('/admin/faculty-types', \App\Http\Controllers\Admin\FacultyTypeController::class)->names('admin.faculty-types');
+
+
     // Exams
     Route::resource('/admin/exams', \App\Http\Controllers\Admin\ExamController::class)->names('admin.exams')->middleware('can:department-browse');
 

@@ -108,4 +108,16 @@ class Campus extends Model
     {
         return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
     }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'campus_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'campus_id', 'faculty_id')
+                    ->withPivot('designation_id', 'department_id', 'is_primary_department', 'status');
+    }
 }
+

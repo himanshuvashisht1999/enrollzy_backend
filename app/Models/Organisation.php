@@ -495,4 +495,16 @@ class Organisation extends Model
     {
         return $this->hasMany(OrganisationDomain::class)->orderBy('sort_order', 'asc');
     }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'organisation_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'organisation_id', 'faculty_id')
+                    ->withPivot('campus_id', 'department_id', 'designation_id', 'is_primary_department', 'status');
+    }
 }
+

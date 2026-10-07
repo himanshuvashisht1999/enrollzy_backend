@@ -178,4 +178,16 @@ class Department extends Model
         // For now, we'll leave it as json cast.
         return $this->attributes['collaborating_departments'];
     }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'department_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'department_id', 'faculty_id')
+                    ->withPivot('designation_id', 'is_primary_department', 'status');
+    }
 }
+
