@@ -81,7 +81,21 @@ class Campus extends Model
                     ->where('campus_id', $campus->id)
                     ->delete();
             }
+
+            if (method_exists($campus, 'documents')) {
+                $campus->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $campus->documents()->delete();
+            }
         });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(CampusDocument::class)->orderBy('sort_order', 'asc');
     }
 
     public function scopeOrdered($query)

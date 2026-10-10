@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpertController;
@@ -48,6 +49,9 @@ use App\Http\Controllers\Admin\ScholarshipController;
 
 // ✅ Root Redirect
 Route::get('/', function () {
+    if (Auth::guard('admin')->check() || (Auth::guard('web')->check() && Auth::guard('web')->user()?->is_admin)) {
+        return redirect()->route('admin.dashboard');
+    }
     return redirect()->route('login');
 });
 
@@ -193,6 +197,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'destroy' => 'admin.organisations.destroy',
     ]);
     Route::patch('/admin/organisations/{organisation}/toggle-status', [OrganisationController::class, 'toggleStatus'])->name('admin.organisations.toggle-status');
+    Route::delete('/admin/organisations/{organisation}/documents/{document}', [OrganisationController::class, 'destroyDocument'])->name('admin.organisations.documents.destroy');
     Route::post('/admin/organisations/store-draft', [OrganisationController::class, 'storeDraft'])->name('admin.organisations.store-draft');
     Route::post('/admin/organisations/{organisation}/autosave', [OrganisationController::class, 'autosave'])->name('admin.organisations.autosave');
     Route::post('/admin/organisations/{organisation}/autosave-repeater', [OrganisationController::class, 'autosaveRepeater'])->name('admin.organisations.autosave-repeater');
@@ -209,10 +214,12 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     ]);
     Route::post('/admin/organisations/{organisation}/campuses/store-draft', [\App\Http\Controllers\Admin\CampusController::class, 'storeDraft'])->name('admin.organisations.campuses.store-draft');
     Route::post('/admin/organisations/{organisation}/campuses/{campus}/autosave-tab', [\App\Http\Controllers\Admin\CampusController::class, 'autosaveTab'])->name('admin.organisations.campuses.autosave-tab');
+    Route::delete('/admin/organisations/{organisation}/campuses/{campus}/documents/{document}', [\App\Http\Controllers\Admin\CampusController::class, 'destroyDocument'])->name('admin.organisations.campuses.documents.destroy');
 
     // Departments (Nested under Campuses contextually, but flat resource for now)
     Route::post('/admin/departments/bulk-destroy', [DepartmentController::class, 'bulkDestroy'])->name('admin.departments.bulk-destroy')->middleware('can:department-browse');
     Route::resource('/admin/departments', DepartmentController::class)->names('admin.departments')->middleware('can:department-browse');
+    Route::delete('/admin/departments/{department}/documents/{document}', [DepartmentController::class, 'destroyDocument'])->name('admin.departments.documents.destroy');
     Route::post('/admin/departments/store-draft', [DepartmentController::class, 'storeDraft'])->name('admin.departments.store-draft');
     Route::post('/admin/departments/{department}/autosave-tab', [DepartmentController::class, 'autosaveTab'])->name('admin.departments.autosave-tab');
 
@@ -418,6 +425,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
 
     Route::post('/admin/organisation-courses/store-draft', [OrganisationCourseController::class, 'storeDraft'])->name('admin.organisation-courses.store-draft');
     Route::post('/admin/organisation-courses/{organisation}/courses/{course}/autosave-tab', [OrganisationCourseController::class, 'autosaveTab'])->name('admin.organisation-courses.autosave-tab');
+    Route::delete('/admin/organisation-courses/{organisationCourse}/documents/{document}', [OrganisationCourseController::class, 'destroyDocument'])->name('admin.organisation-courses.documents.destroy');
 
     // Master Course Management
     Route::resource('/admin/courses', CourseController::class)->names([
@@ -428,6 +436,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'update' => 'admin.courses.update',
         'destroy' => 'admin.courses.destroy',
     ]);
+    Route::delete('/admin/courses/{course}/documents/{document}', [CourseController::class, 'destroyDocument'])->name('admin.courses.documents.destroy');
     Route::post('/admin/courses/fetch-bot-data', [CourseController::class, 'fetchBotData'])
         ->name('admin.courses.fetch-bot-data');
     Route::get('admin/courses/{course}/duplicate', [CourseController::class, 'duplicate'])

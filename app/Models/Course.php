@@ -42,6 +42,22 @@ class Course extends Model
                 $course->slug = Str::slug($course->name);
             }
         });
+
+        static::deleting(function ($course) {
+            if (method_exists($course, 'documents')) {
+                $course->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $course->documents()->delete();
+            }
+        });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(CourseDocument::class)->orderBy('sort_order', 'asc');
     }
 
     public function scopeOrdered($query)

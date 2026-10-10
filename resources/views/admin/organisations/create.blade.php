@@ -118,6 +118,9 @@
                                     </div>
                                 </div>
 
+                                {{-- Organisation Documents (PDF Only, for all types) --}}
+                                @include('admin.organisations.partials.documents')
+
                                 <!-- University Specific Fields Section -->
                                 <div id="university-fields" class="col-12" style="display: none;">
                                     <hr class="my-4">
@@ -1965,6 +1968,7 @@
                 const inputs = document.querySelectorAll('input, select, textarea');
                 inputs.forEach(input => {
                     input.addEventListener('change', function () {
+                        if (this.closest('.doc-repeater-row') || this.classList.contains('no-autosave')) return;
                         const orgId = orgIdInput.value;
                         if (!orgId) return;
 

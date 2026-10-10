@@ -73,7 +73,7 @@
                 </div>
                 
                 <div class="col-md-3 mb-3 organisation-field">
-                    <label class="form-label fw-semibold">Campus <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Campus <span class="text-danger" id="campusRequiredMarker" style="display: none;">*</span></label>
                     <select name="campus_id" id="campus_id" class="form-select @error('campus_id') is-invalid @enderror">
                         <option value="">Select Campus...</option>
                     </select>
@@ -282,7 +282,14 @@
                 $('#clientDetailsPreview').addClass('d-none');
 
                 $('.organisation-field').removeClass('d-none');
-                $('#organisation_id, #campus_id').prop('required', true);
+                $('#organisation_id').prop('required', true);
+                if (currentCampuses.length > 0) {
+                    $('#campus_id').prop('required', true);
+                    $('#campusRequiredMarker').show();
+                } else {
+                    $('#campus_id').prop('required', false);
+                    $('#campusRequiredMarker').hide();
+                }
             }
         }
 
@@ -354,33 +361,58 @@
         function loadCampuses(orgId, selectedCampusId) {
             const $campusSelect = $('#campus_id');
             const $campusPreview = $('#campusDetailsPreview');
+            const $marker = $('#campusRequiredMarker');
             
             $campusSelect.empty().append('<option value="">Select Campus...</option>');
             $campusSelect.prop('disabled', true);
             $campusPreview.addClass('d-none');
             
-            if(orgId) {
-                fetch(`/admin/organisations/${orgId}/campuses-json`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
+            if(!orgId) {
+                currentCampuses = [];
+                $campusSelect.prop('required', false);
+                $marker.hide();
+                return;
+            }
+            
+            fetch(`/admin/organisations/${orgId}/campuses-json`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    currentCampuses = data || [];
+                    if(currentCampuses.length > 0) {
+                        $campusSelect.empty().append('<option value="">Select Campus...</option>');
+                        currentCampuses.forEach(campus => {
+                            const isSelected = selectedCampusId && (campus.id == selectedCampusId);
+                            $campusSelect.append(new Option(campus.campus_name, campus.id, isSelected, isSelected));
+                        });
+                        $campusSelect.prop('disabled', false);
+                        if ($('input[name="client_type"]:checked').val() === 'organisation') {
+                            $campusSelect.prop('required', true);
+                            $marker.show();
+                        }
+                        if (selectedCampusId) {
+                            $campusSelect.trigger('change');
+                        }
+                    } else {
+                        // Organisation has no campus
+                        $campusSelect.empty().append('<option value="">No Campus Available</option>');
+                        $campusSelect.prop('disabled', false);
+                        $campusSelect.prop('required', false);
+                        $campusSelect.removeClass('is-invalid');
+                        $campusSelect.siblings('.invalid-feedback').hide();
+                        $marker.hide();
+                        $campusPreview.addClass('d-none');
                     }
                 })
-                    .then(res => res.json())
-                    .then(data => {
-                        currentCampuses = data;
-                        if(data.length > 0) {
-                            data.forEach(campus => {
-                                const isSelected = selectedCampusId && (campus.id == selectedCampusId);
-                                $campusSelect.append(new Option(campus.campus_name, campus.id, isSelected, isSelected));
-                            });
-                            $campusSelect.prop('disabled', false);
-                            if (selectedCampusId) {
-                                $campusSelect.trigger('change');
-                            }
-                        }
-                    });
-            }
+                .catch(() => {
+                    currentCampuses = [];
+                    $campusSelect.prop('required', false);
+                    $marker.hide();
+                });
         }
 
         $('#organisation_id').on('change', function() {
@@ -414,6 +446,8 @@
         const initialOrgId = $('#organisation_id').val();
         if (initialOrgId) {
             loadCampuses(initialOrgId, existingCampusId);
+        } else {
+            $('#campusRequiredMarker').hide();
         }
         
         function addNewRow(item = null) {

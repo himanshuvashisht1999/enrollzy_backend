@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organisation;
+use App\Models\OrganisationDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +56,10 @@ class OrganisationController extends Controller
             'about_university' => 'nullable|string',
             'vision_mission' => 'nullable|string',
             'about_organisation' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         // Type 1 & 2: University
@@ -289,9 +294,13 @@ class OrganisationController extends Controller
             ];
         }
 
-        $request->validate($rules);
+        $messages = [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
+        ];
+        $request->validate($rules, $messages);
 
-        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token', 'organisation_id']);
+        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', 'documents', 'has_documents_form', '_token', 'organisation_id']);
 
         if ($request->has('core_values') && is_array($request->core_values)) {
             $data['core_values'] = array_values(array_filter($request->core_values, fn($val) => !is_null($val) && trim($val) !== ''));
@@ -387,13 +396,14 @@ class OrganisationController extends Controller
             $organisation = Organisation::create($data);
         }
         $this->syncElearningDetails($request, $organisation);
+        $this->syncDocuments($request, $organisation);
 
         return redirect()->route('admin.organisations.edit', $organisation->id)->with('success', 'Organisation added successfully.');
     }
 
     public function edit(Organisation $organisation)
     {
-        $organisation->load(['elearning', 'partners', 'instructors', 'leaders', 'elearningDomains']);
+        $organisation->load(['elearning', 'partners', 'instructors', 'leaders', 'elearningDomains', 'documents']);
         $organisationTypes = \App\Models\OrganisationType::where('status', true)->get();
         $brandTypes = Organisation::BRAND_TYPES;
         $campusTypeNews = \App\Models\CampusTypeNew::where('status', true)->orderBy('sort_order')->get();
@@ -419,6 +429,10 @@ class OrganisationController extends Controller
             'about_university' => 'nullable|string',
             'vision_mission' => 'nullable|string',
             'about_organisation' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         if (in_array($request->organisation_type_id, [1, 2])) {
@@ -650,9 +664,13 @@ class OrganisationController extends Controller
             ];
         }
 
-        $request->validate($rules);
+        $messages = [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
+        ];
+        $request->validate($rules, $messages);
 
-        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', '_token', '_method']);
+        $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', 'documents', 'has_documents_form', '_token', '_method']);
 
         if ($request->has('core_values') && is_array($request->core_values)) {
             $data['core_values'] = array_values(array_filter($request->core_values, fn($val) => !is_null($val) && trim($val) !== ''));
@@ -747,6 +765,7 @@ class OrganisationController extends Controller
 
         $organisation->update($data);
         $this->syncElearningDetails($request, $organisation);
+        $this->syncDocuments($request, $organisation);
 
         return redirect()->route('admin.organisations.index')->with('success', 'Organisation updated successfully.');
     }
@@ -1038,4 +1057,97 @@ class OrganisationController extends Controller
             }
         }
     }
+
+    protected function syncDocuments(Request $request, Organisation $organisation): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/organisations/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $organisation->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/organisations/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/organisations/documents/' . $fileName;
+
+                        $newDoc = $organisation->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $organisation->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(Organisation $organisation, OrganisationDocument $document)
+    {
+        if ($document->organisation_id !== $organisation->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this organisation.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
+    }
 }
+

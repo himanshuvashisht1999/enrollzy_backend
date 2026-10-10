@@ -15,7 +15,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <form action="{{ route('admin.courses.update', $course->id) }}" method="POST">
+                <form action="{{ route('admin.courses.update', $course->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -351,6 +351,8 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @include('admin.courses.partials.documents')
 
                         {{-- Submit --}}
                         <div class="col-12 mt-4">

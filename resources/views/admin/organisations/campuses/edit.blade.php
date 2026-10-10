@@ -102,7 +102,7 @@
     <div class="row">
         <div class="col-12">
             <form action="{{ route('admin.organisations.campuses.update', [$organisation->id, $campus->id]) }}"
-                id="campus-form" method="POST">
+                id="campus-form" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -129,6 +129,7 @@
                             <li class="nav-item"><a class="nav-link" href="#safety" role="tab">Safety</a></li>
                             <li class="nav-item"><a class="nav-link" href="#contact" role="tab">Contact</a></li>
                             <li class="nav-item"><a class="nav-link" href="#class-profile" role="tab">Class Profile</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#documents-tab" role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a></li>
                         </ul>
                     </div>
 
@@ -443,6 +444,11 @@
                                     @endforeach
                                 </div>
                             </div>
+
+                            <!-- 10. Documents -->
+                            <div class="tab-pane" id="documents-tab" role="tabpanel">
+                                @include('admin.organisations.campuses.partials.documents')
+                            </div>
                         </div>
 
                         <div class="step-footer d-flex align-items-center">
@@ -534,6 +540,7 @@
 
             function saveStepData() {
                 const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
+                if (currentTabId === 'documents-tab') return;
 
                 if (campusId) {
                     const formData = {};

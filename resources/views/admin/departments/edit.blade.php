@@ -96,7 +96,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.departments.update', $department->id) }}" id="department-form" method="POST">
+            <form action="{{ route('admin.departments.update', $department->id) }}" id="department-form" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -137,6 +137,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="#settings" role="tab">Settings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#documents-tab" role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a>
                             </li>
                         </ul>
                     </div>
@@ -582,6 +585,11 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 8. Documents -->
+                            <div class="tab-pane fade" id="documents-tab" role="tabpanel">
+                                @include('admin.departments.partials.documents')
+                            </div>
                         </div> <!-- End Tab Content -->
 
                         <!-- Footer Navigation -->
@@ -661,6 +669,7 @@
             function saveStepData() {
                 if (isSaving) return;
                 const currentTabId = $(tabs[currentTab]).attr('href');
+                if (currentTabId === '#documents-tab' || currentTabId === 'documents-tab') return;
 
                 isSaving = true;
                 showAutoSaveStatus('saving');

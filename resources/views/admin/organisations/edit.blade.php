@@ -143,6 +143,9 @@
                                 </div>
                             </div>
 
+                            {{-- Organisation Documents (PDF Only, for all types) --}}
+                            @include('admin.organisations.partials.documents')
+
                              <!-- University Specific Fields Section -->
                              <div id="university-fields" class="col-12" style="display: none;">
                                 <hr class="my-4">
@@ -1948,6 +1951,7 @@
         const nonSelectInputs = document.querySelectorAll('input:not([type=hidden]):not([type=file]), textarea');
         nonSelectInputs.forEach(input => {
             input.addEventListener('change', function() {
+                if (this.closest('.doc-repeater-row') || this.classList.contains('no-autosave')) return;
                 let fieldName = this.name ? this.name.replace('[]', '') : null;
                 if (!fieldName) return;
 
@@ -1973,6 +1977,7 @@
         const fileInputs = document.querySelectorAll('input[type=file]');
         fileInputs.forEach(input => {
             input.addEventListener('change', function() {
+                if (this.closest('.doc-repeater-row') || this.classList.contains('no-autosave')) return;
                 const fieldName = this.name ? this.name.replace('[]', '') : null;
                 if (!fieldName) return;
                 sendAutosave(fieldName, null, true, this);

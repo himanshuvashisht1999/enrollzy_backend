@@ -33,7 +33,7 @@
         <h3 class="fw-bold mt-2">Add New Course to {{ $organisation->name }}</h3>
     </div>
 
-    <form action="{{ route('admin.organisation-courses.store') }}" method="POST">
+    <form action="{{ route('admin.organisation-courses.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="organisation_id" value="{{ $organisation->id }}">
 
@@ -734,6 +734,8 @@
                     </div>
                 </div>
             @endif
+
+                @include('admin.organisation-courses.partials.documents')
 
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary btn-lg px-5">

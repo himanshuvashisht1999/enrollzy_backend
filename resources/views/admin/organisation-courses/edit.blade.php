@@ -33,7 +33,7 @@
         <h3 class="fw-bold mt-2">Edit Course: {{ $organisationCourse->course->name ?? 'Unknown' }}</h3>
     </div>
 
-    <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST">
+    <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -727,6 +727,8 @@
                     </div>
                 </div>
             @endif
+
+                @include('admin.organisation-courses.partials.documents')
 
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary btn-lg px-5">

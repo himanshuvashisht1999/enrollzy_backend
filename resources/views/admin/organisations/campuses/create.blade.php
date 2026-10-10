@@ -112,7 +112,7 @@
             @endif
 
             <form action="{{ route('admin.organisations.campuses.store', $organisation->id) }}" id="campus-form"
-                method="POST">
+                method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="card">
@@ -147,6 +147,8 @@
                                     role="tab">Contact</a></li>
                             <li class="nav-item"><a class="nav-link" href="#class-profile"
                                     role="tab">Class Profile</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#documents-tab"
+                                    role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a></li>
                         </ul>
                     </div>
 
@@ -455,6 +457,11 @@
                                     @endforeach
                                 </div>
                             </div>
+
+                            <!-- 10. Documents -->
+                            <div class="tab-pane" id="documents-tab" role="tabpanel">
+                                @include('admin.organisations.campuses.partials.documents')
+                            </div>
                         </div> <!-- End Tab Content -->
 
                         <!-- Footer Navigation -->
@@ -552,6 +559,7 @@
             function saveStepData() {
                 if (isSaving) return;
                 const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
+                if (currentTabId === 'documents-tab') return;
 
                 if (!campusId && currentTabId === 'identity') {
                     // Create Draft

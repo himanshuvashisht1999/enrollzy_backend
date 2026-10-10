@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
+use App\Models\CampusDocument;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,9 +52,22 @@ class CampusController extends Controller
      */
     public function store(Request $request, Organisation $organisation)
     {
-        $campus = new Campus($request->all());
+        $request->validate([
+            'campus_name' => 'required|string|max:255',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
+        ]);
+
+        $campus = new Campus($request->except(['documents', 'has_documents_form']));
         $campus->organisation_id = $organisation->id;
         $campus->save();
+
+        $this->syncDocuments($request, $campus);
 
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
             ->with('success', 'Campus created successfully');
@@ -64,6 +78,7 @@ class CampusController extends Controller
      */
     public function edit(Organisation $organisation, Campus $campus)
     {
+        $campus->load('documents');
         $brandTypes = Organisation::BRAND_TYPES;
         $examCategories = \App\Models\Exam::whereNotNull('exam_category')->get()
             ->pluck('exam_category')
@@ -93,9 +108,16 @@ class CampusController extends Controller
             'class_profile.*.total_male_students' => 'nullable|integer|min:0',
             'class_profile.*.total_female_students' => 'nullable|integer|min:0',
             'class_profile.*.total_outside_state' => 'nullable|integer|min:0',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
         ]);
 
-        $input = $request->all();
+        $input = $request->except(['documents', 'has_documents_form']);
 
         $booleans = [
             'smart_classrooms', 'library_available', 'digital_library_access', 'hostel_available',
@@ -115,6 +137,7 @@ class CampusController extends Controller
         }
 
         $campus->update($input);
+        $this->syncDocuments($request, $campus);
 
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
             ->with('success', 'Campus updated successfully');
@@ -217,5 +240,97 @@ class CampusController extends Controller
         
         $campus->update($updateData);
         return response()->json(['status' => 'success', 'message' => 'Tab saved']);
+    }
+
+    protected function syncDocuments(Request $request, Campus $campus): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/campuses/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $campus->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/campuses/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/campuses/documents/' . $fileName;
+
+                        $newDoc = $campus->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $campus->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(Organisation $organisation, Campus $campus, CampusDocument $document)
+    {
+        if ($document->campus_id !== $campus->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this campus.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
     }
 }

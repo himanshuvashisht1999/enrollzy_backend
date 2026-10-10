@@ -398,7 +398,20 @@ class Organisation extends Model
             if (method_exists($organisation, 'elearningDomains')) {
                 $organisation->elearningDomains()->delete();
             }
+            if (method_exists($organisation, 'documents')) {
+                $organisation->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $organisation->documents()->delete();
+            }
         });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(OrganisationDocument::class)->orderBy('sort_order', 'asc');
     }
 
     public function scopeOrdered($query)

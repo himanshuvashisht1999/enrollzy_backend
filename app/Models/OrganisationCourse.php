@@ -179,6 +179,27 @@ class OrganisationCourse extends Model
         return $this->belongsTo(Specialization::class);
     }
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($orgCourse) {
+            if (method_exists($orgCourse, 'documents')) {
+                $orgCourse->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $orgCourse->documents()->delete();
+            }
+        });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(OrganisationCourseDocument::class)->orderBy('sort_order', 'asc');
+    }
+
     protected $casts = [
         'streams_offered' => 'array',
         'board_result_classes' => 'array',

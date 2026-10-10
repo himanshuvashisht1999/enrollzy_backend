@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseDocument;
 use App\Services\GeminiCourseBotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -95,12 +96,18 @@ class CourseController extends Controller
             'faqs.*.answer' => 'nullable|string',
             'related_courses' => 'nullable|array',
             'related_courses.*' => 'nullable|exists:courses,id',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ], [
             'slug.unique' => 'A course with this name or slug already exists.'
         ])->validate();
 
+        unset($data['documents'], $data['has_documents_form']);
+
         $course = new Course($data);
         $course->save();
+        $this->syncDocuments($request, $course);
 
         if ($request->has('program_types')) {
             $course->programTypes()->sync($request->program_types);
@@ -115,6 +122,7 @@ class CourseController extends Controller
     // }
     public function edit(Course $course)
     {
+        $course->load('documents');
         $programLevels = \App\Models\ProgramLevel::where('status', true)->get();
         $streamOffereds = \App\Models\StreamOffered::where('status', true)->get();
         $disciplines = \App\Models\Discipline::where('status', true)->get();
@@ -180,11 +188,17 @@ class CourseController extends Controller
             'faqs.*.answer' => 'nullable|string',
             'related_courses' => 'nullable|array',
             'related_courses.*' => 'nullable|exists:courses,id',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ], [
             'slug.unique' => 'A course with this name or slug already exists.'
         ])->validate();
 
+        unset($data['documents'], $data['has_documents_form']);
+
         $course->update($data);
+        $this->syncDocuments($request, $course);
 
         if ($request->has('program_types')) {
             $course->programTypes()->sync($request->program_types);
@@ -246,4 +260,95 @@ class CourseController extends Controller
         }
     }
 
+    protected function syncDocuments(Request $request, Course $course): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/courses/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $course->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/courses/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/courses/documents/' . $fileName;
+
+                        $newDoc = $course->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $course->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(Course $course, CourseDocument $document)
+    {
+        if ($document->course_id != $course->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this course.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
+    }
 }

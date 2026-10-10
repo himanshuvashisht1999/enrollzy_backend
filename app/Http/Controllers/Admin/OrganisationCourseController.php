@@ -7,6 +7,7 @@ use App\Models\Organisation;
 use App\Models\OrganisationCourse;
 use App\Models\OrganisationSchoolCourse;
 use App\Models\Course;
+use App\Models\OrganisationCourseDocument;
 use Illuminate\Support\Str;
 use App\Models\Exam; // Import Exam
 use Illuminate\Http\Request;
@@ -100,6 +101,9 @@ class OrganisationCourseController extends Controller
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         // Type Specific Rules
@@ -163,7 +167,10 @@ class OrganisationCourseController extends Controller
             $data['slug'] = Str::slug($data['academic_unit_name']);
         }
 
-        OrganisationCourse::create($data);
+        unset($data['documents'], $data['has_documents_form']);
+
+        $course = OrganisationCourse::create($data);
+        $this->syncDocuments($request, $course);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $request->organisation_id,
@@ -175,6 +182,7 @@ class OrganisationCourseController extends Controller
     public function edit(Request $request, OrganisationCourse $organisationCourse)
     {
         $organisation = $organisationCourse->organisation;
+        $organisationCourse->load('documents');
 
         $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
@@ -223,6 +231,9 @@ class OrganisationCourseController extends Controller
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         // Type Specific Rules
@@ -289,7 +300,10 @@ class OrganisationCourseController extends Controller
             $data['slug'] = Str::slug($data['academic_unit_name']);
         }
 
+        unset($data['documents'], $data['has_documents_form']);
+
         $organisationCourse->update($data);
+        $this->syncDocuments($request, $organisationCourse);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $organisation->id,
@@ -369,5 +383,97 @@ class OrganisationCourseController extends Controller
             'campus_id' => $originalCourse->campus_id,
             'department_id' => $originalCourse->department_id
         ])->with('success', 'Course duplicated successfully.');
+    }
+
+    protected function syncDocuments(Request $request, OrganisationCourse $organisationCourse): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/organisation_courses/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $organisationCourse->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/organisation_courses/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/organisation_courses/documents/' . $fileName;
+
+                        $newDoc = $organisationCourse->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $organisationCourse->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(OrganisationCourse $organisationCourse, OrganisationCourseDocument $document)
+    {
+        if ($document->organisation_course_id != $organisationCourse->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this course.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
     }
 }

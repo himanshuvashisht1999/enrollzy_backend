@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BillingClient;
 use App\Models\BillingInvoice;
 use App\Models\BillingService;
+use App\Models\Campus;
 use App\Models\Organisation;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -101,7 +102,19 @@ class BillingInvoiceController extends Controller
             $rules['billing_client_id'] = 'required|exists:billing_clients,id';
         } else {
             $rules['organisation_id'] = 'required|exists:organisations,id';
-            $rules['campus_id'] = 'required';
+            
+            $hasCampuses = false;
+            if ($request->filled('organisation_id')) {
+                $hasCampuses = Campus::where('organisation_id', $request->organisation_id)
+                    ->where('status', true)
+                    ->exists();
+            }
+
+            if ($hasCampuses) {
+                $rules['campus_id'] = 'required|exists:campuses,id';
+            } else {
+                $rules['campus_id'] = 'nullable';
+            }
         }
 
         $request->validate($rules);
@@ -131,7 +144,7 @@ class BillingInvoiceController extends Controller
             'client_type' => $clientType,
             'billing_client_id' => $clientType === 'client' ? $request->billing_client_id : null,
             'organisation_id' => $clientType === 'organisation' ? $request->organisation_id : null,
-            'campus_id' => $clientType === 'organisation' ? $request->campus_id : null,
+            'campus_id' => ($clientType === 'organisation' && $request->filled('campus_id')) ? $request->campus_id : null,
             'issue_date' => $request->issue_date,
             'due_date' => $request->due_date,
             'subtotal' => $subtotal,
@@ -203,7 +216,19 @@ class BillingInvoiceController extends Controller
             $rules['billing_client_id'] = 'required|exists:billing_clients,id';
         } else {
             $rules['organisation_id'] = 'required|exists:organisations,id';
-            $rules['campus_id'] = 'required';
+            
+            $hasCampuses = false;
+            if ($request->filled('organisation_id')) {
+                $hasCampuses = Campus::where('organisation_id', $request->organisation_id)
+                    ->where('status', true)
+                    ->exists();
+            }
+
+            if ($hasCampuses) {
+                $rules['campus_id'] = 'required|exists:campuses,id';
+            } else {
+                $rules['campus_id'] = 'nullable';
+            }
         }
 
         $request->validate($rules);
@@ -227,7 +252,7 @@ class BillingInvoiceController extends Controller
             'client_type' => $clientType,
             'billing_client_id' => $clientType === 'client' ? $request->billing_client_id : null,
             'organisation_id' => $clientType === 'organisation' ? $request->organisation_id : null,
-            'campus_id' => $clientType === 'organisation' ? $request->campus_id : null,
+            'campus_id' => ($clientType === 'organisation' && $request->filled('campus_id')) ? $request->campus_id : null,
             'issue_date' => $request->issue_date,
             'due_date' => $request->due_date,
             'subtotal' => $subtotal,

@@ -110,6 +110,14 @@ class Department extends Model
 
         static::deleting(function ($department) {
             $department->organisationCourses()->delete();
+            if (method_exists($department, 'documents')) {
+                $department->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $department->documents()->delete();
+            }
         });
     }
 
@@ -188,6 +196,11 @@ class Department extends Model
     {
         return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'department_id', 'faculty_id')
                     ->withPivot('designation_id', 'is_primary_department', 'status');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(DepartmentDocument::class)->orderBy('sort_order', 'asc');
     }
 }
 
