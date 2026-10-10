@@ -46,6 +46,17 @@ class Campus extends Model
         'facilities' => 'array',
         'campus_type_new_id' => 'array',
         'coaching_category_ids' => 'array',
+        'total_appointed_teachers' => 'integer',
+        'male_staff' => 'integer',
+        'female_staff' => 'integer',
+        'total_enrolled_students' => 'integer',
+        'enrolled_boys' => 'integer',
+        'enrolled_girls' => 'integer',
+        'reviews' => 'array',
+        'events_and_activities' => 'array',
+        'notable_alumni' => 'array',
+        'clubs_and_committees' => 'array',
+        'faqs' => 'array',
     ];
 
     protected static function boot()

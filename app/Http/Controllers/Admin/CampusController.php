@@ -63,7 +63,14 @@ class CampusController extends Controller
             'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
         ]);
 
-        $campus = new Campus($request->except(['documents', 'has_documents_form']));
+        $input = $request->except(['documents', 'has_documents_form']);
+        foreach ($input as $k => $v) {
+            if ($v === '') {
+                $input[$k] = null;
+            }
+        }
+
+        $campus = new Campus($input);
         $campus->organisation_id = $organisation->id;
         $campus->save();
 
@@ -118,6 +125,11 @@ class CampusController extends Controller
         ]);
 
         $input = $request->except(['documents', 'has_documents_form']);
+        foreach ($input as $k => $v) {
+            if ($v === '') {
+                $input[$k] = null;
+            }
+        }
 
         $booleans = [
             'smart_classrooms', 'library_available', 'digital_library_access', 'hostel_available',
@@ -233,7 +245,7 @@ class CampusController extends Controller
                 if (in_array($key, $booleans)) {
                     $updateData[$key] = ($value === 'true' || $value === 1 || $value === '1' || $value === true) ? 1 : 0;
                 } else {
-                    $updateData[$key] = $value;
+                    $updateData[$key] = ($value === '') ? null : $value;
                 }
             }
         }

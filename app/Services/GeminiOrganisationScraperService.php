@@ -1394,6 +1394,9 @@ STRICT_URL_INSTRUCTIONS;
   * brand_type: "Independent" | "Chain" | "Franchise"
   * established_year: integer
   * city, state, country, pincode, full_address
+  * location_type: "Urban" | "Semi-Urban" | "Rural"
+  * udise_code: UDISE+ 11-digit school code if mentioned
+  * affiliation_board: "CBSE" | "CISCE (ICSE / ISC)" | "State Board" | "IB (International Baccalaureate)" | "Cambridge (IGCSE)" | "NIOS" | "Other"
   * campus_area_acres: float (e.g. 15.5)
   * campus_area_unit: "Acres" or "Square Yard"
   * classrooms_count: count of classrooms
@@ -1404,7 +1407,24 @@ STRICT_URL_INSTRUCTIONS;
   * bus_routes: array of bus routes / stops
   * cctv_coverage: true/false
   * campus_email: email address
+  * campus_website: website URL
   * campus_contact_numbers: array of phone numbers
+  * facebook_url, instagram_url, linkedin_url, youtube_url, twitter_url: social media profile links
+  * headmaster_principal: name of Principal or Headmaster
+  * total_appointed_teachers: integer count of appointed teaching staff
+  * male_staff, female_staff: counts of male and female teachers
+  * total_enrolled_students: integer student count
+  * enrolled_boys, enrolled_girls: enrolled boys and girls count
+  * pupil_teacher_ratio: string ratio e.g. "25:1"
+  * admission_procedure: admission overview or procedure text
+  * rte_details: Right to Education provisions or zero fee guidelines
+  * admission_guide_url: link to admission guide / prospectus
+  * reviews: array of [{ "reviewer_name": "...", "reviewer_type": "Parent", "rating": 5, "date": "...", "title": "...", "comment": "..." }]
+  * events_and_activities: array of [{ "title": "...", "category": "Sports", "date": "...", "description": "..." }]
+  * alumni_details: alumni network overview text
+  * notable_alumni: array of [{ "name": "...", "batch": "...", "profession": "...", "testimonial": "..." }]
+  * clubs_and_committees: array of [{ "name": "...", "type": "Student Club", "coordinator": "...", "description": "..." }]
+  * faqs: array of [{ "question": "...", "answer": "..." }]
 SCHOOL_CAMPUS_INSTR
         : '';
 
@@ -2636,7 +2656,33 @@ IMPORTANT INSTRUCTIONS:
       "fire_safety_certified": true,
       "visitor_management_system": true,
       "campus_email": "",
-      "campus_contact_numbers": []
+      "campus_website": "",
+      "campus_contact_numbers": [],
+      "facebook_url": "",
+      "instagram_url": "",
+      "linkedin_url": "",
+      "youtube_url": "",
+      "twitter_url": "",
+      "udise_code": "",
+      "affiliation_board": "CBSE",
+      "location_type": "Urban",
+      "headmaster_principal": "",
+      "total_appointed_teachers": 50,
+      "male_staff": 20,
+      "female_staff": 30,
+      "total_enrolled_students": 1200,
+      "enrolled_boys": 650,
+      "enrolled_girls": 550,
+      "pupil_teacher_ratio": "24:1",
+      "admission_procedure": "",
+      "rte_details": "",
+      "admission_guide_url": "",
+      "reviews": [],
+      "events_and_activities": [],
+      "alumni_details": "",
+      "notable_alumni": [],
+      "clubs_and_committees": [],
+      "faqs": []
     }
   ],
   "departments": [

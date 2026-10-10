@@ -2086,7 +2086,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </button>
                 </div>
                 <div class="card-body">
-                    <!-- 9 Tabs matching School Edit Campus page -->
+                    <!-- 16 Tabs matching School Edit Campus page -->
                     <ul class="nav nav-tabs campus-inner-tabs mb-3" role="tablist">
                         <li class="nav-item">
                             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-identity" type="button" role="tab">Identity</button>
@@ -2115,6 +2115,27 @@ document.addEventListener('DOMContentLoaded', function () {
                         <li class="nav-item">
                             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-class-profile" type="button" role="tab">Class Profile</button>
                         </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-staff-details" type="button" role="tab"><i class="fas fa-chalkboard-teacher text-info me-1"></i> Staff</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-admissions" type="button" role="tab"><i class="fas fa-user-graduate text-primary me-1"></i> Admissions</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-reviews" type="button" role="tab"><i class="fas fa-comments text-warning me-1"></i> Reviews</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-events-activities" type="button" role="tab"><i class="fas fa-calendar-alt text-success me-1"></i> Events</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-alumni" type="button" role="tab"><i class="fas fa-user-friends text-secondary me-1"></i> Alumni</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-clubs-committees" type="button" role="tab"><i class="fas fa-users-cog text-danger me-1"></i> Clubs</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-faqs" type="button" role="tab"><i class="fas fa-question-circle text-primary me-1"></i> FAQs</button>
+                        </li>
                     </ul>
 
                     <div class="tab-content">
@@ -2129,6 +2150,18 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <label class="form-label fw-bold small">School Type</label>
                                     <select class="form-select select2 c-school-types" multiple data-placeholder="Select School Type(s)">
                                         ${schoolTypesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">UDISE Code</label>
+                                    <input type="text" class="form-control c-udise" value="${c.udise_code || ''}" placeholder="e.g. 04010100101">
+                                    <small class="text-muted" style="font-size:0.75rem;">Unified District Information System for Education code</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Affiliation Board</label>
+                                    <select class="form-select c-affiliation-board">
+                                        <option value="">Select Affiliation Board</option>
+                                        ${['CBSE', 'CISCE (ICSE / ISC)', 'State Board', 'IB (International Baccalaureate)', 'Cambridge (IGCSE)', 'NIOS', 'Other'].map(b => `<option value="${b}" ${(c.affiliation_board === b || (b === 'CBSE' && !c.affiliation_board)) ? 'selected' : ''}>${b}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -2154,17 +2187,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         <!-- 2. Location -->
                         <div class="tab-pane fade" id="c-tab-${idx}-location" role="tabpanel">
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold small">Pincode</label>
                                     <input type="text" class="form-control c-pincode" value="${c.pincode || ''}" placeholder="e.g. 160022">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold small">City</label>
                                     <input type="text" class="form-control c-city" value="${c.city || ''}" placeholder="e.g. Chandigarh">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold small">State</label>
                                     <input type="text" class="form-control c-state" value="${c.state || ''}" placeholder="e.g. Punjab">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold small">Location Type</label>
+                                    <select class="form-select c-location-type">
+                                        <option value="">Select Location Type</option>
+                                        ${['Urban', 'Semi-Urban', 'Rural'].map(lt => `<option value="${lt}" ${c.location_type === lt ? 'selected' : ''}>${lt}</option>`).join('')}
+                                    </select>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold small">Full Address</label>
@@ -2264,22 +2304,336 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <input type="email" class="form-control c-email" value="${c.campus_email || ''}" placeholder="e.g. principal@school.edu.in">
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Website</label>
+                                    <input type="url" class="form-control c-website" value="${c.campus_website || ''}" placeholder="https://example.com">
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label fw-bold small">Contact Numbers (Comma separated)</label>
                                     <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}" placeholder="e.g. 0172-123456, 9876543210">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <h6 class="text-primary fw-bold mb-2 border-bottom pb-2 small">
+                                        <i class="fas fa-share-alt me-1"></i> Social Media Profiles
+                                    </h6>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Facebook URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-facebook text-primary"></i></span>
+                                        <input type="url" class="form-control c-facebook" value="${c.facebook_url || ''}" placeholder="https://facebook.com/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Instagram URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-instagram text-danger"></i></span>
+                                        <input type="url" class="form-control c-instagram" value="${c.instagram_url || ''}" placeholder="https://instagram.com/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">LinkedIn URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-linkedin text-info"></i></span>
+                                        <input type="url" class="form-control c-linkedin" value="${c.linkedin_url || ''}" placeholder="https://linkedin.com/school/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">YouTube URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-youtube text-danger"></i></span>
+                                        <input type="url" class="form-control c-youtube" value="${c.youtube_url || ''}" placeholder="https://youtube.com/@your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Twitter / X URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-x-twitter"></i></span>
+                                        <input type="url" class="form-control c-twitter" value="${c.twitter_url || ''}" placeholder="https://x.com/your-school">
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 9. Class Profile -->
                         <div class="tab-pane fade" id="c-tab-${idx}-class-profile" role="tabpanel">
+                            <div class="card border mb-3 p-3 bg-white shadow-sm">
+                                <h6 class="text-primary fw-bold mb-2 small"><i class="fas fa-chart-pie me-1"></i> Student & Teacher Statistics (School Level)</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Total Enrolled Students</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-total-students" value="${c.total_enrolled_students || ''}" placeholder="e.g. 1242">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Enrolled Boys</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-boys" value="${c.enrolled_boys || ''}" placeholder="e.g. 659">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Enrolled Girls</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-girls" value="${c.enrolled_girls || ''}" placeholder="e.g. 583">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Pupil-Teacher Ratio (PTR)</label>
+                                        <input type="text" class="form-control form-control-sm c-ptr" value="${c.pupil_teacher_ratio || ''}" placeholder="e.g. 25:1">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-primary mb-0 fw-bold small"><i class="fas fa-users me-1"></i> Class Profile</h6>
+                                <h6 class="text-primary mb-0 fw-bold small"><i class="fas fa-users me-1"></i> Class Profile (Year-wise)</h6>
                                 <button type="button" class="btn btn-sm btn-outline-primary btn-add-stat">
                                     <i class="fas fa-plus me-1"></i> Add Year Stats
                                 </button>
                             </div>
                             <div class="c-class-profile-container d-flex flex-column gap-3">
                                 ${classProfileHtml}
+                            </div>
+                        </div>
+
+                        <!-- 10. Staff Details -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-staff-details" role="tabpanel">
+                            <div class="border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-chalkboard-teacher me-1"></i> School Teacher Details & Teaching Staff</h6>
+                                <p class="text-muted mb-0" style="font-size:0.75rem;">Leadership and verified teacher counts under official UDISE+ and RTE guidelines.</p>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Headmaster / Principal</label>
+                                    <input type="text" class="form-control c-principal" value="${c.headmaster_principal || ''}" placeholder="e.g. Mamta Mehta">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Total Appointed Teachers</label>
+                                    <input type="number" min="0" class="form-control c-total-teachers" value="${c.total_appointed_teachers || ''}" placeholder="e.g. 245">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Male Staff (Teachers)</label>
+                                    <input type="number" min="0" class="form-control c-male-staff" value="${c.male_staff || ''}" placeholder="e.g. 110">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Female Staff (Teachers)</label>
+                                    <input type="number" min="0" class="form-control c-female-staff" value="${c.female_staff || ''}" placeholder="e.g. 135">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 11. Admissions -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-admissions" role="tabpanel">
+                            <div class="border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-user-graduate me-1"></i> Admissions & Right to Education (RTE)</h6>
+                                <p class="text-muted mb-0" style="font-size:0.75rem;">Specify the admission process, entry routes, and statutory RTE benefits.</p>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Admission Procedure / Route</label>
+                                    <textarea class="form-control c-admission-procedure" rows="3" placeholder="Describe the application process, eligibility criteria, admission routes...">${c.admission_procedure || ''}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Right to Education (RTE) Provisions & Details</label>
+                                    <textarea class="form-control c-rte-details" rows="3" placeholder="Specify RTE Act (2009) guidelines, zero tuition fees, lottery details...">${c.rte_details || ''}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Complete RTE / Admission Guide Link (Optional)</label>
+                                    <input type="url" class="form-control c-admission-guide-url" value="${c.admission_guide_url || ''}" placeholder="https://example.com/admission-guide">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 12. Reviews -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-reviews" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-comments me-1"></i> Parent & Alumni Reviews</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-review">
+                                    <i class="fas fa-plus me-1"></i> Add Review
+                                </button>
+                            </div>
+                            <div class="c-reviews-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.reviews) ? c.reviews : []).map(r => `
+                                    <div class="card border p-3 bg-light position-relative review-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Reviewer Name</label>
+                                                <input type="text" class="form-control form-control-sm r-name" value="${r.reviewer_name || ''}" placeholder="Ramesh Kumar">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Reviewer Role</label>
+                                                <select class="form-select form-select-sm r-type">
+                                                    ${['Parent', 'Alumni', 'Student', 'Guardian', 'Other'].map(rt => `<option value="${rt}" ${(r.reviewer_type || 'Parent') === rt ? 'selected' : ''}>${rt}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-bold">Rating</label>
+                                                <select class="form-select form-select-sm r-rating">
+                                                    ${[5, 4, 3, 2, 1].map(rt => `<option value="${rt}" ${(parseInt(r.rating) || 5) === rt ? 'selected' : ''}>${rt} ★</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Date / Year</label>
+                                                <input type="text" class="form-control form-control-sm r-date" value="${r.date || ''}" placeholder="Oct 2024">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Review Title</label>
+                                                <input type="text" class="form-control form-control-sm r-title" value="${r.title || ''}" placeholder="Excellent academic support">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Comment</label>
+                                                <textarea class="form-control form-control-sm r-comment" rows="2" placeholder="Experience details...">${r.comment || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 13. Events & Activities -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-events-activities" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-calendar-alt me-1"></i> Events & Activities</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-event">
+                                    <i class="fas fa-plus me-1"></i> Add Event
+                                </button>
+                            </div>
+                            <div class="c-events-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.events_and_activities) ? c.events_and_activities : []).map(e => `
+                                    <div class="card border p-3 bg-light position-relative event-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-bold">Event Title</label>
+                                                <input type="text" class="form-control form-control-sm e-title" value="${e.title || ''}" placeholder="Annual Sports Meet">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Category</label>
+                                                <select class="form-select form-select-sm e-category">
+                                                    ${['Sports', 'Cultural', 'Academic', 'Annual Day', 'Science Exhibition', 'Workshop', 'Competition', 'Community Outreach'].map(cat => `<option value="${cat}" ${(e.category || 'Sports') === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Date / Frequency</label>
+                                                <input type="text" class="form-control form-control-sm e-date" value="${e.date || ''}" placeholder="November 2024 / Annual">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Description</label>
+                                                <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights...">${e.description || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 14. Alumni -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-alumni" role="tabpanel">
+                            <div class="border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-user-friends me-1"></i> Alumni Network</h6>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Alumni Association / Network Details</label>
+                                    <textarea class="form-control c-alumni-details" rows="3" placeholder="Describe alumni association activities, reunions, channels...">${c.alumni_details || ''}</textarea>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-award me-1"></i> Notable Alumni</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-alumni">
+                                    <i class="fas fa-plus me-1"></i> Add Notable Alumni
+                                </button>
+                            </div>
+                            <div class="c-alumni-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.notable_alumni) ? c.notable_alumni : []).map(a => `
+                                    <div class="card border p-3 bg-light position-relative alumni-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Alumni Name</label>
+                                                <input type="text" class="form-control form-control-sm a-name" value="${a.name || ''}" placeholder="Dr. Anjali Sharma">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Batch / Year</label>
+                                                <input type="text" class="form-control form-control-sm a-batch" value="${a.batch || ''}" placeholder="Batch of 2015">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-bold">Profession / Achievement</label>
+                                                <input type="text" class="form-control form-control-sm a-profession" value="${a.profession || ''}" placeholder="IAS Officer / Scientist">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Testimonial</label>
+                                                <textarea class="form-control form-control-sm a-testimonial" rows="2" placeholder="Brief words...">${a.testimonial || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 15. Clubs & Committees -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-clubs-committees" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-users-cog me-1"></i> Clubs & Committees</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-club">
+                                    <i class="fas fa-plus me-1"></i> Add Club / Committee
+                                </button>
+                            </div>
+                            <div class="c-clubs-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.clubs_and_committees) ? c.clubs_and_committees : []).map(cl => `
+                                    <div class="card border p-3 bg-light position-relative club-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Club / Committee Name</label>
+                                                <input type="text" class="form-control form-control-sm cl-name" value="${cl.name || ''}" placeholder="Eco Club">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Category</label>
+                                                <select class="form-select form-select-sm cl-type">
+                                                    ${['Student Club', 'Statutory Committee', 'Academic Society', 'Sports Committee', 'Cultural Society', 'Safety & Discipline Committee'].map(ct => `<option value="${ct}" ${(cl.type || 'Student Club') === ct ? 'selected' : ''}>${ct}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Coordinator</label>
+                                                <input type="text" class="form-control form-control-sm cl-coord" value="${cl.coordinator || ''}" placeholder="Mrs. Sunita Sharma">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Purpose & Activities</label>
+                                                <textarea class="form-control form-control-sm cl-description" rows="2" placeholder="Purpose and activities...">${cl.description || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 16. FAQs -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-faqs" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-question-circle me-1"></i> Frequently Asked Questions (FAQ)</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-faq">
+                                    <i class="fas fa-plus me-1"></i> Add FAQ
+                                </button>
+                            </div>
+                            <div class="c-faqs-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.faqs) ? c.faqs : []).map(f => `
+                                    <div class="card border p-3 bg-light position-relative faq-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Question</label>
+                                                <input type="text" class="form-control form-control-sm f-question" value="${f.question || ''}" placeholder="e.g. What is the school timing?">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Answer</label>
+                                                <textarea class="form-control form-control-sm f-answer" rows="2" placeholder="Detailed answer...">${f.answer || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
@@ -2376,6 +2730,191 @@ document.addEventListener('DOMContentLoaded', function () {
             div.querySelectorAll('.btn-remove-stat').forEach(btn => {
                 btn.addEventListener('click', function () {
                     this.closest('.c-class-profile-item').remove();
+                });
+            });
+
+            // Review Repeater Handler
+            div.querySelector('.btn-add-review')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-reviews-container');
+                const revDiv = document.createElement('div');
+                revDiv.className = 'card border p-3 bg-light position-relative review-item';
+                revDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Reviewer Name</label>
+                            <input type="text" class="form-control form-control-sm r-name" placeholder="Ramesh Kumar">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Reviewer Role</label>
+                            <select class="form-select form-select-sm r-type">
+                                <option value="Parent">Parent</option>
+                                <option value="Alumni">Alumni</option>
+                                <option value="Student">Student</option>
+                                <option value="Guardian">Guardian</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Rating</label>
+                            <select class="form-select form-select-sm r-rating">
+                                <option value="5">5 ★</option>
+                                <option value="4">4 ★</option>
+                                <option value="3">3 ★</option>
+                                <option value="2">2 ★</option>
+                                <option value="1">1 ★</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Date / Year</label>
+                            <input type="text" class="form-control form-control-sm r-date" placeholder="Oct 2024">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Review Title</label>
+                            <input type="text" class="form-control form-control-sm r-title" placeholder="Review headline...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Comment</label>
+                            <textarea class="form-control form-control-sm r-comment" rows="2" placeholder="Experience details..."></textarea>
+                        </div>
+                    </div>
+                `;
+                revDiv.querySelector('.btn-remove-item').addEventListener('click', function () { revDiv.remove(); });
+                container.appendChild(revDiv);
+            });
+
+            // Event Repeater Handler
+            div.querySelector('.btn-add-event')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-events-container');
+                const evDiv = document.createElement('div');
+                evDiv.className = 'card border p-3 bg-light position-relative event-item';
+                evDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Event Title</label>
+                            <input type="text" class="form-control form-control-sm e-title" placeholder="Annual Sports Meet">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select class="form-select form-select-sm e-category">
+                                <option value="Sports">Sports</option>
+                                <option value="Cultural">Cultural</option>
+                                <option value="Academic">Academic</option>
+                                <option value="Annual Day">Annual Day</option>
+                                <option value="Science Exhibition">Science Exhibition</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Competition">Competition</option>
+                                <option value="Community Outreach">Community Outreach</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Date / Frequency</label>
+                            <input type="text" class="form-control form-control-sm e-date" placeholder="Nov 2024 / Annual">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Description</label>
+                            <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights..."></textarea>
+                        </div>
+                    </div>
+                `;
+                evDiv.querySelector('.btn-remove-item').addEventListener('click', function () { evDiv.remove(); });
+                container.appendChild(evDiv);
+            });
+
+            // Alumni Repeater Handler
+            div.querySelector('.btn-add-alumni')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-alumni-container');
+                const alDiv = document.createElement('div');
+                alDiv.className = 'card border p-3 bg-light position-relative alumni-item';
+                alDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Alumni Name</label>
+                            <input type="text" class="form-control form-control-sm a-name" placeholder="Dr. Anjali Sharma">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Batch / Year</label>
+                            <input type="text" class="form-control form-control-sm a-batch" placeholder="Batch of 2015">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Profession / Achievement</label>
+                            <input type="text" class="form-control form-control-sm a-profession" placeholder="IAS Officer / Scientist">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Testimonial</label>
+                            <textarea class="form-control form-control-sm a-testimonial" rows="2" placeholder="Brief words..."></textarea>
+                        </div>
+                    </div>
+                `;
+                alDiv.querySelector('.btn-remove-item').addEventListener('click', function () { alDiv.remove(); });
+                container.appendChild(alDiv);
+            });
+
+            // Club Repeater Handler
+            div.querySelector('.btn-add-club')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-clubs-container');
+                const clDiv = document.createElement('div');
+                clDiv.className = 'card border p-3 bg-light position-relative club-item';
+                clDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Club / Committee Name</label>
+                            <input type="text" class="form-control form-control-sm cl-name" placeholder="Eco Club">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select class="form-select form-select-sm cl-type">
+                                <option value="Student Club">Student Club</option>
+                                <option value="Statutory Committee">Statutory Committee</option>
+                                <option value="Academic Society">Academic Society</option>
+                                <option value="Sports Committee">Sports Committee</option>
+                                <option value="Cultural Society">Cultural Society</option>
+                                <option value="Safety & Discipline Committee">Safety & Discipline Committee</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Coordinator</label>
+                            <input type="text" class="form-control form-control-sm cl-coord" placeholder="Mrs. Sunita Sharma">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Purpose & Activities</label>
+                            <textarea class="form-control form-control-sm cl-description" rows="2" placeholder="Purpose and activities..."></textarea>
+                        </div>
+                    </div>
+                `;
+                clDiv.querySelector('.btn-remove-item').addEventListener('click', function () { clDiv.remove(); });
+                container.appendChild(clDiv);
+            });
+
+            // FAQ Repeater Handler
+            div.querySelector('.btn-add-faq')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-faqs-container');
+                const fqDiv = document.createElement('div');
+                fqDiv.className = 'card border p-3 bg-light position-relative faq-item';
+                fqDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Question</label>
+                            <input type="text" class="form-control form-control-sm f-question" placeholder="e.g. What is the school timing?">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Answer</label>
+                            <textarea class="form-control form-control-sm f-answer" rows="2" placeholder="Detailed answer..."></textarea>
+                        </div>
+                    </div>
+                `;
+                fqDiv.querySelector('.btn-remove-item').addEventListener('click', function () { fqDiv.remove(); });
+                container.appendChild(fqDiv);
+            });
+
+            // Generic remove handler for initial items
+            div.querySelectorAll('.btn-remove-item').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.card').remove();
                 });
             });
 
@@ -2750,10 +3289,85 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            // Reviews repeater items
+            const reviewsItems = [];
+            el.querySelectorAll('.review-item').forEach(rEl => {
+                const rName = rEl.querySelector('.r-name')?.value.trim();
+                const rComment = rEl.querySelector('.r-comment')?.value.trim();
+                if (rName || rComment) {
+                    reviewsItems.push({
+                        reviewer_name: rName || null,
+                        reviewer_type: rEl.querySelector('.r-type')?.value || 'Parent',
+                        rating: parseInt(rEl.querySelector('.r-rating')?.value) || 5,
+                        date: rEl.querySelector('.r-date')?.value.trim() || null,
+                        title: rEl.querySelector('.r-title')?.value.trim() || null,
+                        comment: rComment || null
+                    });
+                }
+            });
+
+            // Events repeater items
+            const eventsItems = [];
+            el.querySelectorAll('.event-item').forEach(eEl => {
+                const eTitle = eEl.querySelector('.e-title')?.value.trim();
+                if (eTitle) {
+                    eventsItems.push({
+                        title: eTitle,
+                        category: eEl.querySelector('.e-category')?.value || 'Sports',
+                        date: eEl.querySelector('.e-date')?.value.trim() || null,
+                        description: eEl.querySelector('.e-description')?.value.trim() || null
+                    });
+                }
+            });
+
+            // Alumni repeater items
+            const alumniItems = [];
+            el.querySelectorAll('.alumni-item').forEach(aEl => {
+                const aName = aEl.querySelector('.a-name')?.value.trim();
+                if (aName) {
+                    alumniItems.push({
+                        name: aName,
+                        batch: aEl.querySelector('.a-batch')?.value.trim() || null,
+                        profession: aEl.querySelector('.a-profession')?.value.trim() || null,
+                        testimonial: aEl.querySelector('.a-testimonial')?.value.trim() || null
+                    });
+                }
+            });
+
+            // Clubs repeater items
+            const clubsItems = [];
+            el.querySelectorAll('.club-item').forEach(clEl => {
+                const clName = clEl.querySelector('.cl-name')?.value.trim();
+                if (clName) {
+                    clubsItems.push({
+                        name: clName,
+                        type: clEl.querySelector('.cl-type')?.value || 'Student Club',
+                        coordinator: clEl.querySelector('.cl-coord')?.value.trim() || null,
+                        description: clEl.querySelector('.cl-description')?.value.trim() || null
+                    });
+                }
+            });
+
+            // FAQs repeater items
+            const faqsItems = [];
+            el.querySelectorAll('.faq-item').forEach(fEl => {
+                const fQuestion = fEl.querySelector('.f-question')?.value.trim();
+                const fAnswer = fEl.querySelector('.f-answer')?.value.trim();
+                if (fQuestion || fAnswer) {
+                    faqsItems.push({
+                        question: fQuestion || null,
+                        answer: fAnswer || null
+                    });
+                }
+            });
+
             return {
                 campus_name: name,
                 campus_type: 'Main',
                 campus_type_new_id: schoolTypeIds,
+                udise_code: el.querySelector('.c-udise')?.value.trim() || null,
+                affiliation_board: el.querySelector('.c-affiliation-board')?.value || null,
+                location_type: el.querySelector('.c-location-type')?.value || null,
                 established_year: el.querySelector('.c-est')?.value.trim() || null,
                 brand_type: el.querySelector('.c-brand-type')?.value || null,
                 status: el.querySelector('.c-status')?.checked ? 1 : 0,
@@ -2772,8 +3386,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 bus_routes: busRoutes,
                 cctv_coverage: el.querySelector('.c-cctv')?.checked ? 1 : 0,
                 campus_email: el.querySelector('.c-email')?.value.trim() || null,
+                campus_website: el.querySelector('.c-website')?.value.trim() || null,
                 campus_contact_numbers: contactNumbers,
-                class_profile: classProfileItems
+                facebook_url: el.querySelector('.c-facebook')?.value.trim() || null,
+                instagram_url: el.querySelector('.c-instagram')?.value.trim() || null,
+                linkedin_url: el.querySelector('.c-linkedin')?.value.trim() || null,
+                youtube_url: el.querySelector('.c-youtube')?.value.trim() || null,
+                twitter_url: el.querySelector('.c-twitter')?.value.trim() || null,
+                total_enrolled_students: el.querySelector('.c-total-students')?.value.trim() || null,
+                enrolled_boys: el.querySelector('.c-boys')?.value.trim() || null,
+                enrolled_girls: el.querySelector('.c-girls')?.value.trim() || null,
+                pupil_teacher_ratio: el.querySelector('.c-ptr')?.value.trim() || null,
+                headmaster_principal: el.querySelector('.c-principal')?.value.trim() || null,
+                total_appointed_teachers: el.querySelector('.c-total-teachers')?.value.trim() || null,
+                male_staff: el.querySelector('.c-male-staff')?.value.trim() || null,
+                female_staff: el.querySelector('.c-female-staff')?.value.trim() || null,
+                admission_procedure: el.querySelector('.c-admission-procedure')?.value.trim() || null,
+                rte_details: el.querySelector('.c-rte-details')?.value.trim() || null,
+                admission_guide_url: el.querySelector('.c-admission-guide-url')?.value.trim() || null,
+                class_profile: classProfileItems,
+                reviews: reviewsItems,
+                events_and_activities: eventsItems,
+                alumni_details: el.querySelector('.c-alumni-details')?.value.trim() || null,
+                notable_alumni: alumniItems,
+                clubs_and_committees: clubsItems,
+                faqs: faqsItems
             };
         }
 
