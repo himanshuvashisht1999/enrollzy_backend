@@ -70,6 +70,14 @@ class CampusController extends Controller
             }
         }
 
+        if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
+            $input['events_and_activities'] = $this->processEventsAndActivities($request);
+        }
+
+        if ($request->has('school_classes')) {
+            $input['school_classes'] = $this->processSchoolClasses($request);
+        }
+
         $campus = new Campus($input);
         $campus->organisation_id = $organisation->id;
         $campus->save();
@@ -146,6 +154,14 @@ class CampusController extends Controller
         // Handle slug: if empty, let model handle it
         if (array_key_exists('slug', $input) && empty($input['slug'])) {
             unset($input['slug']);
+        }
+
+        if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
+            $input['events_and_activities'] = $this->processEventsAndActivities($request, $campus->events_and_activities);
+        }
+
+        if ($request->has('school_classes')) {
+            $input['school_classes'] = $this->processSchoolClasses($request);
         }
 
         $campus->update($input);
@@ -250,8 +266,127 @@ class CampusController extends Controller
             }
         }
         
+        $processedEvents = null;
+        if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
+            $processedEvents = $this->processEventsAndActivities($request, $campus->events_and_activities);
+            $updateData['events_and_activities'] = $processedEvents;
+        }
+
+        if ($request->has('school_classes')) {
+            $updateData['school_classes'] = $this->processSchoolClasses($request);
+        }
+
         $campus->update($updateData);
-        return response()->json(['status' => 'success', 'message' => 'Tab saved']);
+
+        $response = ['status' => 'success', 'message' => 'Tab saved'];
+        if ($processedEvents !== null) {
+            $response['events'] = $processedEvents;
+        }
+        return response()->json($response);
+    }
+
+    /**
+     * Process school classes repeater.
+     */
+    protected function processSchoolClasses(Request $request): ?array
+    {
+        if (!$request->has('school_classes')) {
+            return null;
+        }
+
+        $rawClasses = $request->input('school_classes', []);
+        if (!is_array($rawClasses)) {
+            return [];
+        }
+
+        $cleanClasses = [];
+        foreach ($rawClasses as $sc) {
+            if (!is_array($sc)) continue;
+            $name = isset($sc['class_name']) ? trim((string)$sc['class_name']) : '';
+            $curriculum = isset($sc['curriculum']) ? trim((string)$sc['curriculum']) : '';
+            $fee = isset($sc['fee_structure']) ? trim((string)$sc['fee_structure']) : '';
+            $admission = isset($sc['admission_process']) ? trim((string)$sc['admission_process']) : '';
+            $examPrep = isset($sc['exam_preparation']) ? trim((string)$sc['exam_preparation']) : '';
+
+            if ($name !== '' || $fee !== '' || $curriculum !== '' || $admission !== '' || $examPrep !== '') {
+                $cleanClasses[] = [
+                    'class_name' => $name,
+                    'curriculum' => $curriculum,
+                    'fee_structure' => $fee,
+                    'admission_process' => $admission,
+                    'exam_preparation' => $examPrep,
+                ];
+            }
+        }
+
+        return $cleanClasses;
+    }
+
+    /**
+     * Process events and activities repeater with multiple uploaded images and existing images.
+     */
+    protected function processEventsAndActivities(Request $request, ?array $currentEvents = null): array
+    {
+        $rawEvents = $request->input('events_and_activities', []);
+        if (!is_array($rawEvents)) {
+            $rawEvents = [];
+        }
+
+        $processedEvents = [];
+        $eventDir = public_path('uploads/campuses/events');
+        if (!file_exists($eventDir)) {
+            @mkdir($eventDir, 0777, true);
+        }
+
+        foreach ($rawEvents as $index => $eventData) {
+            if (!is_array($eventData)) {
+                continue;
+            }
+
+            $title = isset($eventData['title']) ? trim((string)$eventData['title']) : '';
+            $category = isset($eventData['category']) ? trim((string)$eventData['category']) : 'Sports';
+            $date = isset($eventData['date']) ? trim((string)$eventData['date']) : '';
+            $description = isset($eventData['description']) ? trim((string)$eventData['description']) : '';
+
+            // 1. Retain existing images that were not removed
+            $images = [];
+            if (!empty($eventData['existing_images']) && is_array($eventData['existing_images'])) {
+                foreach ($eventData['existing_images'] as $img) {
+                    if (!empty($img) && is_string($img)) {
+                        $images[] = trim($img);
+                    }
+                }
+            }
+
+            // 2. Process newly uploaded multiple image files for this event index
+            $uploadedFiles = $request->file("events_and_activities.{$index}.images");
+            if ($uploadedFiles) {
+                if (!is_array($uploadedFiles)) {
+                    $uploadedFiles = [$uploadedFiles];
+                }
+                foreach ($uploadedFiles as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                        $fileName = 'event_' . time() . '_' . uniqid() . '.' . $ext;
+                        $file->move($eventDir, $fileName);
+                        $images[] = 'uploads/campuses/events/' . $fileName;
+                    }
+                }
+            }
+
+            // Only add if at least title, description, or images exist
+            if ($title !== '' || $description !== '' || !empty($images)) {
+                $processedEvents[] = [
+                    'title' => $title,
+                    'category' => $category ?: 'Sports',
+                    'date' => $date,
+                    'description' => $description,
+                    'images' => array_values(array_unique($images)),
+                ];
+            }
+        }
+
+        return $processedEvents;
     }
 
     protected function syncDocuments(Request $request, Campus $campus): void

@@ -1390,7 +1390,7 @@ STRICT_URL_INSTRUCTIONS;
         $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
         $schoolInstructions = $isSchool ? <<<SCHOOL_CAMPUS_INSTR
 - THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location according to the School Campus profile:
-  * school_type: ["Day School", "Boarding School", "Day-cum-Boarding", etc.]
+  * school_type: Array of strings matching ALL applicable types from this list: ["Day School", "Boarding School With Integrated Coaching", "Day Boarding", "Fully Boarding", "Co-ed Boarding Schools", "Girls' Boarding School", "Boys' Boarding School", "School With Integrated Coaching", "International Schools", "Military-Style Schools", "Weekly Boarding Schools", "Home Schooling", "NIOS"]. A school can have MULTIPLE types simultaneously (e.g., ["Day School", "Day Boarding", "School With Integrated Coaching"]). ALWAYS return multiple if applicable!
   * brand_type: "Independent" | "Chain" | "Franchise"
   * established_year: integer
   * city, state, country, pincode, full_address
@@ -1403,8 +1403,9 @@ STRICT_URL_INSTRUCTIONS;
   * smart_classrooms: true/false
   * target_classes: array of classes e.g. ["6", "7", "8", "9", "10", "11", "12"]
   * about_institute: campus overview and educational philosophy
-  * transport_available: true/false
-  * bus_routes: array of bus routes / stops
+  * facilities: Array of strings matching available amenities from: ["Classrooms", "Laboratories", "Library", "Sports", "Swimming Pool", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Gym", "Boys Hostel", "Girls Hostel", "Guest Room/Waiting Room", "Alumni Associations", "Transport Facility"]. Extract ALL facilities mentioned or visible in the school sources!
+  * transport_available: boolean - Set to true ONLY if school operates buses, vans, or student transportation routes. If not mentioned or unavailable, set to FALSE!
+  * bus_routes: array of bus routes / stops (leave empty [] if transport is not available)
   * cctv_coverage: true/false
   * campus_email: email address
   * campus_website: website URL
@@ -1416,11 +1417,9 @@ STRICT_URL_INSTRUCTIONS;
   * total_enrolled_students: integer student count
   * enrolled_boys, enrolled_girls: enrolled boys and girls count
   * pupil_teacher_ratio: string ratio e.g. "25:1"
-  * admission_procedure: admission overview or procedure text
-  * rte_details: Right to Education provisions or zero fee guidelines
-  * admission_guide_url: link to admission guide / prospectus
+  * school_classes: array of [{ "class_name": "Class 1", "curriculum": "CBSE", "fee_structure": "Tuition Fee: ₹45,000/yr", "admission_process": "Age 6+ criteria, registration form, interaction", "exam_preparation": "Olympiad and NTSE foundation" }]
   * reviews: array of [{ "reviewer_name": "...", "reviewer_type": "Parent", "rating": 5, "date": "...", "title": "...", "comment": "..." }]
-  * events_and_activities: array of [{ "title": "...", "category": "Sports", "date": "...", "description": "..." }]
+  * events_and_activities: array of [{ "title": "...", "category": "Sports", "date": "...", "description": "...", "images": ["image_url_1", "image_url_2"] }]
   * alumni_details: alumni network overview text
   * notable_alumni: array of [{ "name": "...", "batch": "...", "profession": "...", "testimonial": "..." }]
   * clubs_and_committees: array of [{ "name": "...", "type": "Student Club", "coordinator": "...", "description": "..." }]
@@ -1475,7 +1474,7 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
-      "school_type": "Day School",
+      "school_type": ["Day School", "Co-ed Boarding Schools", "Boarding School With Integrated Coaching"],
       "brand_type": "Independent",
       "established_year": 2005,
       "city": "Bengaluru",
@@ -1491,8 +1490,9 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
       "smart_classrooms": true,
       "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
       "about_institute": "Overview of the school campus and curriculum focus",
-      "transport_available": true,
-      "bus_routes": ["Route 1 - North Sector", "Route 2 - City Center"],
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure"],
+      "transport_available": false,
+      "bus_routes": [],
       "cctv_coverage": true,
       "laboratories_count": 35,
       "science_labs_available": true,
@@ -2621,7 +2621,7 @@ IMPORTANT INSTRUCTIONS:
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
-      "school_type": "Day School",
+      "school_type": ["Day School", "Co-ed Boarding Schools", "Boarding School With Integrated Coaching"],
       "brand_type": "Independent",
       "established_year": 1995,
       "city": "",
@@ -2674,9 +2674,7 @@ IMPORTANT INSTRUCTIONS:
       "enrolled_boys": 650,
       "enrolled_girls": 550,
       "pupil_teacher_ratio": "24:1",
-      "admission_procedure": "",
-      "rte_details": "",
-      "admission_guide_url": "",
+      "school_classes": [],
       "reviews": [],
       "events_and_activities": [],
       "alumni_details": "",

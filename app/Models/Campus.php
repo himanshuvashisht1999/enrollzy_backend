@@ -52,6 +52,7 @@ class Campus extends Model
         'total_enrolled_students' => 'integer',
         'enrolled_boys' => 'integer',
         'enrolled_girls' => 'integer',
+        'school_classes' => 'array',
         'reviews' => 'array',
         'events_and_activities' => 'array',
         'notable_alumni' => 'array',

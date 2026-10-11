@@ -135,7 +135,7 @@
                             <li class="nav-item"><a class="nav-link" href="#class-profile" role="tab">Class Profile</a></li>
                             @if($isSchool)
                                 <li class="nav-item"><a class="nav-link" href="#staff-details" role="tab"><i class="fas fa-chalkboard-teacher text-info me-1"></i> Staff Details</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#admissions" role="tab"><i class="fas fa-user-graduate text-primary me-1"></i> Admissions</a></li>
+                                <li class="nav-item"><a class="nav-link" href="#classes" role="tab"><i class="fas fa-chalkboard text-primary me-1"></i> Classes & Fees</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#reviews" role="tab"><i class="fas fa-comments text-warning me-1"></i> Reviews</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#events-activities" role="tab"><i class="fas fa-calendar-alt text-success me-1"></i> Events & Activities</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#alumni" role="tab"><i class="fas fa-user-friends text-secondary me-1"></i> Alumni</a></li>
@@ -622,30 +622,77 @@
                                 </div>
                             </div>
 
-                            <!-- 11. Admissions -->
-                            <div class="tab-pane" id="admissions" role="tabpanel">
-                                <div class="mb-3 border-bottom pb-2">
-                                    <h5 class="text-primary mb-1"><i class="fas fa-user-graduate me-1"></i> Admissions & Right to Education (RTE)</h5>
-                                    <p class="text-muted small mb-0">Specify the admission process, entry routes, and statutory RTE benefits.</p>
+                            <!-- 11. Classes & Academics -->
+                            <div class="tab-pane" id="classes" role="tabpanel">
+                                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                    <div>
+                                        <h5 class="text-primary mb-1"><i class="fas fa-graduation-cap me-1"></i> Class Offerings & Fees</h5>
+                                        <p class="text-muted small mb-0">Add class-wise details including curriculum, fee structure, admission process, and exam preparation.</p>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary" id="add-class-btn">
+                                        <i class="fas fa-plus me-1"></i> Add Class
+                                    </button>
                                 </div>
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold">Admission Procedure / Route</label>
-                                        <textarea name="admission_procedure" id="admission_procedure" class="editor"
-                                            placeholder="Describe the application process, eligibility criteria, admission routes, etc.">{{ old('admission_procedure', $campus->admission_procedure) }}</textarea>
+
+                                <div id="classes-container">
+                                    @php $classes = old('school_classes', is_array($campus->school_classes) ? $campus->school_classes : []); @endphp
+                                    @forelse($classes as $cIndex => $sClass)
+                                    <div class="class-item card border mb-3 bg-light position-relative">
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-class-btn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Class / Grade <span class="text-danger">*</span></label>
+                                                    @php
+                                                        $masterClasses = [
+                                                            'Playgroup', 'Nursery', 'LKG', 'UKG',
+                                                            'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+                                                            'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+                                                            'Class 11', 'Class 12', 'Dropper'
+                                                        ];
+                                                        $currentVal = $sClass['class_name'] ?? '';
+                                                    @endphp
+                                                    <select name="school_classes[{{$cIndex}}][class_name]" class="form-select select2-class-item">
+                                                        <option value="">-- Select Class / Grade --</option>
+                                                        @foreach($masterClasses as $mClass)
+                                                            <option value="{{ $mClass }}" {{ $currentVal == $mClass ? 'selected' : '' }}>{{ $mClass }}</option>
+                                                        @endforeach
+                                                        @if(!empty($currentVal) && !in_array($currentVal, $masterClasses))
+                                                            <option value="{{ $currentVal }}" selected>{{ $currentVal }}</option>
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Curriculum / Board</label>
+                                                    <input type="text" name="school_classes[{{$cIndex}}][curriculum]" class="form-control"
+                                                        value="{{ $sClass['curriculum'] ?? '' }}" placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold">Fee & Other Charges</label>
+                                                    <textarea name="school_classes[{{$cIndex}}][fee_structure]" class="form-control" rows="2"
+                                                        placeholder="e.g. Tuition Fee: ₹45,000/yr, Admission Fee: ₹5,000, Activity/Lab Charges: ₹3,000...">{{ $sClass['fee_structure'] ?? '' }}</textarea>
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold">Admission Process</label>
+                                                    <textarea name="school_classes[{{$cIndex}}][admission_process]" id="admission_process_{{$cIndex}}" class="form-control editor" rows="4"
+                                                        placeholder="Eligibility, age criteria, entrance test/interview, documents required...">{{ $sClass['admission_process'] ?? '' }}</textarea>
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold">Exam Preparation</label>
+                                                    <textarea name="school_classes[{{$cIndex}}][exam_preparation]" id="exam_preparation_{{$cIndex}}" class="form-control editor" rows="4"
+                                                        placeholder="e.g. Olympiads, NTSE, Board Exam Mentorship, JEE/NEET Foundation...">{{ $sClass['exam_preparation'] ?? '' }}</textarea>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold">Right to Education (RTE) Provisions & Details</label>
-                                        <textarea name="rte_details" id="rte_details" class="editor"
-                                            placeholder="Specify RTE Act (2009) guidelines, zero tuition fees, free elementary education, or lottery process details...">{{ old('rte_details', $campus->rte_details) }}</textarea>
+                                    @empty
+                                    <div class="text-center py-4 border rounded bg-white" id="no-classes-msg">
+                                        <i class="fas fa-chalkboard fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No classes added yet. Click <strong>"Add Class"</strong> to add grades, fees, curriculum, and admission details.</p>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Complete RTE / Admission Guide Link (Optional)</label>
-                                        <input type="url" name="admission_guide_url" class="form-control"
-                                            value="{{ old('admission_guide_url', $campus->admission_guide_url) }}"
-                                            placeholder="https://example.com/rte-admission-guide">
-                                        <small class="text-muted">Link to online lottery process, state admission guide, or prospectus</small>
-                                    </div>
+                                    @endforelse
                                 </div>
                             </div>
 
@@ -761,6 +808,27 @@
                                                     <label class="form-label">Description & Highlights</label>
                                                     <textarea name="events_and_activities[{{$eIndex}}][description]" class="form-control" rows="2"
                                                         placeholder="Brief summary of activities, participants, and highlights...">{{ $event['description'] ?? '' }}</textarea>
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold"><i class="fas fa-images text-primary me-1"></i> Event Photos & Images</label>
+                                                    <input type="file" name="events_and_activities[{{$eIndex}}][images][]" multiple accept="image/*" class="form-control event-images-input">
+                                                    <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>You can select multiple photos (JPG, PNG, WebP) for this event.</small>
+                                                    
+                                                    <div class="event-image-previews d-flex flex-wrap gap-2 mt-2">
+                                                        @php $eventImgs = isset($event['images']) && is_array($event['images']) ? $event['images'] : []; @endphp
+                                                        @foreach($eventImgs as $img)
+                                                            @if(!empty($img))
+                                                            <div class="position-relative d-inline-block border rounded p-1 bg-white shadow-sm event-img-thumb-box" style="width: 85px; height: 85px;">
+                                                                <img src="{{ \Illuminate\Support\Str::startsWith($img, 'http') ? $img : asset($img) }}" class="rounded w-100 h-100" style="object-fit: cover;" alt="Event Photo">
+                                                                <input type="hidden" name="events_and_activities[{{$eIndex}}][existing_images][]" value="{{ $img }}">
+                                                                <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-1 p-0 rounded-circle remove-event-img-btn" style="width: 20px; height: 20px; font-size: 10px; line-height: 1;" title="Remove image">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="selected-files-preview d-flex flex-wrap gap-2 mt-2"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -988,6 +1056,7 @@
             tabs.each(function (index) {
                 $(this).on('click', function (e) {
                     e.preventDefault();
+                    if (typeof tinymce !== 'undefined') tinymce.triggerSave();
                     if (index > currentTab && !validateCurrentStep()) {
                         return false;
                     }
@@ -998,11 +1067,16 @@
             });
 
             window.nextPrev = function (n) {
+                if (typeof tinymce !== 'undefined') tinymce.triggerSave();
                 if (n == 1 && !validateCurrentStep()) return false;
                 saveStepData();
                 currentTab = currentTab + n;
                 showTab(currentTab);
             }
+
+            $('#campus-form').on('submit', function () {
+                if (typeof tinymce !== 'undefined') tinymce.triggerSave();
+            });
 
             function showTab(n) {
                 const bootstrapTab = new bootstrap.Tab(tabs[n]);
@@ -1036,6 +1110,47 @@
                 if (currentTabId === 'documents-tab') return;
 
                 if (campusId) {
+                    if (currentTabId === 'events-activities') {
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+
+                        $('#events-activities').find('input, select, textarea').each(function () {
+                            const name = $(this).attr('name');
+                            if (!name) return;
+
+                            if ($(this).is(':file')) {
+                                const files = this.files;
+                                if (files && files.length > 0) {
+                                    for (let i = 0; i < files.length; i++) {
+                                        fd.append(name, files[i]);
+                                    }
+                                }
+                            } else {
+                                fd.append(name, $(this).val());
+                            }
+                        });
+
+                        showAutoSaveStatus('saving');
+                        $.ajax({
+                            url: `/admin/organisations/{{ $organisation->id }}/campuses/${campusId}/autosave-tab`,
+                            method: 'POST',
+                            data: fd,
+                            processData: false,
+                            contentType: false,
+                            success: function (response) {
+                                showAutoSaveStatus('saved');
+                                $(tabs[currentTab]).addClass('completed');
+                                if (response && response.events) {
+                                    syncEventImagesUI(response.events);
+                                }
+                            },
+                            error: function () {
+                                showAutoSaveStatus('saved');
+                            }
+                        });
+                        return;
+                    }
+
                     const formData = {};
                     const fieldsInStep = getFieldsInStep(currentTabId);
 
@@ -1066,6 +1181,7 @@
                     if (!fields.includes(name)) fields.push(name);
                 });
                 // Ensure repeater base names are included even if all cards are removed
+                if (stepId === 'classes' && !fields.includes('school_classes')) fields.push('school_classes');
                 if (stepId === 'reviews' && !fields.includes('reviews')) fields.push('reviews');
                 if (stepId === 'events-activities' && !fields.includes('events_and_activities')) fields.push('events_and_activities');
                 if (stepId === 'alumni' && !fields.includes('notable_alumni')) fields.push('notable_alumni');
@@ -1075,7 +1191,7 @@
             }
 
             function getInputValue(fieldName) {
-                const repeaterKeys = ['reviews', 'events_and_activities', 'notable_alumni', 'clubs_and_committees', 'faqs'];
+                const repeaterKeys = ['school_classes', 'reviews', 'events_and_activities', 'notable_alumni', 'clubs_and_committees', 'faqs'];
                 // For array/repeater fields
                 if ($(`[name^="${fieldName}["]`).length || fieldName === 'bus_routes' || $(`[name="${fieldName}[]"]`).length || repeaterKeys.includes(fieldName)) {
                     const values = {};
@@ -1254,6 +1370,82 @@
                 $(this).data('auto', false);
             });
 
+            // Classes Repeater
+            let classRowIndex = {{ count(old('school_classes', is_array($campus->school_classes) ? $campus->school_classes : [])) }};
+            const classMasterOptionsHtml = `
+                <option value="">-- Select Class / Grade --</option>
+                <option value="Playgroup">Playgroup</option>
+                <option value="Nursery">Nursery</option>
+                <option value="LKG">LKG</option>
+                <option value="UKG">UKG</option>
+                <option value="Class 1">Class 1</option>
+                <option value="Class 2">Class 2</option>
+                <option value="Class 3">Class 3</option>
+                <option value="Class 4">Class 4</option>
+                <option value="Class 5">Class 5</option>
+                <option value="Class 6">Class 6</option>
+                <option value="Class 7">Class 7</option>
+                <option value="Class 8">Class 8</option>
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10">Class 10</option>
+                <option value="Class 11">Class 11</option>
+                <option value="Class 12">Class 12</option>
+                <option value="Dropper">Dropper</option>
+            `;
+            $('#add-class-btn').on('click', function() {
+                $('#no-classes-msg').hide();
+                const template = `
+                    <div class="class-item card border mb-3 bg-light position-relative">
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-class-btn"><i class="fas fa-times"></i></button>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Class / Grade <span class="text-danger">*</span></label>
+                                    <select name="school_classes[${classRowIndex}][class_name]" class="form-select select2-class-item">
+                                        ${classMasterOptionsHtml}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Curriculum / Board</label>
+                                    <input type="text" name="school_classes[${classRowIndex}][curriculum]" class="form-control" placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Fee & Other Charges</label>
+                                    <textarea name="school_classes[${classRowIndex}][fee_structure]" class="form-control" rows="2" placeholder="e.g. Tuition Fee: ₹45,000/yr, Admission Fee: ₹5,000, Activity/Lab Charges: ₹3,000..."></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Admission Process</label>
+                                    <textarea name="school_classes[${classRowIndex}][admission_process]" id="admission_process_${classRowIndex}" class="form-control editor" rows="4" placeholder="Eligibility, age criteria, entrance test/interview, documents required..."></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Exam Preparation</label>
+                                    <textarea name="school_classes[${classRowIndex}][exam_preparation]" id="exam_preparation_${classRowIndex}" class="form-control editor" rows="4" placeholder="e.g. Olympiads, NTSE, Board Exam Mentorship, JEE/NEET Foundation..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#classes-container').append(template);
+                if (typeof initializeTinyMCE === 'function') {
+                    initializeTinyMCE(`#admission_process_${classRowIndex}`, 200);
+                    initializeTinyMCE(`#exam_preparation_${classRowIndex}`, 200);
+                }
+                classRowIndex++;
+            });
+            $(document).on('click', '.remove-class-btn', function() {
+                const card = $(this).closest('.class-item');
+                card.find('textarea.editor').each(function() {
+                    const id = $(this).attr('id');
+                    if (id && tinymce.get(id)) {
+                        tinymce.get(id).remove();
+                    }
+                });
+                card.remove();
+                if ($('#classes-container .class-item').length === 0) {
+                    $('#no-classes-msg').show();
+                }
+            });
+
             // Reviews Repeater
             let reviewIndex = {{ count(old('reviews', is_array($campus->reviews) ? $campus->reviews : [])) }};
             $('#add-review-btn').on('click', function() {
@@ -1347,6 +1539,13 @@
                                     <label class="form-label">Description & Highlights</label>
                                     <textarea name="events_and_activities[${eventIndex}][description]" class="form-control" rows="2" placeholder="Brief summary of activities, participants, and highlights..."></textarea>
                                 </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold"><i class="fas fa-images text-primary me-1"></i> Event Photos & Images</label>
+                                    <input type="file" name="events_and_activities[${eventIndex}][images][]" multiple accept="image/*" class="form-control event-images-input">
+                                    <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>You can select multiple photos (JPG, PNG, WebP) for this event.</small>
+                                    <div class="event-image-previews d-flex flex-wrap gap-2 mt-2"></div>
+                                    <div class="selected-files-preview d-flex flex-wrap gap-2 mt-2"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1360,6 +1559,68 @@
                     $('#no-events-msg').show();
                 }
             });
+
+            // Event multiple images preview on file selection
+            $(document).on('change', '.event-images-input', function() {
+                const previewContainer = $(this).siblings('.selected-files-preview');
+                previewContainer.empty();
+                const files = this.files;
+                if (files && files.length > 0) {
+                    Array.from(files).forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewContainer.append(`
+                                    <div class="position-relative d-inline-block border border-primary rounded p-1 bg-white shadow-sm" style="width: 85px; height: 85px;">
+                                        <img src="${e.target.result}" class="rounded w-100 h-100" style="object-fit: cover;" alt="Preview">
+                                        <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1" style="font-size: 8px;">New</span>
+                                    </div>
+                                `);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            });
+
+            // Remove existing event image thumbnail
+            $(document).on('click', '.remove-event-img-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).closest('.event-img-thumb-box').remove();
+            });
+
+            // Synchronize event image thumbnails after autosave
+            window.syncEventImagesUI = function(events) {
+                if (!Array.isArray(events)) return;
+                $('#events-container .event-item').each(function(idx) {
+                    const eventData = events[idx];
+                    if (!eventData) return;
+
+                    // Clear file input & temporary previews
+                    $(this).find('.event-images-input').val('');
+                    $(this).find('.selected-files-preview').empty();
+
+                    // Rebuild saved images thumbnail list
+                    const previewsBox = $(this).find('.event-image-previews');
+                    previewsBox.empty();
+
+                    if (Array.isArray(eventData.images)) {
+                        eventData.images.forEach(imgPath => {
+                            const src = imgPath.startsWith('http') ? imgPath : `/${imgPath}`;
+                            previewsBox.append(`
+                                <div class="position-relative d-inline-block border rounded p-1 bg-white shadow-sm event-img-thumb-box" style="width: 85px; height: 85px;">
+                                    <img src="${src}" class="rounded w-100 h-100" style="object-fit: cover;" alt="Event Photo">
+                                    <input type="hidden" name="events_and_activities[${idx}][existing_images][]" value="${imgPath}">
+                                    <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-1 p-0 rounded-circle remove-event-img-btn" style="width: 20px; height: 20px; font-size: 10px; line-height: 1;" title="Remove image">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            `);
+                        });
+                    }
+                });
+            };
 
             // Alumni Repeater
             let alumniIndex = {{ count(old('notable_alumni', is_array($campus->notable_alumni) ? $campus->notable_alumni : [])) }};

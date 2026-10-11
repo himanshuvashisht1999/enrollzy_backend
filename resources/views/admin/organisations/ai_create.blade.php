@@ -1978,9 +1978,22 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (c.campus_type_new_id) {
                 selectedSchoolTypeIds = [String(c.campus_type_new_id)];
             } else if (c.school_type) {
-                const stTitles = Array.isArray(c.school_type) ? c.school_type : [c.school_type];
+                let stTitles = [];
+                if (Array.isArray(c.school_type)) {
+                    stTitles = c.school_type;
+                } else if (typeof c.school_type === 'string') {
+                    stTitles = c.school_type.split(/[,;\/]+/).map(s => s.trim()).filter(Boolean);
+                    if (stTitles.length === 0) stTitles = [c.school_type];
+                }
                 schoolTypes.forEach(st => {
-                    if (stTitles.some(t => normalizeStr(t) === normalizeStr(st.title))) {
+                    const normMaster = normalizeStr(st.title);
+                    const matched = stTitles.some(t => {
+                        const normInput = normalizeStr(t);
+                        return normInput === normMaster || 
+                               (normInput.length >= 5 && normMaster.includes(normInput)) || 
+                               (normMaster.length >= 5 && normInput.includes(normMaster));
+                    });
+                    if (matched && !selectedSchoolTypeIds.includes(String(st.id))) {
                         selectedSchoolTypeIds.push(String(st.id));
                     }
                 });
@@ -2008,9 +2021,64 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Options for Facilities
             const facilitiesList = globalMasters.facilities || [];
-            const selectedFacilities = Array.isArray(c.facilities) ? c.facilities.map(String) : [];
+            let selectedFacilityIds = [];
+            const rawFacilities = Array.isArray(c.facilities) ? c.facilities : (c.facilities ? [c.facilities] : []);
+            
+            rawFacilities.forEach(item => {
+                const itemStr = String(item).trim();
+                // Check if it's already an ID
+                const byId = facilitiesList.find(f => String(f.id) === itemStr);
+                if (byId) {
+                    selectedFacilityIds.push(String(byId.id));
+                } else {
+                    // Match by name
+                    const normItem = normalizeStr(itemStr);
+                    const byName = facilitiesList.find(f => {
+                        const normF = normalizeStr(f.name);
+                        return normF === normItem || 
+                               (normItem.length >= 4 && normF.includes(normItem)) || 
+                               (normF.length >= 4 && normItem.includes(normF));
+                    });
+                    if (byName) {
+                        selectedFacilityIds.push(String(byName.id));
+                    }
+                }
+            });
+
+            // Also check standard boolean properties from extraction to auto-select facilities
+            facilitiesList.forEach(f => {
+                const normF = normalizeStr(f.name);
+                if (normF.includes('classroom') && (c.classrooms_count > 0 || c.smart_classrooms)) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('lab') && (c.laboratories_count > 0 || c.science_labs_available || c.computer_labs_available)) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('library') && (c.library_available || c.digital_library_access)) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('sport') && ((Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0) || c.playground_available)) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('transport') && (c.transport_available || c.gps_enabled_buses)) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('hostel') && (c.hostel_available || (c.hostel_type && c.hostel_type !== 'None'))) {
+                    if (normF.includes('boy') && (c.hostel_type === 'Boys' || c.hostel_type === 'Both')) {
+                        selectedFacilityIds.push(String(f.id));
+                    } else if (normF.includes('girl') && (c.hostel_type === 'Girls' || c.hostel_type === 'Both')) {
+                        selectedFacilityIds.push(String(f.id));
+                    } else if (!normF.includes('boy') && !normF.includes('girl')) {
+                        selectedFacilityIds.push(String(f.id));
+                    }
+                } else if (normF.includes('medical') && c.medical_facility_available) {
+                    selectedFacilityIds.push(String(f.id));
+                } else if (normF.includes('wifi') || normF.includes('itinfrastructure')) {
+                    if (c.computer_labs_available || c.digital_library_access) {
+                        selectedFacilityIds.push(String(f.id));
+                    }
+                }
+            });
+
+            selectedFacilityIds = Array.from(new Set(selectedFacilityIds));
+
             const facilitiesHtml = facilitiesList.length > 0 ? facilitiesList.map(f => {
-                const isChecked = selectedFacilities.includes(String(f.id));
+                const isChecked = selectedFacilityIds.includes(String(f.id));
                 return `
                     <div class="col-md-3 col-sm-4 col-6">
                         <div class="border rounded p-2 text-center h-100 facility-select-card" style="cursor: pointer; background: ${isChecked ? '#f0fdf4' : '#fff'}; border-color: ${isChecked ? '#22c55e' : '#e5e7eb'} !important;">
@@ -2119,7 +2187,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-staff-details" type="button" role="tab"><i class="fas fa-chalkboard-teacher text-info me-1"></i> Staff</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-admissions" type="button" role="tab"><i class="fas fa-user-graduate text-primary me-1"></i> Admissions</button>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-classes" type="button" role="tab"><i class="fas fa-chalkboard text-primary me-1"></i> Classes & Fees</button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-reviews" type="button" role="tab"><i class="fas fa-comments text-warning me-1"></i> Reviews</button>
@@ -2267,12 +2335,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="tab-pane fade" id="c-tab-${idx}-transport" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-12">
+                                    @php
+                                    @endphp
                                     <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input c-transport" type="checkbox" id="transport_sw_${idx}" ${c.transport_available ? 'checked' : ''}>
+                                        <input class="form-check-input c-transport" type="checkbox" id="transport_sw_${idx}" ${(c.transport_available === true || c.transport_available === 1 || c.transport_available === '1' || c.transport_available === 'true') ? 'checked' : ''}>
                                         <label class="form-check-label fw-bold small" for="transport_sw_${idx}">Transport Available</label>
                                     </div>
                                 </div>
-                                <div class="col-12 c-bus-routes-box" style="display: ${c.transport_available ? 'block' : 'none'};">
+                                <div class="col-12 c-bus-routes-box" style="display: ${(c.transport_available === true || c.transport_available === 1 || c.transport_available === '1' || c.transport_available === 'true') ? 'block' : 'none'};">
                                     <label class="form-label fw-bold small">Bus Routes</label>
                                     <div class="c-bus-routes-container d-flex flex-column gap-2 mb-2">
                                         ${busRoutesHtml}
@@ -2415,25 +2485,51 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
 
-                        <!-- 11. Admissions -->
-                        <div class="tab-pane fade" id="c-tab-${idx}-admissions" role="tabpanel">
-                            <div class="border-bottom pb-2 mb-3">
-                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-user-graduate me-1"></i> Admissions & Right to Education (RTE)</h6>
-                                <p class="text-muted mb-0" style="font-size:0.75rem;">Specify the admission process, entry routes, and statutory RTE benefits.</p>
+                        <!-- 11. Classes & Academics -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-classes" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-graduation-cap me-1"></i> Class Offerings & Fees</h6>
+                                    <p class="text-muted mb-0" style="font-size:0.75rem;">Class-wise curriculum, fee structure, admission criteria, and exam preparation.</p>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-school-class">
+                                    <i class="fas fa-plus me-1"></i> Add Class
+                                </button>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label fw-bold small">Admission Procedure / Route</label>
-                                    <textarea class="form-control c-admission-procedure" rows="3" placeholder="Describe the application process, eligibility criteria, admission routes...">${c.admission_procedure || ''}</textarea>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold small">Right to Education (RTE) Provisions & Details</label>
-                                    <textarea class="form-control c-rte-details" rows="3" placeholder="Specify RTE Act (2009) guidelines, zero tuition fees, lottery details...">${c.rte_details || ''}</textarea>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold small">Complete RTE / Admission Guide Link (Optional)</label>
-                                    <input type="url" class="form-control c-admission-guide-url" value="${c.admission_guide_url || ''}" placeholder="https://example.com/admission-guide">
-                                </div>
+                            <div class="c-school-classes-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.school_classes) ? c.school_classes : []).map(sc => `
+                                    <div class="card border p-3 bg-light position-relative school-class-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Class / Grade</label>
+                                                <select class="form-select form-select-sm sc-name">
+                                                    <option value="">-- Select Class / Grade --</option>
+                                                    ${['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'].map(cls => `
+                                                        <option value="\${cls}" \${sc.class_name === cls ? 'selected' : ''}>\${cls}</option>
+                                                    `).join('')}
+                                                    \${sc.class_name && !['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'].includes(sc.class_name) ? `<option value="\${sc.class_name}" selected>\${sc.class_name}</option>` : ''}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Curriculum / Board</label>
+                                                <input type="text" class="form-control form-control-sm sc-curriculum" value="${sc.curriculum || ''}" placeholder="e.g. CBSE, ICSE, Cambridge">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Fee & Other Charges</label>
+                                                <textarea class="form-control form-control-sm sc-fee" rows="2" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000...">${sc.fee_structure || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Admission Process</label>
+                                                <textarea class="form-control form-control-sm sc-admission" rows="2" placeholder="Age criteria, application process, interview...">${sc.admission_process || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Exam Preparation</label>
+                                                <textarea class="form-control form-control-sm sc-exam-prep" rows="2" placeholder="Olympiads, NTSE, Board Exam guidance, Foundation...">${sc.exam_preparation || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
 
@@ -2518,6 +2614,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold">Description</label>
                                                 <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights...">${e.description || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold"><i class="fas fa-images text-primary me-1"></i>Event Images (Multiple URLs separated by commas)</label>
+                                                <input type="text" class="form-control form-control-sm e-images" value="${Array.isArray(e.images) ? e.images.join(', ') : (e.images || '')}" placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg">
                                             </div>
                                         </div>
                                     </div>
@@ -2731,6 +2831,57 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.addEventListener('click', function () {
                     this.closest('.c-class-profile-item').remove();
                 });
+            // School Classes Repeater Handler
+            div.querySelector('.btn-add-school-class')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-school-classes-container');
+                const scDiv = document.createElement('div');
+                scDiv.className = 'card border p-3 bg-light position-relative school-class-item';
+                scDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Class / Grade</label>
+                            <select class="form-select form-select-sm sc-name">
+                                <option value="">-- Select Class / Grade --</option>
+                                <option value="Playgroup">Playgroup</option>
+                                <option value="Nursery">Nursery</option>
+                                <option value="LKG">LKG</option>
+                                <option value="UKG">UKG</option>
+                                <option value="Class 1">Class 1</option>
+                                <option value="Class 2">Class 2</option>
+                                <option value="Class 3">Class 3</option>
+                                <option value="Class 4">Class 4</option>
+                                <option value="Class 5">Class 5</option>
+                                <option value="Class 6">Class 6</option>
+                                <option value="Class 7">Class 7</option>
+                                <option value="Class 8">Class 8</option>
+                                <option value="Class 9">Class 9</option>
+                                <option value="Class 10">Class 10</option>
+                                <option value="Class 11">Class 11</option>
+                                <option value="Class 12">Class 12</option>
+                                <option value="Dropper">Dropper</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Curriculum / Board</label>
+                            <input type="text" class="form-control form-control-sm sc-curriculum" placeholder="e.g. CBSE, ICSE, Cambridge">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Fee & Other Charges</label>
+                            <textarea class="form-control form-control-sm sc-fee" rows="2" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Admission Process</label>
+                            <textarea class="form-control form-control-sm sc-admission" rows="2" placeholder="Age criteria, application process, interview..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Exam Preparation</label>
+                            <textarea class="form-control form-control-sm sc-exam-prep" rows="2" placeholder="Olympiads, NTSE, Board Exam guidance, Foundation..."></textarea>
+                        </div>
+                    </div>
+                `;
+                scDiv.querySelector('.btn-remove-item').addEventListener('click', function () { scDiv.remove(); });
+                container.appendChild(scDiv);
             });
 
             // Review Repeater Handler
@@ -2815,6 +2966,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="col-12">
                             <label class="form-label small fw-bold">Description</label>
                             <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold"><i class="fas fa-images text-primary me-1"></i>Event Images (Multiple URLs separated by commas)</label>
+                            <input type="text" class="form-control form-control-sm e-images" placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg">
                         </div>
                     </div>
                 `;
@@ -3289,6 +3444,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            // School Classes repeater items
+            const schoolClassesItems = [];
+            el.querySelectorAll('.school-class-item').forEach(scEl => {
+                const scName = scEl.querySelector('.sc-name')?.value.trim();
+                if (scName) {
+                    schoolClassesItems.push({
+                        class_name: scName,
+                        curriculum: scEl.querySelector('.sc-curriculum')?.value.trim() || null,
+                        fee_structure: scEl.querySelector('.sc-fee')?.value.trim() || null,
+                        admission_process: scEl.querySelector('.sc-admission')?.value.trim() || null,
+                        exam_preparation: scEl.querySelector('.sc-exam-prep')?.value.trim() || null
+                    });
+                }
+            });
+
             // Reviews repeater items
             const reviewsItems = [];
             el.querySelectorAll('.review-item').forEach(rEl => {
@@ -3311,11 +3481,14 @@ document.addEventListener('DOMContentLoaded', function () {
             el.querySelectorAll('.event-item').forEach(eEl => {
                 const eTitle = eEl.querySelector('.e-title')?.value.trim();
                 if (eTitle) {
+                    const rawImages = eEl.querySelector('.e-images')?.value.trim() || '';
+                    const imagesArr = rawImages ? rawImages.split(',').map(s => s.trim()).filter(Boolean) : [];
                     eventsItems.push({
                         title: eTitle,
                         category: eEl.querySelector('.e-category')?.value || 'Sports',
                         date: eEl.querySelector('.e-date')?.value.trim() || null,
-                        description: eEl.querySelector('.e-description')?.value.trim() || null
+                        description: eEl.querySelector('.e-description')?.value.trim() || null,
+                        images: imagesArr
                     });
                 }
             });
@@ -3401,9 +3574,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 total_appointed_teachers: el.querySelector('.c-total-teachers')?.value.trim() || null,
                 male_staff: el.querySelector('.c-male-staff')?.value.trim() || null,
                 female_staff: el.querySelector('.c-female-staff')?.value.trim() || null,
-                admission_procedure: el.querySelector('.c-admission-procedure')?.value.trim() || null,
-                rte_details: el.querySelector('.c-rte-details')?.value.trim() || null,
-                admission_guide_url: el.querySelector('.c-admission-guide-url')?.value.trim() || null,
+                school_classes: schoolClassesItems,
                 class_profile: classProfileItems,
                 reviews: reviewsItems,
                 events_and_activities: eventsItems,

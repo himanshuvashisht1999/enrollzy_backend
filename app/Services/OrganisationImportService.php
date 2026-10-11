@@ -553,6 +553,7 @@ class OrganisationImportService
                         'admission_procedure' => $cInput['admission_procedure'] ?? null,
                         'rte_details' => $cInput['rte_details'] ?? null,
                         'admission_guide_url' => $cInput['admission_guide_url'] ?? null,
+                        'school_classes' => isset($cInput['school_classes']) ? (is_array($cInput['school_classes']) ? $cInput['school_classes'] : null) : null,
                         'reviews' => isset($cInput['reviews']) ? (is_array($cInput['reviews']) ? $cInput['reviews'] : null) : null,
                         'events_and_activities' => isset($cInput['events_and_activities']) ? (is_array($cInput['events_and_activities']) ? $cInput['events_and_activities'] : null) : null,
                         'alumni_details' => $cInput['alumni_details'] ?? null,
@@ -563,14 +564,17 @@ class OrganisationImportService
                     ];
 
                     if (empty($campusData['campus_type_new_id']) && !empty($cInput['school_type'])) {
-                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : [$cInput['school_type']];
-                        $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
-                            foreach ($stTitles as $title) {
-                                $q->orWhere('title', 'LIKE', '%' . trim($title) . '%');
+                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : preg_split('/[,;\/]+/', (string)$cInput['school_type']);
+                        $stTitles = array_filter(array_map('trim', $stTitles));
+                        if (!empty($stTitles)) {
+                            $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
+                                foreach ($stTitles as $title) {
+                                    $q->orWhere('title', 'LIKE', '%' . $title . '%');
+                                }
+                            })->pluck('id')->toArray();
+                            if (!empty($matchedIds)) {
+                                $campusData['campus_type_new_id'] = $matchedIds;
                             }
-                        })->pluck('id')->toArray();
-                        if (!empty($matchedIds)) {
-                            $campusData['campus_type_new_id'] = $matchedIds;
                         }
                     }
 
@@ -876,6 +880,7 @@ class OrganisationImportService
                         'admission_procedure' => $cInput['admission_procedure'] ?? null,
                         'rte_details' => $cInput['rte_details'] ?? null,
                         'admission_guide_url' => $cInput['admission_guide_url'] ?? null,
+                        'school_classes' => isset($cInput['school_classes']) ? (is_array($cInput['school_classes']) ? $cInput['school_classes'] : null) : null,
                         'reviews' => isset($cInput['reviews']) ? (is_array($cInput['reviews']) ? $cInput['reviews'] : null) : null,
                         'events_and_activities' => isset($cInput['events_and_activities']) ? (is_array($cInput['events_and_activities']) ? $cInput['events_and_activities'] : null) : null,
                         'alumni_details' => $cInput['alumni_details'] ?? null,
@@ -886,14 +891,17 @@ class OrganisationImportService
                     ];
 
                     if (empty($campusData['campus_type_new_id']) && !empty($cInput['school_type'])) {
-                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : [$cInput['school_type']];
-                        $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
-                            foreach ($stTitles as $title) {
-                                $q->orWhere('title', 'LIKE', '%' . trim($title) . '%');
+                        $stTitles = is_array($cInput['school_type']) ? $cInput['school_type'] : preg_split('/[,;\/]+/', (string)$cInput['school_type']);
+                        $stTitles = array_filter(array_map('trim', $stTitles));
+                        if (!empty($stTitles)) {
+                            $matchedIds = \App\Models\CampusTypeNew::where(function($q) use ($stTitles) {
+                                foreach ($stTitles as $title) {
+                                    $q->orWhere('title', 'LIKE', '%' . $title . '%');
+                                }
+                            })->pluck('id')->toArray();
+                            if (!empty($matchedIds)) {
+                                $campusData['campus_type_new_id'] = $matchedIds;
                             }
-                        })->pluck('id')->toArray();
-                        if (!empty($matchedIds)) {
-                            $campusData['campus_type_new_id'] = $matchedIds;
                         }
                     }
 
