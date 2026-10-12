@@ -70,6 +70,7 @@ class OrganisationCourseController extends Controller
             ->filter()
             ->values();
         $exams = Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
 
         return view('admin.organisation-courses.create', compact(
             'organisation',
@@ -81,7 +82,8 @@ class OrganisationCourseController extends Controller
             'examCategories',
             'departments',
             'campusId',
-            'departmentId'
+            'departmentId',
+            'academicClasses'
         ));
     }
 
@@ -201,6 +203,8 @@ class OrganisationCourseController extends Controller
         $campusId = $request->query('campus_id');
         $departmentId = $request->query('department_id');
 
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
+
         return view('admin.organisation-courses.edit', compact(
             'organisationCourse',
             'organisation',
@@ -212,7 +216,8 @@ class OrganisationCourseController extends Controller
             'examCategories',
             'departments',
             'campusId',
-            'departmentId'
+            'departmentId',
+            'academicClasses'
         ));
     }
 

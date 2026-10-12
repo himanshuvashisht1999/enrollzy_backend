@@ -32,4 +32,9 @@ class Facility extends Model
             }
         });
     }
+
+    public function organisationTypes()
+    {
+        return $this->belongsToMany(OrganisationType::class, 'facility_organisation_type', 'facility_id', 'organisation_type_id')->withTimestamps();
+    }
 }

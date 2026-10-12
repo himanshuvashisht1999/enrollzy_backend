@@ -313,12 +313,21 @@
                                         <label class="form-label">Target Classes</label>
                                         <select name="target_classes[]" class="form-select select2" multiple>
                                             @php
-                                                $selectedClasses = $campus->target_classes ?? [];
+                                                $selectedClasses = is_array($campus->target_classes) ? $campus->target_classes : (json_decode($campus->target_classes, true) ?: []);
+                                                $targetClassList = isset($academicClasses) && $academicClasses->isNotEmpty()
+                                                    ? $academicClasses->pluck('name')->toArray()
+                                                    : \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->pluck('name')->toArray();
+                                                if (empty($targetClassList)) {
+                                                    $targetClassList = ['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'];
+                                                }
                                             @endphp
-                                            @for($i = 6; $i <= 12; $i++)
-                                                <option value="{{ $i }}" {{ in_array((string)$i, $selectedClasses) ? 'selected' : '' }}>Class {{ $i }}</option>
-                                            @endfor
-                                            <option value="Dropper" {{ in_array('Dropper', $selectedClasses) ? 'selected' : '' }}>Dropper</option>
+                                            @foreach($targetClassList as $cls)
+                                                @php
+                                                    $numOnly = str_replace('Class ', '', $cls);
+                                                    $isSel = in_array($cls, (array)$selectedClasses) || in_array((string)$numOnly, (array)$selectedClasses);
+                                                @endphp
+                                                <option value="{{ $cls }}" {{ $isSel ? 'selected' : '' }}>{{ $cls }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <div class="col-12">
@@ -646,12 +655,17 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">Class / Grade <span class="text-danger">*</span></label>
                                                     @php
-                                                        $masterClasses = [
-                                                            'Playgroup', 'Nursery', 'LKG', 'UKG',
-                                                            'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-                                                            'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-                                                            'Class 11', 'Class 12', 'Dropper'
-                                                        ];
+                                                        $masterClasses = isset($academicClasses) && $academicClasses->isNotEmpty()
+                                                            ? $academicClasses->pluck('name')->toArray()
+                                                            : \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->pluck('name')->toArray();
+                                                        if (empty($masterClasses)) {
+                                                            $masterClasses = [
+                                                                'Playgroup', 'Nursery', 'LKG', 'UKG',
+                                                                'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+                                                                'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+                                                                'Class 11', 'Class 12', 'Dropper'
+                                                            ];
+                                                        }
                                                         $currentVal = $sClass['class_name'] ?? '';
                                                     @endphp
                                                     <select name="school_classes[{{$cIndex}}][class_name]" class="form-select select2-class-item">
@@ -664,14 +678,14 @@
                                                         @endif
                                                     </select>
                                                 </div>
-                                                <div class="col-md-6">
+                                                <div class="col-12">
                                                     <label class="form-label fw-bold">Curriculum / Board</label>
-                                                    <input type="text" name="school_classes[{{$cIndex}}][curriculum]" class="form-control"
-                                                        value="{{ $sClass['curriculum'] ?? '' }}" placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board">
+                                                    <textarea name="school_classes[{{$cIndex}}][curriculum]" id="curriculum_{{$cIndex}}" class="form-control editor" rows="4"
+                                                        placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board">{{ $sClass['curriculum'] ?? '' }}</textarea>
                                                 </div>
                                                 <div class="col-12">
                                                     <label class="form-label fw-bold">Fee & Other Charges</label>
-                                                    <textarea name="school_classes[{{$cIndex}}][fee_structure]" class="form-control" rows="2"
+                                                    <textarea name="school_classes[{{$cIndex}}][fee_structure]" id="fee_structure_{{$cIndex}}" class="form-control editor" rows="4"
                                                         placeholder="e.g. Tuition Fee: ₹45,000/yr, Admission Fee: ₹5,000, Activity/Lab Charges: ₹3,000...">{{ $sClass['fee_structure'] ?? '' }}</textarea>
                                                 </div>
                                                 <div class="col-12">
@@ -1372,25 +1386,19 @@
 
             // Classes Repeater
             let classRowIndex = {{ count(old('school_classes', is_array($campus->school_classes) ? $campus->school_classes : [])) }};
+            @php
+                $classesForJs = isset($academicClasses) && $academicClasses->isNotEmpty()
+                    ? $academicClasses->pluck('name')->toArray()
+                    : \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->pluck('name')->toArray();
+                if (empty($classesForJs)) {
+                    $classesForJs = ['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'];
+                }
+            @endphp
             const classMasterOptionsHtml = `
                 <option value="">-- Select Class / Grade --</option>
-                <option value="Playgroup">Playgroup</option>
-                <option value="Nursery">Nursery</option>
-                <option value="LKG">LKG</option>
-                <option value="UKG">UKG</option>
-                <option value="Class 1">Class 1</option>
-                <option value="Class 2">Class 2</option>
-                <option value="Class 3">Class 3</option>
-                <option value="Class 4">Class 4</option>
-                <option value="Class 5">Class 5</option>
-                <option value="Class 6">Class 6</option>
-                <option value="Class 7">Class 7</option>
-                <option value="Class 8">Class 8</option>
-                <option value="Class 9">Class 9</option>
-                <option value="Class 10">Class 10</option>
-                <option value="Class 11">Class 11</option>
-                <option value="Class 12">Class 12</option>
-                <option value="Dropper">Dropper</option>
+                @foreach($classesForJs as $clsOption)
+                    <option value="{{ $clsOption }}">{{ $clsOption }}</option>
+                @endforeach
             `;
             $('#add-class-btn').on('click', function() {
                 $('#no-classes-msg').hide();
@@ -1405,13 +1413,13 @@
                                         ${classMasterOptionsHtml}
                                     </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <label class="form-label fw-bold">Curriculum / Board</label>
-                                    <input type="text" name="school_classes[${classRowIndex}][curriculum]" class="form-control" placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board">
+                                    <textarea name="school_classes[${classRowIndex}][curriculum]" id="curriculum_${classRowIndex}" class="form-control editor" rows="4" placeholder="e.g. CBSE, ICSE, Cambridge / IGCSE, State Board"></textarea>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold">Fee & Other Charges</label>
-                                    <textarea name="school_classes[${classRowIndex}][fee_structure]" class="form-control" rows="2" placeholder="e.g. Tuition Fee: ₹45,000/yr, Admission Fee: ₹5,000, Activity/Lab Charges: ₹3,000..."></textarea>
+                                    <textarea name="school_classes[${classRowIndex}][fee_structure]" id="fee_structure_${classRowIndex}" class="form-control editor" rows="4" placeholder="e.g. Tuition Fee: ₹45,000/yr, Admission Fee: ₹5,000, Activity/Lab Charges: ₹3,000..."></textarea>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold">Admission Process</label>
@@ -1427,6 +1435,8 @@
                 `;
                 $('#classes-container').append(template);
                 if (typeof initializeTinyMCE === 'function') {
+                    initializeTinyMCE(`#curriculum_${classRowIndex}`, 200);
+                    initializeTinyMCE(`#fee_structure_${classRowIndex}`, 200);
                     initializeTinyMCE(`#admission_process_${classRowIndex}`, 200);
                     initializeTinyMCE(`#exam_preparation_${classRowIndex}`, 200);
                 }

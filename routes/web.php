@@ -497,6 +497,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('accreditation-approvals', \App\Http\Controllers\Admin\AccreditationApprovalController::class)->middleware('can:accreditation-approvals-browse');
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class)->middleware('can:campus-types-browse');
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class)->middleware('can:campus-types-browse');
+        Route::resource('academic-classes', \App\Http\Controllers\Admin\AcademicClassController::class);
         Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class)->middleware('can:coaching-categories-browse');
         Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class)->middleware('can:course-types-browse');
         Route::resource('exam-categories', \App\Http\Controllers\Admin\ExamCategoryController::class)->middleware('can:exam-categories-browse');

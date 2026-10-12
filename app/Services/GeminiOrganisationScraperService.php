@@ -365,6 +365,27 @@ class GeminiOrganisationScraperService
                 $org['levels_offered'] = array_values(array_unique($normalizedLevels));
             }
 
+            // Ensure canonical_url is always blank and claimed_by_organization is always unchecked
+            $org['canonical_url'] = '';
+            $org['claimed_by_organization'] = false;
+            if (isset($org['claimed_by_authority'])) {
+                $org['claimed_by_authority'] = false;
+            }
+
+            // Ensure reviews and ratings are not autofilled by AI, and left blank
+            $org['average_rating'] = null;
+            $org['total_reviews'] = null;
+            $org['public_trust_rating'] = null;
+            $org['reviews'] = [];
+            unset($org['rating']);
+            if (isset($org['third_party_ratings'])) {
+                $org['third_party_ratings'] = null;
+            }
+            if (isset($org['app_details']) && is_array($org['app_details'])) {
+                $org['app_details']['android_rating'] = '';
+                $org['app_details']['ios_rating'] = '';
+            }
+
             unset($org);
         }
 
@@ -372,6 +393,11 @@ class GeminiOrganisationScraperService
         $dedupedCampuses = [];
         foreach ($data['campuses'] as $c) {
             if (!is_array($c)) continue;
+            // Reviews and ratings are not autofilled by AI, leave blank
+            $c['reviews'] = [];
+            $c['rating'] = null;
+            $c['average_rating'] = null;
+            $c['total_reviews'] = null;
             if (empty($c['campus_name']) && !empty($c['name'])) {
                 $c['campus_name'] = $c['name'];
             }
@@ -523,7 +549,7 @@ class GeminiOrganisationScraperService
                 if (strlen($cr['course_name']) > strlen($existing['course_name'])) {
                     $existing['course_name'] = $cr['course_name'];
                 }
-                foreach (['fees', 'total_fees', 'admission_fee', 'annual_fee_range', 'entrance_exams', 'eligibility', 'admission_process', 'placement_details', 'overview', 'rating', 'roi', 'duration', 'mode', 'stream', 'discipline', 'specialization'] as $field) {
+                foreach (['fees', 'total_fees', 'admission_fee', 'annual_fee_range', 'entrance_exams', 'eligibility', 'admission_process', 'placement_details', 'overview', 'roi', 'duration', 'mode', 'stream', 'discipline', 'specialization'] as $field) {
                     if (!empty($cr[$field]) && (empty($existing[$field]) || strlen((string)$cr[$field]) > strlen((string)$existing[$field]))) {
                         $existing[$field] = $cr[$field];
                     }
@@ -531,6 +557,10 @@ class GeminiOrganisationScraperService
                 unset($existing);
             }
         }
+        foreach ($dedupedCourses as &$cItem) {
+            $cItem['rating'] = null;
+        }
+        unset($cItem);
         $data['courses'] = array_values($dedupedCourses);
 
         return $data;
@@ -1317,7 +1347,7 @@ class GeminiOrganisationScraperService
     ): string
     {
         if ($mode === 'campus') {
-            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $searchGoogle, $targetNames);
+            return $this->buildCampusOnlyPrompt($url, $content, $referenceUrls, $targetOrg, $searchGoogle, $targetNames, $orgTypeTitle, $orgTypeId);
         }
 
         if ($mode === 'department') {
@@ -1329,7 +1359,7 @@ class GeminiOrganisationScraperService
         }
 
         if ($targetOrg) {
-            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg, $searchGoogle);
+            return $this->buildCampusesAndCoursesPrompt($url, $content, $orgTypeTitle, $referenceUrls, $targetOrg, $searchGoogle, $orgTypeId);
         }
 
         $titleLower = strtolower($orgTypeTitle);
@@ -1367,10 +1397,17 @@ class GeminiOrganisationScraperService
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
         bool $searchGoogle = true,
-        array $targetNames = []
+        array $targetNames = [],
+        string $orgTypeTitle = '',
+        int $orgTypeId = 0
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Target Organisation';
-        $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
+        if (empty($orgTypeTitle)) {
+            $orgTypeTitle = $targetOrg && $targetOrg->organisationType ? $targetOrg->organisationType->title : 'University / College / School';
+        }
+        if ($orgTypeId === 0 && $targetOrg) {
+            $orgTypeId = (int)$targetOrg->organisation_type_id;
+        }
         $orgShort = $targetOrg ? $targetOrg->short_name : '';
         $orgSite = $targetOrg ? $targetOrg->official_website : $url;
         $orgId = $targetOrg ? $targetOrg->id : 0;
@@ -1387,7 +1424,7 @@ GOOGLE_INSTRUCTIONS
    - DO NOT search Google or fabricate data. If any field (e.g. exact acreage, pin code, or contact numbers) is not present in the provided sources, leave it null or empty.
 STRICT_URL_INSTRUCTIONS;
 
-        $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
+        $isSchool = ($orgTypeId === 4 || str_contains(strtolower($orgTypeTitle), 'school') || ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && str_contains(strtolower($targetOrg->organisationType->title), 'school')))));
         $schoolInstructions = $isSchool ? <<<SCHOOL_CAMPUS_INSTR
 - THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location according to the School Campus profile:
   * school_type: Array of strings matching ALL applicable types from this list: ["Day School", "Boarding School With Integrated Coaching", "Day Boarding", "Fully Boarding", "Co-ed Boarding Schools", "Girls' Boarding School", "Boys' Boarding School", "School With Integrated Coaching", "International Schools", "Military-Style Schools", "Weekly Boarding Schools", "Home Schooling", "NIOS"]. A school can have MULTIPLE types simultaneously (e.g., ["Day School", "Day Boarding", "School With Integrated Coaching"]). ALWAYS return multiple if applicable!
@@ -1417,6 +1454,7 @@ STRICT_URL_INSTRUCTIONS;
   * total_enrolled_students: integer student count
   * enrolled_boys, enrolled_girls: enrolled boys and girls count
   * pupil_teacher_ratio: string ratio e.g. "25:1"
+  * class_profile: array of [{ "year": 2024, "total_students": 1400, "total_faculty": 65, "total_male_students": 750, "total_female_students": 650, "total_outside_state": 45 }]
   * school_classes: array of [{ "class_name": "Class 1", "curriculum": "CBSE", "fee_structure": "Tuition Fee: ₹45,000/yr", "admission_process": "Age 6+ criteria, registration form, interaction", "exam_preparation": "Olympiad and NTSE foundation" }]
   * reviews: array of [{ "reviewer_name": "...", "reviewer_type": "Parent", "rating": 5, "date": "...", "title": "...", "comment": "..." }]
   * events_and_activities: array of [{ "title": "...", "category": "Sports", "date": "...", "description": "...", "images": ["image_url_1", "image_url_2"] }]
@@ -1444,38 +1482,125 @@ STRICT INSTRUCTIONS:
 TARGETED_CAMPUSES;
         }
 
-        return <<<PROMPT
-You are an expert institutional infrastructure, geography, and campus research AI agent.
-Your EXCLUSIVE MISSION is to extract physical CAMPUS / BRANCH LOCATION(S) for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
-{$targetCampusesMandate}
-(Note: If this institution is a School, extract School branch / campus locations).
-
-TARGET INSTITUTION: {$orgName}
-ORGANISATION TYPE: {$orgTypeTitle}
-SHORT NAME: {$orgShort}
-OFFICIAL SITE: {$orgSite}
-CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
-{$cleanContent}
-
-=== CRITICAL RESEARCH & EXTRACTION MANDATE ===
-1. CAMPUS EXTRACTION:
-   - Extract campus objects in the "campuses" array matching the requested campus locations.
-   - Accurately determine the campus name, address, city, state, country, pincode, facilities, and contact details.
-{$schoolInstructions}
-
-{$searchInstructions}
-
-3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE (Single campus in array):
-{
-  "target_organisation_id": {$orgId},
-  "target_organisation_name": "{$orgName}",
-  "mode": "campus",
-  "campuses": [
+        $campusJsonSchema = $isSchool ? <<<SCHOOL_JSON
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
       "school_type": ["Day School", "Co-ed Boarding Schools", "Boarding School With Integrated Coaching"],
       "brand_type": "Independent",
+      "established_year": 2005,
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India",
+      "pincode": "562106",
+      "full_address": "Chikkahagade Cross, Chandapura - Anekal Main Road, Bengaluru, Karnataka 562106",
+      "google_map_url": "https://maps.google.com/?q=School+Campus+Bangalore",
+      "location_type": "Urban",
+      "udise_code": "29200100101",
+      "affiliation_board": "CBSE",
+      "campus_area_acres": 15.5,
+      "campus_area_unit": "Acres",
+      "classrooms_count": 60,
+      "smart_classrooms": true,
+      "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
+      "about_institute": "Overview of the school branch, curriculum, holistic pedagogy, and academic excellence.",
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
+      "transport_available": true,
+      "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
+      "cctv_coverage": true,
+      "campus_email": "principal@school.edu.in",
+      "campus_website": "https://school.edu.in",
+      "campus_contact_numbers": [
+        "+91 80 4619 9000",
+        "+91 80 4619 9001"
+      ],
+      "facebook_url": "https://facebook.com/school",
+      "instagram_url": "https://instagram.com/school",
+      "linkedin_url": "https://linkedin.com/school",
+      "youtube_url": "https://youtube.com/@school",
+      "twitter_url": "https://twitter.com/school",
+      "headmaster_principal": "Dr. Sunita Sharma",
+      "total_appointed_teachers": 65,
+      "male_staff": 25,
+      "female_staff": 40,
+      "total_enrolled_students": 1400,
+      "enrolled_boys": 750,
+      "enrolled_girls": 650,
+      "pupil_teacher_ratio": "22:1",
+      "class_profile": [
+        {
+          "year": 2024,
+          "total_students": 1400,
+          "total_faculty": 65,
+          "total_male_students": 750,
+          "total_female_students": 650,
+          "total_outside_state": 45
+        }
+      ],
+      "school_classes": [
+        {
+          "class_name": "Class 1",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹45,000/yr",
+          "admission_process": "Age 6+ criteria, registration form, interaction",
+          "exam_preparation": "Foundation learning and mental maths"
+        },
+        {
+          "class_name": "Class 11",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹75,000/yr",
+          "admission_process": "Class 10 board score evaluation, interaction",
+          "exam_preparation": "Board preparation, Olympiads and competitive guidance"
+        }
+      ],
+      "reviews": [
+        {
+          "reviewer_name": "Ramesh Kumar",
+          "reviewer_type": "Parent",
+          "rating": 5,
+          "date": "2024",
+          "title": "Excellent academic support and nurturing environment",
+          "comment": "Dedicated teachers, strong sports facilities and great focus on individual student development."
+        }
+      ],
+      "events_and_activities": [
+        {
+          "title": "Annual Sports Day",
+          "category": "Sports",
+          "date": "November 2024",
+          "description": "Inter-house athletics track events, football tournament, and cultural demonstrations.",
+          "images": []
+        }
+      ],
+      "alumni_details": "Vibrant alumni network with graduates studying at top universities worldwide.",
+      "notable_alumni": [
+        {
+          "name": "Dr. Anjali Verma",
+          "batch": "Batch of 2016",
+          "profession": "Doctor / Researcher",
+          "testimonial": "The foundational schooling and encouraging teachers helped shape my career."
+        }
+      ],
+      "clubs_and_committees": [
+        {
+          "name": "Eco & Science Club",
+          "type": "Student Club",
+          "coordinator": "Senior Science Teacher",
+          "description": "Active student club focusing on environmental awareness, science exhibitions, and robotics."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What is the admission procedure?",
+          "answer": "Parents can apply online through the official school admission portal followed by document submission and interaction."
+        }
+      ]
+    }
+SCHOOL_JSON
+        : <<<UNI_JSON
+    {
+      "campus_name": "Main Campus",
+      "campus_type": "Main",
       "established_year": 2005,
       "city": "Bengaluru",
       "state": "Karnataka",
@@ -1488,8 +1613,7 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
       "campus_area_unit": "Acres",
       "classrooms_count": 80,
       "smart_classrooms": true,
-      "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
-      "about_institute": "Overview of the school campus and curriculum focus",
+      "about_institute": "Overview of the campus and academic environment",
       "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure"],
       "transport_available": false,
       "bus_routes": [],
@@ -1524,6 +1648,36 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
         "+91 80 4619 9001"
       ]
     }
+UNI_JSON;
+
+        return <<<PROMPT
+You are an expert institutional infrastructure, geography, and campus research AI agent.
+Your EXCLUSIVE MISSION is to extract physical CAMPUS / BRANCH LOCATION(S) for the institution "{$orgName}" (Organisation Type: {$orgTypeTitle}) corresponding to the provided campus URL/webpage.
+{$targetCampusesMandate}
+(Note: If this institution is a School, extract School branch / campus locations).
+
+TARGET INSTITUTION: {$orgName}
+ORGANISATION TYPE: {$orgTypeTitle}
+SHORT NAME: {$orgShort}
+OFFICIAL SITE: {$orgSite}
+CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
+{$cleanContent}
+
+=== CRITICAL RESEARCH & EXTRACTION MANDATE ===
+1. CAMPUS EXTRACTION:
+   - Extract campus objects in the "campuses" array matching the requested campus locations.
+   - Accurately determine the campus name, address, city, state, country, pincode, facilities, and contact details.
+{$schoolInstructions}
+
+{$searchInstructions}
+
+3. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE (Single campus in array):
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "mode": "campus",
+  "campuses": [
+{$campusJsonSchema}
   ]
 }
 PROMPT;
@@ -2096,12 +2250,18 @@ PROMPT;
         string $orgTypeTitle,
         array $referenceUrls = [],
         ?\App\Models\Organisation $targetOrg = null,
-        bool $searchGoogle = true
+        bool $searchGoogle = true,
+        int $orgTypeId = 0
     ): string {
         $orgName = $targetOrg ? $targetOrg->name : 'the Selected Institution';
         $orgShort = $targetOrg ? $targetOrg->short_name : '';
         $orgSite = $targetOrg ? $targetOrg->official_website : $url;
         $orgId = $targetOrg ? $targetOrg->id : 0;
+        if ($orgTypeId === 0 && $targetOrg) {
+            $orgTypeId = (int)$targetOrg->organisation_type_id;
+        }
+
+        $isSchool = ($orgTypeId === 4 || str_contains(strtolower($orgTypeTitle), 'school') || ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && str_contains(strtolower($targetOrg->organisationType->title), 'school')))));
 
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
@@ -2119,37 +2279,122 @@ GOOGLE_INSTRUCTIONS
    - DO NOT search Google or fabricate data. If any information is missing from the provided sources, leave it null or empty.
 STRICT_URL_INSTRUCTIONS;
 
-        return <<<PROMPT
-You are an expert higher education data extraction and research AI agent.
-Your PRIMARY GOAL is to perform comprehensive, verified research and extract all physical CAMPUSES, academic DEPARTMENTS / FACULTIES, and ACADEMIC COURSES / DEGREES offered by the institution "{$orgName}".
-
-TARGET INSTITUTION: {$orgName}
-SHORT NAME: {$orgShort}
-OFFICIAL SITE: {$orgSite}
-PRIMARY URL: {$url}{$refUrlsText}
-ORGANISATION TYPE: {$orgTypeTitle}
-{$cleanContent}
-
-CRITICAL RESEARCH & WRITING INSTRUCTIONS:
-{$searchInstructions}
-2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
-   - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
-   - Synthesize, summarize, and write original, clear, informative, professional, and SEO-friendly summaries in your own words for:
-     * `about_department`: 1-2 paragraphs detailing the department's academic philosophy, faculty expertise, lab infrastructure, and focus areas.
-     * `overview` (Course Overview): 1-2 engaging paragraphs explaining the degree curriculum, industry relevance, career pathways, and learning outcomes.
-     * `eligibility`: Clear, concise criteria (e.g. "10+2 with minimum 50% aggregate marks in PCM from a recognized board").
-     * `admission_process`: Clear step-by-step summary (e.g. "Online application followed by entrance exam score evaluation and personal interview").
-     * `placement_details`: Comprehensive summary including average & highest package, top recruiters, and industry domains.
-3. STRUCTURE & LINKING:
-   - Link each course to its respective campus and department name.
-   - If exact fees or dates are not publicly listed, provide accurate estimates/ranges based on verified sources or standard fees for this institution.
-4. RETURN FORMAT:
-   - Return ONLY valid, parseable JSON matching EXACTLY this structure:
-
-{
-  "target_organisation_id": {$orgId},
-  "target_organisation_name": "{$orgName}",
-  "campuses": [
+        $campusJsonTemplate = $isSchool ? <<<SCHOOL_CAMPUS_JSON
+    {
+      "campus_name": "Main Campus",
+      "campus_type": "Main",
+      "school_type": ["Day School", "Co-ed Boarding Schools", "Boarding School With Integrated Coaching"],
+      "brand_type": "Independent",
+      "established_year": 2005,
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India",
+      "pincode": "562106",
+      "full_address": "Chikkahagade Cross, Chandapura - Anekal Main Road, Bengaluru, Karnataka 562106",
+      "google_map_url": "https://maps.google.com/?q=School+Campus+Bangalore",
+      "location_type": "Urban",
+      "udise_code": "29200100101",
+      "affiliation_board": "CBSE",
+      "campus_area_acres": 15.5,
+      "campus_area_unit": "Acres",
+      "classrooms_count": 60,
+      "smart_classrooms": true,
+      "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
+      "about_institute": "Overview of the school branch, curriculum, holistic pedagogy, and academic excellence.",
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
+      "transport_available": true,
+      "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
+      "cctv_coverage": true,
+      "campus_email": "principal@school.edu.in",
+      "campus_website": "https://school.edu.in",
+      "campus_contact_numbers": [
+        "+91 80 4619 9000",
+        "+91 80 4619 9001"
+      ],
+      "facebook_url": "https://facebook.com/school",
+      "instagram_url": "https://instagram.com/school",
+      "linkedin_url": "https://linkedin.com/school",
+      "youtube_url": "https://youtube.com/@school",
+      "twitter_url": "https://twitter.com/school",
+      "headmaster_principal": "Dr. Sunita Sharma",
+      "total_appointed_teachers": 65,
+      "male_staff": 25,
+      "female_staff": 40,
+      "total_enrolled_students": 1400,
+      "enrolled_boys": 750,
+      "enrolled_girls": 650,
+      "pupil_teacher_ratio": "22:1",
+      "class_profile": [
+        {
+          "year": 2024,
+          "total_students": 1400,
+          "total_faculty": 65,
+          "total_male_students": 750,
+          "total_female_students": 650,
+          "total_outside_state": 45
+        }
+      ],
+      "school_classes": [
+        {
+          "class_name": "Class 1",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹45,000/yr",
+          "admission_process": "Age 6+ criteria, registration form, interaction",
+          "exam_preparation": "Foundation learning and mental maths"
+        },
+        {
+          "class_name": "Class 11",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹75,000/yr",
+          "admission_process": "Class 10 board score evaluation, interaction",
+          "exam_preparation": "Board preparation, Olympiads and competitive guidance"
+        }
+      ],
+      "reviews": [
+        {
+          "reviewer_name": "Ramesh Kumar",
+          "reviewer_type": "Parent",
+          "rating": 5,
+          "date": "2024",
+          "title": "Excellent academic support and nurturing environment",
+          "comment": "Dedicated teachers, strong sports facilities and great focus on individual student development."
+        }
+      ],
+      "events_and_activities": [
+        {
+          "title": "Annual Sports Day",
+          "category": "Sports",
+          "date": "November 2024",
+          "description": "Inter-house athletics track events, football tournament, and cultural demonstrations.",
+          "images": []
+        }
+      ],
+      "alumni_details": "Vibrant alumni network with graduates studying at top universities worldwide.",
+      "notable_alumni": [
+        {
+          "name": "Dr. Anjali Verma",
+          "batch": "Batch of 2016",
+          "profession": "Doctor / Researcher",
+          "testimonial": "The foundational schooling and encouraging teachers helped shape my career."
+        }
+      ],
+      "clubs_and_committees": [
+        {
+          "name": "Eco & Science Club",
+          "type": "Student Club",
+          "coordinator": "Senior Science Teacher",
+          "description": "Active student club focusing on environmental awareness, science exhibitions, and robotics."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What is the admission procedure?",
+          "answer": "Parents can apply online through the official school admission portal followed by document submission and interaction."
+        }
+      ]
+    }
+SCHOOL_CAMPUS_JSON
+        : <<<UNI_CAMPUS_JSON
     {
       "campus_name": "Main Campus",
       "campus_type": "Main",
@@ -2187,6 +2432,40 @@ CRITICAL RESEARCH & WRITING INSTRUCTIONS:
         "+91 80 4619 9000"
       ]
     }
+UNI_CAMPUS_JSON;
+
+        return <<<PROMPT
+You are an expert higher education data extraction and research AI agent.
+Your PRIMARY GOAL is to perform comprehensive, verified research and extract all physical CAMPUSES, academic DEPARTMENTS / FACULTIES, and ACADEMIC COURSES / DEGREES offered by the institution "{$orgName}".
+
+TARGET INSTITUTION: {$orgName}
+SHORT NAME: {$orgShort}
+OFFICIAL SITE: {$orgSite}
+PRIMARY URL: {$url}{$refUrlsText}
+ORGANISATION TYPE: {$orgTypeTitle}
+{$cleanContent}
+
+CRITICAL RESEARCH & WRITING INSTRUCTIONS:
+{$searchInstructions}
+2. ORIGINAL & POLISHED DESCRIPTIONS (NO COPY-PASTE):
+   - DO NOT copy-paste raw text or boilerplate disclaimers from websites.
+   - Synthesize, summarize, and write original, clear, informative, professional, and SEO-friendly summaries in your own words for:
+     * `about_department`: 1-2 paragraphs detailing the department's academic philosophy, faculty expertise, lab infrastructure, and focus areas.
+     * `overview` (Course Overview): 1-2 engaging paragraphs explaining the degree curriculum, industry relevance, career pathways, and learning outcomes.
+     * `eligibility`: Clear, concise criteria (e.g. "10+2 with minimum 50% aggregate marks in PCM from a recognized board").
+     * `admission_process`: Clear step-by-step summary (e.g. "Online application followed by entrance exam score evaluation and personal interview").
+     * `placement_details`: Comprehensive summary including average & highest package, top recruiters, and industry domains.
+3. STRUCTURE & LINKING:
+   - Link each course to its respective campus and department name.
+   - If exact fees or dates are not publicly listed, provide accurate estimates/ranges based on verified sources or standard fees for this institution.
+4. RETURN FORMAT:
+   - Return ONLY valid, parseable JSON matching EXACTLY this structure:
+
+{
+  "target_organisation_id": {$orgId},
+  "target_organisation_name": "{$orgName}",
+  "campuses": [
+{$campusJsonTemplate}
   ],
   "departments": [
     {
@@ -2610,7 +2889,7 @@ IMPORTANT INSTRUCTIONS:
     "awards_and_recognition": ["Top School Award"],
     "meta_title": "",
     "meta_description": "",
-    "canonical_url": "{$url}",
+    "canonical_url": "",
     "schema_type": "School",
     "claimed_by_organization": false,
     "email": "info@school.edu",
@@ -2636,9 +2915,10 @@ IMPORTANT INSTRUCTIONS:
       "classrooms_count": 50,
       "smart_classrooms": true,
       "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
-      "about_institute": "Overview of school branch and pedagogical approach",
+      "about_institute": "Overview of school branch, curriculum, and pedagogical approach",
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
       "transport_available": true,
-      "bus_routes": ["Route 1", "Route 2"],
+      "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
       "laboratories_count": 6,
       "science_labs_available": true,
       "computer_labs_available": true,
@@ -2649,7 +2929,6 @@ IMPORTANT INSTRUCTIONS:
       "hostel_type": "",
       "hostel_capacity": 0,
       "sports_facilities": ["Playground", "Basketball Court", "Skating Rink", "Swimming Pool"],
-      "transport_available": true,
       "gps_enabled_buses": true,
       "bus_fleet_size": 20,
       "cctv_coverage": true,
@@ -2674,13 +2953,74 @@ IMPORTANT INSTRUCTIONS:
       "enrolled_boys": 650,
       "enrolled_girls": 550,
       "pupil_teacher_ratio": "24:1",
-      "school_classes": [],
-      "reviews": [],
-      "events_and_activities": [],
-      "alumni_details": "",
-      "notable_alumni": [],
-      "clubs_and_committees": [],
-      "faqs": []
+      "class_profile": [
+        {
+          "year": 2024,
+          "total_students": 1200,
+          "total_faculty": 50,
+          "total_male_students": 650,
+          "total_female_students": 550,
+          "total_outside_state": 40
+        }
+      ],
+      "school_classes": [
+        {
+          "class_name": "Class 1",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹45,000/yr",
+          "admission_process": "Age 6+ criteria, registration form, interaction",
+          "exam_preparation": "Foundation learning & mental maths"
+        },
+        {
+          "class_name": "Class 11",
+          "curriculum": "CBSE",
+          "fee_structure": "Tuition Fee: ₹75,000/yr",
+          "admission_process": "Class 10 board results, entrance interaction",
+          "exam_preparation": "Board exams and Olympiad preparation"
+        }
+      ],
+      "reviews": [
+        {
+          "reviewer_name": "Parent / Student",
+          "reviewer_type": "Parent",
+          "rating": 5,
+          "date": "2024",
+          "title": "Holistic school environment",
+          "comment": "Dedicated teachers, strong sports facilities and well-balanced academics."
+        }
+      ],
+      "events_and_activities": [
+        {
+          "title": "Annual Sports & Cultural Meet",
+          "category": "Sports",
+          "date": "Annual",
+          "description": "Inter-house athletics competitions, football matches and cultural exhibitions.",
+          "images": []
+        }
+      ],
+      "alumni_details": "Active alumni network connecting graduates across higher education and professional careers.",
+      "notable_alumni": [
+        {
+          "name": "Alumni Name",
+          "batch": "Batch of 2018",
+          "profession": "Civil Services / Medical / Engineering",
+          "testimonial": "The foundational schooling provided excellent preparation for higher studies."
+        }
+      ],
+      "clubs_and_committees": [
+        {
+          "name": "Science & Eco Club",
+          "type": "Student Club",
+          "coordinator": "Senior Teacher",
+          "description": "Promotes science projects, environmental sustainability and exhibitions."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What is the admission procedure?",
+          "answer": "Parents can apply online through the school portal followed by document verification and interaction."
+        }
+      ]
     }
   ],
   "departments": [
@@ -3019,7 +3359,7 @@ IMPORTANT INSTRUCTIONS:
     "states_covered_count": 36,
     "meta_title": "",
     "meta_description": "",
-    "canonical_url": "{$url}",
+    "canonical_url": "",
     "claimed_by_authority": false,
     "is_top": false
   },
@@ -3100,7 +3440,7 @@ IMPORTANT INSTRUCTIONS:
     "years_of_operation": 68,
     "meta_title": "",
     "meta_description": "",
-    "canonical_url": "{$url}",
+    "canonical_url": "",
     "claimed_by_authority": false,
     "is_top": false
   },

@@ -35,7 +35,8 @@ class AiOrganisationImportController extends Controller
         $organisation = new \App\Models\Organisation();
         $schoolTypes = \App\Models\CampusTypeNew::where('status', 1)->orderBy('sort_order')->orderBy('title')->get();
         $brandTypes = \App\Models\Organisation::BRAND_TYPES;
-        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
+        $facilitiesMaster = \App\Models\Facility::with('organisationTypes')->where('status', 1)->orderBy('name')->get();
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->get();
 
         return view('admin.organisations.ai_create', compact(
             'organisation',
@@ -47,7 +48,8 @@ class AiOrganisationImportController extends Controller
             'courses',
             'schoolTypes',
             'brandTypes',
-            'facilitiesMaster'
+            'facilitiesMaster',
+            'academicClasses'
         ));
     }
 
@@ -341,6 +343,12 @@ class AiOrganisationImportController extends Controller
                     $data['organisation']['organisation_type_id'] = $orgType->id;
                     $data['organisation']['organisation_type'] = $orgType->title;
                 }
+                // Canonical URL must always be blank and Claimed by Organisation must always be unchecked
+                $data['organisation']['canonical_url'] = '';
+                $data['organisation']['claimed_by_organization'] = false;
+                if (isset($data['organisation']['claimed_by_authority'])) {
+                    $data['organisation']['claimed_by_authority'] = false;
+                }
                 if (!isset($data['campuses'])) $data['campuses'] = [];
                 if (!isset($data['departments'])) $data['departments'] = [];
                 if (!isset($data['courses'])) $data['courses'] = [];
@@ -369,6 +377,44 @@ class AiOrganisationImportController extends Controller
                 }
             }
 
+            // Ensure canonical_url is blank, claimed_by_organization unchecked, and reviews & ratings are not autofilled by AI (left blank)
+            if (!empty($data['organisation']) && is_array($data['organisation'])) {
+                $data['organisation']['canonical_url'] = '';
+                $data['organisation']['claimed_by_organization'] = false;
+                if (isset($data['organisation']['claimed_by_authority'])) {
+                    $data['organisation']['claimed_by_authority'] = false;
+                }
+                $data['organisation']['average_rating'] = null;
+                $data['organisation']['total_reviews'] = null;
+                $data['organisation']['public_trust_rating'] = null;
+                $data['organisation']['reviews'] = [];
+                unset($data['organisation']['rating']);
+                if (isset($data['organisation']['third_party_ratings'])) {
+                    $data['organisation']['third_party_ratings'] = null;
+                }
+                if (isset($data['organisation']['app_details']) && is_array($data['organisation']['app_details'])) {
+                    $data['organisation']['app_details']['android_rating'] = '';
+                    $data['organisation']['app_details']['ios_rating'] = '';
+                }
+            }
+
+            if (!empty($data['campuses']) && is_array($data['campuses'])) {
+                foreach ($data['campuses'] as &$cItem) {
+                    $cItem['reviews'] = [];
+                    $cItem['rating'] = null;
+                    $cItem['average_rating'] = null;
+                    $cItem['total_reviews'] = null;
+                }
+                unset($cItem);
+            }
+
+            if (!empty($data['courses']) && is_array($data['courses'])) {
+                foreach ($data['courses'] as &$crItem) {
+                    $crItem['rating'] = null;
+                }
+                unset($crItem);
+            }
+
             $masters = [
                 'courses' => \App\Models\Course::select('id', 'name', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration')->orderBy('name')->get(),
                 'program_levels' => \App\Models\ProgramLevel::select('id', 'title')->orderBy('title')->get(),
@@ -377,7 +423,8 @@ class AiOrganisationImportController extends Controller
                 'organisation_types' => \App\Models\OrganisationType::select('id', 'title')->orderBy('title')->get(),
                 'school_types' => \App\Models\CampusTypeNew::where('status', 1)->orderBy('sort_order')->orderBy('title')->get(),
                 'brand_types' => \App\Models\Organisation::BRAND_TYPES,
-                'facilities' => \App\Models\Facility::where('status', 1)->orderBy('name')->get(['id', 'name', 'icon']),
+                'facilities' => \App\Models\Facility::with('organisationTypes:id,title')->where('status', 1)->orderBy('name')->get(['id', 'name', 'icon']),
+                'academic_classes' => \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->get(['id', 'name']),
             ];
 
             return response()->json([
@@ -429,6 +476,13 @@ class AiOrganisationImportController extends Controller
             }
 
             $mode = $data['mode'] ?? 'organisation';
+            if (isset($data['organisation']) && is_array($data['organisation'])) {
+                $data['organisation']['canonical_url'] = '';
+                $data['organisation']['claimed_by_organization'] = false;
+                if (isset($data['organisation']['claimed_by_authority'])) {
+                    $data['organisation']['claimed_by_authority'] = false;
+                }
+            }
             $organisation = $this->importer->saveImportedData($data);
 
             if ($mode === 'campus') {

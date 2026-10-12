@@ -41,10 +41,20 @@ class CampusController extends Controller
             ->filter()
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
-        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
+        $facilitiesMaster = \App\Models\Facility::where('status', 1)
+            ->when($organisation->organisation_type_id, function ($query) use ($organisation) {
+                $query->where(function ($q) use ($organisation) {
+                    $q->whereHas('organisationTypes', function ($sub) use ($organisation) {
+                        $sub->where('organisation_types.id', $organisation->organisation_type_id);
+                    })->orDoesntHave('organisationTypes');
+                });
+            })
+            ->orderBy('name')
+            ->get();
         $schoolTypes = \App\Models\CampusTypeNew::all();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->orderBy('sort_order')->get();
-        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories'));
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
+        return view('admin.organisations.campuses.create', compact('organisation', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories', 'academicClasses'));
     }
 
     /**
@@ -102,10 +112,26 @@ class CampusController extends Controller
             ->filter()
             ->values();
         $exams = \App\Models\Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
-        $facilitiesMaster = \App\Models\Facility::where('status', 1)->orderBy('name')->get();
+        $selectedFacilityIds = is_array($campus->facilities) 
+            ? $campus->facilities 
+            : (json_decode($campus->facilities, true) ?: []);
+        $facilitiesMaster = \App\Models\Facility::where('status', 1)
+            ->where(function ($query) use ($organisation, $selectedFacilityIds) {
+                if ($organisation->organisation_type_id) {
+                    $query->whereHas('organisationTypes', function ($sub) use ($organisation) {
+                        $sub->where('organisation_types.id', $organisation->organisation_type_id);
+                    })->orDoesntHave('organisationTypes');
+                }
+                if (!empty($selectedFacilityIds)) {
+                    $query->orWhereIn('id', $selectedFacilityIds);
+                }
+            })
+            ->orderBy('name')
+            ->get();
         $schoolTypes = \App\Models\CampusTypeNew::all();
         $coachingCategories = \App\Models\CoachingCategory::where('status', 1)->orderBy('sort_order')->get();
-        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories'));
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
+        return view('admin.organisations.campuses.edit', compact('organisation', 'campus', 'brandTypes', 'exams', 'examCategories', 'facilitiesMaster', 'schoolTypes', 'coachingCategories', 'academicClasses'));
     }
 
     /**

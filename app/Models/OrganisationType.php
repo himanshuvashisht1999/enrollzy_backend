@@ -16,4 +16,9 @@ class OrganisationType extends Model
     {
         return $this->hasMany(OrganisationSubType::class);
     }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class, 'facility_organisation_type', 'organisation_type_id', 'facility_id')->withTimestamps();
+    }
 }

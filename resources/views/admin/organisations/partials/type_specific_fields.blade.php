@@ -645,12 +645,12 @@
                                             <div class="col-md-6"><label class="form-label">Total Reviews</label><input type="number" name="total_reviews" class="form-control" value="{{ old('total_reviews', $organisation->total_reviews) }}"></div>
                                             <div class="col-md-12"><label class="form-label">Awards & Recognition (Comma separated)</label><input type="text" name="awards_and_recognition[]" class="form-control" value="{{ implode(',', is_array($organisation->awards_and_recognition) ? $organisation->awards_and_recognition : []) }}"></div>
                                             <div class="col-md-6"><label class="form-label">Meta Title</label><input type="text" name="meta_title" class="form-control" value="{{ old('meta_title', $organisation->meta_title) }}"></div>
-                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="text" name="canonical_url" class="form-control" value="{{ old('canonical_url', $organisation->canonical_url) }}"></div>
+                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="text" name="canonical_url" class="form-control" value=""></div>
                                             <div class="col-md-12"><label class="form-label">Meta Description</label><textarea name="meta_description" class="form-control" rows="2">{{ old('meta_description', $organisation->meta_description) }}</textarea></div>
                                             <div class="col-md-6"><label class="form-label">Schema Type</label><input type="text" name="schema_type" class="form-control" value="{{ old('schema_type', $organisation->schema_type ?? 'School') }}"></div>
                                             <div class="col-md-6">
                                                  <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="claimed_by_organization" id="claimed_by_organization" {{ old('claimed_by_organization', $organisation->claimed_by_organization) ? 'checked' : '' }}>
+                                                    <input class="form-check-input" type="checkbox" name="claimed_by_organization" id="claimed_by_organization">
                                                     <label class="form-check-label" for="claimed_by_organization">Claimed by Organization</label>
                                                  </div>
                                             </div>
@@ -736,7 +736,7 @@
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="claimed_auth" {{ old('claimed_by_authority', $organisation->claimed_by_authority) ? 'checked' : '' }}><label class="form-check-label" for="claimed_auth">Claimed by Authority</label></div>
+                                                    <div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="claimed_auth"><label class="form-check-label" for="claimed_auth">Claimed by Authority</label></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1159,7 +1159,7 @@
                                     <div class="tab-pane fade" id="cb-seo" role="tabpanel">
                                         <div class="row g-3">
                                             <div class="col-md-6"><label class="form-label">Meta Title</label><input type="text" name="meta_title" class="form-control" value="{{ old('meta_title', $organisation->meta_title) }}"></div>
-                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="url" name="canonical_url" class="form-control" value="{{ old('canonical_url', $organisation->canonical_url) }}"></div>
+                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="url" name="canonical_url" class="form-control" value=""></div>
                                             <div class="col-md-12"><label class="form-label">Meta Description</label><textarea name="meta_description" class="form-control" rows="2">{{ old('meta_description', $organisation->meta_description) }}</textarea></div>
                                             <div class="col-md-12"><label class="form-label">Keywords (Comma separated)</label><input type="text" name="focus_keywords" class="form-control" value="{{ implode(',', is_array($organisation->focus_keywords) ? $organisation->focus_keywords : []) }}"></div>
                                         </div>
@@ -1392,7 +1392,7 @@
                                     <div class="tab-pane fade" id="rb-seo" role="tabpanel">
                                         <div class="row g-3">
                                             <div class="col-md-6"><label class="form-label">Meta Title</label><input type="text" name="meta_title" class="form-control" value="{{ old('meta_title', $organisation->meta_title) }}"></div>
-                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="url" name="canonical_url" class="form-control" value="{{ old('canonical_url', $organisation->canonical_url) }}"></div>
+                                            <div class="col-md-6"><label class="form-label">Canonical URL</label><input type="url" name="canonical_url" class="form-control" value=""></div>
                                             <div class="col-md-12"><label class="form-label">Meta Description</label><textarea name="meta_description" class="form-control" rows="2">{{ old('meta_description', $organisation->meta_description) }}</textarea></div>
                                         </div>
                                     </div>
@@ -1405,7 +1405,7 @@
                                                         <option value="{{ $opt }}" {{ old('verification_status', $organisation->verification_status) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
                                                 </select></div>
-                                            <div class="col-md-3"><div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="rb_claimed" {{ old('claimed_by_authority', $organisation->claimed_by_authority) ? 'checked' : '' }}><label class="form-check-label" for="rb_claimed">Claimed</label></div></div>
+                                            <div class="col-md-3"><div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="rb_claimed"><label class="form-check-label" for="rb_claimed">Claimed</label></div></div>
                                             <div class="col-md-3"><label class="form-label">Status</label><select name="status" class="form-select">
                                                     @foreach(['Active', 'Inactive', 'Archived'] as $opt)
                                                         <option value="{{ $opt }}" {{ old('status', $organisation->status) == $opt ? 'selected' : '' }}>{{ $opt }}</option>

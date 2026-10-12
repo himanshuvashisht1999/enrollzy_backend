@@ -487,8 +487,21 @@ document.addEventListener('DOMContentLoaded', function () {
         organisation_types: @json($organisationTypes ?? []),
         school_types: @json($schoolTypes ?? []),
         brand_types: @json($brandTypes ?? []),
-        facilities: @json($facilitiesMaster ?? [])
+        facilities: @json($facilitiesMaster ?? []),
+        academic_classes: @json($academicClasses ?? [])
     };
+
+    function getMasterClassesList() {
+        if (globalMasters && Array.isArray(globalMasters.academic_classes) && globalMasters.academic_classes.length > 0) {
+            return globalMasters.academic_classes.map(c => typeof c === 'object' ? (c.name || c.title) : c).filter(Boolean);
+        }
+        return [
+            'Playgroup', 'Nursery', 'LKG', 'UKG',
+            'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+            'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+            'Class 11', 'Class 12', 'Dropper'
+        ];
+    }
 
     function normalizeStr(str) {
         if (!str) return '';
@@ -827,6 +840,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // Ensure canonical_url is always blank and claimed_by_organization is always unchecked
+        document.querySelectorAll('input[name="canonical_url"]').forEach(input => input.value = '');
+        document.querySelectorAll('input[name="claimed_by_organization"], input[name="claimed_by_authority"]').forEach(input => input.checked = false);
+
         if (typeof highlightUnfilledFields === 'function') {
             highlightUnfilledFields();
         }
@@ -861,15 +878,29 @@ document.addEventListener('DOMContentLoaded', function () {
             return false;
         } else {
             const targetOrgId = currentTargetOrgId || $('#aiInputTargetOrg').val() || (currentExtractedData?.target_organisation_id) || (currentExtractedData?.organisation?.id);
-            if (!targetOrgId) {
-                if (currentExtractedData?.organisation?.organisation_type_id == 4) return true;
-                return false;
+            if (targetOrgId) {
+                const org = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
+                if (org) {
+                    if (org.organisation_type_id == 4) return true;
+                    const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(org.organisation_type_id));
+                    if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+                }
             }
-            const org = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
-            if (org) {
-                if (org.organisation_type_id == 4) return true;
-                const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(org.organisation_type_id));
-                if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+            if (currentExtractedData?.organisation?.organisation_type_id == 4) return true;
+            const inputType = document.getElementById('aiInputOrgType')?.value;
+            if (inputType == 4) return true;
+            const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(inputType));
+            if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+            if (currentExtractedData?.campuses && Array.isArray(currentExtractedData.campuses)) {
+                const hasSchoolData = currentExtractedData.campuses.some(c => 
+                    (Array.isArray(c.school_type) && c.school_type.length > 0) || 
+                    (Array.isArray(c.school_classes) && c.school_classes.length > 0) || 
+                    c.udise_code || 
+                    c.affiliation_board ||
+                    c.headmaster_principal ||
+                    c.pupil_teacher_ratio
+                );
+                if (hasSchoolData) return true;
             }
             return false;
         }
@@ -1547,6 +1578,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const baseName = name.replace(/\[\]$/, '');
 
+                    if (baseName === 'canonical_url') {
+                        input.value = '';
+                        return;
+                    }
+                    if (baseName === 'claimed_by_organization' || baseName === 'claimed_by_authority') {
+                        input.checked = false;
+                        return;
+                    }
+                    if (baseName === 'average_rating' || 
+                        baseName === 'total_reviews' || 
+                        baseName === 'public_trust_rating' || 
+                        baseName.toLowerCase().includes('rating') || 
+                        baseName.toLowerCase().includes('review')) {
+                        input.value = '';
+                        if (input.type === 'checkbox') input.checked = false;
+                        return;
+                    }
+
                     if (org[baseName] !== undefined && org[baseName] !== null) {
                         const val = org[baseName];
                         if (input.type === 'checkbox') {
@@ -1594,6 +1643,15 @@ document.addEventListener('DOMContentLoaded', function () {
                                 input.value = typeof val === 'object' ? toCsv(val) : String(val);
                             }
                         }
+                    }
+                });
+
+                // Ensure all rating and review fields across all tabs in organisation form remain completely blank
+                document.querySelectorAll('#tab-org [name*="rating"], #tab-org [name*="review"]').forEach(el => {
+                    if (el.type === 'checkbox') {
+                        el.checked = false;
+                    } else {
+                        el.value = '';
                     }
                 });
 
@@ -1756,6 +1814,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function isFieldEmpty(el) {
         if (!el || el.disabled) return false;
         if (el.type === 'hidden' || el.type === 'file' || el.type === 'checkbox' || el.type === 'radio') return false;
+        if (el.name === 'canonical_url') return false;
 
         const parentSpecific = el.closest('.col-12[id$="-fields"]');
         if (parentSpecific && (parentSpecific.style.display === 'none' || window.getComputedStyle(parentSpecific).display === 'none')) {
@@ -2011,13 +2070,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 <option value="${b}" ${c.brand_type === b ? 'selected' : ''}>${b}</option>
             `).join('');
 
-            // Options for Target Classes (Classes 6 to 12 + Dropper, matching edit page)
+            // Options for Target Classes (Using Academic Classes Master)
             const selectedClasses = Array.isArray(c.target_classes) ? c.target_classes.map(String) : [];
-            let targetClassesOptions = '';
-            for (let i = 6; i <= 12; i++) {
-                targetClassesOptions += `<option value="${i}" ${selectedClasses.includes(String(i)) ? 'selected' : ''}>Class ${i}</option>`;
-            }
-            targetClassesOptions += `<option value="Dropper" ${selectedClasses.includes('Dropper') ? 'selected' : ''}>Dropper</option>`;
+            const masterClassesList = getMasterClassesList();
+            const targetClassesOptions = masterClassesList.map(cls => {
+                const clsStr = String(cls);
+                const numOnly = clsStr.replace(/^Class\s+/i, '');
+                const isSelected = selectedClasses.includes(clsStr) || 
+                                   selectedClasses.includes(numOnly) || 
+                                   selectedClasses.some(sc => sc.toLowerCase() === clsStr.toLowerCase());
+                return `<option value="${clsStr}" ${isSelected ? 'selected' : ''}>${clsStr}</option>`;
+            }).join('');
 
             // Options for Facilities
             const facilitiesList = globalMasters.facilities || [];
@@ -2075,9 +2138,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            selectedFacilityIds = Array.from(new Set(selectedFacilityIds));
+            const currentOrgTypeId = parseInt($('#organisation_type_id').val() || '0');
+            const filteredFacilitiesList = facilitiesList.filter(f => {
+                if (!currentOrgTypeId) return true;
+                if (!f.organisation_types || f.organisation_types.length === 0) return true;
+                return f.organisation_types.some(t => parseInt(t.id) === currentOrgTypeId);
+            });
 
-            const facilitiesHtml = facilitiesList.length > 0 ? facilitiesList.map(f => {
+            const facilitiesHtml = filteredFacilitiesList.length > 0 ? filteredFacilitiesList.map(f => {
                 const isChecked = selectedFacilityIds.includes(String(f.id));
                 return `
                     <div class="col-md-3 col-sm-4 col-6">
@@ -2497,7 +2565,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </button>
                             </div>
                             <div class="c-school-classes-container d-flex flex-column gap-2">
-                                ${(Array.isArray(c.school_classes) ? c.school_classes : []).map(sc => `
+                                ${(Array.isArray(c.school_classes) ? c.school_classes : []).map((sc, scIdx) => `
                                     <div class="card border p-3 bg-light position-relative school-class-item">
                                         <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
                                         <div class="row g-2">
@@ -2505,10 +2573,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                                 <label class="form-label small fw-bold">Class / Grade</label>
                                                 <select class="form-select form-select-sm sc-name">
                                                     <option value="">-- Select Class / Grade --</option>
-                                                    ${['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'].map(cls => `
-                                                        <option value="\${cls}" \${sc.class_name === cls ? 'selected' : ''}>\${cls}</option>
+                                                    ${getMasterClassesList().map(cls => `
+                                                        <option value="${cls}" ${sc.class_name === cls ? 'selected' : ''}>${cls}</option>
                                                     `).join('')}
-                                                    \${sc.class_name && !['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'].includes(sc.class_name) ? `<option value="\${sc.class_name}" selected>\${sc.class_name}</option>` : ''}
+                                                    ${sc.class_name && !getMasterClassesList().includes(sc.class_name) ? `<option value="${sc.class_name}" selected>${sc.class_name}</option>` : ''}
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
@@ -2517,7 +2585,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold">Fee & Other Charges</label>
-                                                <textarea class="form-control form-control-sm sc-fee" rows="2" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000...">${sc.fee_structure || ''}</textarea>
+                                                <textarea class="form-control form-control-sm sc-fee editor" id="sc_fee_${idx}_${scIdx}" rows="4" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000...">${sc.fee_structure || ''}</textarea>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold">Admission Process</label>
@@ -2544,41 +2612,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </button>
                             </div>
                             <div class="c-reviews-container d-flex flex-column gap-2">
-                                ${(Array.isArray(c.reviews) ? c.reviews : []).map(r => `
-                                    <div class="card border p-3 bg-light position-relative review-item">
-                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
-                                        <div class="row g-2">
-                                            <div class="col-md-4">
-                                                <label class="form-label small fw-bold">Reviewer Name</label>
-                                                <input type="text" class="form-control form-control-sm r-name" value="${r.reviewer_name || ''}" placeholder="Ramesh Kumar">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small fw-bold">Reviewer Role</label>
-                                                <select class="form-select form-select-sm r-type">
-                                                    ${['Parent', 'Alumni', 'Student', 'Guardian', 'Other'].map(rt => `<option value="${rt}" ${(r.reviewer_type || 'Parent') === rt ? 'selected' : ''}>${rt}</option>`).join('')}
-                                                </select>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <label class="form-label small fw-bold">Rating</label>
-                                                <select class="form-select form-select-sm r-rating">
-                                                    ${[5, 4, 3, 2, 1].map(rt => `<option value="${rt}" ${(parseInt(r.rating) || 5) === rt ? 'selected' : ''}>${rt} ★</option>`).join('')}
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small fw-bold">Date / Year</label>
-                                                <input type="text" class="form-control form-control-sm r-date" value="${r.date || ''}" placeholder="Oct 2024">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label small fw-bold">Review Title</label>
-                                                <input type="text" class="form-control form-control-sm r-title" value="${r.title || ''}" placeholder="Excellent academic support">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label small fw-bold">Comment</label>
-                                                <textarea class="form-control form-control-sm r-comment" rows="2" placeholder="Experience details...">${r.comment || ''}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('')}
+                                <!-- Reviews not autofilled by AI, left blank -->
                             </div>
                         </div>
 
@@ -2831,10 +2865,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.addEventListener('click', function () {
                     this.closest('.c-class-profile-item').remove();
                 });
+            });
+
             // School Classes Repeater Handler
             div.querySelector('.btn-add-school-class')?.addEventListener('click', function () {
                 const container = div.querySelector('.c-school-classes-container');
                 const scDiv = document.createElement('div');
+                const newFeeId = 'sc_fee_' + idx + '_' + Date.now();
                 scDiv.className = 'card border p-3 bg-light position-relative school-class-item';
                 scDiv.innerHTML = `
                     <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
@@ -2843,23 +2880,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <label class="form-label small fw-bold">Class / Grade</label>
                             <select class="form-select form-select-sm sc-name">
                                 <option value="">-- Select Class / Grade --</option>
-                                <option value="Playgroup">Playgroup</option>
-                                <option value="Nursery">Nursery</option>
-                                <option value="LKG">LKG</option>
-                                <option value="UKG">UKG</option>
-                                <option value="Class 1">Class 1</option>
-                                <option value="Class 2">Class 2</option>
-                                <option value="Class 3">Class 3</option>
-                                <option value="Class 4">Class 4</option>
-                                <option value="Class 5">Class 5</option>
-                                <option value="Class 6">Class 6</option>
-                                <option value="Class 7">Class 7</option>
-                                <option value="Class 8">Class 8</option>
-                                <option value="Class 9">Class 9</option>
-                                <option value="Class 10">Class 10</option>
-                                <option value="Class 11">Class 11</option>
-                                <option value="Class 12">Class 12</option>
-                                <option value="Dropper">Dropper</option>
+                                ${getMasterClassesList().map(cls => `<option value="${cls}">${cls}</option>`).join('')}
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -2868,7 +2889,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-bold">Fee & Other Charges</label>
-                            <textarea class="form-control form-control-sm sc-fee" rows="2" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000..."></textarea>
+                            <textarea class="form-control form-control-sm sc-fee editor" id="${newFeeId}" rows="4" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000..."></textarea>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-bold">Admission Process</label>
@@ -2880,8 +2901,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
                 `;
-                scDiv.querySelector('.btn-remove-item').addEventListener('click', function () { scDiv.remove(); });
+                scDiv.querySelector('.btn-remove-item').addEventListener('click', function () {
+                    if (typeof tinymce !== 'undefined' && tinymce.get(newFeeId)) {
+                        tinymce.get(newFeeId).remove();
+                    }
+                    scDiv.remove();
+                });
                 container.appendChild(scDiv);
+                if (typeof initializeTinyMCE === 'function') {
+                    initializeTinyMCE('#' + newFeeId, 180);
+                }
             });
 
             // Review Repeater Handler
@@ -2909,6 +2938,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="col-md-2">
                             <label class="form-label small fw-bold">Rating</label>
                             <select class="form-select form-select-sm r-rating">
+                                <option value="">Select Rating</option>
                                 <option value="5">5 ★</option>
                                 <option value="4">4 ★</option>
                                 <option value="3">3 ★</option>
@@ -3248,6 +3278,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         div.querySelector('.btn-remove-campus').addEventListener('click', function () {
+            div.querySelectorAll('.editor').forEach(el => {
+                if (el.id && typeof tinymce !== 'undefined' && tinymce.get(el.id)) {
+                    tinymce.get(el.id).remove();
+                }
+            });
             div.remove();
             updateAllBadges();
             refreshCourseCampusAndDeptDropdowns();
@@ -3260,6 +3295,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('campusesContainer').appendChild(div);
         initSelect2OnCard(div);
+        if (isSchool && typeof initializeTinyMCE === 'function') {
+            div.querySelectorAll('.sc-fee.editor').forEach(el => {
+                if (el.id) {
+                    initializeTinyMCE('#' + el.id, 180);
+                }
+            });
+        }
     }
 
     // Append Department Card
@@ -3449,10 +3491,15 @@ document.addEventListener('DOMContentLoaded', function () {
             el.querySelectorAll('.school-class-item').forEach(scEl => {
                 const scName = scEl.querySelector('.sc-name')?.value.trim();
                 if (scName) {
+                    const feeEl = scEl.querySelector('.sc-fee');
+                    let feeVal = feeEl?.value.trim() || null;
+                    if (feeEl?.id && typeof tinymce !== 'undefined' && tinymce.get(feeEl.id)) {
+                        feeVal = tinymce.get(feeEl.id).getContent().trim() || null;
+                    }
                     schoolClassesItems.push({
                         class_name: scName,
                         curriculum: scEl.querySelector('.sc-curriculum')?.value.trim() || null,
-                        fee_structure: scEl.querySelector('.sc-fee')?.value.trim() || null,
+                        fee_structure: feeVal,
                         admission_process: scEl.querySelector('.sc-admission')?.value.trim() || null,
                         exam_preparation: scEl.querySelector('.sc-exam-prep')?.value.trim() || null
                     });
@@ -3468,7 +3515,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     reviewsItems.push({
                         reviewer_name: rName || null,
                         reviewer_type: rEl.querySelector('.r-type')?.value || 'Parent',
-                        rating: parseInt(rEl.querySelector('.r-rating')?.value) || 5,
+                        rating: parseInt(rEl.querySelector('.r-rating')?.value) || null,
                         date: rEl.querySelector('.r-date')?.value.trim() || null,
                         title: rEl.querySelector('.r-title')?.value.trim() || null,
                         comment: rComment || null
@@ -3681,7 +3728,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 total_teachers: el.querySelector('.cr-total-teachers')?.value.trim(),
                 student_teacher_ratio: el.querySelector('.cr-teacher-ratio')?.value.trim(),
                 average_class_size: el.querySelector('.cr-class-size')?.value.trim(),
-                rating: el.querySelector('.cr-rating')?.value.trim() || '4.5',
+                rating: el.querySelector('.cr-rating')?.value.trim() || null,
                 average_board_result_percentage: el.querySelector('.cr-board-result')?.value.trim(),
                 highest_score: el.querySelector('.cr-highest-score')?.value.trim(),
                 distinction_percentage: el.querySelector('.cr-distinction-pct')?.value.trim(),
@@ -3726,7 +3773,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 total_fees: el.querySelector('.cr-total-fees')?.value.trim(),
                 admission_fee: el.querySelector('.cr-adm-fee')?.value.trim(),
                 annual_fee_range: el.querySelector('.cr-fee-range')?.value.trim(),
-                rating: el.querySelector('.cr-rating')?.value.trim(),
+                rating: el.querySelector('.cr-rating')?.value.trim() || null,
                 roi: el.querySelector('.cr-roi')?.value.trim(),
                 eligibility: el.querySelector('.cr-eligibility')?.value.trim(),
                 admission_process: el.querySelector('.cr-adm-process')?.value.trim(),
@@ -3893,7 +3940,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold small">Rating</label>
-                            <input type="text" class="form-control cr-rating" value="${cr.rating || '4.5'}">
+                            <input type="text" class="form-control cr-rating" value="${cr.rating || ''}" placeholder="e.g. 4.5">
                         </div>
 
                         <div class="col-md-4">
@@ -4146,7 +4193,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         <div class="col-md-2">
                             <label class="form-label fw-bold small">Rating</label>
-                            <input type="text" class="form-control cr-rating" value="${cr.rating || '4.5'}">
+                            <input type="text" class="form-control cr-rating" value="${cr.rating || ''}" placeholder="e.g. 4.5">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">ROI / Package</label>
@@ -4307,6 +4354,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // ----------------------------------------------------
     document.querySelectorAll('.btn-confirm-save-action').forEach(btn => {
         btn.addEventListener('click', function () {
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
             const saveButtons = document.querySelectorAll('.btn-confirm-save-action');
             saveButtons.forEach(b => {
                 b.disabled = true;
@@ -4396,6 +4446,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     orgPayload.cover_image_url = extractedCover;
                 }
 
+                // Canonical URL must always be blank and Claimed by Organisation must always be unchecked
+                orgPayload.canonical_url = '';
+                orgPayload.claimed_by_organization = false;
+                if (orgPayload.claimed_by_authority !== undefined) {
+                    orgPayload.claimed_by_authority = false;
+                }
+
                 payload.organisation = orgPayload;
 
                 // Collect child campuses, departments, and courses for the organisation
@@ -4483,6 +4540,12 @@ document.addEventListener('DOMContentLoaded', function () {
     handleEntityModeChange();
     const initialTypeId = (aiOrgTypeMaster && aiOrgTypeMaster.value) || 1;
     toggleOrgTypeFields(initialTypeId);
+    document.querySelectorAll('input[name="canonical_url"]').forEach(el => el.value = '');
+    document.querySelectorAll('input[name="claimed_by_organization"], input[name="claimed_by_authority"]').forEach(el => el.checked = false);
+    document.querySelectorAll('#tab-org [name*="rating"], #tab-org [name*="review"]').forEach(el => {
+        if (el.type === 'checkbox') el.checked = false;
+        else el.value = '';
+    });
 });
 </script>
 @endpush
