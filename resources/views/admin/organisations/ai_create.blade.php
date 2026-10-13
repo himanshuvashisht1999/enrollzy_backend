@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'School Official Website URL <span class="text-danger">*</span>' : 'Official Website URL <span class="text-danger">*</span>';
             if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net' : 'https://www.example.edu.in';
             if (badgePromptMode) {
-                badgePromptMode.innerText = isSchool ? 'School Organisation & All Records' : 'Organisation Only';
+                badgePromptMode.innerText = isSchool ? 'School Organisation Only' : 'Organisation Only';
                 badgePromptMode.className = 'badge bg-light text-dark border ms-1 fw-normal';
             }
         } else if (mode === 'campus') {
@@ -1539,11 +1539,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 : `<i class="fas fa-university text-primary me-2"></i>Organisation Profile Preview`;
             if (headerBadgeEl) headerBadgeEl.innerText = (org.short_name || orgName || '') + (org.established_year ? ' (Est. ' + org.established_year + ')' : '');
 
-            // Show ALL tabs: Org, Campuses, Departments, Courses
+            // Show ONLY Organisation tab
             if (tabItemOrg) tabItemOrg.classList.remove('d-none');
-            if (tabItemCampuses) tabItemCampuses.classList.remove('d-none');
-            if (tabItemDepts) tabItemDepts.classList.remove('d-none');
-            if (tabItemCourses) tabItemCourses.classList.remove('d-none');
+            if (tabItemCampuses) tabItemCampuses.classList.add('d-none');
+            if (tabItemDepts) tabItemDepts.classList.add('d-none');
+            if (tabItemCourses) tabItemCourses.classList.add('d-none');
 
             if (tabOrgPane) {
                 tabOrgPane.classList.remove('d-none');
@@ -1552,7 +1552,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (tabOrgBtn) tabOrgBtn.classList.add('active');
 
             saveButtons.forEach(b => {
-                b.innerHTML = '<i class="fas fa-save me-1"></i> Save Organisation & All Records';
+                b.innerHTML = isSchool
+                    ? '<i class="fas fa-save me-1"></i> Save School Organisation'
+                    : '<i class="fas fa-save me-1"></i> Save Organisation';
             });
 
             // Populate Org Fields
@@ -1685,33 +1687,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Populate Campuses Tab
+            // Clear child containers in organisation mode
             const campusesContainer = document.getElementById('campusesContainer');
-            if (campusesContainer) {
-                campusesContainer.innerHTML = '';
-                const cList = campuses.length > 0 ? campuses : [{ campus_name: orgName ? (orgName + ' - Main Campus') : (isSchool ? 'Main School Campus' : 'Main Campus'), campus_type: 'Main' }];
-                cList.forEach((c, idx) => {
-                    appendCampusCard(c, idx);
-                });
-            }
+            if (campusesContainer) campusesContainer.innerHTML = '';
 
-            // Populate Departments Tab
             const deptsContainer = document.getElementById('deptsContainer');
-            if (deptsContainer) {
-                deptsContainer.innerHTML = '';
-                departments.forEach((d, idx) => {
-                    appendDeptCard(d, idx);
-                });
-            }
+            if (deptsContainer) deptsContainer.innerHTML = '';
 
-            // Populate Courses Tab
             const coursesContainer = document.getElementById('coursesContainer');
-            if (coursesContainer) {
-                coursesContainer.innerHTML = '';
-                courses.forEach((cr, idx) => {
-                    appendCourseCard(cr, idx);
-                });
-            }
+            if (coursesContainer) coursesContainer.innerHTML = '';
 
             highlightUnfilledFields();
 
@@ -4454,20 +4438,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 payload.organisation = orgPayload;
-
-                // Collect child campuses, departments, and courses for the organisation
-                document.querySelectorAll('.campus-item').forEach(el => {
-                    const c = collectCampusItemData(el);
-                    if (c) payload.campuses.push(c);
-                });
-                document.querySelectorAll('.dept-item').forEach(el => {
-                    const d = collectDeptItemData(el);
-                    if (d) payload.departments.push(d);
-                });
-                document.querySelectorAll('.course-item').forEach(el => {
-                    const cr = collectCourseItemData(el);
-                    if (cr) payload.courses.push(cr);
-                });
+                payload.campuses = [];
+                payload.departments = [];
+                payload.courses = [];
 
             // 2. CAMPUS MODE SAVE
             } else if (mode === 'campus') {

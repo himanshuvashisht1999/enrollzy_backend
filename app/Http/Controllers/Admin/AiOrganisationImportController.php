@@ -349,9 +349,9 @@ class AiOrganisationImportController extends Controller
                 if (isset($data['organisation']['claimed_by_authority'])) {
                     $data['organisation']['claimed_by_authority'] = false;
                 }
-                if (!isset($data['campuses'])) $data['campuses'] = [];
-                if (!isset($data['departments'])) $data['departments'] = [];
-                if (!isset($data['courses'])) $data['courses'] = [];
+                $data['campuses'] = [];
+                $data['departments'] = [];
+                $data['courses'] = [];
             } elseif ($mode === 'campus') {
                 $data['organisation'] = [];
                 $data['departments'] = [];
@@ -476,6 +476,23 @@ class AiOrganisationImportController extends Controller
             }
 
             $mode = $data['mode'] ?? 'organisation';
+            if ($mode === 'organisation') {
+                $data['campuses'] = [];
+                $data['departments'] = [];
+                $data['courses'] = [];
+            } elseif ($mode === 'campus') {
+                $data['organisation'] = [];
+                $data['departments'] = [];
+                $data['courses'] = [];
+            } elseif ($mode === 'department') {
+                $data['organisation'] = [];
+                $data['campuses'] = [];
+                $data['courses'] = [];
+            } elseif ($mode === 'course') {
+                $data['organisation'] = [];
+                $data['campuses'] = [];
+                $data['departments'] = [];
+            }
             if (isset($data['organisation']) && is_array($data['organisation'])) {
                 $data['organisation']['canonical_url'] = '';
                 $data['organisation']['claimed_by_organization'] = false;

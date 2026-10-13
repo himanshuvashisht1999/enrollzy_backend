@@ -793,8 +793,8 @@ class OrganisationImportService
                 return $organisation;
             }
 
-            // --- MODE: ORGANISATION ONLY (when no child entities were provided) ---
-            if ($mode === 'organisation' && empty($data['campuses']) && empty($data['departments']) && empty($data['courses'])) {
+            // --- MODE: ORGANISATION ONLY ---
+            if ($mode === 'organisation') {
                 return $organisation;
             }
 
