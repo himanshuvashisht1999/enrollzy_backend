@@ -348,7 +348,7 @@
                                             if (is_array(old('facilities'))) {
                                                 $isChecked = in_array($facility->id, old('facilities'));
                                             } elseif (is_array($campus->facilities)) {
-                                                $isChecked = in_array($facility->id, $campus->facilities);
+                                                $isChecked = in_array($facility->id, $campus->facilities) || in_array($facility->name, $campus->facilities);
                                             }
                                         @endphp
                                         <div class="col-md-3 col-sm-4 col-6">

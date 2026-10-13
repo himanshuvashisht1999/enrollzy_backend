@@ -2070,60 +2070,167 @@ document.addEventListener('DOMContentLoaded', function () {
             const facilitiesList = globalMasters.facilities || [];
             let selectedFacilityIds = [];
             const rawFacilities = Array.isArray(c.facilities) ? c.facilities : (c.facilities ? [c.facilities] : []);
+
+            const facilityAliasMap = {
+                'classrooms': ['classroom', 'classrooms', 'classes', 'smart class', 'smart classroom', 'smart classrooms'],
+                'laboratories': ['lab', 'labs', 'laboratory', 'laboratories', 'science lab', 'computer lab', 'robotics', 'physics lab', 'chemistry lab', 'biology lab', 'stem lab'],
+                'library': ['library', 'reading room', 'digital library', 'book bank'],
+                'sports': ['sport', 'sports', 'playground', 'athletics', 'games', 'football', 'cricket', 'basketball', 'volleyball', 'tennis', 'badminton', 'turf', 'running track'],
+                'swimming pool': ['swimming', 'swimming pool', 'pool', 'aquatics', 'all weather pool'],
+                'cafeteria': ['cafeteria', 'canteen', 'mess', 'dining', 'food court', 'snack bar', 'tuck shop'],
+                'meals': ['meal', 'meals', 'lunch', 'breakfast', 'food facility', 'dining hall', 'mid day meal', 'mid-day meal'],
+                'auditorium': ['auditorium', 'amphitheatre', 'multipurpose hall', 'assembly hall', 'av room', 'audio visual', 'seminar hall'],
+                'wifi': ['wifi', 'wi-fi', 'internet', 'wireless', 'broadband', 'campus wifi'],
+                'i.t infrastructure': ['it', 'itinfrastructure', 'computer', 'computer center', 'technology', 'smart class', 'smart classes', 'ict lab'],
+                'medical/hospital': ['medical', 'hospital', 'infirmary', 'clinic', 'first aid', 'doctor', 'nurse', 'health center', 'medical room', 'dispensary'],
+                'gym': ['gym', 'gymnasium', 'fitness', 'workout', 'physical fitness', 'fitness center'],
+                'boys hostel': ['boys hostel', 'boy hostel', 'hostel boys', 'male hostel', 'boarding for boys'],
+                'girls hostel': ['girls hostel', 'girl hostel', 'hostel girls', 'female hostel', 'boarding for girls'],
+                'guest room/waiting room': ['guest room', 'waiting room', 'lounge', 'guest house', 'visitor room', 'reception lounge'],
+                'alumni associations': ['alumni', 'alumni association', 'alumni network', 'old students association'],
+                'transport facility': ['transport', 'transportation', 'bus', 'buses', 'school bus', 'van', 'commute', 'fleet', 'bus facility'],
+                'drinking water': ['water', 'drinking water', 'ro water', 'purified water', 'water cooler', 'mineral water'],
+                'indoor games': ['indoor', 'indoor games', 'indoor sports', 'table tennis', 'chess', 'carrom', 'board games', 'tt room'],
+                'dancing': ['dance', 'dancing', 'dance room', 'dance studio', 'performing arts'],
+                'debate': ['debate', 'debating', 'public speaking', 'elocution'],
+                'drama': ['drama', 'theatre', 'theater', 'dramatics'],
+                'common room': ['common room', 'student lounge', 'activity room', 'recreation room'],
+                'cinema hall': ['cinema', 'cinema hall', 'screening room', 'movie hall', 'projection hall']
+            };
+
+            const addFacilityByTarget = (targetKey) => {
+                const normTarget = normalizeStr(targetKey);
+                for (const f of facilitiesList) {
+                    const normF = normalizeStr(f.name);
+                    if (normF === normTarget || (normTarget.length >= 3 && normF.includes(normTarget)) || (normF.length >= 3 && normTarget.includes(normF))) {
+                        selectedFacilityIds.push(String(f.id));
+                        return;
+                    }
+                }
+                if (facilityAliasMap[targetKey]) {
+                    for (const alias of facilityAliasMap[targetKey]) {
+                        const normAlias = normalizeStr(alias);
+                        for (const f of facilitiesList) {
+                            const normF = normalizeStr(f.name);
+                            if (normF === normAlias || (normAlias.length >= 3 && normF.includes(normAlias)) || (normF.length >= 3 && normAlias.includes(normF))) {
+                                selectedFacilityIds.push(String(f.id));
+                                return;
+                            }
+                        }
+                    }
+                }
+            };
             
             rawFacilities.forEach(item => {
                 const itemStr = String(item).trim();
-                // Check if it's already an ID
+                if (!itemStr) return;
+
                 const byId = facilitiesList.find(f => String(f.id) === itemStr);
                 if (byId) {
                     selectedFacilityIds.push(String(byId.id));
-                } else {
-                    // Match by name
-                    const normItem = normalizeStr(itemStr);
-                    const byName = facilitiesList.find(f => {
-                        const normF = normalizeStr(f.name);
-                        return normF === normItem || 
-                               (normItem.length >= 4 && normF.includes(normItem)) || 
-                               (normF.length >= 4 && normItem.includes(normF));
-                    });
-                    if (byName) {
-                        selectedFacilityIds.push(String(byName.id));
+                    return;
+                }
+
+                const normItem = normalizeStr(itemStr);
+                let matched = false;
+                for (const f of facilitiesList) {
+                    const normF = normalizeStr(f.name);
+                    if (normF === normItem || 
+                        (normItem.length >= 3 && normF.includes(normItem)) || 
+                        (normF.length >= 3 && normItem.includes(normF))) {
+                        selectedFacilityIds.push(String(f.id));
+                        matched = true;
+                        break;
+                    }
+                }
+
+                if (!matched) {
+                    for (const [targetKey, aliases] of Object.entries(facilityAliasMap)) {
+                        for (const alias of aliases) {
+                            const normAlias = normalizeStr(alias);
+                            if (normItem === normAlias || normItem.includes(normAlias) || normAlias.includes(normItem)) {
+                                addFacilityByTarget(targetKey);
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (matched) break;
                     }
                 }
             });
 
-            // Also check standard boolean properties from extraction to auto-select facilities
-            facilitiesList.forEach(f => {
-                const normF = normalizeStr(f.name);
-                if (normF.includes('classroom') && (c.classrooms_count > 0 || c.smart_classrooms)) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('lab') && (c.laboratories_count > 0 || c.science_labs_available || c.computer_labs_available)) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('library') && (c.library_available || c.digital_library_access)) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('sport') && ((Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0) || c.playground_available)) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('transport') && (c.transport_available || c.gps_enabled_buses)) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('hostel') && (c.hostel_available || (c.hostel_type && c.hostel_type !== 'None'))) {
-                    if (normF.includes('boy') && (c.hostel_type === 'Boys' || c.hostel_type === 'Both')) {
-                        selectedFacilityIds.push(String(f.id));
-                    } else if (normF.includes('girl') && (c.hostel_type === 'Girls' || c.hostel_type === 'Both')) {
-                        selectedFacilityIds.push(String(f.id));
-                    } else if (!normF.includes('boy') && !normF.includes('girl')) {
-                        selectedFacilityIds.push(String(f.id));
-                    }
-                } else if (normF.includes('medical') && c.medical_facility_available) {
-                    selectedFacilityIds.push(String(f.id));
-                } else if (normF.includes('wifi') || normF.includes('itinfrastructure')) {
-                    if (c.computer_labs_available || c.digital_library_access) {
-                        selectedFacilityIds.push(String(f.id));
-                    }
+            // Auto-infer facilities from campus properties & booleans
+            if (c.classrooms_count > 0 || c.smart_classrooms || isSchool || (Array.isArray(c.target_classes) && c.target_classes.length > 0)) {
+                addFacilityByTarget('classrooms');
+            }
+            if (c.laboratories_count > 0 || c.science_labs_available || c.computer_labs_available) {
+                addFacilityByTarget('laboratories');
+            }
+            if (c.library_available || c.digital_library_access) {
+                addFacilityByTarget('library');
+            }
+            if (c.playground_available || (Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0)) {
+                addFacilityByTarget('sports');
+            }
+            if (Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0) {
+                const sportsStr = c.sports_facilities.map(s => String(s).toLowerCase()).join(' ');
+                if (sportsStr.includes('swim') || sportsStr.includes('pool')) {
+                    addFacilityByTarget('swimming pool');
                 }
-            });
+                if (sportsStr.includes('chess') || sportsStr.includes('carrom') || sportsStr.includes('table tennis') || sportsStr.includes('indoor') || sportsStr.includes('badminton')) {
+                    addFacilityByTarget('indoor games');
+                }
+                if (sportsStr.includes('gym') || sportsStr.includes('fitness')) {
+                    addFacilityByTarget('gym');
+                }
+            }
+            if (c.transport_available || c.gps_enabled_buses || (c.bus_fleet_size && c.bus_fleet_size > 0) || (Array.isArray(c.bus_routes) && c.bus_routes.length > 0)) {
+                addFacilityByTarget('transport facility');
+            }
+            if (c.medical_facility_available) {
+                addFacilityByTarget('medical/hospital');
+            }
+            if (c.computer_labs_available || c.smart_classrooms || c.digital_library_access) {
+                addFacilityByTarget('i.t infrastructure');
+                addFacilityByTarget('wifi');
+            }
+            if (c.food_facility) {
+                addFacilityByTarget('cafeteria');
+                addFacilityByTarget('meals');
+            }
+            if (c.hostel_available || (c.hostel_type && c.hostel_type !== 'None')) {
+                if (c.hostel_type === 'Boys' || c.hostel_type === 'Both') {
+                    addFacilityByTarget('boys hostel');
+                }
+                if (c.hostel_type === 'Girls' || c.hostel_type === 'Both') {
+                    addFacilityByTarget('girls hostel');
+                }
+                if (c.hostel_type !== 'Boys' && c.hostel_type !== 'Girls') {
+                    addFacilityByTarget('boys hostel');
+                    addFacilityByTarget('girls hostel');
+                }
+            }
+            if (isSchool) {
+                addFacilityByTarget('drinking water');
+            }
 
-            const currentOrgTypeId = parseInt($('#organisation_type_id').val() || '0');
+            const eventsClubsStr = (JSON.stringify(c.events_and_activities || []) + ' ' + JSON.stringify(c.clubs_and_committees || [])).toLowerCase();
+            if (eventsClubsStr.includes('dance')) addFacilityByTarget('dancing');
+            if (eventsClubsStr.includes('debate') || eventsClubsStr.includes('elocution')) addFacilityByTarget('debate');
+            if (eventsClubsStr.includes('drama') || eventsClubsStr.includes('theatre')) addFacilityByTarget('drama');
+
+            selectedFacilityIds = [...new Set(selectedFacilityIds)];
+
+            const currentOrgTypeId = parseInt(
+                $('#aiOrgTypeMaster').val() || 
+                $('#aiInputOrgType').val() || 
+                $('#targetOrganisationSelect option:selected').data('type-id') || 
+                (typeof currentExtractedData !== 'undefined' && currentExtractedData?.organisation?.organisation_type_id) || 
+                (typeof currentExtractedData !== 'undefined' && currentExtractedData?.selected_type_id) || 
+                '0'
+            );
             const filteredFacilitiesList = facilitiesList.filter(f => {
+                if (selectedFacilityIds.includes(String(f.id))) return true;
                 if (!currentOrgTypeId) return true;
                 if (!f.organisation_types || f.organisation_types.length === 0) return true;
                 return f.organisation_types.some(t => parseInt(t.id) === currentOrgTypeId);

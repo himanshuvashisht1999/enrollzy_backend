@@ -528,7 +528,7 @@ class OrganisationImportService
                         'campus_area_unit' => $cInput['campus_area_unit'] ?? 'Acres',
                         'target_classes' => isset($cInput['target_classes']) ? (is_array($cInput['target_classes']) ? array_values(array_filter($cInput['target_classes'])) : [$cInput['target_classes']]) : null,
                         'about_institute' => $cInput['about_institute'] ?? null,
-                        'facilities' => isset($cInput['facilities']) ? (is_array($cInput['facilities']) ? array_values(array_filter($cInput['facilities'])) : [$cInput['facilities']]) : null,
+                        'facilities' => $this->resolveFacilityIds($cInput['facilities'] ?? null, $cInput),
                         'bus_routes' => isset($cInput['bus_routes']) ? (is_array($cInput['bus_routes']) ? array_values(array_filter($cInput['bus_routes'])) : [$cInput['bus_routes']]) : null,
                         'class_profile' => isset($cInput['class_profile']) ? (is_array($cInput['class_profile']) ? $cInput['class_profile'] : null) : null,
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
@@ -855,7 +855,7 @@ class OrganisationImportService
                         'campus_area_unit' => $cInput['campus_area_unit'] ?? 'Acres',
                         'target_classes' => isset($cInput['target_classes']) ? (is_array($cInput['target_classes']) ? array_values(array_filter($cInput['target_classes'])) : [$cInput['target_classes']]) : null,
                         'about_institute' => $cInput['about_institute'] ?? null,
-                        'facilities' => isset($cInput['facilities']) ? (is_array($cInput['facilities']) ? array_values(array_filter($cInput['facilities'])) : [$cInput['facilities']]) : null,
+                        'facilities' => $this->resolveFacilityIds($cInput['facilities'] ?? null, $cInput),
                         'bus_routes' => isset($cInput['bus_routes']) ? (is_array($cInput['bus_routes']) ? array_values(array_filter($cInput['bus_routes'])) : [$cInput['bus_routes']]) : null,
                         'class_profile' => isset($cInput['class_profile']) ? (is_array($cInput['class_profile']) ? $cInput['class_profile'] : null) : null,
                         'campus_email' => $cInput['campus_email'] ?? ($organisation->email ?? null),
@@ -1194,5 +1194,175 @@ class OrganisationImportService
         }
 
         return $url;
+    }
+
+    /**
+     * Resolve facility names or UUIDs into valid Facility UUIDs array
+     */
+    protected function resolveFacilityIds(mixed $facilities, array $campusInput = []): ?array
+    {
+        try {
+            $masterFacilities = \App\Models\Facility::where('status', 1)->get(['id', 'name']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Could not query master facilities: " . $e->getMessage());
+            return is_array($facilities) ? array_values(array_filter($facilities)) : ($facilities ? [$facilities] : null);
+        }
+
+        if ($masterFacilities->isEmpty()) {
+            return is_array($facilities) ? array_values(array_filter($facilities)) : ($facilities ? [$facilities] : null);
+        }
+
+        $resolvedIds = [];
+        $rawList = is_array($facilities) ? $facilities : ($facilities ? [$facilities] : []);
+
+        $aliasMap = [
+            'Classrooms' => ['classroom', 'classrooms', 'smart class', 'classes', 'smart classroom'],
+            'Laboratories' => ['lab', 'labs', 'laboratory', 'laboratories', 'science lab', 'computer lab', 'robotics', 'physics lab', 'chemistry lab', 'biology lab', 'stem lab'],
+            'Library' => ['library', 'reading room', 'digital library', 'book bank'],
+            'Sports' => ['sport', 'sports', 'playground', 'athletics', 'games', 'football', 'cricket', 'basketball', 'volleyball', 'tennis', 'badminton', 'turf', 'running track'],
+            'Swimming Pool' => ['swimming', 'swimming pool', 'pool', 'aquatics', 'all weather pool'],
+            'Cafeteria' => ['cafeteria', 'canteen', 'mess', 'dining', 'food court', 'snack bar', 'tuck shop'],
+            'Meals' => ['meal', 'meals', 'lunch', 'breakfast', 'food facility', 'dining hall', 'mid day meal', 'mid-day meal'],
+            'Auditorium' => ['auditorium', 'amphitheatre', 'multipurpose hall', 'assembly hall', 'av room', 'audio visual', 'seminar hall'],
+            'Wifi' => ['wifi', 'wi-fi', 'internet', 'wireless', 'broadband', 'campus wifi'],
+            'I.T Infrastructure' => ['it', 'itinfrastructure', 'computer', 'computer center', 'technology', 'smart class', 'smart classes', 'ict lab'],
+            'Medical/Hospital' => ['medical', 'hospital', 'infirmary', 'clinic', 'first aid', 'doctor', 'nurse', 'health center', 'medical room', 'dispensary'],
+            'Gym' => ['gym', 'gymnasium', 'fitness', 'workout', 'physical fitness', 'fitness center'],
+            'Boys Hostel' => ['boys hostel', 'boy hostel', 'hostel boys', 'male hostel', 'boarding for boys'],
+            'Girls Hostel' => ['girls hostel', 'girl hostel', 'hostel girls', 'female hostel', 'boarding for girls'],
+            'Guest Room/Waiting Room' => ['guest room', 'waiting room', 'lounge', 'guest house', 'visitor room', 'reception lounge'],
+            'Alumni Associations' => ['alumni', 'alumni association', 'alumni network', 'old students association'],
+            'Transport Facility' => ['transport', 'transportation', 'bus', 'buses', 'school bus', 'van', 'commute', 'fleet', 'bus facility'],
+            'Drinking Water' => ['water', 'drinking water', 'ro water', 'purified water', 'water cooler', 'mineral water'],
+            'Indoor Games' => ['indoor', 'indoor games', 'indoor sports', 'table tennis', 'chess', 'carrom', 'board games', 'tt room'],
+            'Dancing' => ['dance', 'dancing', 'dance room', 'dance studio', 'performing arts'],
+            'Debate' => ['debate', 'debating', 'public speaking', 'elocution'],
+            'Drama' => ['drama', 'theatre', 'theater', 'dramatics'],
+            'Common Room' => ['common room', 'student lounge', 'activity room', 'recreation room'],
+            'Cinema Hall' => ['cinema', 'cinema hall', 'screening room', 'movie hall', 'projection hall'],
+        ];
+
+        // Process raw facilities passed
+        foreach ($rawList as $item) {
+            $itemStr = trim((string)$item);
+            if (empty($itemStr)) continue;
+
+            // Direct UUID match
+            $matched = $masterFacilities->firstWhere('id', $itemStr);
+            if ($matched) {
+                $resolvedIds[] = (string)$matched->id;
+                continue;
+            }
+
+            // Name or Alias match
+            $cleanItem = strtolower(preg_replace('/[^a-z0-9]/', '', $itemStr));
+            $found = false;
+            foreach ($masterFacilities as $mf) {
+                $cleanMfName = strtolower(preg_replace('/[^a-z0-9]/', '', $mf->name));
+                if ($cleanItem === $cleanMfName || (strlen($cleanItem) >= 4 && str_contains($cleanMfName, $cleanItem)) || (strlen($cleanMfName) >= 4 && str_contains($cleanItem, $cleanMfName))) {
+                    $resolvedIds[] = (string)$mf->id;
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                // Check aliases
+                foreach ($aliasMap as $targetKey => $aliases) {
+                    $cleanTarget = strtolower(preg_replace('/[^a-z0-9]/', '', $targetKey));
+                    foreach ($aliases as $alias) {
+                        $cleanAlias = strtolower(preg_replace('/[^a-z0-9]/', '', $alias));
+                        if ($cleanItem === $cleanAlias || str_contains($cleanItem, $cleanAlias) || str_contains($cleanAlias, $cleanItem)) {
+                            // Find corresponding master facility
+                            foreach ($masterFacilities as $mf) {
+                                $cleanMfName = strtolower(preg_replace('/[^a-z0-9]/', '', $mf->name));
+                                if ($cleanMfName === $cleanTarget || str_contains($cleanMfName, $cleanTarget) || str_contains($cleanTarget, $cleanMfName)) {
+                                    $resolvedIds[] = (string)$mf->id;
+                                    break 3;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Infer from campus input fields
+        $addFacilityByName = function (string $targetKey) use (&$resolvedIds, $masterFacilities, $aliasMap) {
+            $cleanTarget = strtolower(preg_replace('/[^a-z0-9]/', '', $targetKey));
+            foreach ($masterFacilities as $mf) {
+                $cleanMfName = strtolower(preg_replace('/[^a-z0-9]/', '', $mf->name));
+                if (str_contains($cleanMfName, $cleanTarget) || str_contains($cleanTarget, $cleanMfName)) {
+                    $resolvedIds[] = (string)$mf->id;
+                    return;
+                }
+            }
+            if (isset($aliasMap[$targetKey])) {
+                foreach ($aliasMap[$targetKey] as $alias) {
+                    $cleanAlias = strtolower(preg_replace('/[^a-z0-9]/', '', $alias));
+                    foreach ($masterFacilities as $mf) {
+                        $cleanMfName = strtolower(preg_replace('/[^a-z0-9]/', '', $mf->name));
+                        if (str_contains($cleanMfName, $cleanAlias)) {
+                            $resolvedIds[] = (string)$mf->id;
+                            return;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (!empty($campusInput['classrooms_count']) || !empty($campusInput['smart_classrooms']) || !empty($campusInput['target_classes']) || !empty($campusInput['school_type'])) {
+            $addFacilityByName('Classrooms');
+        }
+        if (!empty($campusInput['laboratories_count']) || !empty($campusInput['science_labs_available']) || !empty($campusInput['computer_labs_available'])) {
+            $addFacilityByName('Laboratories');
+        }
+        if (!empty($campusInput['library_available']) || !empty($campusInput['digital_library_access'])) {
+            $addFacilityByName('Library');
+        }
+        if (!empty($campusInput['playground_available']) || !empty($campusInput['sports_facilities'])) {
+            $addFacilityByName('Sports');
+        }
+        if (!empty($campusInput['sports_facilities']) && is_array($campusInput['sports_facilities'])) {
+            $sportsStr = strtolower(implode(' ', $campusInput['sports_facilities']));
+            if (str_contains($sportsStr, 'swim') || str_contains($sportsStr, 'pool')) {
+                $addFacilityByName('Swimming Pool');
+            }
+            if (str_contains($sportsStr, 'chess') || str_contains($sportsStr, 'carrom') || str_contains($sportsStr, 'table tennis') || str_contains($sportsStr, 'indoor') || str_contains($sportsStr, 'badminton')) {
+                $addFacilityByName('Indoor Games');
+            }
+            if (str_contains($sportsStr, 'gym') || str_contains($sportsStr, 'fitness')) {
+                $addFacilityByName('Gym');
+            }
+        }
+        if (!empty($campusInput['transport_available']) || !empty($campusInput['gps_enabled_buses']) || !empty($campusInput['bus_routes']) || !empty($campusInput['bus_fleet_size'])) {
+            $addFacilityByName('Transport Facility');
+        }
+        if (!empty($campusInput['medical_facility_available'])) {
+            $addFacilityByName('Medical/Hospital');
+        }
+        if (!empty($campusInput['computer_labs_available']) || !empty($campusInput['smart_classrooms']) || !empty($campusInput['digital_library_access'])) {
+            $addFacilityByName('I.T Infrastructure');
+            $addFacilityByName('Wifi');
+        }
+        if (!empty($campusInput['food_facility'])) {
+            $addFacilityByName('Cafeteria');
+            $addFacilityByName('Meals');
+        }
+        if (!empty($campusInput['hostel_available']) || (!empty($campusInput['hostel_type']) && $campusInput['hostel_type'] !== 'None')) {
+            $hType = $campusInput['hostel_type'] ?? '';
+            if ($hType === 'Boys' || $hType === 'Both') $addFacilityByName('Boys Hostel');
+            if ($hType === 'Girls' || $hType === 'Both') $addFacilityByName('Girls Hostel');
+            if ($hType !== 'Boys' && $hType !== 'Girls') {
+                $addFacilityByName('Boys Hostel');
+                $addFacilityByName('Girls Hostel');
+            }
+        }
+        if (!empty($campusInput['school_type'])) {
+            $addFacilityByName('Drinking Water');
+        }
+
+        $uniqueIds = array_values(array_unique(array_filter($resolvedIds)));
+        return !empty($uniqueIds) ? $uniqueIds : null;
     }
 }

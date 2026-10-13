@@ -123,7 +123,7 @@ class CampusController extends Controller
                     })->orDoesntHave('organisationTypes');
                 }
                 if (!empty($selectedFacilityIds)) {
-                    $query->orWhereIn('id', $selectedFacilityIds);
+                    $query->orWhereIn('id', $selectedFacilityIds)->orWhereIn('name', $selectedFacilityIds);
                 }
             })
             ->orderBy('name')

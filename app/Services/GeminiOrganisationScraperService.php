@@ -426,6 +426,12 @@ class GeminiOrganisationScraperService
                 }
             }
         }
+        $masterFacilityNames = $this->getMasterFacilityNames();
+        foreach ($dedupedCampuses as &$campusItem) {
+            $campusItem['facilities'] = $this->enrichAndNormalizeCampusFacilities($campusItem, $masterFacilityNames);
+        }
+        unset($campusItem);
+
         $data['campuses'] = array_values($dedupedCampuses);
 
         // 2. Normalize & Deduplicate Departments
@@ -1425,6 +1431,9 @@ GOOGLE_INSTRUCTIONS
 STRICT_URL_INSTRUCTIONS;
 
         $isSchool = ($orgTypeId === 4 || str_contains(strtolower($orgTypeTitle), 'school') || ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && str_contains(strtolower($targetOrg->organisationType->title), 'school')))));
+        $masterFacilityNames = $this->getMasterFacilityNames();
+        $masterFacilitiesJson = json_encode($masterFacilityNames);
+
         $schoolInstructions = $isSchool ? <<<SCHOOL_CAMPUS_INSTR
 - THIS INSTITUTION IS A SCHOOL (K-12). Focus on extracting this School Campus / Branch Location according to the School Campus profile:
   * school_type: Array of strings matching ALL applicable types from this list: ["Day School", "Boarding School With Integrated Coaching", "Day Boarding", "Fully Boarding", "Co-ed Boarding Schools", "Girls' Boarding School", "Boys' Boarding School", "School With Integrated Coaching", "International Schools", "Military-Style Schools", "Weekly Boarding Schools", "Home Schooling", "NIOS"]. A school can have MULTIPLE types simultaneously (e.g., ["Day School", "Day Boarding", "School With Integrated Coaching"]). ALWAYS return multiple if applicable!
@@ -1440,10 +1449,26 @@ STRICT_URL_INSTRUCTIONS;
   * smart_classrooms: true/false
   * target_classes: array of classes e.g. ["6", "7", "8", "9", "10", "11", "12"]
   * about_institute: campus overview and educational philosophy
-  * facilities: Array of strings matching available amenities from: ["Classrooms", "Laboratories", "Library", "Sports", "Swimming Pool", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Gym", "Boys Hostel", "Girls Hostel", "Guest Room/Waiting Room", "Alumni Associations", "Transport Facility"]. Extract ALL facilities mentioned or visible in the school sources!
-  * transport_available: boolean - Set to true ONLY if school operates buses, vans, or student transportation routes. If not mentioned or unavailable, set to FALSE!
+  * facilities: Array of strings matching ALL available amenities provided by this campus strictly chosen from this master list: {$masterFacilitiesJson}. CRITICAL: Extract ALL facilities mentioned or visible across school pages, infrastructure, photos, sports, transport, labs, medical, and dining! Almost all schools provide Classrooms, Laboratories (Science/Computer labs), Library, Sports/Playground, Cafeteria/Meals/Canteen, Auditorium, Wifi, I.T Infrastructure, Medical Room, Transport Facility, Drinking Water, Indoor Games, etc. Do not limit to only 2 or 3 facilities; return ALL that apply!
+  * transport_available: boolean - Set to true if school operates buses, vans, or student transportation routes.
   * bus_routes: array of bus routes / stops (leave empty [] if transport is not available)
+  * gps_enabled_buses: true/false
+  * bus_fleet_size: integer
+  * laboratories_count: integer
+  * science_labs_available: true/false
+  * computer_labs_available: true/false
+  * playground_available: true/false
+  * library_available: true/false
+  * digital_library_access: true/false
+  * hostel_available: true/false
+  * hostel_type: "Boys" | "Girls" | "Both" | "None"
+  * hostel_capacity: integer
+  * food_facility: string describing canteen/mess/dining
+  * medical_facility_available: true/false
+  * sports_facilities: array of sports (e.g. ["Playground", "Basketball Court", "Football Field", "Cricket Pitch", "Table Tennis", "Chess", "Badminton", "Swimming Pool"])
   * cctv_coverage: true/false
+  * fire_safety_certified: true/false
+  * visitor_management_system: true/false
   * campus_email: email address
   * campus_website: website URL
   * campus_contact_numbers: array of phone numbers
@@ -1504,10 +1529,26 @@ TARGETED_CAMPUSES;
       "smart_classrooms": true,
       "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
       "about_institute": "Overview of the school branch, curriculum, holistic pedagogy, and academic excellence.",
-      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility", "Drinking Water", "Indoor Games", "Gym", "Meals", "Dancing", "Debate", "Drama"],
       "transport_available": true,
       "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
+      "gps_enabled_buses": true,
+      "bus_fleet_size": 20,
+      "laboratories_count": 6,
+      "science_labs_available": true,
+      "computer_labs_available": true,
+      "playground_available": true,
+      "library_available": true,
+      "digital_library_access": true,
+      "hostel_available": false,
+      "hostel_type": "",
+      "hostel_capacity": 0,
+      "food_facility": "Cafeteria & Dining Hall",
+      "medical_facility_available": true,
+      "sports_facilities": ["Playground", "Basketball Court", "Football Field", "Cricket Pitch", "Table Tennis", "Chess", "Badminton"],
       "cctv_coverage": true,
+      "fire_safety_certified": true,
+      "visitor_management_system": true,
       "campus_email": "principal@school.edu.in",
       "campus_website": "https://school.edu.in",
       "campus_contact_numbers": [
@@ -2262,6 +2303,8 @@ PROMPT;
         }
 
         $isSchool = ($orgTypeId === 4 || str_contains(strtolower($orgTypeTitle), 'school') || ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && str_contains(strtolower($targetOrg->organisationType->title), 'school')))));
+        $masterFacilityNames = $this->getMasterFacilityNames();
+        $masterFacilitiesJson = json_encode($masterFacilityNames);
 
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 10000) : "";
@@ -2271,6 +2314,7 @@ PROMPT;
    - The institution "{$orgName}" already exists in our database. DO NOT focus on basic organisation identity fields.
    - Carefully inspect the PRIMARY URL and any ADDITIONAL REFERENCE URLS provided above.
    - If courses, fee structures, eligibility criteria, campus details, or department information are missing or incomplete on the provided URLs, actively search Google Search Grounding, official admission portals, academic catalogues, Shiksha, Collegedunia, Wikipedia, and brochure PDFs for "{$orgName}" to discover all available physical campuses, academic faculties, and degree programs.
+   - Campus Facilities: Extract ALL facilities matching: {$masterFacilitiesJson}. Do not limit to only 2 or 3 facilities!
 GOOGLE_INSTRUCTIONS
         : <<<STRICT_URL_INSTRUCTIONS
 1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
@@ -2301,10 +2345,26 @@ STRICT_URL_INSTRUCTIONS;
       "smart_classrooms": true,
       "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
       "about_institute": "Overview of the school branch, curriculum, holistic pedagogy, and academic excellence.",
-      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility", "Drinking Water", "Indoor Games", "Gym", "Meals", "Dancing", "Debate", "Drama"],
       "transport_available": true,
       "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
+      "gps_enabled_buses": true,
+      "bus_fleet_size": 20,
+      "laboratories_count": 6,
+      "science_labs_available": true,
+      "computer_labs_available": true,
+      "playground_available": true,
+      "library_available": true,
+      "digital_library_access": true,
+      "hostel_available": false,
+      "hostel_type": "",
+      "hostel_capacity": 0,
+      "food_facility": "Cafeteria & Dining Hall",
+      "medical_facility_available": true,
+      "sports_facilities": ["Playground", "Basketball Court", "Football Field", "Cricket Pitch", "Table Tennis", "Chess", "Badminton"],
       "cctv_coverage": true,
+      "fire_safety_certified": true,
+      "visitor_management_system": true,
       "campus_email": "principal@school.edu.in",
       "campus_website": "https://school.edu.in",
       "campus_contact_numbers": [
@@ -2801,6 +2861,8 @@ PROMPT;
     protected function buildSchoolPrompt(string $url, string $content, string $orgTypeTitle, array $referenceUrls = [], bool $searchGoogle = true): string
     {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
+        $masterFacilityNames = $this->getMasterFacilityNames();
+        $masterFacilitiesJson = json_encode($masterFacilityNames);
 
         $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. Search Google actively for this School or School Chain:
@@ -2815,6 +2877,7 @@ PROMPT;
    - Portals: Official Website, Admission Portal, Parent Portal, Student Portal, Mobile App Available.
    - Reputation: Average rating, total reviews, awards and recognitions, meta title, description.
    - Core details: Brand name, short name, established year, ownership type, managing trust or society name, minority status & type.
+   - Campus Infrastructure & Facilities: Actively search the school website ('About', 'Infrastructure', 'Campus', 'Facilities', 'Sports', 'Laboratories', 'Transport', 'Hostel', 'Life at School') and external sources to identify all campus amenities: Classrooms, Science/Computer Labs, Library, Sports fields/courts, Cafeteria/Dining/Meals, Auditorium/Assembly Hall, Wifi, IT Infrastructure, Medical room/nurse, School Buses/Transport, RO Drinking Water, Indoor Games, Gymnasium, Swimming Pool, Dance/Music Studios, Drama, Debate, etc.
 GOOGLE_INSTRUCTIONS
         : <<<STRICT_URL_INSTRUCTIONS
 1. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
@@ -2832,8 +2895,12 @@ RAW WEBSITE & REFERENCE CONTENT PREVIEW:
 
 IMPORTANT INSTRUCTIONS:
 {$searchInstructions}
-2. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
-3. Return ONLY valid JSON matching EXACTLY this structure:
+2. CAMPUS FACILITIES MANDATE:
+   For each campus in "campuses", return an array in "facilities" containing ALL matching amenities available at that campus strictly chosen from this master list:
+   {$masterFacilitiesJson}
+   CRITICAL: Almost all schools feature Classrooms, Laboratories (Science & Computer Labs), Library, Sports/Playgrounds, Cafeteria/Meals, Auditorium/Assembly Hall, Wifi, I.T Infrastructure, Medical Room/Hospital, Transport Facility, Drinking Water, Indoor Games, etc. Inspect the school's facilities, photos, and amenities thoroughly and include ALL that apply! Do not return only 2 or 3 facilities.
+3. If any field cannot be found, return empty string "" or false for booleans, but include every key in the JSON response.
+4. Return ONLY valid JSON matching EXACTLY this structure:
 
 {
   "organisation": {
@@ -2916,7 +2983,7 @@ IMPORTANT INSTRUCTIONS:
       "smart_classrooms": true,
       "target_classes": ["6", "7", "8", "9", "10", "11", "12"],
       "about_institute": "Overview of school branch, curriculum, and pedagogical approach",
-      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility"],
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Transport Facility", "Drinking Water", "Indoor Games", "Gym", "Meals", "Dancing", "Debate", "Drama"],
       "transport_available": true,
       "bus_routes": ["Route 1 - City Center", "Route 2 - North Sector"],
       "laboratories_count": 6,
@@ -2928,6 +2995,8 @@ IMPORTANT INSTRUCTIONS:
       "hostel_available": false,
       "hostel_type": "",
       "hostel_capacity": 0,
+      "food_facility": "Cafeteria & Dining Hall",
+      "medical_facility_available": true,
       "sports_facilities": ["Playground", "Basketball Court", "Skating Rink", "Swimming Pool"],
       "gps_enabled_buses": true,
       "bus_fleet_size": 20,
@@ -3450,4 +3519,193 @@ IMPORTANT INSTRUCTIONS:
 }
 PROMPT;
     }
+
+    /**
+     * Get active master facility names from database or fallback defaults
+     */
+    public function getMasterFacilityNames(): array
+    {
+        try {
+            $names = \App\Models\Facility::where('status', 1)->orderBy('name')->pluck('name')->toArray();
+            if (!empty($names)) {
+                return $names;
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Could not fetch master facilities from DB: " . $e->getMessage());
+        }
+
+        return [
+            "Classrooms", "Laboratories", "Library", "Sports", "Swimming Pool", "Cafeteria",
+            "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Gym",
+            "Boys Hostel", "Girls Hostel", "Guest Room/Waiting Room", "Alumni Associations",
+            "Transport Facility", "Drinking Water", "Indoor Games", "Meals", "Dancing", "Debate", "Drama"
+        ];
+    }
+
+    /**
+     * Intelligently normalize, map aliases and enrich campus facilities
+     */
+    public function enrichAndNormalizeCampusFacilities(array $c, array $masterFacilityNames): array
+    {
+        $aliasMap = [
+            'Classrooms' => ['classroom', 'classrooms', 'smart class', 'classes', 'smart classroom'],
+            'Laboratories' => ['lab', 'labs', 'laboratory', 'laboratories', 'science lab', 'computer lab', 'robotics', 'physics lab', 'chemistry lab', 'biology lab', 'stem lab'],
+            'Library' => ['library', 'reading room', 'digital library', 'book bank'],
+            'Sports' => ['sport', 'sports', 'playground', 'athletics', 'games', 'football', 'cricket', 'basketball', 'volleyball', 'tennis', 'badminton', 'turf', 'running track'],
+            'Swimming Pool' => ['swimming', 'swimming pool', 'pool', 'aquatics', 'all weather pool'],
+            'Cafeteria' => ['cafeteria', 'canteen', 'mess', 'dining', 'food court', 'snack bar', 'tuck shop'],
+            'Meals' => ['meal', 'meals', 'lunch', 'breakfast', 'food facility', 'dining hall', 'mid day meal', 'mid-day meal'],
+            'Auditorium' => ['auditorium', 'amphitheatre', 'multipurpose hall', 'assembly hall', 'av room', 'audio visual', 'seminar hall'],
+            'Wifi' => ['wifi', 'wi-fi', 'internet', 'wireless', 'broadband', 'campus wifi'],
+            'I.T Infrastructure' => ['it', 'itinfrastructure', 'computer', 'computer center', 'technology', 'smart class', 'smart classes', 'ict lab'],
+            'Medical/Hospital' => ['medical', 'hospital', 'infirmary', 'clinic', 'first aid', 'doctor', 'nurse', 'health center', 'medical room', 'dispensary'],
+            'Gym' => ['gym', 'gymnasium', 'fitness', 'workout', 'physical fitness', 'fitness center'],
+            'Boys Hostel' => ['boys hostel', 'boy hostel', 'hostel boys', 'male hostel', 'boarding for boys'],
+            'Girls Hostel' => ['girls hostel', 'girl hostel', 'hostel girls', 'female hostel', 'boarding for girls'],
+            'Guest Room/Waiting Room' => ['guest room', 'waiting room', 'lounge', 'guest house', 'visitor room', 'reception lounge'],
+            'Alumni Associations' => ['alumni', 'alumni association', 'alumni network', 'old students association'],
+            'Transport Facility' => ['transport', 'transportation', 'bus', 'buses', 'school bus', 'van', 'commute', 'fleet', 'bus facility'],
+            'Drinking Water' => ['water', 'drinking water', 'ro water', 'purified water', 'water cooler', 'mineral water'],
+            'Indoor Games' => ['indoor', 'indoor games', 'indoor sports', 'table tennis', 'chess', 'carrom', 'board games', 'tt room'],
+            'Dancing' => ['dance', 'dancing', 'dance room', 'dance studio', 'performing arts'],
+            'Debate' => ['debate', 'debating', 'public speaking', 'elocution'],
+            'Drama' => ['drama', 'theatre', 'theater', 'dramatics'],
+            'Common Room' => ['common room', 'student lounge', 'activity room', 'recreation room'],
+            'Cinema Hall' => ['cinema', 'cinema hall', 'screening room', 'movie hall', 'projection hall'],
+        ];
+
+        $matched = [];
+        $rawList = [];
+        if (!empty($c['facilities'])) {
+            $rawList = is_array($c['facilities']) ? $c['facilities'] : array_map('trim', explode(',', (string)$c['facilities']));
+        }
+
+        // Match raw facility items
+        foreach ($rawList as $item) {
+            $itemStr = trim((string)$item);
+            if (empty($itemStr)) continue;
+
+            $cleanItem = strtolower(preg_replace('/[^a-z0-9]/', '', $itemStr));
+            $found = false;
+
+            // Direct or substring match with master facility
+            foreach ($masterFacilityNames as $mf) {
+                $cleanMf = strtolower(preg_replace('/[^a-z0-9]/', '', $mf));
+                if ($cleanItem === $cleanMf || (strlen($cleanItem) >= 4 && str_contains($cleanMf, $cleanItem)) || (strlen($cleanMf) >= 4 && str_contains($cleanItem, $cleanMf))) {
+                    $matched[] = $mf;
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                // Check alias map
+                foreach ($aliasMap as $targetName => $aliases) {
+                    foreach ($aliases as $alias) {
+                        $cleanAlias = strtolower(preg_replace('/[^a-z0-9]/', '', $alias));
+                        if ($cleanItem === $cleanAlias || str_contains($cleanItem, $cleanAlias) || str_contains($cleanAlias, $cleanItem)) {
+                            // Find corresponding master facility
+                            foreach ($masterFacilityNames as $mf) {
+                                if (strcasecmp($mf, $targetName) === 0 || str_contains(strtolower($mf), strtolower($targetName)) || str_contains(strtolower($targetName), strtolower($mf))) {
+                                    $matched[] = $mf;
+                                    $found = true;
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Infer facilities from campus fields & booleans
+        $addMasterFacility = function (string $targetKey) use (&$matched, $masterFacilityNames, $aliasMap) {
+            foreach ($masterFacilityNames as $mf) {
+                $cleanMf = strtolower(preg_replace('/[^a-z0-9]/', '', $mf));
+                $cleanTarget = strtolower(preg_replace('/[^a-z0-9]/', '', $targetKey));
+                if (str_contains($cleanMf, $cleanTarget) || str_contains($cleanTarget, $cleanMf)) {
+                    $matched[] = $mf;
+                    return;
+                }
+                if (isset($aliasMap[$targetKey])) {
+                    foreach ($aliasMap[$targetKey] as $alias) {
+                        $cleanAlias = strtolower(preg_replace('/[^a-z0-9]/', '', $alias));
+                        if (str_contains($cleanMf, $cleanAlias)) {
+                            $matched[] = $mf;
+                            return;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (!empty($c['classrooms_count']) || !empty($c['smart_classrooms']) || !empty($c['school_type']) || !empty($c['target_classes'])) {
+            $addMasterFacility('Classrooms');
+        }
+        if (!empty($c['laboratories_count']) || !empty($c['science_labs_available']) || !empty($c['computer_labs_available'])) {
+            $addMasterFacility('Laboratories');
+        }
+        if (!empty($c['library_available']) || !empty($c['digital_library_access'])) {
+            $addMasterFacility('Library');
+        }
+        if (!empty($c['playground_available']) || !empty($c['sports_facilities'])) {
+            $addMasterFacility('Sports');
+        }
+        if (!empty($c['sports_facilities']) && is_array($c['sports_facilities'])) {
+            $sportsStr = strtolower(implode(' ', $c['sports_facilities']));
+            if (str_contains($sportsStr, 'swim') || str_contains($sportsStr, 'pool')) {
+                $addMasterFacility('Swimming Pool');
+            }
+            if (str_contains($sportsStr, 'chess') || str_contains($sportsStr, 'carrom') || str_contains($sportsStr, 'table tennis') || str_contains($sportsStr, 'indoor') || str_contains($sportsStr, 'badminton')) {
+                $addMasterFacility('Indoor Games');
+            }
+            if (str_contains($sportsStr, 'gym') || str_contains($sportsStr, 'fitness')) {
+                $addMasterFacility('Gym');
+            }
+        }
+        if (!empty($c['transport_available']) || !empty($c['gps_enabled_buses']) || !empty($c['bus_routes']) || !empty($c['bus_fleet_size'])) {
+            $addMasterFacility('Transport Facility');
+        }
+        if (!empty($c['medical_facility_available'])) {
+            $addMasterFacility('Medical/Hospital');
+        }
+        if (!empty($c['computer_labs_available']) || !empty($c['smart_classrooms']) || !empty($c['digital_library_access'])) {
+            $addMasterFacility('I.T Infrastructure');
+            $addMasterFacility('Wifi');
+        }
+        if (!empty($c['food_facility'])) {
+            $addMasterFacility('Cafeteria');
+            $addMasterFacility('Meals');
+        }
+        if (!empty($c['hostel_available']) || (!empty($c['hostel_type']) && $c['hostel_type'] !== 'None')) {
+            $hType = $c['hostel_type'] ?? '';
+            if ($hType === 'Boys' || $hType === 'Both') $addMasterFacility('Boys Hostel');
+            if ($hType === 'Girls' || $hType === 'Both') $addMasterFacility('Girls Hostel');
+            if ($hType !== 'Boys' && $hType !== 'Girls') {
+                $addMasterFacility('Boys Hostel');
+                $addMasterFacility('Girls Hostel');
+            }
+        }
+        if (!empty($c['school_type'])) {
+            $addMasterFacility('Drinking Water');
+        }
+
+        // Check events and clubs for dance, debate, drama
+        $combinedExtras = '';
+        if (!empty($c['events_and_activities']) && is_array($c['events_and_activities'])) {
+            $combinedExtras .= ' ' . json_encode($c['events_and_activities']);
+        }
+        if (!empty($c['clubs_and_committees']) && is_array($c['clubs_and_committees'])) {
+            $combinedExtras .= ' ' . json_encode($c['clubs_and_committees']);
+        }
+        if (!empty($combinedExtras)) {
+            $extrasLower = strtolower($combinedExtras);
+            if (str_contains($extrasLower, 'dance')) $addMasterFacility('Dancing');
+            if (str_contains($extrasLower, 'debate') || str_contains($extrasLower, 'elocution')) $addMasterFacility('Debate');
+            if (str_contains($extrasLower, 'drama') || str_contains($extrasLower, 'theatre')) $addMasterFacility('Drama');
+        }
+
+        return array_values(array_unique(array_filter($matched)));
+    }
 }
+
