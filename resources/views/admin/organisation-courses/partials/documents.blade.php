@@ -216,15 +216,26 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.status === 'success') {
                             row.remove();
                             updateDocLabels();
+                            if (typeof toastr !== 'undefined') {
+                                toastr.success('Document deleted successfully.');
+                            }
                         } else {
-                            alert(data.message || 'Failed to delete document.');
+                            if (typeof toastr !== 'undefined') {
+                                toastr.error(data.message || 'Failed to delete document.');
+                            } else {
+                                alert(data.message || 'Failed to delete document.');
+                            }
                             removeBtn.disabled = false;
                             removeBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Delete';
                         }
                     })
                     .catch(err => {
                         console.error('Delete error:', err);
-                        alert('An error occurred while deleting the document.');
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('An error occurred while deleting the document.');
+                        } else {
+                            alert('An error occurred while deleting the document.');
+                        }
                         removeBtn.disabled = false;
                         removeBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Delete';
                     });
@@ -242,13 +253,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (file) {
                     const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
                     if (!isPdf) {
-                        alert('Only PDF files are allowed! Please select a valid .pdf file.');
+                        if (typeof toastr !== 'undefined') {
+                            toastr.warning('Only PDF files are allowed! Please select a valid .pdf file.');
+                        } else {
+                            alert('Only PDF files are allowed! Please select a valid .pdf file.');
+                        }
                         input.value = '';
                         return;
                     }
 
                     if (file.size > 20 * 1024 * 1024) {
-                        alert('File size exceeds 20MB limit. Please upload a smaller PDF file.');
+                        if (typeof toastr !== 'undefined') {
+                            toastr.warning('File size exceeds 20MB limit. Please upload a smaller PDF file.');
+                        } else {
+                            alert('File size exceeds 20MB limit. Please upload a smaller PDF file.');
+                        }
                         input.value = '';
                         return;
                     }

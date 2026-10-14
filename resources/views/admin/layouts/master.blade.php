@@ -1566,6 +1566,72 @@
     <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Global SweetAlert2 Configuration: Auto-close message alerts in 2 seconds
+        (function() {
+            function patchSwal(swalInstance) {
+                if (!swalInstance || swalInstance._autoClosePatched) return swalInstance;
+                const originalFire = swalInstance.fire.bind(swalInstance);
+
+                swalInstance.fire = function(...args) {
+                    let opts = {};
+                    if (args.length === 0) {
+                        opts = {};
+                    } else if (typeof args[0] === 'object' && args[0] !== null) {
+                        opts = { ...args[0] };
+                    } else {
+                        opts = {
+                            title: args[0] !== undefined ? args[0] : '',
+                            html: args[1] !== undefined ? args[1] : '',
+                            icon: args[2] !== undefined ? args[2] : undefined
+                        };
+                    }
+
+                    // Auto-close in 2 seconds unless it's an interactive confirmation (e.g. showCancelButton is true)
+                    const isConfirmation = opts.showCancelButton === true;
+
+                    if (!isConfirmation) {
+                        opts.timer = 2000;
+                        opts.timerProgressBar = true;
+                        if (opts.showConfirmButton === undefined) {
+                            opts.showConfirmButton = false;
+                        }
+                    }
+
+                    return originalFire(opts).then(result => {
+                        // If auto-closed by timer, treat as confirmed so chained .then() callbacks execute cleanly
+                        if (result && result.dismiss === swalInstance.DismissReason.timer) {
+                            result.isConfirmed = true;
+                        }
+                        return result;
+                    });
+                };
+
+                swalInstance._autoClosePatched = true;
+                return swalInstance;
+            }
+
+            let _swal = window.Swal;
+            if (_swal) {
+                patchSwal(_swal);
+            }
+
+            try {
+                Object.defineProperty(window, 'Swal', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                        return _swal;
+                    },
+                    set: function(val) {
+                        _swal = patchSwal(val);
+                    }
+                });
+            } catch(e) {
+                if (window.Swal) patchSwal(window.Swal);
+            }
+        })();
+    </script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -1651,6 +1717,17 @@
                 $(this).find('.menu-arrow').toggleClass('rotate-180');
             });
 
+            // Configure Toastr Notifications: Auto-close in 2 seconds
+            if (typeof toastr !== 'undefined') {
+                toastr.options = {
+                    "closeButton": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "timeOut": 2000,
+                    "extendedTimeOut": 1000
+                };
+            }
+
             // Toastr Notifications
             @if(session('success'))
                 toastr.success("{{ session('success') }}");
@@ -1665,6 +1742,13 @@
                     toastr.warning("{{ $error }}");
                 @endforeach
             @endif
+
+            // Auto-dismiss standard Bootstrap alerts in 2 seconds
+            setTimeout(function() {
+                $('.alert.alert-dismissible').fadeOut(400, function() {
+                    $(this).remove();
+                });
+            }, 2000);
         });
     </script>
 

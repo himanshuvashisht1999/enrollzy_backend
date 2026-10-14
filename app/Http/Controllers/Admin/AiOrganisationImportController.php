@@ -516,6 +516,8 @@ class AiOrganisationImportController extends Controller
                 $redirectUrl = route('admin.organisations.edit', $organisation->id);
             }
 
+            session()->flash('success', $message);
+
             return response()->json([
                 'success' => true,
                 'message' => $message,

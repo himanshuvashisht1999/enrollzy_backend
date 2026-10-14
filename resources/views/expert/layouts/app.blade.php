@@ -133,6 +133,15 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert.alert-dismissible');
+        alerts.forEach(function(alert) {
+            var bsAlert = bootstrap.Alert.getInstance(alert) || new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 2000);
+</script>
 @yield('scripts')
 </body>
 </html>

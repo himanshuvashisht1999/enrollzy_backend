@@ -1979,7 +1979,9 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(res => {
                 if (res.success) {
-                    alert(res.message);
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.message);
+                    }
                     if (res.redirect_url) {
                         window.location.href = res.redirect_url;
                     } else {

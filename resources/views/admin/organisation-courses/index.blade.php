@@ -333,7 +333,11 @@
                 $bulkBtn.on('click', function() {
                     const checkedCount = $('.course-checkbox:checked').length;
                     if (checkedCount === 0) {
-                        alert('Please select at least one course to delete.');
+                        if (typeof toastr !== 'undefined') {
+                            toastr.warning('Please select at least one course to delete.');
+                        } else {
+                            alert('Please select at least one course to delete.');
+                        }
                         return;
                     }
 

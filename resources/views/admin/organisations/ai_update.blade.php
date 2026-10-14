@@ -361,11 +361,15 @@ $(document).ready(function () {
         const url = $('#inputOrgUrl').val();
 
         if (!orgId) {
-            alert('Please select an organisation.');
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Please select an organisation.');
+            }
             return;
         }
         if (!url) {
-            alert('Please enter a valid official website URL.');
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Please enter a valid official website URL.');
+            }
             return;
         }
 
@@ -395,7 +399,9 @@ $(document).ready(function () {
                         toastr.success(res.message || 'Updates fetched!');
                     }
                 } else {
-                    alert(res.message || 'Error fetching updates.');
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(res.message || 'Error fetching updates.');
+                    }
                 }
             },
             error: function (xhr) {
@@ -404,8 +410,6 @@ $(document).ready(function () {
                 const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Error extracting updates from website.';
                 if (typeof toastr !== 'undefined') {
                     toastr.error(msg);
-                } else {
-                    alert(msg);
                 }
             }
         });
@@ -735,7 +739,9 @@ $(document).ready(function () {
 
         const checkedBoxes = $('.diff-chk-apply:checked');
         if (checkedBoxes.length === 0) {
-            alert('Please select at least one field update to apply.');
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Please select at least one field update to apply.');
+            }
             return;
         }
 
@@ -831,14 +837,14 @@ $(document).ready(function () {
                 if (res.success) {
                     if (typeof toastr !== 'undefined') {
                         toastr.success(res.message);
-                    } else {
-                        alert(res.message);
                     }
                     setTimeout(function () {
                         window.location.href = "{{ route('admin.organisations.index') }}";
-                    }, 1200);
+                    }, 500);
                 } else {
-                    alert(res.message || 'Error updating data.');
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(res.message || 'Error updating data.');
+                    }
                 }
             },
             error: function (xhr) {
@@ -846,8 +852,6 @@ $(document).ready(function () {
                 const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Error updating database.';
                 if (typeof toastr !== 'undefined') {
                     toastr.error(msg);
-                } else {
-                    alert(msg);
                 }
             }
         });

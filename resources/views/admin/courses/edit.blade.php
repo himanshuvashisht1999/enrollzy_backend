@@ -529,7 +529,9 @@
                             updateFaqNumbers();
                         }
 
-                        if (typeof Swal !== 'undefined') {
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('Course details auto-filled using AI! Please review and click Update Course to save.');
+                        } else if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Course Details Auto-Filled!',

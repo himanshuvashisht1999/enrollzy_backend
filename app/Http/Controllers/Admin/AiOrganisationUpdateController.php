@@ -486,10 +486,13 @@ class AiOrganisationUpdateController extends Controller
 
             DB::commit();
 
+            $successMsg = "Successfully updated {$appliedCount} field(s) for {$org->name}!";
+            session()->flash('success', $successMsg);
+
             return response()->json([
                 'success' => true,
                 'applied_count' => $appliedCount,
-                'message' => "Successfully updated {$appliedCount} field(s) for {$org->name}!"
+                'message' => $successMsg
             ]);
 
         } catch (\Exception $e) {
