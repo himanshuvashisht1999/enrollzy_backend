@@ -265,6 +265,54 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::post('/admin/dynamic-exams/{dynamicExam}/counsellings/{counselling}/autosave-tab', [\App\Http\Controllers\Admin\DynamicCounsellingController::class, 'autosaveTab'])->name('admin.dynamic-exams.counsellings.autosave-tab');
 
 
+    // Exam Module (exm_*)
+    Route::prefix('admin/exam-module')->name('admin.exam-module.')->group(function () {
+        $ns = 'App\Http\Controllers\Admin\ExamModule\\';
+
+        Route::get('attention', [$ns . 'AttentionController', 'index'])->name('attention')->middleware('can:exm-attention-browse');
+        Route::get('audit', [$ns . 'AttentionController', 'audit'])->name('audit')->middleware('can:exm-audit-browse');
+
+        Route::resource('conducting-bodies', $ns . 'ConductingBodyController')->except('show')
+            ->parameters(['conducting-bodies' => 'conductingBody'])
+            ->middlewareFor(['index'], 'can:exm-conducting-bodies-browse')
+            ->middlewareFor(['create', 'store'], 'can:exm-conducting-bodies-add')
+            ->middlewareFor(['edit', 'update'], 'can:exm-conducting-bodies-edit')
+            ->middlewareFor(['destroy'], 'can:exm-conducting-bodies-delete');
+
+        Route::middleware('can:exm-event-types-manage')->group(function () use ($ns) {
+            Route::resource('event-types', $ns . 'EventTypeController')->only(['index', 'store', 'update', 'destroy'])
+                ->parameters(['event-types' => 'eventType']);
+        });
+
+        Route::patch('exams/{exam}/visibility', [$ns . 'ExamController', 'visibility'])->name('exams.visibility')->middleware('can:exm-exams-publish');
+        Route::resource('exams', $ns . 'ExamController')
+            ->middlewareFor(['index', 'show'], 'can:exm-exams-browse')
+            ->middlewareFor(['create', 'store'], 'can:exm-exams-add')
+            ->middlewareFor(['edit', 'update'], 'can:exm-exams-edit')
+            ->middlewareFor(['destroy'], 'can:exm-exams-delete');
+
+        Route::middleware('can:exm-cycles-manage')->group(function () use ($ns) {
+            Route::get('exams/{exam}/cycles/create', [$ns . 'CycleController', 'create'])->name('cycles.create');
+            Route::post('exams/{exam}/cycles', [$ns . 'CycleController', 'store'])->name('cycles.store');
+            Route::get('cycles/{cycle}', [$ns . 'CycleController', 'show'])->name('cycles.show');
+            Route::get('cycles/{cycle}/edit', [$ns . 'CycleController', 'edit'])->name('cycles.edit');
+            Route::put('cycles/{cycle}', [$ns . 'CycleController', 'update'])->name('cycles.update');
+            Route::delete('cycles/{cycle}', [$ns . 'CycleController', 'destroy'])->name('cycles.destroy');
+            Route::post('cycles/{cycle}/copy', [$ns . 'CycleController', 'copy'])->name('cycles.copy');
+            Route::patch('cycles/{cycle}/current', [$ns . 'CycleController', 'setCurrent'])->name('cycles.current');
+
+            Route::post('cycles/{cycle}/stages', [$ns . 'CycleController', 'storeStage'])->name('stages.store');
+            Route::put('stages/{stage}', [$ns . 'CycleController', 'updateStage'])->name('stages.update');
+            Route::delete('stages/{stage}', [$ns . 'CycleController', 'destroyStage'])->name('stages.destroy');
+
+            Route::post('cycles/{cycle}/events', [$ns . 'EventController', 'store'])->name('events.store');
+            Route::put('events/{event}', [$ns . 'EventController', 'update'])->name('events.update');
+            Route::delete('events/{event}', [$ns . 'EventController', 'destroy'])->name('events.destroy');
+        });
+        Route::patch('cycles/{cycle}/public', [$ns . 'CycleController', 'togglePublic'])->name('cycles.public')->middleware('can:exm-exams-publish');
+        Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:exm-exams-verify');
+    });
+
     // Exam Stage Data Management
     Route::get('/admin/exams/{exam}/stages/{stage}/edit', [ExamStageDataController::class, 'edit'])->name('admin.exams.stages.edit');
     Route::post('/admin/exams/{exam}/interview/update', [ExamStageDataController::class, 'updateInterview'])->name('admin.exams.interview.update');
