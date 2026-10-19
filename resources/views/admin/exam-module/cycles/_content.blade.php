@@ -166,7 +166,7 @@
                                 @endif
                                 @break
                             @case('rows')
-                                <div class="rows-box" data-name="{{ $f['name'] }}" data-sub="{{ json_encode($f['sub']) }}"></div>
+                                <div class="rows-box" data-name="{{ $f['name'] }}" data-sub="{{ json_encode(array_map(fn ($s) => $s['type'] === 'select' ? ['options' => ContentBlocks::options($s)] + $s : $s, $f['sub'])) }}"></div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addRow(this.previousElementSibling)">Add row</button>@break
                             @default<input type="text" name="{{ $f['name'] }}" class="form-control" data-default="{{ $f['default'] ?? '' }}">
                         @endswitch

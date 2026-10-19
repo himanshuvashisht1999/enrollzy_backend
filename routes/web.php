@@ -333,6 +333,122 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:exm-exams-verify');
     });
 
+    // Counselling Module (cns_*)
+    Route::prefix('admin/counselling')->name('admin.counselling.')->group(function () {
+        $ns = 'App\Http\Controllers\Admin\Counselling\\';
+        $masters = 'categories|quotas|round-types|candidate-actions|document-types';
+
+        Route::redirect('/', '/admin/counselling/counsellings');
+
+        Route::middleware('can:cns-masters-manage')->group(function () use ($ns, $masters) {
+            Route::get('masters/{master}', [$ns . 'MasterController', 'index'])->where('master', $masters)->name('masters.index');
+            Route::post('masters/{master}', [$ns . 'MasterController', 'store'])->where('master', $masters)->name('masters.store');
+            Route::put('masters/{master}/{id}', [$ns . 'MasterController', 'update'])->where('master', $masters)->whereNumber('id')->name('masters.update');
+            Route::delete('masters/{master}/{id}', [$ns . 'MasterController', 'destroy'])->where('master', $masters)->whereNumber('id')->name('masters.destroy');
+        });
+        Route::middleware('can:cns-codes-manage')->group(function () use ($ns) {
+            Route::get('codes', [$ns . 'InstituteCodeController', 'index'])->name('codes.index');
+            Route::post('codes', [$ns . 'InstituteCodeController', 'store'])->name('codes.store');
+            Route::put('codes/{code}', [$ns . 'InstituteCodeController', 'update'])->name('codes.update');
+            Route::delete('codes/{code}', [$ns . 'InstituteCodeController', 'destroy'])->name('codes.destroy');
+        });
+
+        // Exam Module hook: counsellings mapped to one exam
+        Route::get('exams/{exam}', [$ns . 'CounsellingController', 'forExam'])->name('exams.counselling')->middleware('can:cns-counsellings-browse');
+        Route::post('exams/{exam}/map', [$ns . 'CounsellingController', 'mapExistingFromExam'])->name('exams.map')->middleware('can:cns-counsellings-edit');
+
+        Route::patch('counsellings/{counselling}/visibility', [$ns . 'CounsellingController', 'visibility'])->name('counsellings.visibility')->middleware('can:cns-counsellings-publish');
+        Route::resource('counsellings', $ns . 'CounsellingController')->parameters(['counsellings' => 'counselling'])
+            ->middlewareFor(['index', 'show'], 'can:cns-counsellings-browse')
+            ->middlewareFor(['create', 'store'], 'can:cns-counsellings-add')
+            ->middlewareFor(['edit', 'update'], 'can:cns-counsellings-edit')
+            ->middlewareFor(['destroy'], 'can:cns-counsellings-delete');
+
+        Route::middleware('can:cns-counsellings-edit')->group(function () use ($ns) {
+            Route::post('counsellings/{counselling}/exams', [$ns . 'CounsellingController', 'mapExam'])->name('mappings.store');
+            Route::put('mappings/{mapping}', [$ns . 'CounsellingController', 'updateMapping'])->name('mappings.update');
+            Route::delete('mappings/{mapping}', [$ns . 'CounsellingController', 'unmapExam'])->name('mappings.destroy');
+
+            Route::get('counsellings/{counselling}/cycles/create', [$ns . 'CycleController', 'create'])->name('cycles.create');
+            Route::post('counsellings/{counselling}/cycles', [$ns . 'CycleController', 'store'])->name('cycles.store');
+            Route::get('cycles/{cycle}/edit', [$ns . 'CycleController', 'edit'])->name('cycles.edit');
+            Route::put('cycles/{cycle}', [$ns . 'CycleController', 'update'])->name('cycles.update');
+            Route::delete('cycles/{cycle}', [$ns . 'CycleController', 'destroy'])->name('cycles.destroy');
+            Route::patch('cycles/{cycle}/current', [$ns . 'CycleController', 'setCurrent'])->name('cycles.current');
+
+            Route::post('cycles/{cycle}/copy', [$ns . 'CycleController', 'copy'])->name('cycles.copy');
+
+            // Eligibility, process, fees, documents, rules: at cycle level, or as a round override / addition
+            $blocks = 'eligibility|process|fees|documents|rules';
+            Route::post('cycles/{cycle}/blocks/{block}', [$ns . 'BlockController', 'storeForCycle'])->where('block', $blocks)->name('blocks.store-cycle');
+            Route::post('rounds/{round}/blocks/{block}', [$ns . 'BlockController', 'storeForRound'])->where('block', $blocks)->name('blocks.store-round');
+            Route::post('rounds/{round}/blocks/{block}/{id}/override', [$ns . 'BlockController', 'override'])->where('block', $blocks)->whereNumber('id')->name('blocks.override');
+            Route::put('blocks/{block}/{id}', [$ns . 'BlockController', 'update'])->where('block', $blocks)->whereNumber('id')->name('blocks.update');
+            Route::delete('blocks/{block}/{id}', [$ns . 'BlockController', 'destroy'])->where('block', $blocks)->whereNumber('id')->name('blocks.destroy');
+
+            Route::post('cycles/{cycle}/rounds', [$ns . 'CycleController', 'storeRound'])->name('rounds.store');
+            Route::put('rounds/{round}', [$ns . 'CycleController', 'updateRound'])->name('rounds.update');
+            Route::delete('rounds/{round}', [$ns . 'CycleController', 'destroyRound'])->name('rounds.destroy');
+
+            Route::post('cycles/{cycle}/events', [$ns . 'EventController', 'storeForCycle'])->name('events.store-cycle');
+            Route::post('rounds/{round}/events', [$ns . 'EventController', 'storeForRound'])->name('events.store-round');
+            Route::put('events/{event}', [$ns . 'EventController', 'update'])->name('events.update');
+            Route::delete('events/{event}', [$ns . 'EventController', 'destroy'])->name('events.destroy');
+        });
+        Route::middleware('can:cns-counsellings-browse')->group(function () use ($ns) {
+            Route::get('cycles/{cycle}', [$ns . 'CycleController', 'show'])->name('cycles.show');
+            Route::get('rounds/{round}', [$ns . 'CycleController', 'showRound'])->name('rounds.show');
+        });
+        // Phase B: participants, seat matrix, results, cutoffs
+        Route::middleware('can:cns-counsellings-browse')->group(function () use ($ns) {
+            Route::get('cycles/{cycle}/participants', [$ns . 'ParticipantController', 'index'])->name('participants.index');
+            Route::get('rounds/{round}/seats', [$ns . 'SeatMatrixController', 'index'])->name('seats.index');
+            Route::get('seat-versions/{version}', [$ns . 'SeatMatrixController', 'show'])->name('seats.show');
+            Route::get('seat-versions/{version}/diff', [$ns . 'SeatMatrixController', 'diff'])->name('seats.diff');
+            Route::get('rounds/{round}/cutoffs', [$ns . 'CutoffController', 'index'])->name('cutoffs.index');
+            Route::get('imports/lookup', [$ns . 'ImportController', 'lookup'])->name('imports.lookup');
+        });
+        Route::middleware('can:cns-counsellings-edit')->group(function () use ($ns) {
+            Route::post('cycles/{cycle}/participants', [$ns . 'ParticipantController', 'store'])->name('participants.store');
+            Route::put('participants/{participant}', [$ns . 'ParticipantController', 'update'])->name('participants.update');
+            Route::delete('participants/{participant}', [$ns . 'ParticipantController', 'destroy'])->name('participants.destroy');
+            Route::patch('seat-versions/{version}/live', [$ns . 'SeatMatrixController', 'makeLive'])->name('seats.live');
+            Route::delete('seat-versions/{version}', [$ns . 'SeatMatrixController', 'destroy'])->name('seats.destroy');
+            Route::post('rounds/{round}/results', [$ns . 'ResultController', 'store'])->name('results.store');
+            Route::put('results/{result}', [$ns . 'ResultController', 'update'])->name('results.update');
+            Route::delete('results/{result}', [$ns . 'ResultController', 'destroy'])->name('results.destroy');
+            Route::post('rounds/{round}/cutoffs', [$ns . 'CutoffController', 'store'])->name('cutoffs.store');
+            Route::put('cutoffs/{cutoff}', [$ns . 'CutoffController', 'update'])->name('cutoffs.update');
+            Route::delete('cutoffs/{cutoff}', [$ns . 'CutoffController', 'destroy'])->name('cutoffs.destroy');
+        });
+        Route::post('rounds/{round}/cutoffs/clear', [$ns . 'CutoffController', 'clear'])->name('cutoffs.clear')->middleware('can:cns-counsellings-delete');
+
+        // Follow / alert monitor
+        Route::get('alerts', [$ns . 'AlertAdminController', 'index'])->name('alerts.index')->middleware('can:cns-counsellings-browse');
+        Route::post('alerts/run', [$ns . 'AlertAdminController', 'run'])->name('alerts.run')->middleware('can:cns-counsellings-edit');
+        Route::post('alerts/retry', [$ns . 'AlertAdminController', 'retry'])->name('alerts.retry')->middleware('can:cns-counsellings-edit');
+
+        // CSV import centre
+        Route::middleware('can:cns-import-manage')->prefix('imports')->name('imports.')->group(function () use ($ns) {
+            Route::get('/', [$ns . 'ImportController', 'index'])->name('index');
+            Route::get('create', [$ns . 'ImportController', 'create'])->name('create');
+            Route::post('/', [$ns . 'ImportController', 'store'])->name('store');
+            Route::get('template/{type}', [$ns . 'ImportController', 'template'])->where('type', 'participants|seats|cutoffs')->name('template');
+            Route::get('{batch}', [$ns . 'ImportController', 'show'])->whereNumber('batch')->name('show');
+            Route::post('{batch}/fix', [$ns . 'ImportController', 'fix'])->whereNumber('batch')->name('fix');
+            Route::post('{batch}/accept', [$ns . 'ImportController', 'accept'])->whereNumber('batch')->name('accept');
+            Route::post('{batch}/confirm', [$ns . 'ImportController', 'confirm'])->whereNumber('batch')->name('confirm');
+            Route::post('{batch}/cancel', [$ns . 'ImportController', 'cancel'])->whereNumber('batch')->name('cancel');
+            Route::get('{batch}/errors', [$ns . 'ImportController', 'errors'])->whereNumber('batch')->name('errors');
+            Route::delete('aliases/{alias}', [$ns . 'ImportController', 'destroyAlias'])->name('aliases.destroy');
+        });
+        Route::post('imports/{batch}/undo', [$ns . 'ImportController', 'undo'])->whereNumber('batch')->name('imports.undo')->middleware('can:cns-import-undo');
+
+        Route::patch('cycles/{cycle}/public', [$ns . 'CycleController', 'togglePublic'])->name('cycles.public')->middleware('can:cns-counsellings-publish');
+        Route::post('cycles/{cycle}/verify', [$ns . 'CycleController', 'verify'])->name('cycles.verify')->middleware('can:cns-counsellings-verify');
+        Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:cns-counsellings-verify');
+    });
+
     // Exam Stage Data Management
     Route::get('/admin/exams/{exam}/stages/{stage}/edit', [ExamStageDataController::class, 'edit'])->name('admin.exams.stages.edit');
     Route::post('/admin/exams/{exam}/interview/update', [ExamStageDataController::class, 'updateInterview'])->name('admin.exams.interview.update');

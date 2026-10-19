@@ -59,7 +59,7 @@ class EventController extends Controller
         $request->merge(['stage_id' => $allStages ? null : $request->input('stage_id')]);
 
         $validator = Validator::make($request->all(), [
-            'event_type_id' => ['required', Rule::exists('exm_event_types', 'id')],
+            'event_type_id' => ['required', Rule::exists('exm_event_types', 'id')->whereIn('applies_to', ['exam', 'both'])],
             'stage_id' => [$usesStages && !$allStages ? 'required' : 'nullable', Rule::exists('exm_stages', 'id')->where('cycle_id', $cycle->id)],
             'label' => 'nullable|string|max:150',
             'start_at' => 'nullable|date',

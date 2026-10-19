@@ -136,6 +136,9 @@ class ExamController extends Controller
         }
 
         $exam->fill($data);
+        if (blank($exam->slug)) {
+            $exam->slug = Exam::uniqueSlug($exam->name, $exam->id);
+        }
 
         $notice = null;
         if ($exam->visibility === 'public') {

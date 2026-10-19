@@ -19,9 +19,20 @@ class ContentRow extends Model
 
     public string $blockKey = '';
 
+    /** Class holding the block definitions; counselling rows swap this out. */
+    protected static function definitions(): string
+    {
+        return ContentBlocks::class;
+    }
+
+    protected function auditNamespace(): string
+    {
+        return 'App\\Models\\ExamModule\\Block\\';
+    }
+
     public static function block(string $key): static
     {
-        $def = ContentBlocks::get($key) ?? abort(404);
+        $def = (static::definitions())::get($key) ?? abort(404);
         $m = new static;
         $m->blockKey = $key;
         $m->setTable($def['table']);
@@ -29,7 +40,7 @@ class ContentRow extends Model
         $casts = [];
         foreach ($def['fields'] as $f) {
             $casts[$f['name']] = match ($f['type']) {
-                'list', 'rows' => 'array',
+                'list', 'rows', 'multiselect' => 'array',
                 'bool' => 'boolean',
                 'date' => 'date:Y-m-d',
                 default => null,
@@ -84,7 +95,7 @@ class ContentRow extends Model
     protected function writeAudit(string $action, ?array $old, ?array $new): void
     {
         AuditLog::create([
-            'auditable_type' => 'App\\Models\\ExamModule\\Block\\' . Str::studly($this->blockKey ?: $this->getTable()),
+            'auditable_type' => $this->auditNamespace() . Str::studly($this->blockKey ?: $this->getTable()),
             'auditable_id' => $this->getKey(),
             'user_id' => auth('admin')->id(),
             'action' => $action,

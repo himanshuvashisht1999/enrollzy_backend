@@ -14,7 +14,7 @@ class CycleEvent extends Model
     protected $table = 'exm_cycle_events';
 
     protected $fillable = [
-        'cycle_id', 'stage_id', 'applies_to_all_stages', 'event_type_id', 'label', 'start_at', 'end_at', 'extended_end_at',
+        'cycle_id', 'counselling_cycle_id', 'round_id', 'quota_id', 'stage_id', 'applies_to_all_stages', 'event_type_id', 'label', 'start_at', 'end_at', 'extended_end_at',
         'date_precision', 'manual_status', 'on_demand_text', 'link_url', 'note', 'source_url',
         'last_verified_at', 'verified_by',
     ];
@@ -39,14 +39,31 @@ class CycleEvent extends Model
     public function endAt(): Attribute { return $this->tzDate(); }
     public function extendedEndAt(): Attribute { return $this->tzDate(); }
 
+    /** An event belongs to an exam cycle or a counselling cycle (never both); either one supplies the timezone. */
     private function cycleTimezone(): string
     {
-        return ($this->cycle_id ? $this->cycle?->timezone : null) ?: 'Asia/Kolkata';
+        $tz = $this->cycle_id ? $this->cycle?->timezone : ($this->counselling_cycle_id ? $this->counsellingCycle?->timezone : null);
+        return $tz ?: 'Asia/Kolkata';
     }
 
     public function cycle()
     {
         return $this->belongsTo(Cycle::class, 'cycle_id');
+    }
+
+    public function counsellingCycle()
+    {
+        return $this->belongsTo(\App\Models\Counselling\CounsellingCycle::class, 'counselling_cycle_id');
+    }
+
+    public function round()
+    {
+        return $this->belongsTo(\App\Models\Counselling\Round::class, 'round_id');
+    }
+
+    public function quota()
+    {
+        return $this->belongsTo(\App\Models\Counselling\Quota::class, 'quota_id');
     }
 
     public function stage()

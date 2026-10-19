@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class EventType extends Model
 {
     protected $table = 'exm_event_types';
-    protected $fillable = ['name', 'slug', 'status_source', 'sort_order', 'status'];
+    protected $fillable = ['name', 'slug', 'status_source', 'applies_to', 'sort_order', 'status'];
     protected $casts = ['status' => 'boolean'];
 
     public function events()

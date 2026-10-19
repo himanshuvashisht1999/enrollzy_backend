@@ -15,7 +15,19 @@ use Illuminate\Validation\Rule;
  */
 class ContentBlocks
 {
-    public const FEE_CATEGORIES = ['general' => 'General', 'obc_ncl' => 'OBC-NCL', 'ews' => 'EWS', 'sc' => 'SC', 'st' => 'ST', 'pwd' => 'PwD'];
+    /** Active categories from the shared Category master (id => name), used by fees and age relaxation. */
+    public static function categories(): array
+    {
+        static $cache = null;
+        return $cache ??= \App\Models\Counselling\Category::where('status', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** Every category name including inactive ones, so old rows still display. */
+    public static function categoryName($id): string
+    {
+        return \App\Models\Counselling\Category::find($id)?->name ?? '-';
+    }
+
     public const GENDERS = ['male' => 'Male', 'female' => 'Female', 'transgender' => 'Transgender'];
     public const CURRENCIES = ['INR' => 'INR', 'USD' => 'USD', 'EUR' => 'EUR', 'GBP' => 'GBP', 'AED' => 'AED'];
     public const MODES = ['cbt' => 'Computer based (CBT)', 'pen_paper' => 'Pen and paper', 'hybrid' => 'Hybrid', 'home_based' => 'Home based'];
@@ -38,7 +50,7 @@ class ContentBlocks
                     ['name' => 'age_max', 'label' => 'Max age', 'type' => 'number', 'min' => 0, 'max' => 120, 'col' => 3],
                     ['name' => 'age_as_of', 'label' => 'Age as of', 'type' => 'date', 'col' => 6],
                     ['name' => 'age_relaxation', 'label' => 'Age relaxation by category', 'type' => 'rows', 'col' => 12, 'sub' => [
-                        ['name' => 'category', 'label' => 'Category', 'type' => 'select', 'options' => self::FEE_CATEGORIES],
+                        ['name' => 'category_id', 'label' => 'Category', 'type' => 'select', 'options' => fn () => self::categories()],
                         ['name' => 'years', 'label' => 'Years', 'type' => 'number', 'min' => 0, 'max' => 30],
                     ]],
                     ['name' => 'other_conditions', 'label' => 'Other conditions', 'type' => 'textarea', 'col' => 12],
@@ -79,12 +91,12 @@ class ContentBlocks
             'fees' => [
                 'title' => 'Fees', 'table' => 'exm_fees', 'label' => 'Fee',
                 'fields' => [
-                    ['name' => 'category', 'label' => 'Category', 'type' => 'select', 'options' => self::FEE_CATEGORIES, 'required' => true, 'col' => 4],
+                    ['name' => 'category_id', 'label' => 'Category', 'type' => 'select', 'options' => fn () => self::categories(), 'required' => true, 'col' => 4],
                     ['name' => 'gender', 'label' => 'Gender (optional)', 'type' => 'select', 'options' => self::GENDERS, 'col' => 4],
                     ['name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'min' => 0, 'required' => true, 'col' => 2],
                     ['name' => 'currency', 'label' => 'Currency', 'type' => 'select', 'options' => self::CURRENCIES, 'required' => true, 'default' => 'INR', 'col' => 2],
                 ],
-                'summary' => fn ($r) => [(self::FEE_CATEGORIES[$r->category] ?? $r->category) . ($r->gender ? ' (' . (self::GENDERS[$r->gender] ?? $r->gender) . ')' : ''), $r->currency . ' ' . (float) $r->amount],
+                'summary' => fn ($r) => [self::categoryName($r->category_id) . ($r->gender ? ' (' . (self::GENDERS[$r->gender] ?? $r->gender) . ')' : ''), $r->currency . ' ' . (float) $r->amount],
             ],
             'syllabus' => [
                 'title' => 'Syllabus', 'table' => 'exm_syllabus', 'label' => 'Syllabus',
@@ -167,7 +179,7 @@ class ContentBlocks
         return $rules;
     }
 
-    private static function fieldRules(array $f, string $path, bool $isUpdate, bool $sub = false): array
+    public static function fieldRules(array $f, string $path, bool $isUpdate, bool $sub = false): array
     {
         $req = !empty($f['required']) ? 'required' : 'nullable';
         $min = $f['min'] ?? null;
@@ -182,6 +194,8 @@ class ContentBlocks
             'select' => [$req, Rule::in(array_map('strval', array_keys(self::options($f))))],
             'file' => [(!empty($f['required']) && !$isUpdate) ? 'required' : 'nullable', 'file', 'mimes:' . ($f['mimes'] ?? 'pdf'), 'max:10240'],
             'list' => ['nullable', 'string', 'max:10000'],
+            'url' => [$req, 'url', 'max:500'],
+            'multiselect' => ['nullable', 'array'],
             'rows' => ['nullable', 'array', 'max:50'],
             default => ['nullable'],
         };

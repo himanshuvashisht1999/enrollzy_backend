@@ -61,6 +61,7 @@
                     <td class="text-end pe-4">
                         <a href="{{ route('admin.exam-module.exams.show', $exam) }}" class="btn btn-sm btn-light border"><i class="fas fa-eye text-info"></i></a>
                         @can('exm-exams-edit')<a href="{{ route('admin.exam-module.exams.edit', $exam) }}" class="btn btn-sm btn-light border"><i class="fas fa-edit text-primary"></i></a>@endcan
+                        @can('cns-counsellings-browse')<a href="{{ route('admin.counselling.exams.counselling', $exam) }}" class="btn btn-sm btn-light border" title="Counselling mapped to this exam"><i class="fas fa-people-arrows text-success"></i> Counselling</a>@endcan
                         @can('exm-exams-delete')
                         <form action="{{ route('admin.exam-module.exams.destroy', $exam) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this exam?');">
                             @csrf @method('DELETE')

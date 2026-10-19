@@ -114,7 +114,9 @@ class ContentController extends Controller
             $clean = [];
             foreach ($sub as $s) {
                 $v = $row[$s['name']] ?? null;
-                $clean[$s['name']] = ($v === '' || $v === null) ? null : ($s['type'] === 'number' ? $v + 0 : $v);
+                // Numbers and id-keyed selects (e.g. category_id) are stored as numbers, not strings.
+                $clean[$s['name']] = ($v === '' || $v === null) ? null
+                    : ($s['type'] === 'number' || ($s['type'] === 'select' && ctype_digit((string) $v)) ? $v + 0 : $v);
             }
             if (array_filter($clean, fn ($v) => $v !== null)) {
                 $out[] = $clean;

@@ -21,6 +21,7 @@ class EventTypeController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:100|unique:exm_event_types,name',
             'status_source' => ['required', Rule::in(['dates', 'manual'])],
+            'applies_to' => ['required', Rule::in(['exam', 'counselling', 'both'])],
         ]);
         EventType::create($data + ['slug' => Str::slug($data['name']), 'sort_order' => EventType::max('sort_order') + 1, 'status' => true]);
         return back()->with('success', 'Event type added.');

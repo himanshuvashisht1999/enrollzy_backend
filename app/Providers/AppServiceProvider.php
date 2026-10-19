@@ -27,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        // Public counselling API: generous for reads, tight for anything that sends mail / WhatsApp.
+        \Illuminate\Support\Facades\RateLimiter::for('cns-public', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(120)->by($request->ip()));
+        \Illuminate\Support\Facades\RateLimiter::for('cns-follow', fn ($request) => [
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(6)->by($request->ip()),
+            \Illuminate\Cache\RateLimiting\Limit::perHour(5)->by(strtolower((string) ($request->input('email') ?: $request->input('phone') ?: $request->ip()))),
+        ]);
+
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             if (method_exists($user, 'hasRole') && ($user->hasRole('admin') || $user->hasRole('superadmin'))) {
                 return true;

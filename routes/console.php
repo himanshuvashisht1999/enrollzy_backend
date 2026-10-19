@@ -45,3 +45,8 @@ Artisan::command('import:students {file : The absolute path to the Excel (.xlsx/
 
     return 0;
 })->purpose('Import students directly from an Excel or CSV file');
+
+use Illuminate\Support\Facades\Schedule;
+
+// Counselling / exam alerts: needs the server cron to run `php artisan schedule:run` every minute.
+Schedule::command("cns:dispatch-alerts")->everyTenMinutes()->withoutOverlapping();
