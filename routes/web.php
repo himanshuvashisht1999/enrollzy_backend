@@ -309,7 +309,27 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::put('events/{event}', [$ns . 'EventController', 'update'])->name('events.update');
             Route::delete('events/{event}', [$ns . 'EventController', 'destroy'])->name('events.destroy');
         });
-        Route::patch('cycles/{cycle}/public', [$ns . 'CycleController', 'togglePublic'])->name('cycles.public')->middleware('can:exm-exams-publish');
+        // Cycle content blocks (eligibility, pattern, fees, syllabus, centres, documents, papers, faqs)
+        Route::middleware('can:exm-content-manage')->group(function () use ($ns) {
+            $blocks = 'eligibility|pattern|fees|syllabus|centres|documents|papers|faqs';
+            Route::post('cycles/{cycle}/content/{block}', [$ns . 'ContentController', 'store'])->where('block', $blocks)->name('content.store');
+            Route::put('content/{block}/{id}', [$ns . 'ContentController', 'update'])->where('block', $blocks)->whereNumber('id')->name('content.update');
+            Route::delete('content/{block}/{id}', [$ns . 'ContentController', 'destroy'])->where('block', $blocks)->whereNumber('id')->name('content.destroy');
+            Route::post('cycles/{cycle}/custom-values', [$ns . 'CustomFieldController', 'saveValues'])->name('custom-values.save');
+        });
+
+        // Schema Builder and City master
+        Route::middleware('can:exm-schema-manage')->group(function () use ($ns) {
+            Route::get('exams/{exam}/fields', [$ns . 'CustomFieldController', 'index'])->name('fields.index');
+            Route::post('exams/{exam}/fields', [$ns . 'CustomFieldController', 'store'])->name('fields.store');
+            Route::put('fields/{field}', [$ns . 'CustomFieldController', 'update'])->name('fields.update');
+            Route::delete('fields/{field}', [$ns . 'CustomFieldController', 'destroy'])->name('fields.destroy');
+        });
+        Route::middleware('can:exm-cities-manage')->group(function () use ($ns) {
+            Route::resource('cities', $ns . 'CityController')->only(['index', 'store', 'update', 'destroy']);
+        });
+
+        Route::patch('cycles/{cycle}/public',[$ns . 'CycleController', 'togglePublic'])->name('cycles.public')->middleware('can:exm-exams-publish');
         Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:exm-exams-verify');
     });
 

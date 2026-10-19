@@ -12,6 +12,7 @@
         @can('exm-attention-browse')<a href="{{ route('admin.exam-module.attention') }}" class="btn btn-outline-warning"><i class="fas fa-bell me-1"></i> Needs Attention</a>@endcan
         @can('exm-conducting-bodies-browse')<a href="{{ route('admin.exam-module.conducting-bodies.index') }}" class="btn btn-light border">Conducting Bodies</a>@endcan
         @can('exm-event-types-manage')<a href="{{ route('admin.exam-module.event-types.index') }}" class="btn btn-light border">Event Types</a>@endcan
+        @can('exm-cities-manage')<a href="{{ route('admin.exam-module.cities.index') }}" class="btn btn-light border">Cities</a>@endcan
         @can('exm-audit-browse')<a href="{{ route('admin.exam-module.audit') }}" class="btn btn-light border">Audit Log</a>@endcan
         @can('exm-exams-add')<a href="{{ route('admin.exam-module.exams.create') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Add Exam</a>@endcan
     </div>
@@ -54,6 +55,8 @@
                     <td>
                         <span class="badge {{ $exam->visibility === 'public' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">{{ ucfirst($exam->visibility) }}</span>
                         @unless($exam->status)<span class="badge bg-danger-subtle text-danger">Inactive</span>@endunless
+                        @if($exam->is_archived)<span class="badge bg-warning-subtle text-warning">Archived</span>@endif
+                        @if($exam->featured)<span class="badge bg-primary-subtle text-primary">Featured</span>@endif
                     </td>
                     <td class="text-end pe-4">
                         <a href="{{ route('admin.exam-module.exams.show', $exam) }}" class="btn btn-sm btn-light border"><i class="fas fa-eye text-info"></i></a>

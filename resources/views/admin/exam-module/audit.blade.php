@@ -29,7 +29,7 @@
 
 <div class="card border-0 shadow-sm rounded-4"><div class="table-responsive">
     <table class="table align-middle mb-0">
-        <thead class="bg-light"><tr><th class="ps-4">When</th><th>Who</th><th>Record</th><th>Action</th><th>Old</th><th>New</th></tr></thead>
+        <thead class="bg-light"><tr><th class="ps-4">When</th><th>Who</th><th>Record</th><th>Action</th><th>Old (UTC)</th><th>New (UTC)</th></tr></thead>
         <tbody>
         @forelse($logs as $log)
             <tr class="small">
@@ -37,8 +37,8 @@
                 <td>{{ $log->user->name ?? 'system' }}</td>
                 <td>{{ $log->subject }}</td>
                 <td><span class="badge bg-light text-dark border">{{ $log->action }}</span></td>
-                <td style="max-width:260px"><code class="text-wrap">{{ $log->action === 'updated' ? json_encode($log->old_values) : '' }}</code></td>
-                <td style="max-width:260px"><code class="text-wrap">{{ $log->action === 'updated' ? json_encode($log->new_values) : '' }}</code></td>
+                <td style="max-width:260px"><code class="text-wrap">{{ $log->action === 'updated' ? json_encode($log->displayValues($log->old_values)) : '' }}</code></td>
+                <td style="max-width:260px"><code class="text-wrap">{{ $log->action === 'updated' ? json_encode($log->displayValues($log->new_values)) : '' }}</code></td>
             </tr>
         @empty
             <tr><td colspan="6" class="text-center text-muted py-5">No entries.</td></tr>

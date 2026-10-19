@@ -28,20 +28,43 @@
 </div>
 
 {{-- Calculated student-facing status --}}
+@php
+    $usesStages = $cycle->usesStages();
+    $statusCols = ['registration' => 'Registration', 'admit-card' => 'Admit card', 'exam-date' => 'Exam date', 'result' => 'Result'];
+@endphp
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
     <h6 class="fw-bold mb-3">Status shown to students (calculated)</h6>
-    <div class="d-flex flex-wrap gap-4">
-        @foreach(['registration' => 'Registration', 'admit-card' => 'Admit card', 'exam-date' => 'Exam date', 'result' => 'Result'] as $slug => $name)
-            @php $st = $cycle->statusForType($slug); @endphp
-            @continue($st['state'] === 'hidden')
-            <div><div class="small text-muted">{{ $name }}</div><span class="badge {{ $badge($st['state']) }}">{{ $st['label'] }}</span></div>
-        @endforeach
-    </div>
+    @if($usesStages)
+        <div class="table-responsive"><table class="table table-sm align-middle mb-1">
+            <thead class="bg-light"><tr><th>Stage</th>@foreach($statusCols as $name)<th>{{ $name }}</th>@endforeach</tr></thead>
+            <tbody>
+            @foreach($cycle->stages as $stage)
+                <tr>
+                    <td class="fw-semibold">{{ $stage->name }}@if($stage->is_qualifying) <span class="badge bg-light text-dark border">Qualifying</span>@endif</td>
+                    @foreach($statusCols as $slug => $name)
+                        @php $st = $cycle->statusForType($slug, $stage->id); @endphp
+                        <td>@if($st['state'] !== 'hidden')<span class="badge {{ $badge($st['state']) }}">{{ $st['label'] }}</span>@endif</td>
+                    @endforeach
+                </tr>
+            @endforeach
+            </tbody>
+        </table></div>
+        <div class="small text-muted">Each stage shows its own events plus events marked "All stages (common)".</div>
+    @else
+        <div class="d-flex flex-wrap gap-4">
+            @foreach($statusCols as $slug => $name)
+                @php $st = $cycle->statusForType($slug); @endphp
+                @continue($st['state'] === 'hidden')
+                <div><div class="small text-muted">{{ $name }}</div><span class="badge {{ $badge($st['state']) }}">{{ $st['label'] }}</span></div>
+            @endforeach
+        </div>
+    @endif
 </div></div>
-
 {{-- Stages --}}
+@if($cycle->exam->has_stages)
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
-    <h6 class="fw-bold mb-3">Stages <span class="text-muted fw-normal small">(optional: Prelims / Mains / Interview)</span></h6>
+    <h6 class="fw-bold mb-3">Stages <span class="text-muted fw-normal small">(Prelims / Mains / Interview)</span></h6>
+    @unless($cycle->stages->count())<div class="alert alert-warning small py-2">Add at least one stage so events can be tagged to it.</div>@endunless
     @foreach($cycle->stages as $stage)
         <form action="{{ route('admin.exam-module.stages.update', $stage) }}" method="POST" class="row g-2 mb-2 align-items-center">
             @csrf @method('PUT')
@@ -62,6 +85,9 @@
         <div class="col-md-2"><button class="btn btn-sm btn-outline-primary">Add stage</button></div>
     </form>
 </div></div>
+@else
+<div class="alert alert-light border small">This exam has no stages (see "Does this exam have stages?" on the exam). Events apply to the whole cycle.</div>
+@endif
 
 {{-- Events --}}
 <div class="card border-0 shadow-sm rounded-4"><div class="card-body">
@@ -76,10 +102,16 @@
         @forelse($cycle->events as $ev)
             <tr>
                 <td>
-                    <div class="fw-semibold">{{ $ev->type->name }}@if($ev->label) <span class="text-muted">· {{ $ev->label }}</span>@endif</div>
-                    @if($ev->stage)<div class="small text-muted">{{ $ev->stage->name }}</div>@endif
-                    @if($ev->link_url)<a href="{{ $ev->link_url }}" target="_blank" rel="noopener" class="small">Link</a>@endif
-                    @if($ev->source_url) <a href="{{ $ev->source_url }}" target="_blank" rel="noopener" class="small">Source</a>@endif
+                    <div class="fw-semibold">{{ $ev->type->name }}@if($usesStages && $ev->stageLabel()) <span class="text-muted">· {{ $ev->stageLabel() }}</span>@endif@if($ev->label) <span class="text-muted">· {{ $ev->label }}</span>@endif</div>
+                    @if($usesStages)
+                        @if($ev->stageLabel())<span class="badge bg-primary-subtle text-primary">{{ $ev->stageLabel() }}</span>
+                        @else<span class="badge bg-danger-subtle text-danger">Stage missing</span>@endif
+                    @endif
+                    @php $link = \App\Models\ExamModule\CycleEvent::safeUrl($ev->link_url); $src = \App\Models\ExamModule\CycleEvent::safeUrl($ev->source_url); @endphp
+                    <div class="small">
+                        @if($link)<a href="{{ $link }}" target="_blank" rel="noopener noreferrer" title="{{ $link }}">Link: {{ parse_url($link, PHP_URL_HOST) }}</a>@endif
+                        @if($src) <a href="{{ $src }}" target="_blank" rel="noopener noreferrer" title="{{ $src }}" class="ms-2">Source: {{ parse_url($src, PHP_URL_HOST) }}</a>@endif
+                    </div>
                 </td>
                 <td class="small">{{ $ev->dateText() }}@if($ev->note)<div class="text-muted">{{ $ev->note }}</div>@endif</td>
                 @php $d = $ev->displayStatus(); @endphp
@@ -93,6 +125,7 @@
                     @endcan
                     @php
                         $payload = $ev->only(['id', 'event_type_id', 'stage_id', 'label', 'date_precision', 'manual_status', 'on_demand_text', 'link_url', 'note', 'source_url']);
+                        if ($ev->applies_to_all_stages) $payload['stage_id'] = 'all';
                         foreach (['start_at', 'end_at', 'extended_end_at'] as $k) {
                             $payload[$k] = $ev->$k?->format('Y-m-d\TH:i');
                         }
@@ -110,6 +143,8 @@
     <div class="small text-muted">Times are shown in {{ $cycle->timezone }}.</div>
 </div></div>
 
+@include('admin.exam-module.cycles._content')
+
 {{-- Event modal --}}
 <div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
     <form id="eventForm" method="POST" action="{{ route('admin.exam-module.events.store', $cycle) }}">
@@ -121,9 +156,9 @@
                     @foreach($eventTypes as $t)<option value="{{ $t->id }}" data-manual="{{ $t->status_source === 'manual' ? 1 : 0 }}">{{ $t->name }}{{ $t->status_source === 'manual' ? ' (manual status)' : '' }}</option>@endforeach
                 </select></div>
             <div class="col-md-6"><label class="form-label fw-bold">Label</label><input type="text" name="label" id="f_label" class="form-control" placeholder="Phase 2, Shift 1"></div>
-            @if($cycle->stages->count())
-            <div class="col-md-6"><label class="form-label fw-bold">Stage</label>
-                <select name="stage_id" id="f_stage_id" class="form-select custom-select2"><option value="">None</option>@foreach($cycle->stages as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
+            @if($usesStages)
+            <div class="col-md-6"><label class="form-label fw-bold">Stage <span class="text-danger">*</span></label>
+                <select name="stage_id" id="f_stage_id" class="form-select custom-select2" required><option value="">Select stage</option><option value="all">All stages (common)</option>@foreach($cycle->stages as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
             @endif
             <div class="col-md-6"><label class="form-label fw-bold">Date Precision</label>
                 <select name="date_precision" id="f_date_precision" class="form-select custom-select2">@foreach(\App\Models\ExamModule\CycleEvent::PRECISIONS as $k => $v)<option value="{{ $k }}">{{ $v }}</option>@endforeach</select></div>

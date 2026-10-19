@@ -7,6 +7,8 @@
     <div>
         <h4 class="mb-1 fw-bold">{{ $exam->name }}
             <span class="badge {{ $exam->visibility === 'public' ? 'bg-success' : 'bg-secondary' }} fs-6 align-middle">{{ ucfirst($exam->visibility) }}</span>
+            @if($exam->is_archived)<span class="badge bg-warning text-dark fs-6 align-middle">Archived</span>@endif
+            @if($exam->featured)<span class="badge bg-primary fs-6 align-middle">Featured</span>@endif
         </h4>
         <div class="text-muted">/{{ $exam->slug }} · {{ \App\Models\ExamModule\Exam::TYPES[$exam->exam_type] ?? 'Type not set' }}</div>
     </div>
@@ -25,6 +27,8 @@
     <div class="alert alert-warning">To publish, still missing: <strong>{{ implode(', ', $missing) }}</strong></div>
 @endif
 
+@if($exam->cover_image)<img src="{{ asset('storage/' . $exam->cover_image) }}" class="img-fluid rounded-4 mb-4" style="max-height:180px;width:100%;object-fit:cover" alt="">@endif
+@if($exam->is_archived)<div class="alert alert-warning">This exam is archived: it is discontinued, but its page stays live.</div>@endif
 <div class="row g-4">
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm rounded-4"><div class="card-body">
@@ -38,8 +42,9 @@
                 <dt class="col-5">Levels</dt><dd class="col-7">{{ collect($exam->program_levels)->map(fn ($i) => $levels[$i] ?? null)->filter()->implode(', ') ?: '-' }}</dd>
                 @if($exam->states)<dt class="col-5">States</dt><dd class="col-7">{{ implode(', ', $exam->states) }}</dd>@endif
                 <dt class="col-5">Feeder exam</dt><dd class="col-7">{{ $exam->feederExam->name ?? '-' }}</dd>
-                <dt class="col-5">Languages</dt><dd class="col-7">{{ implode(', ', $exam->languages ?? []) ?: '-' }}</dd>
+                <dt class="col-5">Languages</dt><dd class="col-7">{{ collect($exam->languages)->map(fn ($i) => $languageNames[$i] ?? null)->filter()->implode(', ') ?: '-' }}</dd>
                 <dt class="col-5">Aliases</dt><dd class="col-7">{{ implode(', ', $exam->aliases ?? []) ?: '-' }}</dd>
+                <dt class="col-5">Sort order</dt><dd class="col-7">{{ $exam->sort_order }}</dd>
                 <dt class="col-5">Website</dt><dd class="col-7">@if($exam->official_website)<a href="{{ $exam->official_website }}" target="_blank" rel="noopener">Open</a>@else - @endif</dd>
             </dl>
         </div></div>

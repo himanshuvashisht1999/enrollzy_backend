@@ -14,12 +14,12 @@ class CycleEvent extends Model
     protected $table = 'exm_cycle_events';
 
     protected $fillable = [
-        'cycle_id', 'stage_id', 'event_type_id', 'label', 'start_at', 'end_at', 'extended_end_at',
+        'cycle_id', 'stage_id', 'applies_to_all_stages', 'event_type_id', 'label', 'start_at', 'end_at', 'extended_end_at',
         'date_precision', 'manual_status', 'on_demand_text', 'link_url', 'note', 'source_url',
         'last_verified_at', 'verified_by',
     ];
 
-    protected $casts = ['last_verified_at' => 'datetime'];
+    protected $casts = ['last_verified_at' => 'datetime', 'applies_to_all_stages' => 'boolean'];
 
     public const PRECISIONS = ['exact' => 'Exact', 'month_only' => 'Month only', 'tentative' => 'Tentative', 'tba' => 'To be announced'];
     public const MANUAL_STATUSES = ['not_announced' => 'Not announced', 'expected' => 'Expected', 'declared' => 'Declared',
@@ -104,6 +104,19 @@ class CycleEvent extends Model
             'open' => ['state' => $s, 'label' => $end ? 'Open, closes ' . $end->format('d M Y') : 'Open today'],
             default => ['state' => 'closed', 'label' => 'Closed'],
         };
+    }
+
+    /** Stage scope for display: stage name, "All stages", or null when untagged. */
+    public function stageLabel(): ?string
+    {
+        if ($this->applies_to_all_stages) return 'All stages';
+        return $this->stage?->name;
+    }
+
+    /** Only absolute http(s) URLs are ever rendered as links. */
+    public static function safeUrl(?string $url): ?string
+    {
+        return $url && preg_match('#^https?://#i', $url) ? $url : null;
     }
 
     /** Date text honouring precision, for admin and public display. */

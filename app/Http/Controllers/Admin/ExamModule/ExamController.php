@@ -24,7 +24,7 @@ class ExamController extends Controller
             }))
             ->when($request->exam_type, fn ($q, $t) => $q->where('exam_type', $t))
             ->when($request->visibility, fn ($q, $v) => $q->where('visibility', $v))
-            ->orderBy('name')->paginate(15)->withQueryString();
+            ->orderBy('sort_order')->orderBy('name')->paginate(15)->withQueryString();
 
         return view('admin.exam-module.exams.index', compact('exams'));
     }
@@ -50,7 +50,8 @@ class ExamController extends Controller
             ->latest('id')->limit(15)->get();
 
         return view('admin.exam-module.exams.show', ['exam' => $exam, 'logs' => $logs, 'missing' => $exam->missingForPublish()]
-            + ['categories' => ExamCategory::pluck('title', 'id'), 'levels' => ProgramLevel::pluck('title', 'id')]);
+            + ['categories' => ExamCategory::pluck('title', 'id'), 'levels' => ProgramLevel::pluck('title', 'id'),
+                'languageNames' => \App\Models\Language::pluck('title', 'id')]);
     }
 
     public function edit(Exam $exam)
@@ -97,25 +98,41 @@ class ExamController extends Controller
             'program_levels.*' => 'integer',
             'states' => 'nullable|array',
             'states.*' => 'string',
-            'feeder_exam_id' => ['nullable', 'exists:exm_exams,id', Rule::notIn([$exam->id])],
-            'languages' => 'nullable|string',
+            'feeder_exam_id' => array_filter(['nullable', 'exists:exm_exams,id', $exam->exists ? Rule::notIn([$exam->id]) : null]),
+            'languages' => 'nullable|array',
+            'languages.*' => ['integer', Rule::exists('languages', 'id')],
             'about' => 'nullable|string',
             'official_website' => 'nullable|url|max:255',
             'logo' => 'nullable|image|max:2048',
+            'cover_image' => 'nullable|image|max:4096',
+            'sort_order' => 'nullable|integer|min:0|max:65535',
             'has_stages' => 'nullable|boolean',
             'visibility' => 'required|in:draft,public',
             'status' => 'nullable|boolean',
         ]);
 
         $data['aliases'] = $this->csv($data['aliases'] ?? null);
-        $data['languages'] = $this->csv($data['languages'] ?? null);
+        $data['languages'] = array_map('intval', $data['languages'] ?? []) ?: null;
         $data['has_stages'] = $request->boolean('has_stages');
+
+        // Turning stages off while cycles still define them would hide data that events depend on.
+        if ($exam->exists && $exam->has_stages && !$data['has_stages']
+            && \App\Models\ExamModule\Stage::whereIn('cycle_id', $exam->cycles()->withTrashed()->pluck('id'))->exists()) {
+            return back()->withInput()->withErrors(['has_stages' => 'Delete the stages from all cycles before turning stages off.']);
+        }
         $data['status'] = $request->boolean('status');
-        $data['slug'] = $data['slug'] ?: null;
-        unset($data['logo']);
+        $data['slug'] = $data['slug'] ?? null ?: null;
+        $data['featured'] = $request->boolean('featured');
+        $data['is_archived'] = $request->boolean('is_archived');
+        $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
+        unset($data['logo'], $data['cover_image']);
 
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('exm/logos', 'public');
+        }
+
+        if ($request->hasFile('cover_image')) {
+            $data['cover_image'] = $request->file('cover_image')->store('exm/covers', 'public');
         }
 
         $exam->fill($data);
@@ -145,6 +162,7 @@ class ExamController extends Controller
     {
         return [
             'bodies' => ConductingBody::where('status', true)->orderBy('name')->get(),
+            'languageList' => \App\Models\Language::where('status', 1)->orderBy('title')->get(['id', 'title']),
             'categories' => ExamCategory::where('status', 1)->orderBy('title')->get(),
             'levels' => ProgramLevel::where('status', 1)->orderBy('title')->get(),
             'organisations' => Organisation::orderBy('name')->get(['id', 'name']),

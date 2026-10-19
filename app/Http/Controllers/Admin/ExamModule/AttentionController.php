@@ -33,7 +33,7 @@ class AttentionController extends Controller
             ->where('updated_at', '<', now()->subDays(14))->get();
 
         // 4. Public exams with no current cycle for the coming year.
-        $noCurrent = Exam::where('visibility', 'public')->where('status', true)
+        $noCurrent = Exam::where('visibility', 'public')->where('status', true)->where('is_archived', false)
             ->whereDoesntHave('cycles', fn ($q) => $q->where('is_current', true)->where('year', '>=', now()->year))->get();
 
         return view('admin.exam-module.attention', compact('overdueResults', 'unverified', 'stalePostponed', 'noCurrent'));

@@ -75,6 +75,9 @@ class CycleController extends Controller
 
     public function storeStage(Request $request, Cycle $cycle)
     {
+        if (!$cycle->exam->has_stages) {
+            return back()->with('error', 'This exam is set to have no stages. Turn on "Does this exam have stages?" first.');
+        }
         $cycle->stages()->create($this->stageData($request) + ['sort_order' => $cycle->stages()->max('sort_order') + 1]);
         return back()->with('success', 'Stage added.');
     }

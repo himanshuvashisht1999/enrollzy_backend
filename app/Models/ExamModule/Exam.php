@@ -17,12 +17,12 @@ class Exam extends Model
         'name', 'short_name', 'slug', 'aliases', 'source_type', 'owning_organisation_id',
         'conducting_body_id', 'exam_type', 'exam_categories', 'frequency', 'program_levels',
         'states', 'feeder_exam_id', 'languages', 'about', 'official_website', 'logo',
-        'has_stages', 'visibility', 'status',
+        'has_stages', 'visibility', 'status', 'cover_image', 'featured', 'sort_order', 'is_archived',
     ];
 
     protected $casts = [
         'aliases' => 'array', 'exam_categories' => 'array', 'program_levels' => 'array',
-        'states' => 'array', 'languages' => 'array', 'has_stages' => 'boolean', 'status' => 'boolean',
+        'states' => 'array', 'languages' => 'array', 'has_stages' => 'boolean', 'status' => 'boolean', 'featured' => 'boolean', 'is_archived' => 'boolean',
     ];
 
     public const TYPES = ['national' => 'National', 'state' => 'State', 'university' => 'University',
@@ -96,6 +96,11 @@ class Exam extends Model
     public function feederExam()
     {
         return $this->belongsTo(self::class, 'feeder_exam_id');
+    }
+
+    public function customFields()
+    {
+        return $this->hasMany(CustomField::class, 'exam_id')->orderBy('sort_order');
     }
 
     public function cycles()

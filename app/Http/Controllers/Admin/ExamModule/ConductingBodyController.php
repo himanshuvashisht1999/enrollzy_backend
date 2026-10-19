@@ -51,6 +51,7 @@ class ConductingBodyController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('exm_conducting_bodies', 'name')->ignore($body?->id)],
             'short_name' => 'nullable|string|max:100',
+            'body_type' => ['nullable', Rule::in(array_keys(ConductingBody::TYPES))],
             'website' => 'nullable|url|max:255',
         ]);
         $data['status'] = $request->boolean('status');

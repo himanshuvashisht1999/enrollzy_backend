@@ -60,7 +60,17 @@ class Cycle extends Model
      * Student-facing status for one event type (spec section 3, rules 1-5).
      * Returns ['state' => string, 'label' => string].
      */
-    public function statusForType(string $slug): array
+    /** True when events must be tagged with a stage (exam has stages and this cycle defines some). */
+    public function usesStages(): bool
+    {
+        return (bool) $this->exam?->has_stages && $this->stages()->exists();
+    }
+
+    /**
+     * Status for one event type, optionally for one stage. A stage sees its own events
+     * plus events marked "All stages (common)".
+     */
+    public function statusForType(string $slug, ?int $stageId = null): array
     {
         if (in_array($this->cycle_status, ['postponed', 'cancelled'])) {
             return ['state' => $this->cycle_status, 'label' => ucfirst($this->cycle_status) . ($this->status_note ? ': ' . $this->status_note : '')];
@@ -72,7 +82,8 @@ class Cycle extends Model
         }
 
         $events = $this->events()->with('type')->get()
-            ->filter(fn ($e) => $e->type && $e->type->slug === $slug);
+            ->filter(fn ($e) => $e->type && $e->type->slug === $slug)
+            ->when($stageId, fn ($c) => $c->filter(fn ($e) => $e->stage_id === $stageId || $e->applies_to_all_stages));
         if ($events->isEmpty()) {
             return ['state' => 'to_be_announced', 'label' => 'To be announced'];
         }
@@ -98,13 +109,52 @@ class Cycle extends Model
             foreach ($this->events()->with('type')->get() as $event) {
                 $new->events()->create([
                     'stage_id' => $event->stage_id ? ($map[$event->stage_id] ?? null) : null,
+                    'applies_to_all_stages' => $event->applies_to_all_stages,
                     'event_type_id' => $event->event_type_id,
                     'label' => $event->label,
                     'date_precision' => 'tba',
                     'manual_status' => $event->type?->isManual() ? 'not_announced' : null,
                 ]);
             }
+            $this->copyContentTo($new, $map);
             return $new;
         });
+    }
+
+    /** Copy eligibility, pattern, fees, syllabus, centres, documents, papers, FAQs and per-cycle custom values. */
+    private function copyContentTo(self $new, array $stageMap): void
+    {
+        foreach (\App\Support\ExamModule\ContentBlocks::all() as $key => $def) {
+            $files = \App\Support\ExamModule\ContentBlocks::fileFields($def);
+            foreach (ContentRow::block($key)->newQuery()->where('cycle_id', $this->id)->get() as $row) {
+                $copy = $row->replicate();
+                $copy->cycle_id = $new->id;
+                $copy->stage_id = $row->stage_id ? ($stageMap[$row->stage_id] ?? null) : null;
+                foreach ($files as $f) {
+                    $copy->$f = $this->copyFile($row->$f);
+                }
+                $copy->save();
+            }
+        }
+
+        $fields = CustomField::where('exam_id', $this->exam_id)->where('scope', 'cycle')->get()->keyBy('id');
+        foreach (CustomValue::where('cycle_id', $this->id)->whereIn('field_id', $fields->keys())->get() as $v) {
+            $value = $v->value;
+            if ($fields[$v->field_id]->type === 'file' && is_string($value)) {
+                $value = $this->copyFile($value);
+            }
+            CustomValue::create(['field_id' => $v->field_id, 'cycle_id' => $new->id, 'value' => $value]);
+        }
+    }
+
+    /** Duplicate an uploaded file so deleting one cycle's copy never breaks the other. */
+    private function copyFile(?string $path): ?string
+    {
+        if (!$path || !\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return null;
+        }
+        $target = dirname($path) . '/' . \Illuminate\Support\Str::random(20) . '_' . basename($path);
+        \Illuminate\Support\Facades\Storage::disk('public')->copy($path, $target);
+        return $target;
     }
 }

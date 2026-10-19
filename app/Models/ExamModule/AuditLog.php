@@ -18,6 +18,17 @@ class AuditLog extends Model
         return $this->belongsTo(\App\Models\Admin::class, 'user_id');
     }
 
+    /** Values for display. Dates are UTC; older rows logged ISO "T...Z", normalised to match new rows. */
+    public function displayValues(?array $values): array
+    {
+        return collect($values ?? [])->map(function ($v) {
+            if (is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/', $v)) {
+                return \Carbon\Carbon::parse($v)->utc()->format('Y-m-d H:i:s');
+            }
+            return $v;
+        })->all();
+    }
+
     public function getSubjectAttribute(): string
     {
         return class_basename($this->auditable_type) . ' #' . $this->auditable_id;

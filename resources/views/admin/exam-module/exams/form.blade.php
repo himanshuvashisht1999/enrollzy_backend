@@ -101,7 +101,10 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Languages</label>
-                    <input type="text" name="languages" class="form-control" value="{{ old('languages', implode(', ', $exam->languages ?? [])) }}" placeholder="English, Hindi, Tamil">
+                    <select name="languages[]" class="form-select" multiple>
+                        @foreach($languageList as $lang)<option value="{{ $lang->id }}" @selected(in_array($lang->id, array_map('intval', old('languages', $exam->languages ?? []))))>{{ $lang->title }}</option>@endforeach
+                    </select>
+                    @can('languages-browse')<div class="form-text">Missing one? <a href="{{ route('admin.languages.index') }}" target="_blank">Add it in the Language master</a>.</div>@endcan
                 </div>
 
                 <div class="col-md-6">
@@ -113,6 +116,17 @@
                     <input type="file" name="logo" class="form-control" accept="image/*">
                     @if($exam->logo)<img src="{{ asset('storage/' . $exam->logo) }}" height="40" class="mt-2">@endif
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Cover Image</label>
+                    <input type="file" name="cover_image" class="form-control" accept="image/*">
+                    <div class="form-text">Banner for the public exam page. Max 4 MB.</div>
+                    @if($exam->cover_image)<img src="{{ asset('storage/' . $exam->cover_image) }}" height="60" class="mt-2 rounded">@endif
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Sort Order</label>
+                    <input type="number" name="sort_order" min="0" class="form-control" value="{{ old('sort_order', $exam->sort_order ?? 0) }}">
+                    <div class="form-text">Lower numbers are listed first on the website.</div>
+                </div>
                 <div class="col-12">
                     <label class="form-label fw-bold">About</label>
                     <textarea name="about" rows="5" class="form-control">{{ old('about', $exam->about) }}</textarea>
@@ -123,6 +137,18 @@
                         <input type="hidden" name="has_stages" value="0">
                         <input class="form-check-input" type="checkbox" name="has_stages" id="has_stages" value="1" @checked(old('has_stages', $exam->has_stages))>
                         <label class="form-check-label" for="has_stages">Does this exam have stages?</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch mb-2">
+                        <input type="hidden" name="featured" value="0">
+                        <input class="form-check-input" type="checkbox" name="featured" id="featured" value="1" @checked(old('featured', $exam->featured))>
+                        <label class="form-check-label" for="featured">Featured exam</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input type="hidden" name="is_archived" value="0">
+                        <input class="form-check-input" type="checkbox" name="is_archived" id="is_archived" value="1" @checked(old('is_archived', $exam->is_archived))>
+                        <label class="form-check-label" for="is_archived">Archived (discontinued, page stays live)</label>
                     </div>
                 </div>
                 <div class="col-md-4">

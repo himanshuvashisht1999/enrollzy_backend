@@ -15,7 +15,7 @@ trait Auditable
             if ($changes->isEmpty()) {
                 return;
             }
-            $old = $changes->mapWithKeys(fn ($v, $k) => [$k => $m->getOriginal($k)])->all();
+            $old = $changes->mapWithKeys(fn ($v, $k) => [$k => $m->getRawOriginal($k)])->all();
             $m->writeAudit('updated', $old, $changes->all());
         });
 

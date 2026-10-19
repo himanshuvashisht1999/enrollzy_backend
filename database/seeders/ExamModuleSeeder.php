@@ -30,7 +30,8 @@ class ExamModuleSeeder extends Seeder
             'exm-exams-browse', 'exm-exams-add', 'exm-exams-edit', 'exm-exams-delete',
             'exm-exams-verify', 'exm-exams-publish', 'exm-cycles-manage',
             'exm-conducting-bodies-browse', 'exm-conducting-bodies-add', 'exm-conducting-bodies-edit', 'exm-conducting-bodies-delete',
-            'exm-event-types-manage', 'exm-attention-browse', 'exm-audit-browse',
+            'exm-content-manage', 'exm-schema-manage', 'exm-cities-manage',
+            'exm-event-types-manage','exm-attention-browse', 'exm-audit-browse',
         ];
         $role = Role::where('name', 'superadmin')->where('guard_name', 'admin')->first();
         foreach ($perms as $name) {
