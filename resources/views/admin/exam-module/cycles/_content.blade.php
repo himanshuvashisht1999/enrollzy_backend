@@ -151,7 +151,20 @@
                             @case('file')<input type="file" name="{{ $f['name'] }}" class="form-control" accept=".{{ str_replace(',', ',.', $f['mimes'] ?? 'pdf') }}"><div class="small text-muted cur-file" data-file="{{ $f['name'] }}"></div>@break
                             @case('select')
                                 <select name="{{ $f['name'] }}" class="form-select" data-default="{{ $f['default'] ?? '' }}"><option value="">Select</option>
-                                @foreach($opts as $ov => $ol)<option value="{{ $ov }}">{{ $ol }}</option>@endforeach</select>@break
+                                @foreach($opts as $ov => $ol)<option value="{{ $ov }}">{{ $ol }}</option>@endforeach</select>
+                                @if(($f['quick_add'] ?? null) === 'city')
+                                    @unless(count($opts))<div class="form-text text-warning">The City master is empty.@cannot('exm-cities-manage') Ask an admin to add cities.@endcannot</div>@endunless
+                                    @can('exm-cities-manage')
+                                    <a href="#" class="small" onclick="this.nextElementSibling.classList.toggle('d-none'); return false;">+ Add a new city</a>
+                                    <div class="d-none border rounded p-2 mt-1 quick-city" data-url="{{ route('admin.exam-module.cities.store') }}">
+                                        <input type="text" class="form-control form-control-sm mb-1 qc-name" placeholder="City name">
+                                        <select class="form-select form-select-sm mb-1 qc-state"><option value="">State (optional)</option>@foreach(\App\Models\ExamModule\Exam::STATES as $st)<option>{{ $st }}</option>@endforeach</select>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="quickAddCity(this.closest('.quick-city'))">Add city</button>
+                                        <span class="small text-danger qc-error ms-2"></span>
+                                    </div>
+                                    @endcan
+                                @endif
+                                @break
                             @case('rows')
                                 <div class="rows-box" data-name="{{ $f['name'] }}" data-sub="{{ json_encode($f['sub']) }}"></div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addRow(this.previousElementSibling)">Add row</button>@break
@@ -196,6 +209,25 @@
         box.appendChild(row);
     }
     document.querySelectorAll('.group-rows').forEach(b => { const rows = JSON.parse(b.dataset.rows || '[]'); (rows.length ? rows : [null]).forEach(r => addGroupRow(b, r)); });
+
+    // ---- add a city from the centre form without leaving the page ----
+    async function quickAddCity(box) {
+        const form = box.closest('form'), select = form.querySelector('select[name="city_id"]');
+        const name = box.querySelector('.qc-name').value.trim(), state = box.querySelector('.qc-state').value;
+        const err = box.querySelector('.qc-error'); err.textContent = '';
+        if (!name) { err.textContent = 'Enter a city name.'; return; }
+        const res = await fetch(box.dataset.url, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value },
+            body: JSON.stringify({ name, state: state || null }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) { err.textContent = (body.errors && Object.values(body.errors)[0][0]) || body.message || 'Could not add the city.'; return; }
+        select.add(new Option(body.label, body.id, true, true));
+        $(select).trigger('change');
+        box.querySelector('.qc-name').value = '';
+        box.classList.add('d-none');
+    }
 
     // ---- block modal ----
     function openBlock(key, row) {

@@ -19,7 +19,12 @@ class CityController extends Controller
 
     public function store(Request $request)
     {
-        City::create($this->validated($request));
+        $city = City::create($this->validated($request));
+
+        // Quick-add from the exam centre form.
+        if ($request->expectsJson()) {
+            return response()->json(['id' => $city->id, 'label' => $city->name . ($city->state ? ', ' . $city->state : '')], 201);
+        }
         return back()->with('success', 'City added.');
     }
 
@@ -44,6 +49,12 @@ class CityController extends Controller
             'name' => 'required|string|max:150',
             'state' => ['nullable', 'string', 'max:100', Rule::unique('exm_cities', 'state')->where('name', $request->name)->ignore($city?->id)],
         ], ['state.unique' => 'This city already exists for that state.']);
+        // The unique index ignores NULL states, so check name + state explicitly.
+        $exists = City::where('name', $data['name'])->where('state', $data['state'] ?? null)
+            ->when($city, fn ($q) => $q->where('id', '!=', $city->id))->exists();
+        if ($exists) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['name' => 'This city already exists for that state.']);
+        }
         $data['status'] = true;
         return $data;
     }

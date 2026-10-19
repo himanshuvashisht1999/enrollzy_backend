@@ -99,7 +99,7 @@ class ContentBlocks
             'centres' => [
                 'title' => 'Exam centres', 'table' => 'exm_centres', 'label' => 'Centre',
                 'fields' => [
-                    ['name' => 'city_id', 'label' => 'City', 'type' => 'select', 'options' => fn () => City::where('status', true)->orderBy('name')->get()->mapWithKeys(fn ($c) => [$c->id => $c->name . ($c->state ? ', ' . $c->state : '')])->all(), 'col' => 6, 'help' => 'Leave empty for a country-level centre (international exams)'],
+                    ['name' => 'city_id', 'label' => 'City', 'type' => 'select', 'options' => fn () => City::where('status', true)->orderBy('name')->get()->mapWithKeys(fn ($c) => [$c->id => $c->name . ($c->state ? ', ' . $c->state : '')])->all(), 'col' => 6, 'quick_add' => 'city', 'help' => 'Leave empty for a country-level centre (international exams)'],
                     ['name' => 'country', 'label' => 'Country', 'type' => 'text', 'required' => true, 'default' => 'India', 'col' => 6],
                 ],
                 'summary' => fn ($r) => [($r->city->name ?? 'Any city') . ', ' . $r->country],
