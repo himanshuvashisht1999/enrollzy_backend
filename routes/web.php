@@ -449,6 +449,59 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:cns-counsellings-verify');
     });
 
+    // Rankings & Accreditation (entity identity, rankings, accreditations, verification)
+    Route::prefix('admin/quality')->name('admin.quality.')->group(function () {
+        $ns = 'App\Http\Controllers\Admin\Quality\\';
+        $masters = 'ranking-bodies|ranking-categories|accreditation-bodies';
+
+        Route::middleware('can:quality-browse')->group(function () use ($ns) {
+            Route::get('/', [$ns . 'DashboardController', 'index'])->name('dashboard');
+            Route::get('review', [$ns . 'RecordController', 'review'])->name('review');
+            Route::get('entity/{type}/{id}', [$ns . 'RecordController', 'entity'])->name('entity');
+            Route::get('evidence/{kind}/{id}', [$ns . 'RecordController', 'evidence'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('evidence');
+        });
+        Route::middleware('can:quality-edit')->group(function () use ($ns) {
+            Route::post('entity/{type}/{id}/rankings', [$ns . 'RecordController', 'storeRanking'])->name('rankings.store');
+            Route::put('rankings/{ranking}', [$ns . 'RecordController', 'updateRanking'])->name('rankings.update');
+            Route::post('entity/{type}/{id}/accreditations', [$ns . 'RecordController', 'storeAccreditation'])->name('accreditations.store');
+            Route::put('accreditations/{accreditation}', [$ns . 'RecordController', 'updateAccreditation'])->name('accreditations.update');
+        });
+        Route::middleware('can:quality-delete')->group(function () use ($ns) {
+            Route::delete('rankings/{ranking}', [$ns . 'RecordController', 'destroyRanking'])->name('rankings.destroy');
+            Route::delete('accreditations/{accreditation}', [$ns . 'RecordController', 'destroyAccreditation'])->name('accreditations.destroy');
+        });
+        Route::middleware('can:quality-verify')->group(function () use ($ns) {
+            Route::post('records/{kind}/{id}/verify', [$ns . 'RecordController', 'verify'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('records.verify');
+            Route::post('records/{kind}/{id}/reject', [$ns . 'RecordController', 'reject'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('records.reject');
+            Route::post('review/verify', [$ns . 'RecordController', 'bulkVerify'])->name('review.verify');
+        });
+        Route::middleware('can:quality-masters-manage')->group(function () use ($ns, $masters) {
+            // One-page data update, run after the SQL file has created the tables (safe to run again).
+            Route::get('setup', [$ns . 'SetupController', 'index'])->name('setup');
+            Route::post('setup', [$ns . 'SetupController', 'run'])->name('setup.run');
+            Route::get('masters/{master}', [$ns . 'MasterController', 'index'])->where('master', $masters)->name('masters.index');
+            Route::post('masters/{master}', [$ns . 'MasterController', 'store'])->where('master', $masters)->name('masters.store');
+            Route::put('masters/{master}/{id}', [$ns . 'MasterController', 'update'])->where('master', $masters)->whereNumber('id')->name('masters.update');
+            Route::delete('masters/{master}/{id}', [$ns . 'MasterController', 'destroy'])->where('master', $masters)->whereNumber('id')->name('masters.destroy');
+        });
+        Route::middleware('can:quality-identity-manage')->group(function () use ($ns) {
+            Route::get('identity', [$ns . 'IdentityController', 'index'])->name('identity.index');
+            Route::put('identity/{level}/{id}', [$ns . 'IdentityController', 'update'])->name('identity.update');
+            Route::get('identity-template', [$ns . 'IdentityController', 'template'])->name('identity.template');
+            Route::post('identity/import', [$ns . 'IdentityController', 'import'])->name('identity.import');
+            Route::post('identity/import/confirm', [$ns . 'IdentityController', 'confirmImport'])->name('identity.import.confirm');
+            Route::get('groups', [$ns . 'GroupController', 'index'])->name('groups.index');
+            Route::post('groups', [$ns . 'GroupController', 'store'])->name('groups.store');
+            Route::put('groups/{group}', [$ns . 'GroupController', 'update'])->name('groups.update');
+            Route::delete('groups/{group}', [$ns . 'GroupController', 'destroy'])->name('groups.destroy');
+            Route::get('moves', [$ns . 'MoveController', 'index'])->name('moves.index');
+            Route::get('moves/search', [$ns . 'MoveController', 'search'])->name('moves.search');
+            Route::post('moves/preview', [$ns . 'MoveController', 'preview'])->name('moves.preview');
+            Route::post('moves/apply', [$ns . 'MoveController', 'apply'])->name('moves.apply');
+            Route::post('moves/{move}/undo', [$ns . 'MoveController', 'undo'])->whereNumber('move')->name('moves.undo');
+        });
+    });
+
     // Exam Stage Data Management
     Route::get('/admin/exams/{exam}/stages/{stage}/edit', [ExamStageDataController::class, 'edit'])->name('admin.exams.stages.edit');
     Route::post('/admin/exams/{exam}/interview/update', [ExamStageDataController::class, 'updateInterview'])->name('admin.exams.interview.update');
@@ -678,7 +731,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('disciplines', \App\Http\Controllers\Admin\DisciplineController::class)->middleware('can:disciplines-browse');
         Route::resource('specializations', \App\Http\Controllers\Admin\SpecializationController::class)->middleware('can:specializations-browse');
         Route::resource('organisation-types', \App\Http\Controllers\Admin\OrganisationTypeController::class)->middleware('can:organisation-types-browse');
-        Route::resource('accreditation-approvals', \App\Http\Controllers\Admin\AccreditationApprovalController::class)->middleware('can:accreditation-approvals-browse');
+        // Retired: the old Accreditation & Approval master now lives in Rankings & Accreditation > Accreditation & approval bodies.
+        Route::get('accreditation-approvals/{any?}', fn () => redirect()->route('admin.quality.masters.index', 'accreditation-bodies'))->where('any', '.*')->name('accreditation-approvals.index');
         Route::resource('campus-types', \App\Http\Controllers\Admin\CampusTypeController::class)->middleware('can:campus-types-browse');
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class)->middleware('can:campus-types-browse');
         Route::resource('academic-classes', \App\Http\Controllers\Admin\AcademicClassController::class);

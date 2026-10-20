@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class Campus extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Models\Quality\Concerns\HasQualityRecords;
 
     protected $keyType = 'string';
     public $incrementing = false;

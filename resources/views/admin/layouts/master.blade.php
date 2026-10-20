@@ -292,15 +292,15 @@
                 {{-- Academics Group --}}
                 
 <!-- wrapped parent #academicsMenu -->
-@if($user && method_exists($user, 'canAny') && $user->canAny(['faculties-browse', 'faculty-designations-browse', 'faculty-types-browse', 'organisations-browse', 'organisation-courses-browse', 'exams-browse', 'dynamic-exams-browse', 'exm-exams-browse', 'cns-counsellings-browse', 'courses-browse', 'scholarships-browse', 'noteworthy-categories-browse', 'noteworthy-mentions-browse', 'trending-skills-browse', 'program-levels-browse', 'program-types-browse', 'stream-offereds-browse', 'disciplines-browse', 'specializations-browse', 'organisation-types-browse', 'accreditation-approvals-browse', 'campus-types-browse', 'facilities-browse', 'sports-browse', 'exam-stages-browse']))
+@if($user && method_exists($user, 'canAny') && $user->canAny(['faculties-browse', 'faculty-designations-browse', 'faculty-types-browse', 'organisations-browse', 'organisation-courses-browse', 'exams-browse', 'dynamic-exams-browse', 'exm-exams-browse', 'cns-counsellings-browse', 'quality-browse', 'courses-browse', 'scholarships-browse', 'noteworthy-categories-browse', 'noteworthy-mentions-browse', 'trending-skills-browse', 'program-levels-browse', 'program-types-browse', 'stream-offereds-browse', 'disciplines-browse', 'specializations-browse', 'organisation-types-browse', 'accreditation-approvals-browse', 'campus-types-browse', 'facilities-browse', 'sports-browse', 'exam-stages-browse']))
 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/quality*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#academicsMenu" role="button"
-                        aria-expanded="{{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
+                        aria-expanded="{{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/quality*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
                         <span><i class="fas fa-graduation-cap"></i> Academics</span>
                         <i class="fas fa-chevron-down small menu-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->is('admin/faculties*', 'admin/faculty-designations*', 'admin/faculty-types*', 'admin/academic-directory*', 'admin/organisation-fields*', 'admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/exam-module*', 'admin/counselling*', 'admin/quality*', 'admin/organisation-courses*', 'admin/courses*', 'admin/scholarships*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/campus_type_new*', 'admin/academic-classes*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
                         id="academicsMenu">
                         <ul class="nav flex-column ps-3">
                             <li><a class="nav-link sub-link {{ request()->routeIs('admin.academic-directory.*') ? 'active' : '' }}"
@@ -335,6 +335,10 @@
 @if($user && method_exists($user, 'can') && $user->can('cns-counsellings-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.counselling.*') ? 'active' : '' }}"
                                     href="{{ route('admin.counselling.counsellings.index') }}">Counselling</a></li>
+@endif
+@if($user && method_exists($user, 'can') && $user->can('quality-browse'))
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.quality.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.quality.dashboard') }}">Rankings & Accreditation</a></li>
 @endif
 
                             <!-- wrapped courses -->
@@ -429,9 +433,9 @@
 @endif
 
                             <!-- wrapped sublink missing -->
-@if($user && method_exists($user, 'can') && $user->can('accreditation-approvals-browse'))
-<li><a class="nav-link sub-link {{ request()->routeIs('admin.accreditation-approvals.*') ? 'active' : '' }}"
-                                    href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
+@if($user && method_exists($user, 'can') && $user->can('quality-masters-manage'))
+<li><a class="nav-link sub-link {{ request()->is('admin/quality/masters/accreditation-bodies*') ? 'active' : '' }}"
+                                    href="{{ route('admin.quality.masters.index', 'accreditation-bodies') }}">Accreditation</a></li>
 @endif
 
                             <!-- wrapped campus-types -->

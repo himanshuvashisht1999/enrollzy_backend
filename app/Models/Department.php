@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class Department extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Models\Quality\Concerns\HasQualityRecords;
 
     protected $fillable = [
         'organisation_id',

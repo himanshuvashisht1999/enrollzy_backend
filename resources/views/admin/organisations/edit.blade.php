@@ -18,6 +18,7 @@
                             }
                         @endphp
                         <a href="{{ route('admin.organisations.campuses.index', $organisation->id) }}" id="btnManageCampuses" class="btn btn-info btn-sm me-2" style="{{ $isELearning ? 'display: none;' : '' }}">Manage Campuses</a>
+                        @can('quality-browse')<a href="{{ route('admin.quality.entity', ['organisation', $organisation->id]) }}" class="btn btn-outline-primary btn-sm me-2"><i class="fas fa-medal me-1"></i> Rankings & Accreditation</a>@endcan
                         <a href="{{ route('admin.organisations.index') }}" class="btn btn-secondary btn-sm">Back</a>
                     </div>
                 </div>

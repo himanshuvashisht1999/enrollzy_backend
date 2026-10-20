@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrganisationCourse extends Model
 {
+    use \App\Models\Quality\Concerns\HasQualityRecords;
+
     protected $fillable = [
         'organisation_id',
         'course_id',

@@ -27,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        // Ranking / accreditation records store 'organisation' | 'campus' | 'department' | 'course', not class names.
+        \App\Support\Quality\Levels::register();
+
         // Public counselling API: generous for reads, tight for anything that sends mail / WhatsApp.
         \Illuminate\Support\Facades\RateLimiter::for('cns-public', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(120)->by($request->ip()));
         \Illuminate\Support\Facades\RateLimiter::for('cns-follow', fn ($request) => [

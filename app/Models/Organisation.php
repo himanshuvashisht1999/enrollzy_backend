@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Organisation extends Model
 {
+    use \App\Models\Quality\Concerns\HasQualityRecords;
+
     protected $fillable = [
         'name',
         'sort_order',

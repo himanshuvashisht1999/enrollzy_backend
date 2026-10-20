@@ -31,6 +31,7 @@
             <i class="fas fa-arrow-left me-1"></i> Back to Courses
         </a>
         <h3 class="fw-bold mt-2">Edit Course: {{ $organisationCourse->course->name ?? 'Unknown' }}</h3>
+        @can('quality-browse')<a href="{{ route('admin.quality.entity', ['course', $organisationCourse->id]) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-medal me-1"></i> Rankings & Accreditation</a>@endcan
     </div>
 
     <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST" enctype="multipart/form-data">
