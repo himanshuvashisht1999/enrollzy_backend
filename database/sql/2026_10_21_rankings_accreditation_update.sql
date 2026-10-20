@@ -1,16 +1,16 @@
 -- =====================================================================================================
--- Rankings & Accreditation update  (migrations 2026_10_21_100000 .. 2026_10_21_130000)
--- Generated 2026-10-20 11:35:13 from the tested local database.
+-- Rankings & Accreditation update  (migrations 2026_10_21_100000 .. 2026_10_26_100000)
+-- Generated 2026-10-20 14:44:35 from the tested local database.
 --
 -- STRUCTURE ONLY. This file creates tables and columns and copies NO data, so it is safe even if the live
 -- database has moved on since it was prepared.
 --
 -- WHAT IT DOES
 --   1. Creates organisation_groups, ranking_bodies, ranking_categories, accreditation_bodies,
---      entity_rankings, entity_accreditations, organisation_moves.
+--      entity_rankings, entity_accreditations, entity_approvals, accreditation_body_disciplines, entity_placements, entity_reviews, entity_awards, organisation_moves.
 --   2. Adds identity columns (AISHE code, NIRF institute id, legal entity type, group, campus role...) to
 --      organisations, campuses and departments, and two link columns to accreditation_approvals.
---   3. Records the four migrations in the `migrations` table so `php artisan migrate` will not run them again.
+--   3. Records the ten migrations in the `migrations` table so `php artisan migrate` will not run them again.
 --
 -- THEN, to fill in the data from whatever is in the live database at that moment:
 --   open  /admin/quality/setup  (log in as superadmin / admin), read the preview, press "Run update".
@@ -165,6 +165,140 @@ CREATE TABLE IF NOT EXISTS `entity_accreditations` (
   CONSTRAINT `entity_accreditations_accreditation_body_id_foreign` FOREIGN KEY (`accreditation_body_id`) REFERENCES `accreditation_bodies` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `entity_approvals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_type` varchar(20) NOT NULL,
+  `entity_id` varchar(40) NOT NULL,
+  `accreditation_body_id` bigint(20) unsigned NOT NULL,
+  `approval_number` varchar(100) DEFAULT NULL,
+  `academic_year` varchar(9) DEFAULT NULL,
+  `sanctioned_intake` int(10) unsigned DEFAULT NULL,
+  `valid_from` date DEFAULT NULL,
+  `valid_to` date DEFAULT NULL,
+  `status` enum('active','expired','applied','withdrawn') NOT NULL DEFAULT 'active',
+  `source_url` varchar(500) DEFAULT NULL,
+  `evidence_file` varchar(255) DEFAULT NULL,
+  `verification_status` enum('unverified','verified','rejected') NOT NULL DEFAULT 'unverified',
+  `verified_by` bigint(20) unsigned DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `legacy_source` varchar(60) DEFAULT NULL,
+  `import_batch` varchar(40) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `entity_approvals_entity_type_entity_id_index` (`entity_type`,`entity_id`),
+  KEY `entity_approvals_body_year` (`accreditation_body_id`,`academic_year`),
+  KEY `entity_approvals_legacy_source_index` (`legacy_source`),
+  KEY `entity_approvals_import_batch_index` (`import_batch`),
+  CONSTRAINT `entity_approvals_accreditation_body_id_foreign` FOREIGN KEY (`accreditation_body_id`) REFERENCES `accreditation_bodies` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `accreditation_body_disciplines` (
+  `accreditation_body_id` bigint(20) unsigned NOT NULL,
+  `discipline_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`accreditation_body_id`,`discipline_id`),
+  KEY `accreditation_body_disciplines_discipline_id_foreign` (`discipline_id`),
+  CONSTRAINT `accreditation_body_disciplines_accreditation_body_id_foreign` FOREIGN KEY (`accreditation_body_id`) REFERENCES `accreditation_bodies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `accreditation_body_disciplines_discipline_id_foreign` FOREIGN KEY (`discipline_id`) REFERENCES `disciplines` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `entity_placements` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_type` varchar(20) NOT NULL,
+  `entity_id` varchar(40) NOT NULL,
+  `academic_year` varchar(9) DEFAULT NULL,
+  `students_graduating` int(10) unsigned DEFAULT NULL,
+  `students_placed` int(10) unsigned DEFAULT NULL,
+  `students_higher_studies` int(10) unsigned DEFAULT NULL,
+  `median_salary` bigint(20) unsigned DEFAULT NULL,
+  `highest_salary` bigint(20) unsigned DEFAULT NULL,
+  `average_salary` bigint(20) unsigned DEFAULT NULL,
+  `recruiters_count` int(10) unsigned DEFAULT NULL,
+  `placement_source` varchar(255) DEFAULT NULL,
+  `source_url` varchar(500) DEFAULT NULL,
+  `evidence_file` varchar(255) DEFAULT NULL,
+  `verification_status` enum('unverified','verified','rejected') NOT NULL DEFAULT 'unverified',
+  `verified_by` bigint(20) unsigned DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `legacy_source` varchar(80) DEFAULT NULL,
+  `import_batch` varchar(40) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `entity_placements_entity_type_entity_id_index` (`entity_type`,`entity_id`),
+  KEY `entity_placements_academic_year_index` (`academic_year`),
+  KEY `entity_placements_legacy_source_index` (`legacy_source`),
+  KEY `entity_placements_import_batch_index` (`import_batch`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `entity_reviews` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_type` varchar(20) NOT NULL,
+  `entity_id` varchar(40) NOT NULL,
+  `reviewer_name` varchar(150) DEFAULT NULL,
+  `reviewer_type` enum('student','alumni','parent','faculty','recruiter','other') NOT NULL DEFAULT 'other',
+  `rating` decimal(2,1) NOT NULL,
+  `infrastructure` decimal(2,1) DEFAULT NULL,
+  `campus_life` decimal(2,1) DEFAULT NULL,
+  `academics` decimal(2,1) DEFAULT NULL,
+  `placements` decimal(2,1) DEFAULT NULL,
+  `value_for_money` decimal(2,1) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `comment` text DEFAULT NULL,
+  `reviewed_on` date DEFAULT NULL,
+  `review_year` smallint(5) unsigned DEFAULT NULL,
+  `source` varchar(100) DEFAULT NULL,
+  `source_url` varchar(500) DEFAULT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT 1,
+  `verification_status` enum('unverified','verified','rejected') NOT NULL DEFAULT 'unverified',
+  `verified_by` bigint(20) unsigned DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `legacy_source` varchar(80) DEFAULT NULL,
+  `import_batch` varchar(40) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `entity_reviews_entity_type_entity_id_index` (`entity_type`,`entity_id`),
+  KEY `entity_reviews_legacy_source_index` (`legacy_source`),
+  KEY `entity_reviews_import_batch_index` (`import_batch`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `entity_awards` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_type` varchar(20) NOT NULL,
+  `entity_id` varchar(40) NOT NULL,
+  `title` varchar(500) NOT NULL,
+  `kind` enum('award','ranking_mention','membership','affiliation','accreditation_mention','other') NOT NULL DEFAULT 'award',
+  `issuer` varchar(255) DEFAULT NULL,
+  `award_year` smallint(5) unsigned DEFAULT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `source_url` varchar(500) DEFAULT NULL,
+  `evidence_file` varchar(255) DEFAULT NULL,
+  `verification_status` enum('unverified','verified','rejected') NOT NULL DEFAULT 'unverified',
+  `verified_by` bigint(20) unsigned DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `legacy_source` varchar(80) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `entity_awards_entity_type_entity_id_index` (`entity_type`,`entity_id`),
+  KEY `entity_awards_kind_verification_status_index` (`kind`,`verification_status`),
+  KEY `entity_awards_legacy_source_index` (`legacy_source`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `organisation_moves` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `from_organisation_id` bigint(20) unsigned NOT NULL,
@@ -252,12 +386,18 @@ INSERT INTO migrations (migration, batch) SELECT '2026_10_21_100000_add_identity
 INSERT INTO migrations (migration, batch) SELECT '2026_10_21_110000_create_ranking_and_accreditation_tables', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_21_110000_create_ranking_and_accreditation_tables');
 INSERT INTO migrations (migration, batch) SELECT '2026_10_21_120000_create_organisation_moves_table', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_21_120000_create_organisation_moves_table');
 INSERT INTO migrations (migration, batch) SELECT '2026_10_21_130000_link_legacy_accreditation_approvals', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_21_130000_link_legacy_accreditation_approvals');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_22_100000_create_entity_approvals_and_body_disciplines', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_22_100000_create_entity_approvals_and_body_disciplines');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_22_110000_add_import_batch_to_entity_approvals', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_22_110000_add_import_batch_to_entity_approvals');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_23_100000_create_entity_placements_and_reviews', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_23_100000_create_entity_placements_and_reviews');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_24_100000_create_entity_awards', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_24_100000_create_entity_awards');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_25_100000_add_import_batch_to_entity_placements', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_25_100000_add_import_batch_to_entity_placements');
+INSERT INTO migrations (migration, batch) SELECT '2026_10_26_100000_add_import_batch_to_entity_reviews', @batch FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2026_10_26_100000_add_import_batch_to_entity_reviews');
 
--- 9. Read-only check that the structure is in place (all numbers should be 7 / 10 / 9 / 2 / 4)
-SELECT (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('organisation_groups','ranking_bodies','ranking_categories','accreditation_bodies','entity_rankings','entity_accreditations','organisation_moves')) AS new_tables,
+-- 9. Read-only check that the structure is in place (all numbers should be 12 / 10 / 9 / 2 / 10)
+SELECT (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('organisation_groups','ranking_bodies','ranking_categories','accreditation_bodies','entity_rankings','entity_accreditations','entity_approvals','accreditation_body_disciplines','entity_placements','entity_reviews','entity_awards','organisation_moves')) AS new_tables,
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'organisations' AND COLUMN_NAME IN ('aishe_code','nirf_institute_id','group_id','affiliating_organisation_id','legal_entity_type','ugc_recognition_date','deemed_status_notification_ref','identity_source_url','identity_verified_at','identity_verified_by')) AS organisation_columns,
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'campuses' AND COLUMN_NAME IN ('campus_role','aishe_code','nirf_institute_id','board_affiliation_number','affiliation_valid_to','inherits_org_accreditation','identity_source_url','identity_verified_at','identity_verified_by')) AS campus_columns,
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'departments' AND COLUMN_NAME IN ('academic_unit_type','nirf_institute_id')) AS department_columns,
-       (SELECT COUNT(*) FROM migrations WHERE migration LIKE '2026_10_21%') AS migrations_recorded;
+       (SELECT COUNT(*) FROM migrations WHERE (migration LIKE '2026_10_21%' OR migration LIKE '2026_10_22%' OR migration LIKE '2026_10_23%' OR migration LIKE '2026_10_24%' OR migration LIKE '2026_10_25%' OR migration LIKE '2026_10_26%')) AS migrations_recorded;
 
 SET SQL_NOTES = @OLD_SQL_NOTES;

@@ -103,6 +103,12 @@ class OrganisationCourseController extends Controller
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'program_level_id' => 'nullable|exists:program_levels,id',
+            'stream_offered_id' => 'nullable|exists:stream_offereds,id',
+            'discipline_id' => 'nullable|exists:disciplines,id',
+            'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
+            'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
             'documents' => 'nullable|array',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
@@ -160,8 +166,10 @@ class OrganisationCourseController extends Controller
             'hostel_fee'
         ];
 
+        // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
         foreach ($booleans as $field) {
-            $data[$field] = $request->has($field);
+            if ($request->has($field)) $data[$field] = $request->boolean($field);
+            else unset($data[$field]);
         }
 
         // Slug generation if not provided
@@ -170,6 +178,14 @@ class OrganisationCourseController extends Controller
         }
 
         unset($data['documents'], $data['has_documents_form']);
+
+        // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
+        foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = ($data[$field] === null || $data[$field] === '') ? null : max(0, (int) $data[$field]);
+        }
+        foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
+        }
 
         $course = OrganisationCourse::create($data);
         $this->syncDocuments($request, $course);
@@ -236,6 +252,12 @@ class OrganisationCourseController extends Controller
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'program_level_id' => 'nullable|exists:program_levels,id',
+            'stream_offered_id' => 'nullable|exists:stream_offereds,id',
+            'discipline_id' => 'nullable|exists:disciplines,id',
+            'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
+            'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
             'documents' => 'nullable|array',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
@@ -297,8 +319,10 @@ class OrganisationCourseController extends Controller
             'hostel_fee'
         ];
 
+        // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
         foreach ($booleans as $field) {
-            $data[$field] = $request->has($field);
+            if ($request->has($field)) $data[$field] = $request->boolean($field);
+            else unset($data[$field]);
         }
 
         if (empty($data['slug']) && !empty($data['academic_unit_name'])) {
@@ -306,6 +330,14 @@ class OrganisationCourseController extends Controller
         }
 
         unset($data['documents'], $data['has_documents_form']);
+
+        // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
+        foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = ($data[$field] === null || $data[$field] === '') ? null : max(0, (int) $data[$field]);
+        }
+        foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
+        }
 
         $organisationCourse->update($data);
         $this->syncDocuments($request, $organisationCourse);

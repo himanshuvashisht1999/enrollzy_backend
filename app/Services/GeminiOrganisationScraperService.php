@@ -620,6 +620,74 @@ class GeminiOrganisationScraperService
     }
 
     /**
+     * Prompt for the AI updater. Only the fields in $allowedFields may be returned; they arrive already filtered by OrganisationFieldPolicy
+     * (a real column, on the edit form staff use, ticked for this organisation type).
+     * Restored: this method was removed in commit 5f7cda49 while extractScopedUpdates() still called it, which broke "Fetch updates".
+     */
+    protected function buildScopedUpdatePrompt(
+        string $url,
+        string $content,
+        string $orgTypeTitle,
+        array $allowedFields,
+        array $currentData
+    ): string {
+        $allowedJson = json_encode($allowedFields, JSON_PRETTY_PRINT);
+        $currentJson = json_encode($currentData, JSON_PRETTY_PRINT);
+
+        return <<<PROMPT
+You are an expert institutional research and verification AI agent.
+You are tasked with reviewing and fetching UPDATES for an existing educational institution.
+
+INSTITUTION URL: {$url}
+ORGANISATION TYPE: {$orgTypeTitle}
+
+RAW WEBSITE / SEARCH CONTENT:
+{$content}
+
+CURRENT DATABASE RECORD (OLD DATA):
+{$currentJson}
+
+ALLOWED FIELDS FOR UPDATE:
+Only the following fields are enabled by the admin for checking and updating:
+{$allowedJson}
+
+CRITICAL RULES:
+1. ONLY return data for the keys explicitly listed in "ALLOWED FIELDS". Do NOT invent or include other field keys.
+2. For every allowed field:
+   - Search the website and Google Search Grounding to find the latest and most accurate current values.
+   - If a field is already accurate in the database, keep the current value.
+   - If there is a newer, updated, or previously missing value (e.g. new HOD, new NAAC grade, contact phone, website, accreditation), provide the NEW accurate value.
+3. For departments, campuses, and courses:
+   - For existing departments/campuses/courses provided in CURRENT DATABASE RECORD, provide their updated fields matching the allowed keys.
+   - You may also include newly detected departments, campuses, or courses if verified on the official website.
+4. Output MUST be ONLY valid JSON matching this structure:
+{
+  "organisation": {
+    /* ONLY allowed organisation keys */
+  },
+  "campuses": [
+    {
+      "name": "...",
+      /* ONLY allowed campus keys */
+    }
+  ],
+  "departments": [
+    {
+      "name": "...",
+      /* ONLY allowed department keys */
+    }
+  ],
+  "courses": [
+    {
+      "academic_unit_name": "...",
+      /* ONLY allowed course keys */
+    }
+  ]
+}
+PROMPT;
+    }
+
+    /**
      * Fetch and clean text, meta images, structured academic navigation, and deep-crawl relevant linked sub-pages without restrictive limits
      */
     protected function fetchUrlContent(

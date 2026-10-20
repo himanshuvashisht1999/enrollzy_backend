@@ -64,6 +64,21 @@ class CampusController extends Controller
     {
         $request->validate([
             'campus_name' => 'required|string|max:255',
+            'campus_type' => 'nullable|in:Main,Regional,Satellite',
+            'country' => 'nullable|string|max:255',
+            'google_map_url' => 'nullable|url|max:255',
+            'nearest_transport_hub' => 'nullable|string|max:255',
+            'hostel_type' => 'nullable|in:Boys,Girls,Both,None',
+            'food_facility' => 'nullable|string|max:255',
+            'sports_facilities' => 'nullable|string|max:2000',
+            'academic_blocks_count' => 'nullable|integer|min:0',
+            'laboratories_count' => 'nullable|integer|min:0',
+            'research_centers_count' => 'nullable|integer|min:0',
+            'library_books_count' => 'nullable|integer|min:0',
+            'hostel_capacity' => 'nullable|integer|min:0',
+            'bus_routes_count' => 'nullable|integer|min:0',
+            'bus_fleet_size' => 'nullable|integer|min:0',
+            'security_staff_count' => 'nullable|integer|min:0',
             'documents' => 'nullable|array',
             'documents.*.id' => 'nullable|integer',
             'documents.*.title' => 'nullable|string|max:255',
@@ -79,6 +94,7 @@ class CampusController extends Controller
                 $input[$k] = null;
             }
         }
+        $input = $this->normaliseFacilityFields($input, $request);
 
         if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
             $input['events_and_activities'] = $this->processEventsAndActivities($request);
@@ -142,6 +158,21 @@ class CampusController extends Controller
         $request->validate([
             'facilities' => 'nullable|array',
             'facilities.*' => 'string',
+            'campus_type' => 'nullable|in:Main,Regional,Satellite',
+            'country' => 'nullable|string|max:255',
+            'google_map_url' => 'nullable|url|max:255',
+            'nearest_transport_hub' => 'nullable|string|max:255',
+            'hostel_type' => 'nullable|in:Boys,Girls,Both,None',
+            'food_facility' => 'nullable|string|max:255',
+            'sports_facilities' => 'nullable|string|max:2000',
+            'academic_blocks_count' => 'nullable|integer|min:0',
+            'laboratories_count' => 'nullable|integer|min:0',
+            'research_centers_count' => 'nullable|integer|min:0',
+            'library_books_count' => 'nullable|integer|min:0',
+            'hostel_capacity' => 'nullable|integer|min:0',
+            'bus_routes_count' => 'nullable|integer|min:0',
+            'bus_fleet_size' => 'nullable|integer|min:0',
+            'security_staff_count' => 'nullable|integer|min:0',
             'class_profile' => 'nullable|array',
             'class_profile.*.year' => 'nullable|integer',
             'class_profile.*.total_students' => 'nullable|integer|min:0',
@@ -173,14 +204,18 @@ class CampusController extends Controller
             'playground_available', 'gps_enabled_buses', 'visitor_management_system'
         ];
 
+        // Only the switches this form showed (each sends a hidden 0 when unticked): verification_status, brand_compliance_verified and others
+        // that are not on the form keep their value instead of being reset to 0 on every save.
         foreach ($booleans as $field) {
-            $input[$field] = $request->has($field) ? 1 : 0;
+            if ($request->has($field)) $input[$field] = $request->boolean($field) ? 1 : 0;
         }
 
         // Handle slug: if empty, let model handle it
         if (array_key_exists('slug', $input) && empty($input['slug'])) {
             unset($input['slug']);
         }
+
+        $input = $this->normaliseFacilityFields($input, $request);
 
         if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
             $input['events_and_activities'] = $this->processEventsAndActivities($request, $campus->events_and_activities);
@@ -292,6 +327,8 @@ class CampusController extends Controller
             }
         }
         
+        $updateData = $this->normaliseFacilityFields($updateData, $request, true);
+
         $processedEvents = null;
         if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
             $processedEvents = $this->processEventsAndActivities($request, $campus->events_and_activities);
@@ -309,6 +346,31 @@ class CampusController extends Controller
             $response['events'] = $processedEvents;
         }
         return response()->json($response);
+    }
+
+    /** Columns that cannot be NULL: an emptied number box means 0, an emptied country means the default. */
+    private const NOT_NULL_COUNTS = ['academic_blocks_count', 'laboratories_count', 'research_centers_count', 'library_books_count', 'hostel_capacity', 'bus_routes_count', 'security_staff_count'];
+
+    /**
+     * Makes the facility inputs safe to save: blank numbers become 0 (their columns are NOT NULL), a blank country keeps the default,
+     * and the sports box (comma / new-line separated text) becomes the list the column holds. The marker field is never saved.
+     */
+    private function normaliseFacilityFields(array $data, Request $request, bool $autosave = false): array
+    {
+        foreach (self::NOT_NULL_COUNTS as $f) {
+            if (array_key_exists($f, $data)) $data[$f] = max(0, (int) $data[$f]);
+        }
+        if (array_key_exists('bus_fleet_size', $data) && $data['bus_fleet_size'] !== null) $data['bus_fleet_size'] = max(0, (int) $data['bus_fleet_size']);
+        if (array_key_exists('country', $data) && trim((string) $data['country']) === '') $data['country'] = 'India';
+        if (array_key_exists('hostel_type', $data) && $data['hostel_type'] !== null && !in_array($data['hostel_type'], ['Boys', 'Girls', 'Both', 'None'], true)) $data['hostel_type'] = null;
+
+        unset($data['sports_facilities_form']);
+        if ($request->has('sports_facilities_form') || array_key_exists('sports_facilities', $data)) {
+            $raw = $request->input('sports_facilities', $data['sports_facilities'] ?? '');
+            $parts = is_array($raw) ? $raw : preg_split('/[,\r\n]+/', (string) $raw);
+            $data['sports_facilities'] = array_values(array_unique(array_filter(array_map('trim', $parts), fn ($v) => $v !== '')));
+        }
+        return $data;
     }
 
     /**

@@ -31,6 +31,18 @@
                 </div>
 
                 <div class="card-body p-4">
+                    @php
+                        $unusableCount = collect($fieldStatus)->flatten(1)->filter(fn ($s) => $s['state'] !== 'ok')->count();
+                    @endphp
+                    <div class="alert alert-light border d-flex justify-content-between align-items-center flex-wrap gap-2 small">
+                        <div>
+                            <i class="fas fa-link me-1 text-primary"></i>
+                            The AI updater can only change a field that is <strong>ticked here</strong>, is a <strong>real database column</strong> and is <strong>on the edit form staff use</strong> for this organisation type.
+                            @if($unusableCount)<span class="text-danger ms-1">{{ $unusableCount }} field(s) below are greyed out because they fail one of those tests.</span>@endif
+                            <span class="text-muted ms-1">Forms last read: {{ $formScan['generated_at'] ?? 'never' }}.</span>
+                        </div>
+                        <a href="{{ route('admin.organisation-fields.audit') }}" class="btn btn-sm btn-outline-primary">See the full audit</a>
+                    </div>
                     <!-- TOP TOOLBAR: Organisation Types Segmented Pills -->
                     <div class="bg-light p-2 rounded border mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <div class="d-flex flex-wrap align-items-center gap-1">
@@ -92,7 +104,7 @@
                                             @foreach($tab['fields'] as $field)
                                                 @php
                                                     $fn = $field['name'];
-                                                    $isChecked = ($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['organisation'] ?? []);
+                                                    $isChecked = (($fieldStatus['organisation'][$fn]['state'] ?? 'ok') === 'ok') && (($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['organisation'] ?? []));
                                                 @endphp
                                                 <div class="col-lg-4 col-md-6">
                                                     <div class="form-check">
@@ -102,10 +114,12 @@
                                                                value="{{ $fn }}"
                                                                id="org_{{ $fn }}"
                                                                data-entity="organisation"
-                                                               {{ $isChecked ? 'checked' : '' }}>
+                                                               {{ $isChecked ? 'checked' : '' }}
+                                                               {{ (($fieldStatus['organisation'][$fn]['state'] ?? 'ok') !== 'ok') ? 'disabled' : '' }}>
                                                         <label class="form-check-label" for="org_{{ $fn }}">
                                                             {{ $field['label'] }}
                                                             <small class="text-muted d-block font-monospace">({{ $fn }})</small>
+                                                            @if(($fieldStatus['organisation'][$fn]['state'] ?? 'ok') !== 'ok')<small class="d-block text-danger"><i class="fas fa-ban me-1"></i>{{ $fieldStatus['organisation'][$fn]['reason'] }}</small>@endif
                                                         </label>
                                                     </div>
                                                 </div>
@@ -134,7 +148,7 @@
                                             @foreach($sec['fields'] as $field)
                                                 @php
                                                     $fn = $field['name'];
-                                                    $isChecked = ($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['campus'] ?? []);
+                                                    $isChecked = (($fieldStatus['campus'][$fn]['state'] ?? 'ok') === 'ok') && (($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['campus'] ?? []));
                                                 @endphp
                                                 <div class="col-lg-4 col-md-6">
                                                     <div class="form-check">
@@ -144,10 +158,12 @@
                                                                value="{{ $fn }}"
                                                                id="campus_{{ $fn }}"
                                                                data-entity="campus"
-                                                               {{ $isChecked ? 'checked' : '' }}>
+                                                               {{ $isChecked ? 'checked' : '' }}
+                                                               {{ (($fieldStatus['campus'][$fn]['state'] ?? 'ok') !== 'ok') ? 'disabled' : '' }}>
                                                         <label class="form-check-label" for="campus_{{ $fn }}">
                                                             {{ $field['label'] }}
                                                             <small class="text-muted d-block font-monospace">({{ $fn }})</small>
+                                                            @if(($fieldStatus['campus'][$fn]['state'] ?? 'ok') !== 'ok')<small class="d-block text-danger"><i class="fas fa-ban me-1"></i>{{ $fieldStatus['campus'][$fn]['reason'] }}</small>@endif
                                                         </label>
                                                     </div>
                                                 </div>
@@ -176,7 +192,7 @@
                                             @foreach($sec['fields'] as $field)
                                                 @php
                                                     $fn = $field['name'];
-                                                    $isChecked = ($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['department'] ?? []);
+                                                    $isChecked = (($fieldStatus['department'][$fn]['state'] ?? 'ok') === 'ok') && (($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['department'] ?? []));
                                                 @endphp
                                                 <div class="col-lg-4 col-md-6">
                                                     <div class="form-check">
@@ -186,10 +202,12 @@
                                                                value="{{ $fn }}"
                                                                id="dept_{{ $fn }}"
                                                                data-entity="department"
-                                                               {{ $isChecked ? 'checked' : '' }}>
+                                                               {{ $isChecked ? 'checked' : '' }}
+                                                               {{ (($fieldStatus['department'][$fn]['state'] ?? 'ok') !== 'ok') ? 'disabled' : '' }}>
                                                         <label class="form-check-label" for="dept_{{ $fn }}">
                                                             {{ $field['label'] }}
                                                             <small class="text-muted d-block font-monospace">({{ $fn }})</small>
+                                                            @if(($fieldStatus['department'][$fn]['state'] ?? 'ok') !== 'ok')<small class="d-block text-danger"><i class="fas fa-ban me-1"></i>{{ $fieldStatus['department'][$fn]['reason'] }}</small>@endif
                                                         </label>
                                                     </div>
                                                 </div>
@@ -218,7 +236,7 @@
                                             @foreach($sec['fields'] as $field)
                                                 @php
                                                     $fn = $field['name'];
-                                                    $isChecked = ($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['course'] ?? []);
+                                                    $isChecked = (($fieldStatus['course'][$fn]['state'] ?? 'ok') === 'ok') && (($activeFieldsConfig === null) || in_array($fn, $activeFieldsConfig['course'] ?? []));
                                                 @endphp
                                                 <div class="col-lg-4 col-md-6">
                                                     <div class="form-check">
@@ -228,10 +246,12 @@
                                                                value="{{ $fn }}"
                                                                id="course_{{ $fn }}"
                                                                data-entity="course"
-                                                               {{ $isChecked ? 'checked' : '' }}>
+                                                               {{ $isChecked ? 'checked' : '' }}
+                                                               {{ (($fieldStatus['course'][$fn]['state'] ?? 'ok') !== 'ok') ? 'disabled' : '' }}>
                                                         <label class="form-check-label" for="course_{{ $fn }}">
                                                             {{ $field['label'] }}
                                                             <small class="text-muted d-block font-monospace">({{ $fn }})</small>
+                                                            @if(($fieldStatus['course'][$fn]['state'] ?? 'ok') !== 'ok')<small class="d-block text-danger"><i class="fas fa-ban me-1"></i>{{ $fieldStatus['course'][$fn]['reason'] }}</small>@endif
                                                         </label>
                                                     </div>
                                                 </div>
@@ -302,7 +322,7 @@ $(document).ready(function () {
     const orgTypeId = $('#organisation_type_id').val();
 
     function updateSummary() {
-        const total = $('.field-chk').length;
+        const total = $('.field-chk:not(:disabled)').length;
         const checked = $('.field-chk:checked').length;
         $('#statusSummary').text(`${checked} of ${total} fields checked`);
     }
@@ -315,27 +335,27 @@ $(document).ready(function () {
     // Select All (All fields across all tabs)
     $('#btnSelectAll').on('click', function (e) {
         e.preventDefault();
-        $('.field-chk').prop('checked', true).trigger('change');
+        $('.field-chk:not(:disabled)').prop('checked', true).trigger('change');
     });
 
     // Deselect All
     $('#btnDeselectAll').on('click', function (e) {
         e.preventDefault();
-        $('.field-chk').prop('checked', false).trigger('change');
+        $('.field-chk:not(:disabled)').prop('checked', false).trigger('change');
     });
 
     // Group-level Select All
     $(document).on('click', '.btn-sec-all', function (e) {
         e.preventDefault();
         const targetSelector = $(this).data('target');
-        $(targetSelector).find('.field-chk').prop('checked', true).trigger('change');
+        $(targetSelector).find('.field-chk:not(:disabled)').prop('checked', true).trigger('change');
     });
 
     // Group-level Deselect All
     $(document).on('click', '.btn-sec-none', function (e) {
         e.preventDefault();
         const targetSelector = $(this).data('target');
-        $(targetSelector).find('.field-chk').prop('checked', false).trigger('change');
+        $(targetSelector).find('.field-chk:not(:disabled)').prop('checked', false).trigger('change');
     });
 
     // Save configuration

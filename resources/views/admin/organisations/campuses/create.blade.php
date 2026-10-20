@@ -244,6 +244,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check form-switch mt-4">
+                                            <input type="hidden" name="status" value="0">
                                             <input class="form-check-input" type="checkbox" name="status" id="status"
                                                 value="1" checked>
                                             <label class="form-check-label fw-bold" for="status">Active Status</label>
@@ -267,6 +268,23 @@
                             <!-- 2. Location -->
                             <div class="tab-pane" id="location" role="tabpanel">
                                 <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Campus Type</label>
+                                        <select name="campus_type" class="form-select">
+                                            <option value="">Select</option>
+                                            <option value="Main" {{ old('campus_type') == 'Main' ? 'selected' : '' }}>Main</option>
+                                            <option value="Regional" {{ old('campus_type') == 'Regional' ? 'selected' : '' }}>Regional</option>
+                                            <option value="Satellite" {{ old('campus_type') == 'Satellite' ? 'selected' : '' }}>Satellite</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Country</label>
+                                        <input type="text" name="country" class="form-control" value="{{ old('country', 'India') }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nearest Transport Hub / Metro / Airport</label>
+                                        <input type="text" name="nearest_transport_hub" class="form-control" value="{{ old('nearest_transport_hub') }}">
+                                    </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Pincode</label>
                                         <input type="text" name="pincode" id="pincode" class="form-control">
@@ -305,6 +323,62 @@
                             <div class="tab-pane" id="infra" role="tabpanel">
                                 <div class="row g-3">
                                     <div class="col-md-4">
+                                        <label class="form-label">Academic Blocks Count</label>
+                                        <input type="number" min="0" name="academic_blocks_count" class="form-control" value="{{ old('academic_blocks_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Total Laboratories Count</label>
+                                        <input type="number" min="0" name="laboratories_count" class="form-control" value="{{ old('laboratories_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Research Centers Count</label>
+                                        <input type="number" min="0" name="research_centers_count" class="form-control" value="{{ old('research_centers_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="library_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="library_available" value="1" id="cf_library_available" {{ old('library_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_library_available">Central Library Available</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Library Books & Volumes Count</label>
+                                        <input type="number" min="0" name="library_books_count" class="form-control" value="{{ old('library_books_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="digital_library_access" value="0">
+                                            <input class="form-check-input" type="checkbox" name="digital_library_access" value="1" id="cf_digital_library_access" {{ old('digital_library_access') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_digital_library_access">Digital Library & Journal Subscriptions</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="science_labs_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="science_labs_available" value="1" id="cf_science_labs_available" {{ old('science_labs_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_science_labs_available">Science Laboratories (Physics/Chem/Bio)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="computer_labs_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="computer_labs_available" value="1" id="cf_computer_labs_available" {{ old('computer_labs_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_computer_labs_available">Computer Coding Labs Available</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="playground_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="playground_available" value="1" id="cf_playground_available" {{ old('playground_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_playground_available">Outdoor Athletics Playground Available</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Sports & Recreation Facilities (Indoor/Outdoor)</label>
+                                        <input type="hidden" name="sports_facilities_form" value="1">
+                                        <textarea name="sports_facilities" class="form-control" rows="2" placeholder="Cricket, Football, Swimming Pool, Gymnasium (separate with commas or new lines)">{{ old('sports_facilities') }}</textarea>
+                                    </div>
+                                    <div class="col-md-4">
                                         <label class="form-label">Campus Area</label>
                                         <div class="input-group">
                                             <input type="number" step="0.01" name="campus_area_acres" class="form-control">
@@ -320,6 +394,7 @@
                                     </div>
                                     <div class="col-md-12">
                                         <div class="form-check form-switch">
+                                            <input type="hidden" name="smart_classrooms" value="0">
                                             <input class="form-check-input" type="checkbox" name="smart_classrooms"
                                                 value="1" id="smart_class">
                                             <label class="form-check-label" for="smart_class">Smart Classrooms
@@ -369,6 +444,38 @@
                             <div class="tab-pane" id="facilities" role="tabpanel">
                                 <p class="text-muted mb-3">Select the facilities available at this campus.</p>
                                 <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="hostel_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="hostel_available" value="1" id="cf_hostel_available" {{ old('hostel_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_hostel_available">Hostel Accommodation Available</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Hostel Type (Boys / Girls / Both)</label>
+                                        <select name="hostel_type" class="form-select">
+                                            <option value="">Select</option>
+                                            <option value="Boys" {{ old('hostel_type') == 'Boys' ? 'selected' : '' }}>Boys</option>
+                                            <option value="Girls" {{ old('hostel_type') == 'Girls' ? 'selected' : '' }}>Girls</option>
+                                            <option value="Both" {{ old('hostel_type') == 'Both' ? 'selected' : '' }}>Both</option>
+                                            <option value="None" {{ old('hostel_type') == 'None' ? 'selected' : '' }}>None</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Hostel Bed Capacity</label>
+                                        <input type="number" min="0" name="hostel_capacity" class="form-control" value="{{ old('hostel_capacity', 0) }}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label">Cafeteria & Mess Dining Facility</label>
+                                        <input type="text" name="food_facility" class="form-control" value="{{ old('food_facility') }}" placeholder="e.g. Mess, Cafeteria, Multi-cuisine Canteen">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="medical_facility_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="medical_facility_available" value="1" id="cf_medical_facility_available" {{ old('medical_facility_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_medical_facility_available">On-Campus Medical Clinic & Doctor</label>
+                                        </div>
+                                    </div>
                                     @foreach($facilitiesMaster as $facility)
                                         <div class="col-md-3 col-sm-4 col-6">
                                             <div class="facility-card text-center border rounded p-3 h-100 position-relative" style="cursor: pointer;" onclick="toggleFacility('{{ $facility->id }}')">
@@ -393,8 +500,31 @@
                             <!-- 6. Transport -->
                             <div class="tab-pane" id="transport" role="tabpanel">
                                 <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Bus Routes Count</label>
+                                        <input type="number" min="0" name="bus_routes_count" class="form-control" value="{{ old('bus_routes_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Total Bus Fleet Size</label>
+                                        <input type="number" min="0" name="bus_fleet_size" class="form-control" value="{{ old('bus_fleet_size') }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="gps_enabled_buses" value="0">
+                                            <input class="form-check-input" type="checkbox" name="gps_enabled_buses" value="1" id="cf_gps_enabled_buses" {{ old('gps_enabled_buses') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_gps_enabled_buses">GPS Tracking Enabled on Buses</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="parking_available" value="0">
+                                            <input class="form-check-input" type="checkbox" name="parking_available" value="1" id="cf_parking_available" {{ old('parking_available') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_parking_available">Student & Staff Parking Available</label>
+                                        </div>
+                                    </div>
                                     <div class="col-md-12">
                                         <div class="form-check form-switch">
+                                            <input type="hidden" name="transport_available" value="0">
                                             <input class="form-check-input" type="checkbox" name="transport_available"
                                                 value="1" id="transport_sw">
                                             <label class="form-check-label" for="transport_sw">Transport Available</label>
@@ -420,7 +550,26 @@
                             <div class="tab-pane" id="safety" role="tabpanel">
                                 <div class="row g-3">
                                     <div class="col-md-4">
+                                        <label class="form-label">Security Staff Personnel Count</label>
+                                        <input type="number" min="0" name="security_staff_count" class="form-control" value="{{ old('security_staff_count', 0) }}">
+                                    </div>
+                                    <div class="col-md-4">
                                         <div class="form-check form-switch">
+                                            <input type="hidden" name="disaster_management_plan" value="0">
+                                            <input class="form-check-input" type="checkbox" name="disaster_management_plan" value="1" id="cf_disaster_management_plan" {{ old('disaster_management_plan') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_disaster_management_plan">Disaster Management Plan in Place</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="visitor_management_system" value="0">
+                                            <input class="form-check-input" type="checkbox" name="visitor_management_system" value="1" id="cf_visitor_management_system" {{ old('visitor_management_system') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cf_visitor_management_system">Digital Visitor Gate Management System</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="cctv_coverage" value="0">
                                             <input class="form-check-input" type="checkbox" name="cctv_coverage" value="1"
                                                 id="cctv">
                                             <label class="form-check-label" for="cctv">CCTV Coverage</label>
@@ -428,6 +577,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-switch">
+                                            <input type="hidden" name="fire_safety_certified" value="0">
                                             <input class="form-check-input" type="checkbox" name="fire_safety_certified"
                                                 value="1" id="fire">
                                             <label class="form-check-label" for="fire">Fire Safety Certified</label>

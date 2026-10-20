@@ -55,13 +55,15 @@ class Masters
                     ['name' => 'has_grade', 'label' => 'Has a grade', 'type' => 'bool', 'col' => 4],
                     ['name' => 'grade_options', 'label' => 'Grade options, comma separated', 'type' => 'csv', 'col' => 8],
                     ['name' => 'has_validity', 'label' => 'Has a validity period', 'type' => 'bool', 'default' => true, 'col' => 4],
+                    ['name' => 'discipline_ids', 'label' => 'Governs these disciplines (to find programmes missing an approval)', 'type' => 'multiselect', 'pivot' => 'disciplines',
+                        'options' => fn () => Discipline::orderBy('title')->pluck('title', 'id')->all(), 'col' => 12],
                     ['name' => 'country', 'label' => 'Country', 'type' => 'text', 'col' => 4],
                     ['name' => 'website', 'label' => 'Website', 'type' => 'text', 'col' => 8],
                     ['name' => 'sort_order', 'label' => 'Order', 'type' => 'number', 'default' => 0, 'col' => 3],
                     ['name' => 'status', 'label' => 'Active', 'type' => 'bool', 'default' => true, 'col' => 3],
                 ],
                 'columns' => ['name', 'short_name', 'kind', 'levels_label'],
-                'in_use' => fn ($m) => $m->records()->withTrashed()->exists(),
+                'in_use' => fn ($m) => $m->records()->withTrashed()->exists() || $m->approvals()->withTrashed()->exists(),
             ],
         ];
     }

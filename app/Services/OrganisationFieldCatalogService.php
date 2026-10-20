@@ -334,7 +334,7 @@ class OrganisationFieldCatalogService
             ];
         }
 
-        return $tabs;
+        return $this->available('organisation', $tabs);
     }
 
     /**
@@ -342,7 +342,7 @@ class OrganisationFieldCatalogService
      */
     public function getCampusSections(): array
     {
-        return [
+        return $this->available('campus', [
             [
                 'id' => 'campus-basic',
                 'title' => 'Basic Details & Location',
@@ -423,7 +423,7 @@ class OrganisationFieldCatalogService
                     ['name' => 'playground_available', 'label' => 'Outdoor Athletics Playground Available'],
                 ]
             ]
-        ];
+        ]);
     }
 
     /**
@@ -431,7 +431,7 @@ class OrganisationFieldCatalogService
      */
     public function getDepartmentSections(): array
     {
-        return [
+        return $this->available('department', [
             [
                 'id' => 'dept-identity',
                 'title' => 'Department Identity & Type',
@@ -495,7 +495,7 @@ class OrganisationFieldCatalogService
                     ['name' => 'department_notice_board_url', 'label' => 'Online Digital Notice Board URL'],
                 ]
             ]
-        ];
+        ]);
     }
 
     /**
@@ -503,7 +503,7 @@ class OrganisationFieldCatalogService
      */
     public function getCourseSections(): array
     {
-        return [
+        return $this->available('course', [
             [
                 'id' => 'course-identity',
                 'title' => 'Course Identity & Masters',
@@ -605,7 +605,7 @@ class OrganisationFieldCatalogService
                     ['name' => 'meta_description', 'label' => 'Course SEO Meta Description'],
                 ]
             ]
-        ];
+        ]);
     }
 
     /**
@@ -642,7 +642,39 @@ class OrganisationFieldCatalogService
                     $map[$f['name']] = $f['label'];
                 }
             }
+            // A University is not asked for coaching batches or school boards, and a School is not asked for placements: only what belongs to this type.
+            $keep = array_flip(\App\Support\OrganisationFields\CourseFields::filter(array_keys($map), $orgTypeId));
+            $map = array_intersect_key($map, $keep);
         }
         return $map;
+    }
+
+    /**
+     * Applies config/organisation_fields.php to a list of tabs / sections: catalogue names that never matched a column are pointed at the
+     * real column ("catalogue_renames"), and fields that cannot be saved anywhere are left out ("unavailable", listed on the audit page).
+     */
+    private function available(string $level, array $sections): array
+    {
+        $renames = config("organisation_fields.catalogue_renames.$level", []);
+        $hidden = config("organisation_fields.unavailable.$level", []);
+        foreach ($sections as $i => $sec) {
+            $seen = [];
+            $fields = [];
+            foreach ($sec['fields'] ?? [] as $f) {
+                if (isset($hidden[$f['name']])) continue;
+                $f['name'] = $renames[$f['name']] ?? $f['name'];
+                if (isset($seen[$f['name']])) continue;
+                $seen[$f['name']] = true;
+                $fields[] = $f;
+            }
+            $sections[$i]['fields'] = $fields;
+        }
+        return array_values(array_filter($sections, fn ($s) => !empty($s['fields'])));
+    }
+
+    /** Catalogue fields that are hidden because they cannot be saved anywhere: [level => [name => reason]] (for the audit). */
+    public function unavailableFields(): array
+    {
+        return array_filter(config('organisation_fields.unavailable', []));
     }
 }

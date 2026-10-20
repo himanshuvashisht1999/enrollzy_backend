@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Admin\Quality;
 use App\Http\Controllers\Controller;
 use App\Models\Organisation;
 use App\Models\Quality\EntityAccreditation;
+use App\Models\Quality\EntityApproval;
+use App\Models\Quality\EntityAward;
+use App\Models\Quality\EntityPlacement;
+use App\Models\Quality\EntityReview;
 use App\Models\Quality\EntityRanking;
 use App\Support\Quality\Levels;
 use Illuminate\Http\Request;
@@ -23,6 +27,16 @@ class DashboardController extends Controller
             'expiring_90' => EntityAccreditation::expiringWithin(90)->count(),
             'expired' => EntityAccreditation::expired()->where('status', 'active')->count(),
             'no_year' => EntityRanking::whereNull('ranking_year')->count(),
+            'placements' => EntityPlacement::count(),
+            'placements_unverified' => EntityPlacement::where('verification_status', 'unverified')->count(),
+            'reviews' => EntityReview::count(),
+            'reviews_unverified' => EntityReview::where('verification_status', 'unverified')->count(),
+            'awards' => EntityAward::where('kind', 'award')->count(),
+            'awards_unverified' => EntityAward::where('kind', 'award')->where('verification_status', 'unverified')->count(),
+            'awards_to_sort' => EntityAward::where('kind', '!=', 'award')->where('verification_status', 'unverified')->count(),
+            'approvals' => EntityApproval::count(),
+            'approvals_unverified' => EntityApproval::where('verification_status', 'unverified')->count(),
+            'approvals_expiring_90' => EntityApproval::expiringWithin(90)->count(),
         ];
 
         $expiring = EntityAccreditation::expiringWithin(90)->with('body')->orderBy('valid_to')->limit(15)->get();

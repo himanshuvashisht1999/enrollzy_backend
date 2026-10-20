@@ -7,7 +7,11 @@
     $tiles = [
         $tile('Rankings', $stats['rankings'], $stats['rankings_unverified'] . ' unverified', route('admin.quality.review', ['kind' => 'ranking'])),
         $tile('Accreditations & approvals', $stats['accreditations'], $stats['accreditations_unverified'] . ' unverified', route('admin.quality.review', ['kind' => 'accreditation'])),
-        $tile('Expiring in 90 days', $stats['expiring_90'], 'accreditations', null, $stats['expiring_90'] ? 'warning' : 'success'),
+        $tile('Placement figures', $stats['placements'], $stats['placements_unverified'] . ' unverified', route('admin.quality.review', ['kind' => 'placement'])),
+        $tile('Reviews', $stats['reviews'], $stats['reviews_unverified'] . ' unverified', route('admin.quality.review', ['kind' => 'review'])),
+        $tile('Awards', $stats['awards'], $stats['awards_unverified'] . ' unverified' . ($stats['awards_to_sort'] ? ', ' . number_format($stats['awards_to_sort']) . ' old entries to sort' : ''), route('admin.quality.review', ['kind' => 'award'])),
+        $tile('Statutory approvals', $stats['approvals'], $stats['approvals_unverified'] . ' unverified', route('admin.quality.review', ['kind' => 'approval'])),
+        $tile('Expiring in 90 days', $stats['expiring_90'] + $stats['approvals_expiring_90'], 'accreditations and approvals', null, ($stats['expiring_90'] + $stats['approvals_expiring_90']) ? 'warning' : 'success'),
         $tile('Past validity, still active', $stats['expired'], 'needs a renewal entry', null, $stats['expired'] ? 'danger' : 'success'),
     ];
 @endphp
@@ -19,6 +23,10 @@
         <p class="text-muted mb-0">Every ranking and accreditation is recorded against the entity that was assessed (organisation, campus, department or course), with its year and a verification state.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('admin.quality.approvals.coverage') }}" class="btn btn-light border"><i class="fas fa-clipboard-check me-1"></i> Approval coverage</a>
+        @can('quality-import')<a href="{{ route('admin.quality.approvals.import') }}" class="btn btn-light border"><i class="fas fa-file-csv me-1"></i> Import approvals</a>@endcan
+        @can('quality-import')<a href="{{ route('admin.quality.placements.import') }}" class="btn btn-light border"><i class="fas fa-file-csv me-1"></i> Import placements</a>@endcan
+        @can('quality-import')<a href="{{ route('admin.quality.reviews.import') }}" class="btn btn-light border"><i class="fas fa-file-csv me-1"></i> Import reviews</a>@endcan
         <a href="{{ route('admin.quality.review') }}" class="btn btn-primary"><i class="fas fa-check-double me-1"></i> Review queue</a>
         @can('quality-masters-manage')
             <div class="dropdown">

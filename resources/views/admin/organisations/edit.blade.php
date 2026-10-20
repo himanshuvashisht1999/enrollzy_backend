@@ -1536,6 +1536,8 @@
                                         <div class="row g-3">
                                             <div class="col-md-6"><label class="form-label">Years of Operation</label><input type="number" name="years_of_operation" class="form-control" value="{{ old('years_of_operation', $organisation->years_of_operation) }}"></div>
                                             <div class="col-md-6"><label class="form-label">Annual Candidate Volume</label><input type="text" name="annual_candidate_volume" class="form-control" value="{{ old('annual_candidate_volume', $organisation->annual_candidate_volume) }}"></div>
+                                            <div class="col-md-4"><label class="form-label">Regulated Institutions Covered</label><input type="number" min="0" name="institutions_covered_count" class="form-control" value="{{ old('institutions_covered_count', $organisation->institutions_covered_count) }}"></div>
+                                            <div class="col-md-4"><label class="form-label">Jurisdiction States Count</label><input type="number" min="0" name="states_covered_count" class="form-control" value="{{ old('states_covered_count', $organisation->states_covered_count) }}"></div>
                                             <div class="col-md-4"><label class="form-label">Trust Rating</label><input type="number" step="0.1" name="public_trust_rating" class="form-control" value="{{ old('public_trust_rating', $organisation->public_trust_rating) }}"></div>
                                         </div>
                                     </div>

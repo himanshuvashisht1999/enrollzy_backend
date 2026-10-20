@@ -106,7 +106,7 @@
             Object.entries(row).forEach(([name, val]) => {
                 if (name === 'id') return;
                 const multi = form.querySelector(`[name="${name}[]"]`);
-                if (multi) { Array.from(multi.options).forEach(o => o.selected = (val || []).includes(o.value)); return; }
+                if (multi) { Array.from(multi.options).forEach(o => o.selected = (val || []).map(String).includes(o.value)); return; }
                 const el = form.querySelector(`[name="${name}"]:not([type=hidden])`);
                 if (!el) return;
                 if (el.type === 'checkbox') el.checked = !!val; else el.value = val ?? '';

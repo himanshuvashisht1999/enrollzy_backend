@@ -19,12 +19,15 @@ class QualitySync
 {
     /** Structure that must exist first (created by the SQL file or the migrations). */
     private const REQUIRED = [
-        'tables' => ['organisation_groups', 'ranking_bodies', 'ranking_categories', 'accreditation_bodies', 'entity_rankings', 'entity_accreditations', 'organisation_moves', 'accreditation_approvals', 'permissions', 'roles'],
+        'tables' => ['organisation_groups', 'ranking_bodies', 'ranking_categories', 'accreditation_bodies', 'entity_rankings', 'entity_accreditations', 'entity_approvals', 'accreditation_body_disciplines', 'entity_placements', 'entity_reviews', 'entity_awards', 'organisation_moves', 'accreditation_approvals', 'permissions', 'roles'],
         'columns' => [
             'organisations' => ['aishe_code', 'nirf_institute_id', 'group_id', 'legal_entity_type', 'ugc_recognition_date'],
             'campuses' => ['campus_role', 'aishe_code', 'nirf_institute_id', 'inherits_org_accreditation'],
             'departments' => ['academic_unit_type', 'nirf_institute_id'],
             'accreditation_approvals' => ['accreditation_body_id', 'grade'],
+            'entity_approvals' => ['import_batch'],
+            'entity_placements' => ['import_batch'],
+            'entity_reviews' => ['import_batch'],
         ],
     ];
 
@@ -45,7 +48,7 @@ class QualitySync
     {
         $steps = [];
         $steps[] = ['key' => 'masters', 'title' => 'Starter masters and permissions',
-            'detail' => sprintf('Currently %d ranking bodies, %d categories, %d accreditation bodies. Any missing starter entries and the quality-* permissions (admin and superadmin roles) will be added; existing entries are left as they are.',
+            'detail' => sprintf('Currently %d ranking bodies, %d categories, %d accreditation bodies. Any missing starter entries, a starter list of which regulator governs which disciplines (only for regulators that have none yet) and the quality-* permissions (admin and superadmin roles) will be added; existing entries are left as they are.',
                 RankingBody::count(), RankingCategory::count(), AccreditationBody::count())];
 
         $steps[] = ['key' => 'identity', 'title' => 'Identity backfill',
@@ -62,6 +65,24 @@ class QualitySync
                 ? "{$legacy['acc_rows']} accreditation and {$legacy['rank_rows']} ranking records will be created (unverified, year unknown). Already copied: {$legacy['counts']['already migrated']}."
                 : 'Counted after the masters step has run (the starter masters are needed first).',
             'warnings' => $legacy['warnings'] ?? []];
+        $m = (new LegacyMetrics)->run(false);
+        $left = collect($m['left_alone'])->filter()->map(fn ($n, $k) => number_format($n) . ' ' . $k)->implode('; ');
+        $steps[] = ['key' => 'metrics', 'title' => 'Copy the real old reviews and placement figures',
+            'detail' => "{$m['counts']['reviews']} campus reviews and {$m['counts']['placement rows']} organisation-wide placement rows will be copied as unverified records. Already copied: " . ($m['counts']['reviews already copied'] + $m['counts']['placement rows already copied']) . '.'
+                . ($left ? " Left exactly where they are (no source or count behind them, shown as 'unsourced'): $left." : ''),
+            'warnings' => $m['warnings']];
+
+        $aw = (new LegacyAwards)->run(false);
+        $kinds = collect($aw['by_kind'])->filter()->map(fn ($n, $k) => number_format($n) . ' ' . strtolower(\App\Models\Quality\EntityAward::SHORT_KINDS[$k]))->implode(', ');
+        $steps[] = ['key' => 'awards', 'title' => 'Turn the old award text lists into award records',
+            'detail' => number_format($aw['counts']['records to create']) . ' distinct entries from ' . number_format($aw['counts']['organisations']) . ' organisations will be created as unverified records (' . ($kinds ?: 'none') . '). '
+                . number_format($aw['counts']['duplicates collapsed']) . ' repeats between the two old lists are merged; ' . number_format($aw['counts']['split from longer entries']) . ' were split out of long comma-separated entries. Year and issuer are filled only where the text states them (' . number_format($aw['counts']['with a year']) . ' years, ' . number_format($aw['counts']['with an issuer']) . ' issuers). Already copied: ' . number_format($aw['counts']['already copied']) . '. The old text stays where it is.',
+            'warnings' => $aw['warnings']];
+        $ft = (new LegacyFreeText)->run(false);
+        $steps[] = ['key' => 'freetext', 'title' => 'Turn the old approvals / accreditations text into records',
+            'detail' => number_format($ft['to_create']) . ' plain statements (e.g. "AICTE", "BCI", "AACSB") from ' . number_format($ft['counts']['organisations with text']) . ' organisations will be created as unverified records without year, number or intake. '
+                . number_format(array_sum($ft['skipped'])) . ' parts are left alone because they are conditional ("where applicable"), memberships, rankings, programme-level bodies or bodies with no master. Already recorded or copied: ' . number_format($ft['counts']['already recorded'] + $ft['counts']['already copied']) . '.',
+            'warnings' => $ft['warnings']];
         return $steps;
     }
 
@@ -91,6 +112,22 @@ class QualitySync
                 . ($legacy['counts']['not a plain rank (left in old column)'] ? " {$legacy['counts']['not a plain rank (left in old column)']} rank value(s) were not plain numbers and stay in the old column." : '')
                 : $legacy['error'],
             'warnings' => $legacy['warnings']];
+
+        $m = (new LegacyMetrics)->run(true);
+        $out[] = ['title' => 'Copy the real old reviews and placement figures',
+            'result' => "Created {$m['counts']['reviews']} reviews and {$m['counts']['placement rows']} placement rows (unverified). Already copied earlier: " . ($m['counts']['reviews already copied'] + $m['counts']['placement rows already copied']) . '.'
+                . ($m['counts']['placement rows skipped'] ? " {$m['counts']['placement rows skipped']} organisation(s) skipped because their departments disagree." : ''),
+            'warnings' => $m['warnings']];
+
+        $aw = (new LegacyAwards)->run(true);
+        $out[] = ['title' => 'Turn the old award text lists into award records',
+            'result' => 'Created ' . number_format($aw['counts']['records to create']) . ' award records (unverified; ' . number_format($aw['by_kind']['award']) . ' look like real awards, the rest are rankings, memberships, affiliations or other claims to sort out in the review queue). Already copied earlier: ' . number_format($aw['counts']['already copied']) . '.',
+            'warnings' => $aw['warnings']];
+
+        $ft = (new LegacyFreeText)->run(true);
+        $out[] = ['title' => 'Turn the old approvals / accreditations text into records',
+            'result' => 'Created ' . number_format($ft['to_create']) . ' records (unverified, no year or number). Left alone: ' . number_format(array_sum($ft['skipped'])) . ' conditional, membership, ranking, programme-level or no-master parts. Already recorded or copied: ' . number_format($ft['counts']['already recorded'] + $ft['counts']['already copied']) . '.',
+            'warnings' => $ft['warnings']];
 
         return $out;
     }

@@ -22,7 +22,8 @@ class MasterController extends Controller
     public function store(Request $request, string $master)
     {
         $def = Masters::get($master) ?? abort(404);
-        $def['model']::create($this->validated($request, $def));
+        $row = $def['model']::create($this->validated($request, $def));
+        $this->syncPivots($row);
         return back()->with('success', $def['singular'] . ' added.');
     }
 
@@ -31,6 +32,7 @@ class MasterController extends Controller
         $def = Masters::get($master) ?? abort(404);
         $row = $def['model']::findOrFail($id);
         $row->update($this->validated($request, $def, $row));
+        $this->syncPivots($row);
         return back()->with('success', $def['singular'] . ' updated.');
     }
 
@@ -45,8 +47,17 @@ class MasterController extends Controller
         return back()->with('success', $def['singular'] . ' deleted.');
     }
 
+    /** Many-to-many fields (e.g. the disciplines a regulator governs), kept out of the row's own columns. */
+    private array $pivots = [];
+
+    private function syncPivots($row): void
+    {
+        foreach ($this->pivots as $relation => $ids) $row->$relation()->sync($ids);
+    }
+
     private function validated(Request $request, array $def, $row = null): array
     {
+        $this->pivots = [];
         $table = (new $def['model'])->getTable();
         $rules = [];
         foreach ($def['fields'] as $f) {
@@ -78,6 +89,12 @@ class MasterController extends Controller
                 'csv' => array_values(array_filter(array_map('trim', explode(',', (string) ($data[$n] ?? ''))), 'strlen')) ?: null,
                 default => ($data[$n] ?? null) === '' ? null : ($data[$n] ?? null),
             };
+        }
+        foreach ($def['fields'] as $f) {
+            if (!empty($f['pivot'])) {
+                $this->pivots[$f['pivot']] = array_map('intval', $request->input($f['name'], []));
+                unset($data[$f['name']]);
+            }
         }
         return $data;
     }

@@ -185,6 +185,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Organisation Fields Configuration (Academics Module)
     Route::get('/admin/organisation-fields', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'index'])->name('admin.organisation-fields.index');
     Route::post('/admin/organisation-fields', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'store'])->name('admin.organisation-fields.store');
+    Route::get('/admin/organisation-fields/audit', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'audit'])->name('admin.organisation-fields.audit');
+    Route::post('/admin/organisation-fields/rescan', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'rescan'])->name('admin.organisation-fields.rescan');
     Route::post('/admin/organisation-fields/{typeId}/reset', [\App\Http\Controllers\Admin\OrganisationFieldConfigController::class, 'reset'])->name('admin.organisation-fields.reset');
 
     // Organisations
@@ -449,6 +451,10 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::post('events/{event}/verify', [$ns . 'EventController', 'verify'])->name('events.verify')->middleware('can:cns-counsellings-verify');
     });
 
+    // Database backup: open /admin/database-backup while logged in as an admin and the .sql.gz downloads (not linked from any menu).
+    // At most 5 downloads an hour, every download audit-logged.
+    Route::get('/admin/database-backup', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'download'])->name('admin.database-backup.download')->middleware('throttle:5,60');
+
     // Rankings & Accreditation (entity identity, rankings, accreditations, verification)
     Route::prefix('admin/quality')->name('admin.quality.')->group(function () {
         $ns = 'App\Http\Controllers\Admin\Quality\\';
@@ -457,23 +463,57 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::middleware('can:quality-browse')->group(function () use ($ns) {
             Route::get('/', [$ns . 'DashboardController', 'index'])->name('dashboard');
             Route::get('review', [$ns . 'RecordController', 'review'])->name('review');
+            Route::get('approvals/coverage', [$ns . 'ApprovalCoverageController', 'index'])->name('approvals.coverage');
             Route::get('entity/{type}/{id}', [$ns . 'RecordController', 'entity'])->name('entity');
-            Route::get('evidence/{kind}/{id}', [$ns . 'RecordController', 'evidence'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('evidence');
+            Route::get('evidence/{kind}/{id}', [$ns . 'RecordController', 'evidence'])->where('kind', 'ranking|accreditation|approval|placement|review|award')->whereNumber('id')->name('evidence');
         });
         Route::middleware('can:quality-edit')->group(function () use ($ns) {
             Route::post('entity/{type}/{id}/rankings', [$ns . 'RecordController', 'storeRanking'])->name('rankings.store');
             Route::put('rankings/{ranking}', [$ns . 'RecordController', 'updateRanking'])->name('rankings.update');
             Route::post('entity/{type}/{id}/accreditations', [$ns . 'RecordController', 'storeAccreditation'])->name('accreditations.store');
+            Route::post('entity/{type}/{id}/approvals', [$ns . 'RecordController', 'storeApproval'])->name('approvals.store');
+            Route::post('entity/{type}/{id}/placements', [$ns . 'RecordController', 'storePlacement'])->name('placements.store');
+            Route::post('entity/{type}/{id}/awards', [$ns . 'RecordController', 'storeAward'])->name('awards.store');
+            Route::put('awards/{award}', [$ns . 'RecordController', 'updateAward'])->name('awards.update');
+            Route::post('review/bulk', [$ns . 'RecordController', 'bulkAction'])->name('review.bulk');
+            Route::put('placements/{placement}', [$ns . 'RecordController', 'updatePlacement'])->name('placements.update');
+            Route::post('entity/{type}/{id}/reviews', [$ns . 'RecordController', 'storeReview'])->name('reviews.store');
+            Route::put('reviews/{review}', [$ns . 'RecordController', 'updateReview'])->name('reviews.update');
+            Route::put('approvals/{approval}', [$ns . 'RecordController', 'updateApproval'])->name('approvals.update');
             Route::put('accreditations/{accreditation}', [$ns . 'RecordController', 'updateAccreditation'])->name('accreditations.update');
         });
         Route::middleware('can:quality-delete')->group(function () use ($ns) {
             Route::delete('rankings/{ranking}', [$ns . 'RecordController', 'destroyRanking'])->name('rankings.destroy');
             Route::delete('accreditations/{accreditation}', [$ns . 'RecordController', 'destroyAccreditation'])->name('accreditations.destroy');
+            Route::delete('approvals/{approval}', [$ns . 'RecordController', 'destroyApproval'])->name('approvals.destroy');
+            Route::delete('placements/{placement}', [$ns . 'RecordController', 'destroyPlacement'])->name('placements.destroy');
+            Route::delete('awards/{award}', [$ns . 'RecordController', 'destroyAward'])->name('awards.destroy');
+            Route::delete('reviews/{review}', [$ns . 'RecordController', 'destroyReview'])->name('reviews.destroy');
         });
         Route::middleware('can:quality-verify')->group(function () use ($ns) {
-            Route::post('records/{kind}/{id}/verify', [$ns . 'RecordController', 'verify'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('records.verify');
-            Route::post('records/{kind}/{id}/reject', [$ns . 'RecordController', 'reject'])->where('kind', 'ranking|accreditation')->whereNumber('id')->name('records.reject');
+            Route::post('records/{kind}/{id}/verify', [$ns . 'RecordController', 'verify'])->where('kind', 'ranking|accreditation|approval|placement|review|award')->whereNumber('id')->name('records.verify');
+            Route::post('records/{kind}/{id}/reject', [$ns . 'RecordController', 'reject'])->where('kind', 'ranking|accreditation|approval|placement|review|award')->whereNumber('id')->name('records.reject');
             Route::post('review/verify', [$ns . 'RecordController', 'bulkVerify'])->name('review.verify');
+        });
+        Route::middleware('can:quality-import')->group(function () use ($ns) {
+            Route::get('reviews/import', [$ns . 'ReviewImportController', 'index'])->name('reviews.import');
+            Route::get('reviews/import/template', [$ns . 'ReviewImportController', 'template'])->name('reviews.import.template');
+            Route::get('reviews/import/ids', [$ns . 'ReviewImportController', 'ids'])->name('reviews.import.ids');
+            Route::get('reviews/import/organisations', [$ns . 'ReviewImportController', 'organisations'])->name('reviews.import.organisations');
+            Route::post('reviews/import/preview', [$ns . 'ReviewImportController', 'preview'])->name('reviews.import.preview');
+            Route::post('reviews/import/confirm', [$ns . 'ReviewImportController', 'confirm'])->name('reviews.import.confirm');
+            Route::post('reviews/import/undo', [$ns . 'ReviewImportController', 'undo'])->name('reviews.import.undo');
+            Route::get('placements/import', [$ns . 'PlacementImportController', 'index'])->name('placements.import');
+            Route::get('placements/import/template', [$ns . 'PlacementImportController', 'template'])->name('placements.import.template');
+            Route::get('placements/import/organisations', [$ns . 'PlacementImportController', 'organisations'])->name('placements.import.organisations');
+            Route::post('placements/import/preview', [$ns . 'PlacementImportController', 'preview'])->name('placements.import.preview');
+            Route::post('placements/import/confirm', [$ns . 'PlacementImportController', 'confirm'])->name('placements.import.confirm');
+            Route::post('placements/import/undo', [$ns . 'PlacementImportController', 'undo'])->name('placements.import.undo');
+            Route::get('approvals/import', [$ns . 'ApprovalImportController', 'index'])->name('approvals.import');
+            Route::get('approvals/import/template', [$ns . 'ApprovalImportController', 'template'])->name('approvals.import.template');
+            Route::post('approvals/import/preview', [$ns . 'ApprovalImportController', 'preview'])->name('approvals.import.preview');
+            Route::post('approvals/import/confirm', [$ns . 'ApprovalImportController', 'confirm'])->name('approvals.import.confirm');
+            Route::post('approvals/import/undo', [$ns . 'ApprovalImportController', 'undo'])->name('approvals.import.undo');
         });
         Route::middleware('can:quality-masters-manage')->group(function () use ($ns, $masters) {
             // One-page data update, run after the SQL file has created the tables (safe to run again).

@@ -16,6 +16,21 @@ class AccreditationBody extends Model
     public const KINDS = ['accreditation' => 'Accreditation', 'statutory_approval' => 'Statutory approval', 'recognition' => 'Recognition', 'affiliation' => 'Affiliation'];
 
     public function records() { return $this->hasMany(EntityAccreditation::class, 'accreditation_body_id'); }
+    public function approvals() { return $this->hasMany(EntityApproval::class, 'accreditation_body_id'); }
+
+    /** Disciplines this regulator governs: used to find programmes that should have an approval. */
+    public function disciplines() { return $this->belongsToMany(\App\Models\Discipline::class, 'accreditation_body_disciplines', 'accreditation_body_id', 'discipline_id'); }
+
+    public function getDisciplineIdsAttribute(): array
+    {
+        return $this->disciplines()->pluck('disciplines.id')->all();
+    }
+
+    /** Accreditations (NAAC, NBA, AMBA...) go in entity_accreditations; everything else (statutory approvals, recognitions, affiliations) in entity_approvals. */
+    public function isApprovalKind(): bool
+    {
+        return $this->kind !== 'accreditation';
+    }
 
     public function getLevelsLabelAttribute(): string
     {

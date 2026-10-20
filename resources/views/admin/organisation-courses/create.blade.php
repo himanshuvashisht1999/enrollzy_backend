@@ -202,6 +202,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="status" value="1"
                                             checked>
                                         <label class="form-check-label" for="status">Active</label>
@@ -210,6 +211,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Provisional Admission</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="provisional_admission" value="0">
                                         <input class="form-check-input" type="checkbox" name="provisional_admission"
                                             id="provisional_admission" value="1" {{ old('provisional_admission') ? 'checked' : '' }}>
                                         <label class="form-check-label" for="provisional_admission">Available</label>
@@ -380,6 +382,7 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="status_type3" value="1" checked>
                                         <label class="form-check-label" for="status_type3">Active</label>
                                     </div>
@@ -388,10 +391,13 @@
                         </div>
                     </div>
 
-                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                    <div class="card border-0 shadow-sm rounded-4 mt-4" style="display: none;">
+                        <div class="card-body p-4">
+                            <div class="row g-4">
                                 <div class="col-md-6" style="display: none;">
                                     <label class="form-label fw-bold">Integrated Schooling Available?</label>
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="integrated_schooling_available" value="0">
                                         <input class="form-check-input" type="checkbox" name="integrated_schooling_available"
                                             value="1">
                                         <label class="form-check-label">Yes</label>
@@ -508,6 +514,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="school_status"
                                             value="1" checked>
                                         <label class="form-check-label" for="school_status">Active</label>
@@ -581,6 +588,7 @@
 
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="transport_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="transport_fee" value="1">
                                         <!-- Using boolean logic for simplicity or modify input type -->
                                         <label class="form-check-label">Transport Available</label>
@@ -588,6 +596,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="hostel_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="hostel_fee" value="1">
                                         <!-- Using boolean logic/presence check -->
                                         <label class="form-check-label">Hostel Available</label>
@@ -699,6 +708,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="el_status" value="1" checked>
                                         <label class="form-check-label" for="el_status">Active / Published</label>
                                     </div>
@@ -734,6 +744,8 @@
                     </div>
                 </div>
             @endif
+
+                @include('admin.organisation-courses.partials.extra-fields')
 
                 @include('admin.organisation-courses.partials.documents')
 

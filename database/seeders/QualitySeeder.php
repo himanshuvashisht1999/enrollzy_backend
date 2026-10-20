@@ -80,6 +80,8 @@ class QualitySeeder extends Seeder
             ]);
         }
 
+        $this->seedDisciplineMap();
+
         // Recording, verifying and managing masters/identity are separate on purpose.
         $perms = ['quality-browse', 'quality-edit', 'quality-verify', 'quality-delete', 'quality-masters-manage', 'quality-identity-manage', 'quality-import'];
         // Only the admin and superadmin roles get these; give others access by hand.
@@ -92,5 +94,27 @@ class QualitySeeder extends Seeder
         }
 
         $this->command?->info('Ranking / accreditation masters and permissions seeded.');
+    }
+
+    /**
+     * Starter suggestion of which regulator governs which disciplines, matched by discipline title (ids differ between environments).
+     * Used by Approval coverage to find programmes that should have an approval. Only fills a body that has NO mapping yet, so an admin's choices are never overwritten.
+     * Regulators with no matching discipline in the master (PCI, DCI, NCTE...) are left for the admin to map.
+     */
+    private function seedDisciplineMap(): void
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('accreditation_body_disciplines') || !\Illuminate\Support\Facades\Schema::hasTable('disciplines')) return;
+        $map = [
+            'AICTE' => ['Aerospace Engineering', 'Civil Engineering', 'Electrical Engineering', 'Electronics & Communication', 'Mechanical engineering', 'Petroleum Engineering',
+                'Computer science and Engineering', 'computer science', 'Computer Applications', 'Information Technology', 'Engineering Diploma', 'Business Administration', 'Hotel Management'],
+            'NMC' => ['Medical'], 'BCI' => ['Law'], 'COA' => ['Architecture'], 'INC' => ['Nursing'],
+        ];
+        $disciplines = \Illuminate\Support\Facades\DB::table('disciplines')->get(['id', 'title'])->groupBy(fn ($d) => mb_strtolower(trim($d->title)));
+        foreach ($map as $short => $titles) {
+            $body = AccreditationBody::where('short_name', $short)->first();
+            if (!$body || $body->disciplines()->exists()) continue;
+            $ids = collect($titles)->flatMap(fn ($t) => ($disciplines[mb_strtolower($t)] ?? collect())->pluck('id'))->unique()->all();
+            if ($ids) $body->disciplines()->sync($ids);
+        }
     }
 }

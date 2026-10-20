@@ -187,6 +187,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="status" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="status">Active</label>
                                     </div>
@@ -194,6 +195,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Provisional Admission</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="provisional_admission" value="0">
                                         <input class="form-check-input" type="checkbox" name="provisional_admission"
                                             id="provisional_admission" value="1" {{ old('provisional_admission', $organisationCourse->provisional_admission) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="provisional_admission">Available</label>
@@ -364,6 +366,7 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="status_type3" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="status_type3">Active</label>
                                     </div>
@@ -508,6 +511,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="school_status"
                                             value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="school_status">Active</label>
@@ -587,6 +591,7 @@
 
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="transport_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="transport_fee" value="1" {{ old('transport_fee', $organisationCourse->transport_fee) ? 'checked' : '' }}>
                                         <!-- Assuming transport_fee is treated as presence boolean temporarily based on previous logic, or adjust to input if it's amount strings -->
                                         <label class="form-check-label">Transport Available</label>
@@ -594,6 +599,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="hostel_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="hostel_fee" value="1" {{ old('hostel_fee', $organisationCourse->hostel_fee) ? 'checked' : '' }}>
                                         <label class="form-check-label">Hostel Available</label>
                                     </div>
@@ -693,6 +699,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="el_status" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="el_status">Active / Published</label>
                                     </div>
@@ -728,6 +735,8 @@
                     </div>
                 </div>
             @endif
+
+                @include('admin.organisation-courses.partials.extra-fields')
 
                 @include('admin.organisation-courses.partials.documents')
 

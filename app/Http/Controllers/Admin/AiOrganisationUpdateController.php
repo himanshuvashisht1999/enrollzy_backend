@@ -12,6 +12,7 @@ use App\Models\Course;
 use App\Models\OrganisationCourse;
 use App\Services\GeminiOrganisationScraperService;
 use App\Services\OrganisationFieldCatalogService;
+use App\Services\OrganisationFields\OrganisationFieldPolicy;
 use App\Services\OrganisationImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,15 +23,18 @@ class AiOrganisationUpdateController extends Controller
     protected GeminiOrganisationScraperService $scraper;
     protected OrganisationFieldCatalogService $catalog;
     protected OrganisationImportService $importer;
+    protected OrganisationFieldPolicy $policy;
 
     public function __construct(
         GeminiOrganisationScraperService $scraper,
         OrganisationFieldCatalogService $catalog,
-        OrganisationImportService $importer
+        OrganisationImportService $importer,
+        OrganisationFieldPolicy $policy
     ) {
         $this->scraper = $scraper;
         $this->catalog = $catalog;
         $this->importer = $importer;
+        $this->policy = $policy;
     }
 
     /**
@@ -63,14 +67,14 @@ class AiOrganisationUpdateController extends Controller
         $typeId = (int) $organisation->organisation_type_id;
 
         // Fetch configured fields for this organisation type
-        $configRecord = OrganisationFieldConfig::where('organisation_type_id', $typeId)->first();
-        $fieldsConfig = $configRecord ? ($configRecord->fields_config ?? []) : null;
+        // Only fields the AI may really touch: in the catalogue, a real column, on the edit form, and ticked for this type.
+        $fieldsConfig = $this->policy->forAi($typeId);
 
         // Fetch labels for human-readable diff
         $orgLabels = $this->catalog->getFieldLabels('organisation', $typeId);
         $campusLabels = $this->catalog->getFieldLabels('campus');
         $deptLabels = $this->catalog->getFieldLabels('department');
-        $courseLabels = $this->catalog->getFieldLabels('course');
+        $courseLabels = $this->catalog->getFieldLabels('course', $typeId);
 
         return response()->json([
             'success' => true,
@@ -114,49 +118,24 @@ class AiOrganisationUpdateController extends Controller
             $typeTitle = $org->organisationType?->title ?? 'Organisation';
 
             // Get enabled fields
-            $configRecord = OrganisationFieldConfig::where('organisation_type_id', $typeId)->first();
-            $enabledFields = $configRecord ? ($configRecord->fields_config ?? []) : null;
-
-            // If no specific config exists, get all default fields from catalog
-            if (!$enabledFields) {
-                $enabledFields = [
-                    'organisation' => array_keys($this->catalog->getFieldLabels('organisation', $typeId)),
-                    'campuses' => array_keys($this->catalog->getFieldLabels('campus')),
-                    'departments' => array_keys($this->catalog->getFieldLabels('department')),
-                    'courses' => array_keys($this->catalog->getFieldLabels('course')),
-                ];
+            // Same rule everywhere (OrganisationFieldPolicy). This also fixes the old mismatch where the screen saved campus / department / course
+            // but this code read campuses / departments / courses, so those restrictions were silently ignored.
+            $enabledFields = $this->policy->forAi($typeId);
+            if (array_sum(array_map('count', $enabledFields)) === 0) {
+                return response()->json(['success' => false, 'message' => 'No field is available to the AI updater for this organisation type. Check the Organisation Fields screen (a field must be ticked, be a real column and be on the edit form).'], 422);
             }
 
-            // Prepare current database data snapshot
+            // The AI is shown the CURRENT value of every field it may change - and only those - so it can tell "unchanged" from "new".
+            // (Before, this held a hand-picked list that included fields that are not allowed, not on the form, or not even columns.)
             $currentData = [
-                'organisation' => $org->toArray(),
-                'campuses' => $org->campuses->map(fn($c) => [
-                    'id' => $c->id,
-                    'campus_name' => $c->campus_name,
-                    'city' => $c->city,
-                    'state' => $c->state,
-                    'pin_code' => $c->pin_code,
-                    'full_address' => $c->full_address,
-                    'phone' => $c->phone,
-                    'email' => $c->email,
-                ])->toArray(),
-                'departments' => $org->departments->map(fn($d) => [
-                    'id' => $d->id,
-                    'department_name' => $d->department_name,
-                    'code' => $d->code,
-                    'hod_name' => $d->hod_name,
-                    'hod_email' => $d->hod_email,
-                    'department_office_contact' => $d->department_office_contact,
-                ])->toArray(),
-                'courses' => $org->organisationCourses->map(fn($oc) => [
-                    'id' => $oc->id,
-                    'academic_unit_name' => $oc->academic_unit_name ?: ($oc->course?->name ?? ''),
-                    'annual_tuition_fee' => $oc->annual_tuition_fee,
-                    'duration' => $oc->duration,
-                    'seats' => $oc->seats,
-                ])->toArray(),
+                'organisation' => \Illuminate\Support\Arr::only($org->toArray(), $enabledFields['organisation']),
+                'campuses' => $org->campuses->map(fn ($c) => ['id' => $c->id, 'campus_name' => $c->campus_name]
+                    + \Illuminate\Support\Arr::only($c->toArray(), $enabledFields['campuses']))->values()->toArray(),
+                'departments' => $org->departments->map(fn ($d) => ['id' => $d->id, 'department_name' => $d->department_name]
+                    + \Illuminate\Support\Arr::only($d->toArray(), $enabledFields['departments']))->values()->toArray(),
+                'courses' => $org->organisationCourses->map(fn ($oc) => ['id' => $oc->id, 'academic_unit_name' => $oc->academic_unit_name ?: ($oc->course?->name ?? '')]
+                    + \Illuminate\Support\Arr::only($oc->toArray(), $enabledFields['courses']))->values()->toArray(),
             ];
-
             // Run Scraper with scoped fields
             $extracted = $this->scraper->extractScopedUpdates(
                 $request->input('url'),
@@ -194,7 +173,7 @@ class AiOrganisationUpdateController extends Controller
         $orgLabels = $this->catalog->getFieldLabels('organisation', $typeId);
         $campusLabels = $this->catalog->getFieldLabels('campus');
         $deptLabels = $this->catalog->getFieldLabels('department');
-        $courseLabels = $this->catalog->getFieldLabels('course');
+        $courseLabels = $this->catalog->getFieldLabels('course', $typeId);
 
         $orgAllowed = $enabledFields['organisation'] ?? array_keys($orgLabels);
         $campusAllowed = $enabledFields['campuses'] ?? array_keys($campusLabels);
@@ -382,6 +361,17 @@ class AiOrganisationUpdateController extends Controller
             'approved_updates' => 'required|array',
         ]);
 
+        $target = Organisation::findOrFail($request->input('organisation_id'));
+        $problems = $this->unavailableFields((int) $target->organisation_type_id, (array) $request->input('approved_updates'));
+        if ($problems) {
+            Log::warning('AI updater: apply refused for organisation ' . $target->id, ['blocked' => $problems]);
+            return response()->json([
+                'success' => false,
+                'blocked' => $problems,
+                'message' => 'Nothing was saved. The AI updater may only change fields that are ticked for this type, are real columns and are on the edit form staff use. Not allowed: ' . implode('; ', $problems),
+            ], 422);
+        }
+
         DB::beginTransaction();
         try {
             $org = Organisation::findOrFail($request->input('organisation_id'));
@@ -392,15 +382,12 @@ class AiOrganisationUpdateController extends Controller
             if (!empty($updates['organisation']) && is_array($updates['organisation'])) {
                 $orgUpdateData = [];
                 foreach ($updates['organisation'] as $fieldKey => $val) {
-                    if (is_array($val)) {
-                        $orgUpdateData[$fieldKey] = json_encode($val);
-                    } else {
-                        $orgUpdateData[$fieldKey] = $val;
-                    }
+                    $orgUpdateData[$fieldKey] = $this->castAware($org, $fieldKey, $val);
                     $appliedCount++;
                 }
                 if (!empty($orgUpdateData)) {
-                    $org->update($orgUpdateData);
+                    // Every key was checked above, so write them all: update() would silently drop any that are not in $fillable while still counting them as applied.
+                    $org->forceFill($orgUpdateData)->save();
                 }
             }
 
@@ -421,7 +408,7 @@ class AiOrganisationUpdateController extends Controller
 
                     if ($campus) {
                         foreach ($fields as $k => $v) {
-                            $campus->{$k} = is_array($v) ? json_encode($v) : $v;
+                            $campus->{$k} = $this->castAware($campus, $k, $v);
                             $appliedCount++;
                         }
                         $campus->save();
@@ -446,7 +433,7 @@ class AiOrganisationUpdateController extends Controller
 
                     if ($dept) {
                         foreach ($fields as $k => $v) {
-                            $dept->{$k} = is_array($v) ? json_encode($v) : $v;
+                            $dept->{$k} = $this->castAware($dept, $k, $v);
                             $appliedCount++;
                         }
                         $dept->save();
@@ -476,7 +463,7 @@ class AiOrganisationUpdateController extends Controller
 
                     if ($oc) {
                         foreach ($fields as $k => $v) {
-                            $oc->{$k} = is_array($v) ? json_encode($v) : $v;
+                            $oc->{$k} = $this->castAware($oc, $k, $v);
                             $appliedCount++;
                         }
                         $oc->save();
@@ -503,5 +490,36 @@ class AiOrganisationUpdateController extends Controller
                 'message' => 'Error applying updates: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * An array value is stored as JSON text, except for attributes the model already casts to array/json: the cast encodes it itself,
+     * and encoding twice would store a JSON string inside a JSON string.
+     */
+    protected function castAware($model, string $key, $value)
+    {
+        if (!is_array($value)) return $value;
+        return $model->hasCast($key, ['array', 'json', 'object', 'collection']) ? $value : json_encode($value);
+    }
+
+    /**
+     * Every field in an apply request that the policy does not allow, as readable strings ("Campus: library_available (Not on the edit form...)").
+     *
+     * @return string[]
+     */
+    protected function unavailableFields(int $typeId, array $updates): array
+    {
+        $problems = [];
+        $label = ['organisation' => 'Organisation', 'campus' => 'Campus', 'department' => 'Department', 'course' => 'Programme'];
+        $check = function (string $level, array $keys) use (&$problems, $typeId, $label) {
+            foreach ($this->policy->blocked($level, $typeId, $keys) as $key => $reason) $problems[] = "{$label[$level]}: $key ($reason)";
+        };
+        if (!empty($updates['organisation']) && is_array($updates['organisation'])) $check('organisation', array_map('strval', array_keys($updates['organisation'])));
+        foreach (['campuses' => 'campus', 'departments' => 'department', 'courses' => 'course'] as $plural => $level) {
+            foreach ((array) ($updates[$plural] ?? []) as $item) {
+                if (is_array($item) && !empty($item['fields']) && is_array($item['fields'])) $check($level, array_map('strval', array_keys($item['fields'])));
+            }
+        }
+        return array_values(array_unique($problems));
     }
 }
