@@ -89,6 +89,48 @@
             </div>
         </div></div>
 
+        @can('cns-counsellings-browse')
+        <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Counselling after this exam <span class="badge bg-light text-dark border">{{ $counsellings->count() }}</span></h6>
+                <a href="{{ route('admin.counselling.exams.counselling', $exam) }}" class="btn btn-sm btn-light border"><i class="fas fa-people-arrows text-success me-1"></i> Map or create</a>
+            </div>
+            @forelse($counsellings as $m)
+                @php
+                    $c = $m->counselling;
+                    $cycle = $c->currentCycle;
+                    $bar = $cycle && !in_array($cycle->cycle_status, ['postponed', 'cancelled']) ? $cycle->statusBar() : null;
+                @endphp
+                <div class="d-flex justify-content-between align-items-start border-top py-2 gap-2">
+                    <div>
+                        <a href="{{ route('admin.counselling.counsellings.show', $c) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a>
+                        <span class="badge bg-light text-dark border">{{ ucfirst($m->role) }}</span>
+                        <div class="small text-muted">
+                            {{ \App\Models\Counselling\Counselling::LEVELS[$c->level] ?? ucfirst($c->level) }} · {{ $c->conductingBody->name ?? '-' }}
+                            @if($m->valid_from_year || $m->valid_to_year) · accepted {{ $m->valid_from_year ?? 'earlier' }}–{{ $m->valid_to_year ?? 'now' }}@endif
+                        </div>
+                        @if($m->seat_scope_note)<div class="small">{{ $m->seat_scope_note }}</div>@endif
+                        <div class="small">
+                            @if(!$cycle)
+                                <span class="text-muted">No current cycle</span>
+                            @elseif(in_array($cycle->cycle_status, ['postponed', 'cancelled']))
+                                {{ $cycle->title }}: <span class="badge bg-danger-subtle text-danger">{{ ucfirst($cycle->cycle_status) }}</span>
+                            @elseif($bar)
+                                {{ $cycle->title }}{{ $bar['round'] ? ' · ' . $bar['round']->name : '' }}:
+                                @foreach($bar['items'] as $label => $st)<span class="badge bg-light text-dark border me-1">{{ $label }}: {{ $st['label'] }}</span>@endforeach
+                            @else
+                                {{ $cycle->title }}: <span class="text-muted">schedule to be announced</span>
+                            @endif
+                        </div>
+                    </div>
+                    <span class="badge {{ $c->visibility === 'public' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">{{ ucfirst($c->visibility) }}</span>
+                </div>
+            @empty
+                <p class="text-muted small mb-0">No counselling is mapped to this exam yet.</p>
+            @endforelse
+        </div></div>
+        @endcan
+
         <div class="card border-0 shadow-sm rounded-4"><div class="card-body">
             <h6 class="fw-bold mb-3">Recent changes</h6>
             @forelse($logs as $log)

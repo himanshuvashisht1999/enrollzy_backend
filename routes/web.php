@@ -348,6 +348,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::put('masters/{master}/{id}', [$ns . 'MasterController', 'update'])->where('master', $masters)->whereNumber('id')->name('masters.update');
             Route::delete('masters/{master}/{id}', [$ns . 'MasterController', 'destroy'])->where('master', $masters)->whereNumber('id')->name('masters.destroy');
         });
+        // One-time data corrections (preview, then one click): /admin/counselling/data-fixes
+        Route::middleware('can:cns-masters-manage')->group(function () use ($ns) {
+            Route::get('data-fixes', [$ns . 'DataFixController', 'index'])->name('data-fixes.index');
+            Route::post('data-fixes', [$ns . 'DataFixController', 'run'])->name('data-fixes.run');
+        });
         Route::middleware('can:cns-codes-manage')->group(function () use ($ns) {
             Route::get('codes', [$ns . 'InstituteCodeController', 'index'])->name('codes.index');
             Route::post('codes', [$ns . 'InstituteCodeController', 'store'])->name('codes.store');

@@ -77,13 +77,15 @@ class CounsellingCycle extends Model
 
     /**
      * Copy Cycle (spec section 14). Copies eligibility (with score rows), process steps, fees, documents (and
-     * their templates), rules, rounds with their overrides, and the event list WITHOUT dates. Does not copy the
-     * bulletin, verification stamps, exam cycles (they differ each year) or, later, seat matrix / results / cutoffs.
+     * their templates), rules, rounds with their overrides, the event list WITHOUT dates and, when asked, the
+     * participating institutes. Does not copy the bulletin, verification stamps, seat matrix, results or cutoffs.
      * Date-type fields inside copied content (Eligibility "age as of") are cleared; needsNewDates() lists them.
+     * Each linked exam cycle moves on to that exam's next cycle; when there is none yet the link is left empty and
+     * needsUpdate() flags it.
      */
-    public function copyForward(int $year, ?string $sessionLabel = null): self
+    public function copyForward(int $year, ?string $sessionLabel = null, bool $withParticipants = false): self
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($year, $sessionLabel) {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($year, $sessionLabel, $withParticipants) {
             $new = $this->replicate(['is_current', 'is_public', 'information_bulletin_pdf', 'information_bulletin_url', 'last_verified_at', 'verified_by', 'source_url']);
             $new->fill(['year' => $year, 'session_label' => $sessionLabel, 'cycle_status' => 'scheduled', 'status_note' => null,
                 'is_current' => false, 'is_public' => false])->save();
@@ -137,12 +139,70 @@ class CounsellingCycle extends Model
                 ]);
             }
 
-            // Suggest the exam cycles that are current now.
-            $new->examCycles()->sync(\App\Models\ExamModule\Cycle::whereIn('exam_id', $this->counselling->mappings()->pluck('exam_id'))
-                ->where('is_current', true)->pluck('id'));
+            $new->examCycles()->sync($this->nextExamCycleIds($year));
+
+            // Participating institutes (optional): same colleges, courses and quotas; the import link is not carried over.
+            if ($withParticipants) {
+                $now = now();
+                Participant::where('cycle_id', $this->id)->orderBy('id')->chunk(500, function ($chunk) use ($new, $now) {
+                    \Illuminate\Support\Facades\DB::table('cns_participants')->insert($chunk->map(fn ($p) => [
+                        'cycle_id' => $new->id, 'organisation_id' => $p->organisation_id, 'course_id' => $p->course_id, 'quota_id' => $p->quota_id,
+                        'institute_type' => $p->institute_type, 'institute_code' => $p->institute_code, 'annual_tuition_fee' => $p->annual_tuition_fee,
+                        'other_fees' => $p->other_fees, 'bond_details' => $p->bond_details, 'total_seats' => $p->total_seats,
+                        'import_batch_id' => null, 'created_at' => $now, 'updated_at' => $now,
+                    ])->all());
+                });
+            }
 
             return $new;
         });
+    }
+
+    /**
+     * Exam cycles for a copy made for $year: each exam cycle linked to this cycle moves on to the same exam's next
+     * cycle (the newest one after it, up to $year). An exam that was not linked gets its cycle for $year, if any.
+     * Nothing is linked when the exam has no such cycle yet: needsUpdate() then flags it on the new cycle.
+     */
+    public function nextExamCycleIds(int $year): array
+    {
+        $linked = $this->examCycles()->get();
+        $ids = [];
+        foreach ($this->mappedExamIdsFor($year) as $examId) {
+            $prev = $linked->where('exam_id', $examId)->sortByDesc('year')->first();
+            $q = \App\Models\ExamModule\Cycle::where('exam_id', $examId)->where('year', '<=', $year);
+            $q = $prev ? $q->where('year', '>', $prev->year) : $q->where('year', $year);
+            $next = $q->orderByDesc('year')->orderByDesc('is_current')->orderBy('id')->first();
+            if ($next) $ids[] = $next->id;
+        }
+        return $ids;
+    }
+
+    /** Exams mapped to the counselling whose acceptance window (valid from / to year) covers $year. */
+    public function mappedExamIdsFor(int $year): array
+    {
+        return $this->counselling->mappings()
+            ->where(fn ($q) => $q->whereNull('valid_from_year')->orWhere('valid_from_year', '<=', $year))
+            ->where(fn ($q) => $q->whereNull('valid_to_year')->orWhere('valid_to_year', '>=', $year))
+            ->whereHas('exam')->pluck('exam_id')->all();
+    }
+
+    /**
+     * Links that need an update (shown as "Needs update"): a mapped exam with no exam cycle linked, or one linked to an
+     * older exam cycle than this counselling year (for example a 2028 counselling still on the 2027 exam).
+     */
+    public function needsUpdate(): array
+    {
+        $linked = $this->examCycles()->with('exam:id,name')->get();
+        $out = [];
+        foreach (\App\Models\ExamModule\Exam::whereIn('id', $this->mappedExamIdsFor((int) $this->year))->orderBy('name')->get(['id', 'name']) as $exam) {
+            $mine = $linked->where('exam_id', $exam->id);
+            if ($mine->isEmpty()) {
+                $out[] = 'Exam cycle for ' . $exam->name . ': none linked (no ' . $this->year . ' cycle of the exam yet). Link it once the exam cycle exists.';
+            } elseif ($mine->max('year') < $this->year) {
+                $out[] = 'Exam cycle for ' . $exam->name . ': still linked to the ' . $mine->max('year') . ' exam cycle. Link the ' . $this->year . ' one.';
+            }
+        }
+        return $out;
     }
 
     /** Date fields cleared by Copy Cycle that still need a value (shown as "Needs a new date"). */
@@ -208,12 +268,21 @@ class CounsellingCycle extends Model
                 || $r->events->contains(fn ($e) => $e->type?->slug === 'allotment-result' && $e->status === 'declared'));
     }
 
-    /** Status bar for the current round: [label => status array], or null when nothing is scheduled. */
+    /**
+     * Status bar for the current round: ['round' => Round|null, 'items' => [label => status]], or null when nothing is scheduled.
+     * With no round to show (none added yet, or none with dates), the cycle-level dates (registration, payment...) are
+     * shown on their own, so an open registration is never hidden behind "schedule to be announced".
+     */
     public function statusBar(): ?array
     {
         $round = $this->currentRound();
         if (!$round) {
-            return null;
+            $items = [];
+            foreach (self::STATUS_BAR as $slug => $label) {
+                $items[$label] = $this->statusForType($slug, null);
+            }
+            $known = array_filter($items, fn ($s) => $s['state'] !== 'to_be_announced');
+            return $known ? ['round' => null, 'items' => $known] : null;
         }
         $bar = ['round' => $round];
         foreach (self::STATUS_BAR as $slug => $label) {

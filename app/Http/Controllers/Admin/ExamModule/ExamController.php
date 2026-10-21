@@ -49,7 +49,11 @@ class ExamController extends Controller
                 ->orWhere(fn ($q) => $q->where('auditable_type', Cycle::class)->whereIn('auditable_id', $cycleIds)))
             ->latest('id')->limit(15)->get();
 
-        return view('admin.exam-module.exams.show', ['exam' => $exam, 'logs' => $logs, 'missing' => $exam->missingForPublish()]
+        // "Counselling after this exam": the same mapping table the counselling page reads, from the exam's side.
+        $counsellings = \App\Models\Counselling\CounsellingExam::with(['counselling.conductingBody', 'counselling.currentCycle'])
+            ->where('exam_id', $exam->id)->whereHas('counselling')->get()->sortBy(fn ($m) => [$m->role === 'primary' ? 0 : 1, $m->counselling->name])->values();
+
+        return view('admin.exam-module.exams.show', ['exam' => $exam, 'logs' => $logs, 'missing' => $exam->missingForPublish(), 'counsellings' => $counsellings]
             + ['categories' => ExamCategory::pluck('title', 'id'), 'levels' => ProgramLevel::pluck('title', 'id'),
                 'languageNames' => \App\Models\Language::pluck('title', 'id')]);
     }

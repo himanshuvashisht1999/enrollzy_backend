@@ -33,6 +33,11 @@
     <div class="alert alert-warning"><strong>Needs a new date</strong> (date fields that are still empty, e.g. after Copy Cycle):
         <ul class="mb-0">@foreach($todo as $t)<li>{{ $t }}</li>@endforeach</ul></div>
 @endif
+@if($stale = $cycle->needsUpdate())
+    <div class="alert alert-warning"><strong>Needs update</strong> (links that do not match this year):
+        <ul class="mb-0">@foreach($stale as $t)<li>{{ $t }}</li>@endforeach</ul>
+        @can('cns-counsellings-edit')<a href="{{ route('admin.counselling.cycles.edit', $cycle) }}" class="btn btn-sm btn-light border mt-2">Edit exam cycles</a>@endcan</div>
+@endif
 
 {{-- Current round status bar (calculated) --}}
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
@@ -41,7 +46,11 @@
         <span class="badge {{ $badge($cycle->cycle_status) }}">{{ ucfirst($cycle->cycle_status) }}{{ $cycle->status_note ? ': ' . $cycle->status_note : '' }}</span>
         <div class="small text-muted mt-1">The cycle status overrides every date and round.</div>
     @elseif($bar)
-        <div class="mb-2">Current round: <a href="{{ route('admin.counselling.rounds.show', $bar['round']) }}" class="fw-semibold text-decoration-none">{{ $bar['round']->name }}</a></div>
+        @if($bar['round'])
+            <div class="mb-2">Current round: <a href="{{ route('admin.counselling.rounds.show', $bar['round']) }}" class="fw-semibold text-decoration-none">{{ $bar['round']->name }}</a></div>
+        @else
+            <div class="mb-2 text-muted small">No round with dates yet: showing the cycle-level dates.</div>
+        @endif
         <div class="d-flex flex-wrap gap-4">
             @foreach($bar['items'] as $label => $st)
                 <div><div class="small text-muted">{{ $label }}</div><span class="badge {{ $badge($st['state']) }}">{{ $st['label'] }}</span></div>
@@ -125,12 +134,20 @@
 @can('cns-counsellings-edit')
 <div class="modal fade" id="copyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <form method="POST" action="{{ route('admin.counselling.cycles.copy', $cycle) }}">
-        @csrf
+        @csrf <input type="hidden" name="_dialog" value="copy">
+        @php $copyFailed = old('_dialog') === 'copy'; @endphp
         <div class="modal-header"><h5 class="modal-title">Copy Cycle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <p class="small text-muted">Copies eligibility, process, fees, documents (with templates), rules, rounds with their overrides, and the event list <strong>without dates</strong>. Does not copy the bulletin or verification. Date fields inside copied content are cleared and flagged "Needs a new date".</p>
-            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control" value="{{ $cycle->year + 1 }}" required></div>
-            <div><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control"></div>
+            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control @if($copyFailed) @error('year') is-invalid @enderror @endif" value="{{ $copyFailed ? old('year') : $cycle->year + 1 }}" required>
+                @if($copyFailed) @error('year')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif</div>
+            <div class="mb-3"><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control" value="{{ $copyFailed ? old('session_label') : '' }}"></div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="copy_participants" value="1" id="copyParticipants" @checked($copyFailed && old('copy_participants'))>
+                <label class="form-check-label" for="copyParticipants">Copy participating institutes
+                    <span class="text-muted small">({{ number_format(\App\Models\Counselling\Participant::where('cycle_id', $cycle->id)->count()) }} rows: same colleges, courses, quotas, fees and codes)</span></label>
+            </div>
+            <div class="form-text">Exam cycles move on to each exam's next cycle. If an exam has no next cycle yet, the link is left empty and flagged "Needs update".</div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary">Copy</button></div>
     </form>
@@ -139,9 +156,16 @@
     <form method="POST" action="{{ route('admin.counselling.rounds.store', $cycle) }}">
         @csrf
         <div class="modal-header"><h5 class="modal-title">Add Round</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">@include('admin.counselling.rounds._fields', ['round' => new \App\Models\Counselling\Round(['round_status' => 'scheduled'])])</div>
+        <div class="modal-body">
+            @if($errors->any() && old('_dialog') === 'round-add')<div class="alert alert-danger small">{!! implode('<br>', array_map('e', $errors->all())) !!}</div>@endif
+            @include('admin.counselling.rounds._fields', ['round' => new \App\Models\Counselling\Round(['round_status' => 'scheduled']), 'dialog' => 'round-add'])</div>
         <div class="modal-footer"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Round</button></div>
     </form>
 </div></div></div>
+@if($errors->any() && in_array(old('_dialog'), ['copy', 'round-add'], true))
+@push('scripts')
+<script>$(function () { new bootstrap.Modal(document.getElementById(@json(old('_dialog') === 'copy' ? 'copyModal' : 'roundModal'))).show(); });</script>
+@endpush
+@endif
 @endcan
 @endsection

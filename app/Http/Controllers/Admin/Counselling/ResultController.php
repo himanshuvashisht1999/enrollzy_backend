@@ -17,6 +17,11 @@ class ResultController extends Controller
 {
     public function store(Request $request, Round $round)
     {
+        // Publishing while students can still change their choices is almost always a mistake: say so, and only go on when confirmed.
+        if (($open = $round->openChoiceFilling()) && !$request->boolean('confirm_choice_open')) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['confirm_choice_open' =>
+                'Choice filling for this round is still open (' . $open->dateText() . '). Publishing the result now marks it declared while students can still change their choices. Tick "Publish anyway" to continue.']);
+        }
         $data = $this->validated($request, null, $round);
         $result = DB::transaction(function () use ($data, $round) {
             $result = $round->results()->create($data);

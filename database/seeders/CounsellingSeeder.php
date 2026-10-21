@@ -21,7 +21,8 @@ class CounsellingSeeder extends Seeder
         }
 
         // [name, is_fresh_registration_default]
-        foreach ([['Regular', false], ['Mop-up', false], ['Stray vacancy', true], ['Spot', true], ['Special', false]] as $i => [$name, $fresh]) {
+        // Regular rounds accept fresh registrations unless a round says otherwise.
+        foreach ([['Regular', true], ['Mop-up', false], ['Stray vacancy', true], ['Spot', true], ['Special', false]] as $i => [$name, $fresh]) {
             RoundType::firstOrCreate(['name' => $name], ['is_fresh_registration_default' => $fresh, 'sort_order' => $i + 1, 'status' => true]);
         }
 

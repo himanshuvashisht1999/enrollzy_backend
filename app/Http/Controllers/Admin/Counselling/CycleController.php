@@ -77,11 +77,13 @@ class CycleController extends Controller
     public function copy(Request $request, CounsellingCycle $cycle)
     {
         $data = $request->validate(['year' => 'required|integer|min:2000|max:2100', 'session_label' => 'nullable|string|max:100']);
-        $new = $cycle->copyForward((int) $data['year'], $data['session_label'] ?? null);
+        $withParticipants = $request->boolean('copy_participants');
+        $new = $cycle->copyForward((int) $data['year'], $data['session_label'] ?? null, $withParticipants);
 
-        $todo = $new->needsNewDates();
+        $todo = count($new->needsNewDates()) + count($new->needsUpdate());
+        $participants = $withParticipants ? ' ' . number_format(\App\Models\Counselling\Participant::where('cycle_id', $new->id)->count()) . ' participating institutes copied.' : '';
         return redirect()->route('admin.counselling.cycles.show', $new)
-            ->with('success', 'Cycle copied without dates, bulletin or verification.' . ($todo ? ' ' . count($todo) . ' date(s) need a new value.' : ''));
+            ->with('success', 'Cycle copied without dates, bulletin or verification.' . $participants . ($todo ? ' ' . $todo . ' item(s) need a new date or an update.' : ''));
     }
 
     public function verify(Request $request, CounsellingCycle $cycle)

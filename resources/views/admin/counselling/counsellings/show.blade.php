@@ -72,9 +72,17 @@
             @if($mappable->count())
             <form action="{{ route('admin.counselling.mappings.store', $counselling) }}" method="POST" class="row g-2 border-top pt-3 mt-1">
                 @csrf
-                <div class="col-md-5"><select name="exam_id" class="form-select" required><option value="">Map an exam...</option>@foreach($mappable as $e)<option value="{{ $e->id }}">{{ $e->name }}</option>@endforeach</select></div>
-                <div class="col-md-3"><select name="role" class="form-select"><option value="primary">Primary</option><option value="additional">Additional</option></select></div>
-                <div class="col-md-4"><button class="btn btn-outline-primary w-100">Add exam</button></div>
+                <div class="col-md-5"><label class="form-label small fw-bold mb-1">Exam</label><select name="exam_id" class="form-select @error('exam_id') is-invalid @enderror" required><option value="">Map an exam...</option>@foreach($mappable as $e)<option value="{{ $e->id }}" @selected(old('exam_id') == $e->id)>{{ $e->name }}</option>@endforeach</select>
+                    @error('exam_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-3"><label class="form-label small fw-bold mb-1">Role</label><select name="role" class="form-select"><option value="primary" @selected(old('role') !== 'additional')>Primary</option><option value="additional" @selected(old('role') === 'additional')>Additional</option></select></div>
+                <div class="col-md-2"><label class="form-label small fw-bold mb-1">Valid from</label><input type="number" name="valid_from_year" value="{{ old('valid_from_year') }}" class="form-control @error('valid_from_year') is-invalid @enderror" placeholder="Year" min="1990" max="2100">
+                    @error('valid_from_year')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-2"><label class="form-label small fw-bold mb-1">Valid to</label><input type="number" name="valid_to_year" value="{{ old('valid_to_year') }}" class="form-control @error('valid_to_year') is-invalid @enderror" placeholder="Year" min="1990" max="2100">
+                    @error('valid_to_year')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-9"><label class="form-label small fw-bold mb-1">Seat scope note</label><input type="text" name="seat_scope_note" value="{{ old('seat_scope_note') }}" class="form-control @error('seat_scope_note') is-invalid @enderror" maxlength="255" placeholder="e.g. JEE Advanced: IIT seats only; JEE Main: NIT, IIIT, GFTI">
+                    @error('seat_scope_note')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-outline-primary w-100">Add exam</button></div>
+                <div class="col-12 form-text mt-0">Leave the years empty when the exam has always been accepted (and still is).</div>
             </form>
             @endif
             @endcan

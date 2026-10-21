@@ -56,8 +56,9 @@
 <div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
     <form id="eventForm" method="POST" action="{{ $storeUrl }}">
         @csrf <span id="eventMethod"></span>
+        <input type="hidden" name="_dialog" value="event"><input type="hidden" name="_dialog_id" id="f_dialog_id">
         <div class="modal-header"><h5 class="modal-title" id="eventTitle">Add Event</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><div class="row g-3">
+        <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">Event Type *</label>
                 <select name="event_type_id" id="f_event_type_id" class="form-select custom-select2" required>
                     @foreach($eventTypes as $t)<option value="{{ $t->id }}" data-manual="{{ $t->status_source === 'manual' ? 1 : 0 }}">{{ $t->name }}{{ $t->status_source === 'manual' ? ' (manual status)' : '' }}</option>@endforeach
@@ -91,13 +92,22 @@
         const form = document.getElementById('eventForm');
         form.reset();
         fields.forEach(f => { const el = $('#f_' + f); if (el.length) el.val(ev ? (ev[f] ?? '') : (f === 'date_precision' ? 'exact' : '')).trigger('change'); });
-        form.action = ev ? updateUrl + '/' + ev.id : storeUrl;
-        $('#eventMethod').html(ev ? '<input type="hidden" name="_method" value="PUT">' : '');
-        $('#eventTitle').text(ev ? 'Edit Event' : 'Add Event');
+        const editing = !!(ev && ev.id);
+        form.action = editing ? updateUrl + '/' + ev.id : storeUrl;
+        $('#eventMethod').html(editing ? '<input type="hidden" name="_method" value="PUT">' : '');
+        $('#f_dialog_id').val(editing ? ev.id : '');
+        $('#eventTitle').text(editing ? 'Edit Event' : 'Add Event');
+        $(form).find('.dialog-errors').addClass('d-none').empty();
         syncManual();
         new bootstrap.Modal(document.getElementById('eventModal')).show();
     }
     $(function () { $('#f_event_type_id').on('change', syncManual); });
-    @if($errors->any()) $(function () { new bootstrap.Modal(document.getElementById('eventModal')).show(); }); @endif
+    // A validation error reopens THIS dialog only when it was the one submitted, with what was typed.
+    @if($errors->any() && old('_dialog') === 'event')
+    $(function () {
+        openEventModal(Object.assign({!! json_encode(collect(old())->only(['event_type_id','quota_id','label','date_precision','manual_status','on_demand_text','link_url','note','source_url','start_at','end_at','extended_end_at']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {id: @json(old('_dialog_id'))}));
+        $('#eventForm .dialog-errors').removeClass('d-none').html(@json($errors->all()).map(e => $('<div>').text(e).html()).join('<br>'));
+    });
+    @endif
 </script>
 @endpush

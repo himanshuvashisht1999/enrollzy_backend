@@ -41,7 +41,8 @@
     <h6 class="fw-bold mb-3">Round settings</h6>
     <form action="{{ route('admin.counselling.rounds.update', $round) }}" method="POST">
         @csrf @method('PUT')
-        @include('admin.counselling.rounds._fields')
+        @if($errors->any() && old('_dialog') === 'round-settings')<div class="alert alert-danger small">{!! implode('<br>', array_map('e', $errors->all())) !!}</div>@endif
+        @include('admin.counselling.rounds._fields', ['dialog' => 'round-settings'])
         <button class="btn btn-primary mt-3"><i class="fas fa-save me-1"></i> Save round</button>
     </form>
 </div></div>

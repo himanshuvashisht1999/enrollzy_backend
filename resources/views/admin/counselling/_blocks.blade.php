@@ -8,7 +8,9 @@
     $isRound = (bool) $round;
     $scope = $isRound ? 'round' : 'cycle';
     $allBlocks = collect(CnsBlocks::all())->filter(fn ($d) => in_array($scope, $d['scopes']));
-    $activeBlock = session('block_tab', $allBlocks->keys()->first());
+    // The tab of a dialog that failed validation stays open; otherwise the last tab used.
+    $failedBlock = str_starts_with((string) old('_dialog'), 'cns:') ? substr(old('_dialog'), 4) : null;
+    $activeBlock = ($failedBlock && $allBlocks->has($failedBlock)) ? $failedBlock : session('block_tab', $allBlocks->keys()->first());
     $defs = [];
     $lists = [];
     foreach ($allBlocks as $key => $d) {
@@ -116,8 +118,9 @@
           data-update="{{ url('admin/counselling/blocks/' . $key) }}"
           action="{{ $isRound ? route('admin.counselling.blocks.store-round', [$round, $key]) : route('admin.counselling.blocks.store-cycle', [$cycle, $key]) }}">
         @csrf <span class="method-slot"></span>
+        <input type="hidden" name="_dialog" value="cns:{{ $key }}"><input type="hidden" name="_dialog_id" class="dialog-id">
         <div class="modal-header"><h5 class="modal-title">{{ $d['title'] }}@if($isRound) <span class="text-muted fs-6">· {{ $round->name }}</span>@endif</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><div class="row g-3">
+        <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
             @foreach($def['fields'] as $f)
                 <div class="col-md-{{ $f['col'] ?? 12 }}">
                     @if($f['type'] === 'bool')
@@ -184,8 +187,11 @@
             if (el.type === 'checkbox') el.checked = el.dataset.default === '1';
             else if (el.dataset.default !== '') el.value = el.dataset.default;
         });
-        form.action = row ? form.dataset.update + '/' + row.id : form.dataset.store;
-        form.querySelector('.method-slot').innerHTML = row ? '<input type="hidden" name="_method" value="PUT">' : '';
+        const editing = !!(row && row.id);
+        form.action = editing ? form.dataset.update + '/' + row.id : form.dataset.store;
+        form.querySelector('.method-slot').innerHTML = editing ? '<input type="hidden" name="_method" value="PUT">' : '';
+        form.querySelector('.dialog-id').value = editing ? row.id : '';
+        $(form).find('.dialog-errors').addClass('d-none').empty();
         if (row) {
             Object.entries(row).forEach(([name, val]) => {
                 if (name === '_files' || name === 'id' || val === null) return;
@@ -195,12 +201,23 @@
                 if (multi) { $(multi).val(val || []).trigger('change'); return; }
                 const el = form.querySelector(`[name="${name}"]:not([type=hidden])`);
                 if (!el) return;
-                if (el.type === 'checkbox') el.checked = !!val; else { el.value = val; $(el).trigger('change'); }
+                if (el.type === 'checkbox') el.checked = [true, 1, '1', 'true', 'on'].includes(val); else { el.value = val; $(el).trigger('change'); }
             });
             Object.entries(row._files || {}).forEach(([n, f]) => { const e = form.querySelector(`.cns-cur-file[data-file="${n}"]`); if (e && f) e.textContent = 'Current file: ' + f + ' (upload to replace)'; });
         }
         form.querySelectorAll('.cns-rows').forEach(b => { if (!b.children.length) addCnsRow(b); });
         new bootstrap.Modal(modalEl).show();
     }
+    // A validation error reopens the dialog that was submitted (e.g. the fee or rule), not another one, with what was typed.
+    @if($errors->any() && $failedBlock && $allBlocks->has($failedBlock))
+    $(function () {
+        const typed = Object.assign({!! json_encode(collect(old())->except(['_token', '_method', '_dialog', '_dialog_id']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {id: @json(old('_dialog_id'))});
+        openCns(@json($failedBlock), typed);
+        const box = document.querySelector('#cnsModal-' + @json($failedBlock) + ' .dialog-errors');
+        const files = document.querySelector('#cnsModal-' + @json($failedBlock) + ' input[type=file]') ? '<br><em>Attach any file again: browsers do not keep a chosen file after a failed save.</em>' : '';
+        box.classList.remove('d-none');
+        box.innerHTML = @json($errors->all()).map(e => $('<div>').text(e).html()).join('<br>') + files;
+    });
+    @endif
 </script>
 @endpush

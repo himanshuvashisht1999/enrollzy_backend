@@ -4,6 +4,7 @@
     $versionCount = $round->seatMatrixVersions()->count();
     $cutoffCount = $round->cutoffs()->count();
     $results = $round->results()->get();
+    $choiceOpen = $round->openChoiceFilling();
 @endphp
 
 <div class="row g-4 mb-4">
@@ -63,14 +64,23 @@
 <div class="modal fade" id="resultModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <form id="resultForm" method="POST" enctype="multipart/form-data" action="{{ route('admin.counselling.results.store', $round) }}">
         @csrf <span id="rMethod"></span>
+        <input type="hidden" name="_dialog" value="result"><input type="hidden" name="_dialog_id" id="r_dialog_id">
         <div class="modal-header"><h5 class="modal-title">Allotment result</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><div class="row g-3">
+        <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
             <div class="col-12"><label class="form-label fw-bold">Title *</label><input type="text" name="title" id="r_title" class="form-control" placeholder="Round 1 provisional result" required></div>
             <div class="col-md-6"><label class="form-label fw-bold">Type *</label><select name="result_type" id="r_result_type" class="form-select custom-select2">@foreach(\App\Models\Counselling\AllotmentResult::TYPES as $k => $v)<option value="{{ $k }}">{{ $v }}</option>@endforeach</select></div>
             <div class="col-md-6"><label class="form-label fw-bold">Published at * <span class="text-muted small">({{ $cycle->timezone }})</span></label><input type="datetime-local" name="published_at" id="r_published_at" class="form-control" required></div>
             <div class="col-12"><label class="form-label fw-bold">Result file</label><input type="file" name="file" class="form-control" accept=".pdf,.xls,.xlsx,.csv,.zip"><div class="small text-muted" id="r_file_note"></div></div>
             <div class="col-12"><label class="form-label fw-bold">or result URL</label><input type="url" name="url" id="r_url" class="form-control" placeholder="https://"><div class="form-text">A file or a URL is required.</div></div>
             <div class="col-12"><label class="form-label fw-bold">Source URL</label><input type="url" name="source_url" id="r_source_url" class="form-control" placeholder="Official notice"></div>
+            @if($choiceOpen)
+            <div class="col-12" id="r_choice_warning">
+                <div class="alert alert-warning mb-2 small"><i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>Choice filling is still open</strong> for this round ({{ $choiceOpen->dateText() }}). Publishing the result now marks it declared while students can still change their choices.</div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="confirm_choice_open" value="1" id="r_confirm_choice_open">
+                    <label class="form-check-label" for="r_confirm_choice_open">Publish anyway</label></div>
+            </div>
+            @endif
         </div></div>
         <div class="modal-footer"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save</button></div>
     </form>
@@ -82,16 +92,28 @@
     function openResult(row) {
         const form = document.getElementById('resultForm');
         form.reset();
-        form.action = row ? rBase + '/' + row.id : rStore;
-        $('#rMethod').html(row ? '<input type="hidden" name="_method" value="PUT">' : '');
+        const editing = !!(row && row.id);
+        form.action = editing ? rBase + '/' + row.id : rStore;
+        $('#rMethod').html(editing ? '<input type="hidden" name="_method" value="PUT">' : '');
+        $('#r_dialog_id').val(editing ? row.id : '');
+        $(form).find('.dialog-errors').addClass('d-none').empty();
         $('#r_title').val(row ? row.title : '');
         $('#r_result_type').val(row ? row.result_type : 'provisional').trigger('change');
         $('#r_published_at').val(row ? row.published_at : '');
         $('#r_url').val(row ? (row.url ?? '') : '');
         $('#r_source_url').val(row ? (row.source_url ?? '') : '');
         $('#r_file_note').text(row && row.has_file ? 'A file is attached. Upload to replace it.' : '');
+        // The open-choice-filling warning is about publishing a new result, not editing one.
+        $('#r_choice_warning').toggle(!editing);
+        $('#r_confirm_choice_open').prop('checked', !!(row && row.confirm_choice_open));
         new bootstrap.Modal(document.getElementById('resultModal')).show();
     }
+    @if($errors->any() && old('_dialog') === 'result')
+    $(function () {
+        openResult(Object.assign({!! json_encode(collect(old())->only(['title', 'result_type', 'published_at', 'url', 'source_url', 'confirm_choice_open']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {id: @json(old('_dialog_id'))}));
+        $('#resultForm .dialog-errors').removeClass('d-none').html(@json($errors->all()).map(e => $('<div>').text(e).html()).join('<br>') + '<br><em>Attach the result file again if you had chosen one.</em>');
+    });
+    @endif
 </script>
 @endpush
 @endcan

@@ -4,7 +4,9 @@
     use App\Models\ExamModule\ContentRow;
 
     $blocks = ContentBlocks::all();
-    $activeTab = session('content_tab', 'eligibility');
+    // The tab of a dialog that failed validation stays open; otherwise the last tab used.
+    $failedBlock = str_starts_with((string) old('_dialog'), 'block:') ? substr(old('_dialog'), 6) : null;
+    $activeTab = ($failedBlock && isset($blocks[$failedBlock])) ? $failedBlock : session('content_tab', 'eligibility');
     $customFields = $cycle->exam->customFields()->get();
     $customValues = \App\Models\ExamModule\CustomValue::whereIn('field_id', $customFields->pluck('id'))
         ->where(fn ($q) => $q->whereNull('cycle_id')->orWhere('cycle_id', $cycle->id))->get()
@@ -125,8 +127,9 @@
     <form method="POST" enctype="multipart/form-data" action="{{ route('admin.exam-module.content.store', [$cycle, $key]) }}"
           data-store="{{ route('admin.exam-module.content.store', [$cycle, $key]) }}" data-update="{{ url('admin/exam-module/content/' . $key) }}">
         @csrf <span class="method-slot"></span>
+        <input type="hidden" name="_dialog" value="block:{{ $key }}"><input type="hidden" name="_dialog_id" class="dialog-id">
         <div class="modal-header"><h5 class="modal-title">{{ $def['title'] }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><div class="row g-3">
+        <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
             @if($cycle->usesStages())
             <div class="col-md-6"><label class="form-label fw-bold">Stage <span class="text-muted small">(optional)</span></label>
                 <select name="stage_id" class="form-select"><option value="">Whole cycle</option>@foreach($cycle->stages as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
@@ -239,20 +242,33 @@
             if (el.type === 'checkbox') el.checked = el.dataset.default === '1';
             else if (el.dataset.default !== '') el.value = el.dataset.default;
         });
-        form.action = row ? form.dataset.update + '/' + row.id : form.dataset.store;
-        form.querySelector('.method-slot').innerHTML = row ? '<input type="hidden" name="_method" value="PUT">' : '';
+        const editing = !!(row && row.id);
+        form.action = editing ? form.dataset.update + '/' + row.id : form.dataset.store;
+        form.querySelector('.method-slot').innerHTML = editing ? '<input type="hidden" name="_method" value="PUT">' : '';
+        form.querySelector('.dialog-id').value = editing ? row.id : '';
+        $(form).find('.dialog-errors').addClass('d-none').empty();
         if (row) {
             Object.entries(row).forEach(([name, val]) => {
                 if (name === '_files' || val === null) return;
                 if (Array.isArray(val)) { const box = form.querySelector(`.rows-box[data-name="${name}"]`); if (box) val.forEach(r => addRow(box, r)); return; }
                 const el = form.querySelector(`[name="${name}"]:not([type=hidden])`);
                 if (!el) return;
-                if (el.type === 'checkbox') el.checked = !!val; else el.value = val;
+                if (el.type === 'checkbox') el.checked = [true, 1, '1', 'true', 'on'].includes(val); else el.value = val;
             });
             Object.entries(row._files || {}).forEach(([n, f]) => { const e = form.querySelector(`.cur-file[data-file="${n}"]`); if (e && f) e.textContent = 'Current file: ' + f + ' (upload to replace)'; });
         }
         form.querySelectorAll('.rows-box').forEach(b => { if (!b.children.length) addRow(b); });
         new bootstrap.Modal(modalEl).show();
     }
+    // A validation error reopens the dialog that was submitted (e.g. the fee), not the event dialog, with what was typed.
+    @if($errors->any() && $failedBlock && isset($blocks[$failedBlock]))
+    $(function () {
+        openBlock(@json($failedBlock), Object.assign({!! json_encode(collect(old())->except(['_token', '_method', '_dialog', '_dialog_id']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {id: @json(old('_dialog_id'))}));
+        const box = document.querySelector('#modal-' + @json($failedBlock) + ' .dialog-errors');
+        const files = document.querySelector('#modal-' + @json($failedBlock) + ' input[type=file]') ? '<br><em>Attach any file again: browsers do not keep a chosen file after a failed save.</em>' : '';
+        box.classList.remove('d-none');
+        box.innerHTML = @json($errors->all()).map(e => $('<div>').text(e).html()).join('<br>') + files;
+    });
+    @endif
 </script>
 @endpush

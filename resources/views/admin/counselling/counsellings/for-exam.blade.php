@@ -35,10 +35,16 @@
             <h6 class="fw-bold mb-3">Map an existing counselling</h6>
             <form action="{{ route('admin.counselling.exams.map', $exam) }}" method="POST" class="row g-2">
                 @csrf
-                <div class="col-md-7"><select name="counselling_id" class="form-select" required><option value="">Select counselling</option>
-                    @foreach($available as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ \App\Models\Counselling\Counselling::LEVELS[$c->level] }})</option>@endforeach</select></div>
-                <div class="col-md-3"><select name="role" class="form-select"><option value="primary">Primary</option><option value="additional">Additional</option></select></div>
-                <div class="col-md-2"><button class="btn btn-outline-primary w-100">Map</button></div>
+                <div class="col-md-8"><label class="form-label small fw-bold mb-1">Counselling</label><select name="counselling_id" class="form-select @error('counselling_id') is-invalid @enderror" required><option value="">Select counselling</option>
+                    @foreach($available as $c)<option value="{{ $c->id }}" @selected(old('counselling_id') == $c->id)>{{ $c->name }} ({{ \App\Models\Counselling\Counselling::LEVELS[$c->level] }})</option>@endforeach</select>
+                    @error('counselling_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-4"><label class="form-label small fw-bold mb-1">Role</label><select name="role" class="form-select"><option value="primary" @selected(old('role') !== 'additional')>Primary</option><option value="additional" @selected(old('role') === 'additional')>Additional</option></select></div>
+                <div class="col-md-3"><label class="form-label small fw-bold mb-1">Valid from</label><input type="number" name="valid_from_year" value="{{ old('valid_from_year') }}" class="form-control @error('valid_from_year') is-invalid @enderror" placeholder="Year" min="1990" max="2100">
+                    @error('valid_from_year')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-3"><label class="form-label small fw-bold mb-1">Valid to</label><input type="number" name="valid_to_year" value="{{ old('valid_to_year') }}" class="form-control @error('valid_to_year') is-invalid @enderror" placeholder="Year" min="1990" max="2100">
+                    @error('valid_to_year')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-md-6"><label class="form-label small fw-bold mb-1">Seat scope note</label><input type="text" name="seat_scope_note" value="{{ old('seat_scope_note') }}" class="form-control" maxlength="255" placeholder="e.g. IIT seats only"></div>
+                <div class="col-12"><button class="btn btn-outline-primary">Map</button></div>
             </form>
         </div></div>
     </div>

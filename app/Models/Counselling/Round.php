@@ -71,6 +71,14 @@ class Round extends Model
         return $this->willingness_options ?? $this->cycle?->willingness_options ?? [];
     }
 
+    /** This round's choice filling window when it is open right now (round dates first, then the cycle's own), else null. */
+    public function openChoiceFilling(): ?\App\Models\ExamModule\CycleEvent
+    {
+        $isOpen = fn ($e) => $e->type?->slug === 'choice-filling' && $e->status === 'open';
+        return $this->events()->with('type')->get()->first($isOpen)
+            ?? $this->cycle?->events()->with('type')->get()->first($isOpen);
+    }
+
     /** Previous and next round by sort order, for the round page navigation. */
     public function previous(): ?self
     {

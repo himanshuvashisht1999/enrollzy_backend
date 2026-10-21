@@ -18,12 +18,29 @@ class ImportContext
     private array $aliases = [];    // type => [normalised alias => id]
     private array $codes = [];      // upper-case authority code => organisation id
     private array $existing = [];   // identity key => true
+    private array $participants = [];       // "org|course|quota" => true (seat matrix / cutoff imports only)
+    private array $participantOrgs = [];    // org id => true
     private array $cache = [];
     private ?int $soleExam = null;
     private string $type;
 
     private const FUZZY_MIN = 0.85;
     private const FUZZY_GAP = 0.03;
+
+    /** Short forms people type in counselling lists, expanded before the word-by-word near-miss match. */
+    private const ABBREVIATIONS = [
+        'univ' => 'university', 'uni' => 'university', 'unv' => 'university', 'universty' => 'university',
+        'inst' => 'institute', 'instt' => 'institute', 'institue' => 'institute', 'coll' => 'college', 'clg' => 'college', 'colg' => 'college',
+        'tech' => 'technology', 'technol' => 'technology', 'engg' => 'engineering', 'engr' => 'engineering', 'eng' => 'engineering',
+        'med' => 'medical', 'govt' => 'government', 'gov' => 'government', 'sci' => 'science', 'sciences' => 'science',
+        'mgmt' => 'management', 'natl' => 'national', 'intl' => 'international', 'pvt' => 'private', 'res' => 'research',
+    ];
+    /** Words that say what kind of place it is, not which one: a near-miss needs at least one word that is not in this list. */
+    private const GENERIC_WORDS = [
+        'university', 'college', 'institute', 'of', 'and', 'the', 'school', 'medical', 'engineering', 'technology', 'science',
+        'government', 'national', 'academy', 'for', 'in', 'at', 'private', 'limited', 'deemed', 'be', 'to', 'research', 'studies',
+        'management', 'centre', 'center', 'india', 'indian', 'state', 'new', 'hospital', 'dental', 'nursing', 'pharmacy', 'law',
+    ];
 
     public function __construct(ImportBatch $batch)
     {
@@ -59,6 +76,32 @@ class ImportContext
         if ($batch->mode === 'append') {
             $this->loadExisting($batch);
         }
+
+        // Seats and cutoffs may only be entered for the cycle's participating institutes (college + course + quota).
+        if (in_array($batch->type, ['seats', 'cutoffs'], true)) {
+            foreach (DB::table('cns_participants')->where('cycle_id', $batch->cycle_id)->get(['organisation_id', 'course_id', 'quota_id']) as $p) {
+                $this->participants[$p->organisation_id . '|' . $p->course_id . '|' . $p->quota_id] = true;
+                $this->participantOrgs[(int) $p->organisation_id] = true;
+            }
+        }
+    }
+
+    /**
+     * Null when this college + course + quota is a participating institute of the cycle, else the reason (shown on the row
+     * as "Not a participating institute"). Only seat matrix and cutoff imports ask.
+     */
+    public function participantProblem(int $org, int $course, int $quota): ?string
+    {
+        if (isset($this->participants["$org|$course|$quota"])) {
+            return null;
+        }
+        $what = ($this->names['organisation'][$org] ?? "college #$org") . ' · ' . ($this->names['course'][$course] ?? "course #$course") . ' · ' . ($this->names['quota'][$quota] ?? "quota #$quota");
+        if (!$this->participants) {
+            return "Not a participating institute: this cycle has no participating institutes yet. Import them first, then re-check this file ($what).";
+        }
+        return isset($this->participantOrgs[$org])
+            ? "Not a participating institute: the college takes part, but not for this course and quota ($what). Add it to Participating Institutes first."
+            : "Not a participating institute: $what is not in this cycle's Participating Institutes. Add it there first.";
     }
 
     private function load(string $type, $rows, array $columns): void
@@ -146,7 +189,7 @@ class ImportContext
             $list = implode('; ', array_map(fn ($id) => $this->names[$type][$id] . " (#$id)", array_slice($exact, 0, 4)));
             return $this->miss("matches " . count($exact) . " records ($list). Choose the right one to continue.");
         }
-        if ($suggestion = $this->fuzzy($type, $norm)) {
+        if ($suggestion = $this->fuzzy($type, $norm) ?? $this->nearMiss($type, $norm)) {
             return ['state' => 'warning', 'id' => $suggestion[0], 'name' => $this->names[$type][$suggestion[0]], 'score' => (int) round($suggestion[1] * 100), 'msg' => null];
         }
         return $this->miss('no match in the ' . $type . ' master. Pick the right one to teach the importer, or add it to the master first.');
@@ -160,6 +203,53 @@ class ImportContext
     private function miss(string $msg): array
     {
         return ['state' => 'error', 'id' => null, 'name' => null, 'score' => null, 'msg' => $msg];
+    }
+
+    /**
+     * Near-miss names ("Amity Univ" for "Amity University, Noida"): short forms are expanded and the words compared one by
+     * one. Every distinctive word typed must be in the candidate (exactly, as the start of a word, or with one typo); the
+     * closest such candidate is returned as a SUGGESTION that someone must confirm, never as a match.
+     * Only for colleges, courses and exams: quotas and categories are short codes where this would guess.
+     */
+    private function nearMiss(string $type, string $norm): ?array
+    {
+        if (!in_array($type, ['organisation', 'course', 'exam'], true)) {
+            return null;
+        }
+        $query = $this->words($norm);
+        $distinct = array_values(array_filter($query, fn ($w) => mb_strlen($w) >= 3 && !in_array($w, self::GENERIC_WORDS, true)));
+        if (!$distinct) {
+            return null;
+        }
+        $best = null;
+        foreach ($this->exact[$type] ?? [] as $candidate => $ids) {
+            if (count($ids) !== 1) {
+                continue;
+            }
+            $words = $this->words($candidate);
+            $hit = fn ($q) => (bool) array_filter($words, fn ($w) => $w === $q
+                || (mb_strlen($q) >= 3 && str_starts_with($w, $q))
+                || (mb_strlen($q) >= 5 && mb_strlen($w) >= 5 && levenshtein($q, $w) <= 1));
+            if (count(array_filter($distinct, $hit)) !== count($distinct)) {
+                continue;
+            }
+            $covered = count(array_filter($query, $hit)) / count($query);
+            if ($covered < 0.8) {
+                continue;
+            }
+            similar_text(implode(' ', $query), implode(' ', $words), $pct);
+            $score = $covered * 0.5 + ($pct / 100) * 0.5;
+            if (!$best || $score > $best[1]) {
+                $best = [$ids[0], $score, $pct / 100];
+            }
+        }
+        return $best ? [$best[0], $best[2]] : null;
+    }
+
+    /** Lower-case words with short forms expanded. */
+    private function words(string $norm): array
+    {
+        return array_map(fn ($w) => self::ABBREVIATIONS[$w] ?? $w, array_values(array_filter(explode(' ', $norm), fn ($w) => $w !== '')));
     }
 
     /** Closest name by edit distance, accepted only when clearly better than the runner-up. */

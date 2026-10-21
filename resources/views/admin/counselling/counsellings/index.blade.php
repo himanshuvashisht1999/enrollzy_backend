@@ -3,6 +3,15 @@
 @section('title', 'Counselling')
 
 @section('content')
+@can('cns-masters-manage')
+    @php $pendingFixes = app(\App\Services\Counselling\DataFixes::class)->pendingCount(); @endphp
+    @if($pendingFixes)
+        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+            <span><strong>{{ $pendingFixes }}</strong> item(s) in existing data need a one-time correction.</span>
+            <a href="{{ route('admin.counselling.data-fixes.index') }}" class="btn btn-sm btn-warning">Review data fixes</a>
+        </div>
+    @endif
+@endcan
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-0 fw-bold">Counselling</h4>

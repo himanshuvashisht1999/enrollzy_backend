@@ -287,6 +287,12 @@ class Importer
                 break;
         }
 
+        // --- seats and cutoffs only for the cycle's participating institutes
+        if (in_array($type, ['seats', 'cutoffs'], true) && $r['organisation_id'] && $r['course_id'] && $r['quota_id']
+            && ($problem = $ctx->participantProblem($r['organisation_id'], $r['course_id'], $r['quota_id']))) {
+            $errors[] = $problem;
+        }
+
         // --- duplicates: inside the file, and against rows that already exist
         if (!$errors) {
             if (isset($seen[$key])) {

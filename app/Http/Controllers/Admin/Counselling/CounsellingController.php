@@ -89,16 +89,20 @@ class CounsellingController extends Controller
 
     // ---- Exam mapping (one table, read from both sides) ----
 
+    /** The same mapping fields wherever a mapping is added or edited (spec section 4). */
+    private const MAPPING_RULES = [
+        'valid_from_year' => 'nullable|integer|min:1990|max:2100',
+        'valid_to_year' => 'nullable|integer|min:1990|max:2100|gte:valid_from_year',
+        'seat_scope_note' => 'nullable|string|max:255',
+    ];
+
     public function mapExam(Request $request, Counselling $counselling)
     {
         $data = $request->validate([
             'exam_id' => ['required', Rule::exists('exm_exams', 'id')->whereNull('deleted_at'),
                 Rule::unique('cns_counselling_exams', 'exam_id')->where('counselling_id', $counselling->id)],
             'role' => ['required', Rule::in(['primary', 'additional'])],
-            'valid_from_year' => 'nullable|integer|min:1990|max:2100',
-            'valid_to_year' => 'nullable|integer|min:1990|max:2100|gte:valid_from_year',
-            'seat_scope_note' => 'nullable|string|max:255',
-        ], ['exam_id.unique' => 'This exam is already mapped to this counselling.']);
+        ] + self::MAPPING_RULES, ['exam_id.unique' => 'This exam is already mapped to this counselling.']);
 
         $counselling->mappings()->create($data + ['sort_order' => ($counselling->mappings()->max('sort_order') ?? 0) + 1]);
         return back()->with('success', 'Exam mapped.');
@@ -147,11 +151,18 @@ class CounsellingController extends Controller
 
     public function mapExistingFromExam(Request $request, Exam $exam)
     {
-        $counselling = Counselling::findOrFail($request->validate(['counselling_id' => 'required|exists:cns_counsellings,id'])['counselling_id']);
+        $data = $request->validate([
+            'counselling_id' => 'required|exists:cns_counsellings,id',
+            'role' => ['nullable', Rule::in(['primary', 'additional'])],
+        ] + self::MAPPING_RULES);
+        $data['role'] ??= 'primary';
+        $counselling = Counselling::findOrFail($data['counselling_id']);
         if ($counselling->mappings()->where('exam_id', $exam->id)->exists()) {
             return back()->with('error', 'Already mapped.');
         }
-        $counselling->mappings()->create(['exam_id' => $exam->id, 'role' => $request->input('role') === 'additional' ? 'additional' : 'primary',
+        $counselling->mappings()->create(['exam_id' => $exam->id, 'role' => $data['role'],
+            'valid_from_year' => $data['valid_from_year'] ?? null, 'valid_to_year' => $data['valid_to_year'] ?? null,
+            'seat_scope_note' => $data['seat_scope_note'] ?? null,
             'sort_order' => ($counselling->mappings()->max('sort_order') ?? 0) + 1]);
         return back()->with('success', 'Counselling mapped to ' . $exam->name . '.');
     }

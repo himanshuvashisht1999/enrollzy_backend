@@ -89,7 +89,11 @@
         @forelse($rows as $r)
             <tr>
                 <td class="ps-3 text-muted">{{ $r->row_no }}</td>
-                <td><span class="badge {{ $tone[$r->status] }}">{{ ucfirst($r->status) }}</span></td>
+                @php
+                    $notParticipant = $r->status === 'error' && collect($r->messages ?? [])->contains(fn ($m) => str_starts_with($m, 'Not a participating institute'));
+                    $statusLabel = $notParticipant ? 'Not a participating institute' : ['matched' => 'Ready', 'warning' => 'Needs confirmation', 'error' => 'Error'][$r->status];
+                @endphp
+                <td><span class="badge {{ $tone[$r->status] }}">{{ $statusLabel }}</span></td>
                 @foreach(\App\Services\Counselling\Importer::DEFS[$batch->type]['columns'] as $c)<td class="small">{{ \Illuminate\Support\Str::limit($r->raw[$c] ?? '', 40) }}</td>@endforeach
                 <td class="small {{ $r->status === 'error' ? 'text-danger' : 'text-warning' }}">{{ implode(' | ', $r->messages ?? []) }}</td>
             </tr>

@@ -73,7 +73,7 @@ class PublicPresenter
             'program_levels' => $this->names('program_levels', $c->program_levels),
             'exams' => $this->mappedExams($c)->map(fn ($e) => ['name' => $e['name'], 'slug' => $e['slug']])->all(),
             'current_cycle' => $cycle ? ['year' => $cycle->year, 'session_label' => $cycle->session_label, 'status' => $cycle->cycle_status] : null,
-            'current_round' => $bar ? $bar['round']->name : null,
+            'current_round' => $bar ? $bar['round']?->name : null,
             'url' => $this->frontend('counselling/' . $c->slug),
             'api_url' => route('api.v1.counselling.show', $c->slug),
         ];
@@ -154,8 +154,8 @@ class PublicPresenter
             return ['state' => 'to_be_announced', 'label' => 'Counselling schedule to be announced', 'current_round' => null, 'items' => []];
         }
         return [
-            'state' => 'scheduled', 'label' => $bar['round']->name,
-            'current_round' => ['id' => $bar['round']->id, 'name' => $bar['round']->name],
+            'state' => 'scheduled', 'label' => $bar['round'] ? $bar['round']->name : 'Counselling ' . $cycle->title,
+            'current_round' => $bar['round'] ? ['id' => $bar['round']->id, 'name' => $bar['round']->name] : null,
             'items' => collect($bar['items'])->map(fn ($s, $label) => ['label' => $label, 'state' => $s['state'], 'text' => $s['label']])->values()->all(),
         ];
     }

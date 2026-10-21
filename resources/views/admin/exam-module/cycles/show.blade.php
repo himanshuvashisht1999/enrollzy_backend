@@ -149,8 +149,9 @@
 <div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
     <form id="eventForm" method="POST" action="{{ route('admin.exam-module.events.store', $cycle) }}">
         @csrf <span id="eventMethod"></span>
+        <input type="hidden" name="_dialog" value="event"><input type="hidden" name="_dialog_id" id="f_dialog_id">
         <div class="modal-header"><h5 class="modal-title" id="eventTitle">Add Event</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><div class="row g-3">
+        <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">Event Type *</label>
                 <select name="event_type_id" id="f_event_type_id" class="form-select custom-select2" required>
                     @foreach($eventTypes as $t)<option value="{{ $t->id }}" data-manual="{{ $t->status_source === 'manual' ? 1 : 0 }}">{{ $t->name }}{{ $t->status_source === 'manual' ? ' (manual status)' : '' }}</option>@endforeach
@@ -179,12 +180,14 @@
 {{-- Copy modal --}}
 <div class="modal fade" id="copyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <form method="POST" action="{{ route('admin.exam-module.cycles.copy', $cycle) }}">
-        @csrf
+        @csrf <input type="hidden" name="_dialog" value="copy">
+        @php $copyFailed = old('_dialog') === 'copy'; @endphp
+        @if($copyFailed && $errors->any())<div class="alert alert-danger small m-3 mb-0">{!! implode('<br>', array_map('e', $errors->all())) !!}</div>@endif
         <div class="modal-header"><h5 class="modal-title">Copy Cycle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <p class="small text-muted">Copies stages and the event list into a new cycle, without dates, links or verification.</p>
-            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control" value="{{ $cycle->year + 1 }}" required></div>
-            <div><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control"></div>
+            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control" value="{{ $copyFailed ? old('year') : $cycle->year + 1 }}" required></div>
+            <div><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control" value="{{ $copyFailed ? old('session_label') : '' }}"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary">Copy</button></div>
     </form>
@@ -204,13 +207,24 @@
         const form = document.getElementById('eventForm');
         form.reset();
         fields.forEach(f => { const el = $('#f_' + f); if (el.length) el.val(ev ? (ev[f] ?? '') : (f === 'date_precision' ? 'exact' : '')).trigger('change'); });
-        form.action = ev ? updateUrl + '/' + ev.id : storeUrl;
-        $('#eventMethod').html(ev ? '<input type="hidden" name="_method" value="PUT">' : '');
-        $('#eventTitle').text(ev ? 'Edit Event' : 'Add Event');
+        const editing = !!(ev && ev.id);
+        form.action = editing ? updateUrl + '/' + ev.id : storeUrl;
+        $('#eventMethod').html(editing ? '<input type="hidden" name="_method" value="PUT">' : '');
+        $('#f_dialog_id').val(editing ? ev.id : '');
+        $('#eventTitle').text(editing ? 'Edit Event' : 'Add Event');
+        $(form).find('.dialog-errors').addClass('d-none').empty();
         syncManual();
         new bootstrap.Modal(document.getElementById('eventModal')).show();
     }
     $(function () { $('#f_event_type_id').on('change', syncManual); });
-    @if($errors->any()) $(function () { new bootstrap.Modal(document.getElementById('eventModal')).show(); }); @endif
+    // A validation error reopens only the dialog that was submitted, with what was typed.
+    @if($errors->any() && old('_dialog') === 'event')
+    $(function () {
+        openEventModal(Object.assign({!! json_encode(collect(old())->only(['event_type_id','stage_id','label','date_precision','manual_status','on_demand_text','link_url','note','source_url','start_at','end_at','extended_end_at']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {id: @json(old('_dialog_id'))}));
+        $('#eventForm .dialog-errors').removeClass('d-none').html(@json($errors->all()).map(e => $('<div>').text(e).html()).join('<br>'));
+    });
+    @elseif($errors->any() && old('_dialog') === 'copy')
+    $(function () { new bootstrap.Modal(document.getElementById('copyModal')).show(); });
+    @endif
 </script>
 @endpush
