@@ -92,7 +92,7 @@
                         @else
                             <button class="btn btn-sm btn-light border" data-row="{{ json_encode($payload) }}" onclick="openCns('{{ $key }}', JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
                             <form action="{{ route('admin.counselling.blocks.destroy', [$key, $row->id]) }}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('{{ $item['source'] === 'overridden' ? 'Reset this round to the cycle value?' : 'Delete this ' . strtolower($d['label']) . '?' }}')">
+                                  data-confirm="{{ $item['source'] === 'overridden' ? 'Reset this round to the cycle value?' : 'Delete this ' . strtolower($d['label']) . '?' }}">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-sm btn-light border text-danger" title="{{ $item['source'] === 'overridden' ? 'Reset to cycle value' : 'Delete' }}">
                                     <i class="fas {{ $item['source'] === 'overridden' ? 'fa-undo' : 'fa-trash-alt' }}"></i></button>

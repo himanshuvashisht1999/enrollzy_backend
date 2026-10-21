@@ -31,7 +31,7 @@
 
 @php $pending = collect($fixes)->where('done', false)->count(); @endphp
 @if($pending)
-<form method="POST" action="{{ route('admin.counselling.data-fixes.run') }}" onsubmit="return confirm('Run the data fixes now?')">
+<form method="POST" action="{{ route('admin.counselling.data-fixes.run') }}" data-confirm="Run the data fixes now?">
     @csrf
     <button class="btn btn-primary"><i class="fas fa-play me-1"></i> Run data fixes</button>
 </form>

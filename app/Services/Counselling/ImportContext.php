@@ -20,6 +20,7 @@ class ImportContext
     private array $existing = [];   // identity key => true
     private array $participants = [];       // "org|course|quota" => true (seat matrix / cutoff imports only)
     private array $participantOrgs = [];    // org id => true
+    private array $unmappedExams = [];      // normalised name / short name / alias of an existing exam NOT mapped to this counselling => true
     private array $cache = [];
     private ?int $soleExam = null;
     private string $type;
@@ -61,8 +62,13 @@ class ImportContext
             }
         }
         $this->soleExam = $exams->count() === 1 ? (int) $exams->first()->id : null;
+        foreach (DB::table('exm_exams')->whereNotIn('id', $examIds)->whereNull('deleted_at')->get(['name', 'short_name', 'aliases']) as $e) {
+            foreach (array_merge([$e->name, $e->short_name], json_decode($e->aliases ?? '[]', true) ?: []) as $n) {
+                if (($norm = Alias::normalize($n)) !== '') $this->unmappedExams[$norm] = true;
+            }
+        }
 
-        foreach (DB::table('cns_institute_codes')->where('conducting_body_id', $counselling->conducting_body_id)->get(['code', 'organisation_id']) as $c) {
+        foreach (DB::table('cns_institute_codes')->where('conducting_organisation_id', $counselling->conducting_organisation_id)->get(['code', 'organisation_id']) as $c) {
             $this->codes[strtoupper(trim($c->code))] = (int) $c->organisation_id;
         }
 
@@ -188,6 +194,10 @@ class ImportContext
         if (count($exact) > 1) {
             $list = implode('; ', array_map(fn ($id) => $this->names[$type][$id] . " (#$id)", array_slice($exact, 0, 4)));
             return $this->miss("matches " . count($exact) . " records ($list). Choose the right one to continue.");
+        }
+        // The exam exists but this counselling does not use it: say so, instead of "no match in the exam master".
+        if ($type === 'exam' && isset($this->unmappedExams[$norm])) {
+            return $this->miss('This exam is not mapped to this counselling. Map it on the counselling page first.');
         }
         if ($suggestion = $this->fuzzy($type, $norm) ?? $this->nearMiss($type, $norm)) {
             return ['state' => 'warning', 'id' => $suggestion[0], 'name' => $this->names[$type][$suggestion[0]], 'score' => (int) round($suggestion[1] * 100), 'msg' => null];

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin\ExamModule;
 use App\Http\Controllers\Controller;
 use App\Models\ExamCategory;
 use App\Models\ExamModule\AuditLog;
-use App\Models\ExamModule\ConductingBody;
 use App\Models\ExamModule\Cycle;
 use App\Models\ExamModule\Exam;
 use App\Models\Organisation;
@@ -93,7 +92,8 @@ class ExamController extends Controller
             'aliases' => 'nullable|string',
             'source_type' => 'required|in:external,internal',
             'owning_organisation_id' => 'required_if:source_type,internal|nullable|integer',
-            'conducting_body_id' => 'nullable|exists:exm_conducting_bodies,id',
+            // Conducting body = an organisation of type "Exam Conducting Body".
+            'conducting_organisation_id' => ['nullable', Rule::exists('organisations', 'id')->where('organisation_type_id', \App\Models\Organisation::TYPE_EXAM_CONDUCTING_BODY)],
             'exam_type' => ['nullable', Rule::in(array_keys(Exam::TYPES))],
             'exam_categories' => 'nullable|array',
             'exam_categories.*' => 'integer',
@@ -168,7 +168,9 @@ class ExamController extends Controller
     private function formData(?Exam $exam = null): array
     {
         return [
-            'bodies' => ConductingBody::where('status', true)->orderBy('name')->get(),
+            // Organisations of type "Exam Conducting Body" (plus the one already chosen, in case its type changed later).
+            'bodies' => Organisation::where('organisation_type_id', Organisation::TYPE_EXAM_CONDUCTING_BODY)
+                ->orWhere('id', $exam?->conducting_organisation_id ?? 0)->orderBy('name')->get(['id', 'name', 'short_name', 'abbreviation']),
             'languageList' => \App\Models\Language::where('status', 1)->orderBy('title')->get(['id', 'title']),
             'categories' => ExamCategory::where('status', 1)->orderBy('title')->get(),
             'levels' => ProgramLevel::where('status', 1)->orderBy('title')->get(),

@@ -15,7 +15,7 @@ class Exam extends Model
 
     protected $fillable = [
         'name', 'short_name', 'slug', 'aliases', 'source_type', 'owning_organisation_id',
-        'conducting_body_id', 'exam_type', 'exam_categories', 'frequency', 'program_levels',
+        'conducting_body_id', 'conducting_organisation_id', 'exam_type', 'exam_categories', 'frequency', 'program_levels',
         'states', 'feeder_exam_id', 'languages', 'about', 'official_website', 'logo',
         'has_stages', 'visibility', 'status', 'cover_image', 'featured', 'sort_order', 'is_archived',
     ];
@@ -77,13 +77,20 @@ class Exam extends Model
                 $missing[] = $label;
             }
         }
-        if ($this->source_type === 'internal' ? blank($this->owning_organisation_id) : blank($this->conducting_body_id)) {
+        if ($this->source_type === 'internal' ? blank($this->owning_organisation_id) : blank($this->conducting_organisation_id)) {
             $missing[] = $this->source_type === 'internal' ? 'Owning organisation' : 'Conducting body';
         }
         return $missing;
     }
 
+    /** The conducting body: an organisation of type "Exam Conducting Body" (Organisation::TYPE_EXAM_CONDUCTING_BODY). */
     public function conductingBody()
+    {
+        return $this->belongsTo(\App\Models\Organisation::class, 'conducting_organisation_id');
+    }
+
+    /** The value from the old separate conducting-body master (kept, shown only as a hint to re-pick). */
+    public function legacyConductingBody()
     {
         return $this->belongsTo(ConductingBody::class, 'conducting_body_id');
     }

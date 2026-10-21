@@ -12,7 +12,7 @@
         <a href="{{ route('admin.counselling.rounds.show', $round) }}" class="btn btn-light border"><i class="fas fa-arrow-left me-1"></i> Round</a>
         @can('cns-import-manage')<a href="{{ route('admin.counselling.imports.create', ['type' => 'cutoffs', 'cycle' => $round->cycle_id, 'round' => $round->id]) }}" class="btn btn-outline-primary"><i class="fas fa-file-csv me-1"></i> Import CSV</a>@endcan
         @can('cns-counsellings-delete')
-            @if($total)<form action="{{ route('admin.counselling.cutoffs.clear', $round) }}" method="POST" onsubmit="return confirm('Delete ALL {{ $total }} cutoffs of this round? This cannot be undone.')">@csrf<button class="btn btn-outline-danger">Delete all</button></form>@endif
+            @if($total)<form action="{{ route('admin.counselling.cutoffs.clear', $round) }}" method="POST" data-confirm="Delete ALL {{ $total }} cutoffs of this round? This cannot be undone.">@csrf<button class="btn btn-outline-danger">Delete all</button></form>@endif
         @endcan
         @can('cns-counsellings-edit')<button class="btn btn-primary" onclick="openCutoff()"><i class="fas fa-plus me-1"></i> Add</button>@endcan
     </div>
@@ -47,7 +47,7 @@
                 <td class="text-end pe-4 text-nowrap">
                     @can('cns-counsellings-edit')
                     <button class="btn btn-sm btn-light border" data-row="{{ json_encode($payload) }}" onclick="openCutoff(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                    <form action="{{ route('admin.counselling.cutoffs.destroy', $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this cutoff?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.counselling.cutoffs.destroy', $c) }}" method="POST" class="d-inline" data-confirm="Delete this cutoff?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>

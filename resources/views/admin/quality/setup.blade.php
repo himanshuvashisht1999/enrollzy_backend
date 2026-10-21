@@ -40,7 +40,7 @@
                     @if(!empty($s['warnings']))<div class="small text-warning mt-1">@foreach(array_slice($s['warnings'], 0, 5) as $w)<div>{{ $w }}</div>@endforeach</div>@endif</div>
             </div>
         @endforeach
-        <form method="POST" action="{{ route('admin.quality.setup.run') }}" onsubmit="return confirm('Run the data update now? It only adds missing data and can be run again later.')">
+        <form method="POST" action="{{ route('admin.quality.setup.run') }}" data-confirm="Run the data update now? It only adds missing data and can be run again later.">
             @csrf
             <button class="btn btn-success"><i class="fas fa-play me-1"></i> Run update</button>
             <span class="text-muted small ms-2">Take a database backup first if this is the live server.</span>

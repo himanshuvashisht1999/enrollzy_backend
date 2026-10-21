@@ -723,6 +723,9 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         ->name('admin.courses.fetch-bot-data');
     Route::get('admin/courses/{course}/duplicate', [CourseController::class, 'duplicate'])
         ->name('admin.courses.duplicate');
+    // Bulk delete: review what is deleted (nothing changes), then confirm.
+    Route::post('admin/courses/bulk-delete/review', [CourseController::class, 'bulkReview'])->name('admin.courses.bulk-review');
+    Route::post('admin/courses/bulk-delete', [CourseController::class, 'bulkDestroy'])->name('admin.courses.bulk-destroy');
 
     // Community Management
     Route::resource('/admin/community-categories', CommunityCategoryController::class)->names('admin.community-categories')->middleware('can:department-browse');

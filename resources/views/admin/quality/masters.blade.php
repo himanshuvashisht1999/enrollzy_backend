@@ -43,7 +43,7 @@
                     @if($inUse[$row->id])
                         <button class="btn btn-sm btn-light border text-muted" disabled title="In use: mark inactive instead"><i class="fas fa-trash-alt"></i></button>
                     @else
-                    <form action="{{ route('admin.quality.masters.destroy', [$master, $row->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this {{ strtolower($def['singular']) }}?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.quality.masters.destroy', [$master, $row->id]) }}" method="POST" class="d-inline" data-confirm="Delete this {{ strtolower($def['singular']) }}?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>

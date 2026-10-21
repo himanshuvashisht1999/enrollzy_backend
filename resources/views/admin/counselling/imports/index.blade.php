@@ -50,7 +50,7 @@
                     <a href="{{ route('admin.counselling.imports.show', $b) }}" class="btn btn-sm btn-light border">{{ $b->status === 'previewed' ? 'Continue' : 'View' }}</a>
                     @if($b->status === 'confirmed')
                         @can('cns-import-undo')
-                        <form action="{{ route('admin.counselling.imports.undo', $b) }}" method="POST" class="d-inline" onsubmit="return confirm('Undo this import? The rows it saved are removed{{ $b->mode === 'replace' ? ' and the rows it replaced are restored' : '' }}.')">@csrf<button class="btn btn-sm btn-outline-warning">Undo</button></form>
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#undoImport{{ $b->id }}">Undo</button>
                         @endcan
                     @endif
                 </td>
@@ -72,7 +72,7 @@
         @forelse($aliases as $a)
             <tr>
                 <td class="text-capitalize">{{ $a->type }}</td><td>{{ $a->alias }}</td><td>{{ $names[$a->type][$a->target_id] ?? '(deleted record #' . $a->target_id . ')' }}</td>
-                <td class="text-end"><form action="{{ route('admin.counselling.imports.aliases.destroy', $a) }}" method="POST" onsubmit="return confirm('Remove this alias?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form></td>
+                <td class="text-end"><button type="button" class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#removeAlias{{ $a->id }}" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
             </tr>
         @empty
             <tr><td colspan="4" class="text-muted small">Nothing learned yet.</td></tr>
@@ -80,4 +80,17 @@
         </tbody>
     </table></div>
 </div></div>
+{{-- In-page confirmations (no browser pop-up) --}}
+@can('cns-import-undo')
+@foreach($batches as $b)
+    @if($b->status === 'confirmed')
+        @include('admin.counselling._confirm_dialog', ['id' => 'undoImport' . $b->id, 'title' => 'Undo import #' . $b->id . '?', 'action' => route('admin.counselling.imports.undo', $b),
+            'lines' => $b->undoSummary(), 'label' => 'Yes, undo the import', 'btnClass' => 'btn-warning'])
+    @endif
+@endforeach
+@endcan
+@foreach($aliases as $a)
+    @include('admin.counselling._confirm_dialog', ['id' => 'removeAlias' . $a->id, 'title' => 'Remove this learned name?', 'action' => route('admin.counselling.imports.aliases.destroy', $a), 'method' => 'DELETE',
+        'lines' => ['"' . $a->alias . '" will no longer be matched automatically. The next import that uses it will ask you to match it again.'], 'label' => 'Yes, remove', 'btnClass' => 'btn-danger'])
+@endforeach
 @endsection

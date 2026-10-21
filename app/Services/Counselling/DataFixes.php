@@ -33,17 +33,17 @@ class DataFixes
     }
 
     /** Runs every fix that has not run yet. @return array<string,int> rows changed per fix */
-    public function run(?int $userId): array
+    public function run(?int $userId, $who = null): array
     {
         $result = [];
         foreach ($this->fixes() as $key => $fix) {
             if ($this->done($key)) {
                 continue;
             }
-            $result[$key] = DB::transaction(function () use ($key, $fix, $userId) {
+            $result[$key] = DB::transaction(function () use ($key, $fix, $userId, $who) {
                 $changed = ($fix['apply'])();
                 AuditLog::create(['auditable_type' => 'counselling_data_fix', 'auditable_id' => 0, 'user_id' => $userId, 'action' => 'data_fix',
-                    'old_values' => null, 'new_values' => ['fix' => $key, 'changed' => $changed]]);
+                    'old_values' => null, 'new_values' => ['fix' => $key, 'changed' => $changed, 'by' => $who ? trim(($who->name ?? '') . ' <' . ($who->email ?? '') . '>') : null]]);
                 return $changed;
             });
         }

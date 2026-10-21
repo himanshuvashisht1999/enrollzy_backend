@@ -59,7 +59,7 @@
                 <td class="text-end">{{ number_format($b->verified) }}</td>
                 <td class="text-end pe-4">
                     <a class="btn btn-sm btn-light border" href="{{ route('admin.quality.review', ['kind' => 'placement', 'status' => 'unverified', 'batch' => $b->import_batch]) }}">Review</a>
-                    @if($b->active)<form action="{{ route('admin.quality.placements.import.undo') }}" method="POST" class="d-inline" onsubmit="return confirm('Remove all {{ $b->active }} placement rows created by this batch?{{ $b->verified ? ' ' . $b->verified . ' of them have been verified.' : '' }}')">@csrf<input type="hidden" name="batch" value="{{ $b->import_batch }}"><button class="btn btn-sm btn-light border text-danger">Undo batch</button></form>@else<span class="badge bg-secondary-subtle text-secondary">undone</span>@endif
+                    @if($b->active)<form action="{{ route('admin.quality.placements.import.undo') }}" method="POST" class="d-inline" data-confirm="Remove all {{ $b->active }} placement rows created by this batch?{{ $b->verified ? ' ' . $b->verified . ' of them have been verified.' : '' }}">@csrf<input type="hidden" name="batch" value="{{ $b->import_batch }}"><button class="btn btn-sm btn-light border text-danger">Undo batch</button></form>@else<span class="badge bg-secondary-subtle text-secondary">undone</span>@endif
                 </td>
             </tr>
         @empty

@@ -46,7 +46,7 @@
                 <td class="text-end pe-4 text-nowrap">
                     <button form="uf{{ $f->id }}" class="btn btn-sm btn-light border" title="Save"><i class="fas fa-save text-primary"></i></button>
                     <form action="{{ route('admin.exam-module.fields.destroy', $f) }}" method="POST" class="d-inline"
-                          onsubmit="return confirm('{{ $f->values_count ? 'This field has saved data. Delete it anyway? The values are kept but hidden.' : 'Delete this field?' }}')">
+                          data-confirm="{{ $f->values_count ? 'This field has saved data. Delete it anyway? The values are kept but hidden.' : 'Delete this field?' }}">
                         @csrf @method('DELETE')<input type="hidden" name="confirm" value="1">
                         <button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button>
                     </form>

@@ -4,6 +4,9 @@ return [
     // Where the student website lives: used for canonical URLs and links inside alerts.
     'frontend_url' => rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'),
 
+    // Shared secret the student website sends (X-Site-Key) so its server-side calls are not rate limited. Empty = no bypass.
+    'site_key' => env('CNS_SITE_KEY', ''),
+
     // Public API responses are cached this many seconds (admin edits show up within a minute).
     'cache_ttl' => (int) env('CNS_CACHE_TTL', 60),
 

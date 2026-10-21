@@ -36,7 +36,7 @@
                 <td><div class="form-check form-switch"><input form="ct{{ $c->id }}" class="form-check-input" type="checkbox" name="status" value="1" @checked($c->status)></div></td>
                 <td class="text-end pe-4 text-nowrap">
                     <button form="ct{{ $c->id }}" class="btn btn-sm btn-light border"><i class="fas fa-save text-primary"></i></button>
-                    <form action="{{ route('admin.exam-module.cities.destroy', $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this city?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.exam-module.cities.destroy', $c) }}" method="POST" class="d-inline" data-confirm="Delete this city?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                 </td>
             </tr>
         @empty

@@ -59,7 +59,7 @@
                     @if($canVerify && $a->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['accreditation', $a->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openAcc(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.accreditations.destroy', $a->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this accreditation?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.accreditations.destroy', $a->id) }}" method="POST" class="d-inline" data-confirm="Remove this accreditation?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>
@@ -97,7 +97,7 @@
                     @if($canVerify && $aw->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['award', $aw->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openAward(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.awards.destroy', $aw->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this entry?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.awards.destroy', $aw->id) }}" method="POST" class="d-inline" data-confirm="Remove this entry?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>
@@ -173,7 +173,7 @@
                     @if($canVerify && $rv->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['review', $rv->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openReview(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.reviews.destroy', $rv->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this review?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.reviews.destroy', $rv->id) }}" method="POST" class="d-inline" data-confirm="Remove this review?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>
@@ -236,7 +236,7 @@
                     @if($canVerify && $pl->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['placement', $pl->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openPlacement(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.placements.destroy', $pl->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove these figures?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.placements.destroy', $pl->id) }}" method="POST" class="d-inline" data-confirm="Remove these figures?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>
@@ -271,7 +271,7 @@
                     @if($canVerify && $ap->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['approval', $ap->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openApproval(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.approvals.destroy', $ap->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this approval?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.approvals.destroy', $ap->id) }}" method="POST" class="d-inline" data-confirm="Remove this approval?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>
@@ -304,7 +304,7 @@
                     @if($canVerify && $r->verification_status !== 'rejected')<form action="{{ route('admin.quality.records.reject', ['ranking', $r->id]) }}" method="POST" class="d-inline">@csrf<button class="btn btn-sm btn-light border text-warning" title="Reject"><i class="fas fa-ban"></i></button></form>@endif
                     @if($canEdit)
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($p) }}" onclick="openRank(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.quality.rankings.destroy', $r->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this ranking?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.rankings.destroy', $r->id) }}" method="POST" class="d-inline" data-confirm="Remove this ranking?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>

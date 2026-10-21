@@ -41,7 +41,7 @@
                 <td class="text-end pe-4 text-nowrap">
                     @can('cns-counsellings-edit')
                     <button class="btn btn-sm btn-light border" data-row="{{ json_encode($payload) }}" onclick="openParticipant(JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                    <form action="{{ route('admin.counselling.participants.destroy', $p) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this participant?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.counselling.participants.destroy', $p) }}" method="POST" class="d-inline" data-confirm="Remove this participant?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>

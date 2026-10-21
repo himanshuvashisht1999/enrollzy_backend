@@ -20,13 +20,11 @@
         <a href="{{ route('admin.counselling.imports.index') }}" class="btn btn-light border"><i class="fas fa-arrow-left me-1"></i> Imports</a>
         @if($batch->error_rows + $batch->warning_rows > 0)<a href="{{ route('admin.counselling.imports.errors', $batch) }}" class="btn btn-outline-secondary"><i class="fas fa-download me-1"></i> Problem rows (CSV)</a>@endif
         @if($open)
-            <form action="{{ route('admin.counselling.imports.cancel', $batch) }}" method="POST" onsubmit="return confirm('Cancel this import? Nothing has been saved.')">@csrf<button class="btn btn-outline-danger">Cancel</button></form>
-            <form action="{{ route('admin.counselling.imports.confirm', $batch) }}" method="POST"
-                  onsubmit="return confirm('Save {{ $batch->matched_rows }} row(s)? {{ $batch->warning_rows + $batch->error_rows }} row(s) with warnings or errors will be skipped.{{ $batch->mode === 'replace' && $batch->type !== 'seats' ? ' Existing rows will be REPLACED (undo can restore them).' : '' }}')">
-                @csrf<button class="btn btn-success" @disabled($batch->matched_rows === 0)><i class="fas fa-check me-1"></i> Confirm and save {{ number_format($batch->matched_rows) }} row{{ $batch->matched_rows === 1 ? '' : 's' }}</button></form>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelImportDialog">Cancel</button>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmImportDialog" @disabled($batch->matched_rows === 0)><i class="fas fa-check me-1"></i> Confirm and save {{ number_format($batch->matched_rows) }} row{{ $batch->matched_rows === 1 ? '' : 's' }}</button>
         @elseif($batch->status === 'confirmed')
             @can('cns-import-undo')
-            <form action="{{ route('admin.counselling.imports.undo', $batch) }}" method="POST" onsubmit="return confirm('Undo this import?')">@csrf<button class="btn btn-outline-warning">Undo import</button></form>
+            <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#undoImportDialog">Undo import</button>
             @endcan
         @endif
     </div>
@@ -104,6 +102,22 @@
     </table>
 </div></div>
 <div class="mt-3">{{ $rows->links() }}</div>
+{{-- In-page confirmations (no browser pop-up) --}}
+@if($open)
+    @include('admin.counselling._confirm_dialog', ['id' => 'cancelImportDialog', 'title' => 'Cancel this import?', 'action' => route('admin.counselling.imports.cancel', $batch),
+        'lines' => ['Nothing has been saved yet, so nothing is lost. The uploaded file stays in the import history as cancelled.'], 'label' => 'Yes, cancel the import', 'btnClass' => 'btn-danger'])
+    @include('admin.counselling._confirm_dialog', ['id' => 'confirmImportDialog', 'title' => 'Save ' . number_format($batch->matched_rows) . ' row(s)?', 'action' => route('admin.counselling.imports.confirm', $batch),
+        'lines' => array_values(array_filter([
+            number_format($batch->matched_rows) . ' ready row(s) are saved under this import, so they can be undone together later.',
+            ($batch->warning_rows + $batch->error_rows) ? number_format($batch->warning_rows + $batch->error_rows) . ' row(s) with warnings or errors are skipped: download the problem rows to fix and re-upload them.' : null,
+            $batch->mode === 'replace' && $batch->type !== 'seats' ? 'Existing rows are REPLACED by this file. Undo puts them back.' : null,
+        ])), 'label' => 'Yes, save', 'btnClass' => 'btn-success'])
+@elseif($batch->status === 'confirmed')
+    @can('cns-import-undo')
+    @include('admin.counselling._confirm_dialog', ['id' => 'undoImportDialog', 'title' => 'Undo this import?', 'action' => route('admin.counselling.imports.undo', $batch),
+        'lines' => $batch->undoSummary(), 'label' => 'Yes, undo the import', 'btnClass' => 'btn-warning'])
+    @endcan
+@endif
 @endsection
 
 @push('scripts')
@@ -113,7 +127,7 @@
         $('.fix-select').each(function () {
             const type = this.dataset.type;
             $(this).select2({ width: '100%', placeholder: 'Search the master...',
-                ajax: { url: LOOKUP, dataType: 'json', delay: 250, data: p => ({ q: p.term || '', type }), processResults: d => d } });
+                ajax: { url: LOOKUP, dataType: 'json', delay: 250, data: p => ({ q: p.term || '', type, batch: @json($batch->id) }), processResults: d => d } });
         });
     });
 </script>

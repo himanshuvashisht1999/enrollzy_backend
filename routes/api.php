@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CounsellingApiController;
+use App\Http\Controllers\Api\V1\ExamApiController;
 use App\Http\Controllers\Api\V1\ExamBlockApiController;
 use App\Http\Controllers\Api\V1\FollowApiController;
 use App\Http\Controllers\Api\V1\OrganisationBlockApiController;
@@ -14,10 +15,13 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->name('api.v1.')->group(function () {
     // ---- Reads: cacheable ----
     Route::middleware(['throttle:cns-public', 'cache.headers:public;max_age=60;etag'])->group(function () {
+        Route::get('masters', [CounsellingApiController::class, 'masters'])->name('masters');
         Route::get('counselling', [CounsellingApiController::class, 'index'])->name('counselling.index');
         Route::get('counselling/{slug}', [CounsellingApiController::class, 'show'])->name('counselling.show');
         Route::get('counselling/{slug}/institutes', [CounsellingApiController::class, 'institutes'])->name('counselling.institutes');
         Route::get('counselling/{slug}/cutoffs', [CounsellingApiController::class, 'cutoffs'])->name('counselling.cutoffs');
+        Route::get('counselling/{slug}/seat-matrix', [CounsellingApiController::class, 'seatMatrix'])->name('counselling.seat-matrix');
+        Route::get('exams/{slug}', [ExamApiController::class, 'show'])->name('exams.show');
         Route::get('exams/{slug}/counselling', [ExamBlockApiController::class, 'show'])->name('exams.counselling');
         Route::get('organisations/{organisation}/admission-through', [OrganisationBlockApiController::class, 'show'])->name('organisations.admission');
     });

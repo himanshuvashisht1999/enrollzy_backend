@@ -41,7 +41,7 @@
                     @endcan
                     @can('cns-counsellings-edit')
                     <button class="btn btn-sm btn-light border" data-event="{{ json_encode($payload) }}" onclick="openEventModal(JSON.parse(this.dataset.event))"><i class="fas fa-edit text-primary"></i></button>
-                    <form action="{{ route('admin.counselling.events.destroy', $ev) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this event?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.counselling.events.destroy', $ev) }}" method="POST" class="d-inline" data-confirm="Delete this event?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>

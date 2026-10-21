@@ -31,7 +31,7 @@
                     @if($g->organisations_count)
                         <button class="btn btn-sm btn-light border text-muted" disabled title="Has organisations"><i class="fas fa-trash-alt"></i></button>
                     @else
-                        <form action="{{ route('admin.quality.groups.destroy', $g) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this group?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.quality.groups.destroy', $g) }}" method="POST" class="d-inline" data-confirm="Delete this group?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endif
                 </td>
             </tr>

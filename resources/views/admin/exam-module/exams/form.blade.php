@@ -50,11 +50,14 @@
                 </div>
                 <div class="col-md-4" id="body_box">
                     <label class="form-label fw-bold">Conducting Body</label>
-                    <select name="conducting_body_id" class="form-select">
+                    <select name="conducting_organisation_id" class="form-select">
                         <option value="">Select</option>
-                        @foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_body_id', $exam->conducting_body_id) == $b->id)>{{ $b->name }}</option>@endforeach
+                        @foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_organisation_id', $exam->conducting_organisation_id) == $b->id)>{{ $b->name }}{{ ($b->short_name ?: $b->abbreviation) ? ' (' . ($b->short_name ?: $b->abbreviation) . ')' : '' }}</option>@endforeach
                     </select>
-                    @can('exm-conducting-bodies-add')<div class="form-text"><a href="{{ route('admin.exam-module.conducting-bodies.create') }}" target="_blank">Add a new body</a></div>@endcan
+                    <div class="form-text">Organisations of type "Exam Conducting Body". <a href="{{ route('admin.organisations.create', ['organisation_type_id' => \App\Models\Organisation::TYPE_EXAM_CONDUCTING_BODY]) }}" target="_blank">Add one</a></div>
+                    @if(!$exam->conducting_organisation_id && $exam->legacyConductingBody)
+                        <div class="form-text text-warning">Earlier set to "{{ $exam->legacyConductingBody->name }}" (old list). Pick the matching organisation.</div>
+                    @endif
                 </div>
 
                 <div class="col-md-4">

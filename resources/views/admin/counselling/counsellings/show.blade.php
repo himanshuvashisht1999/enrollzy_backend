@@ -59,7 +59,7 @@
                     <div class="col-md-3 text-end text-nowrap">
                         @can('cns-counsellings-edit')
                         <button class="btn btn-sm btn-light border"><i class="fas fa-save text-primary"></i></button>
-                        <button class="btn btn-sm btn-light border text-danger" form="unmap{{ $m->id }}" onclick="return confirm('{{ ($n = \App\Models\Counselling\Cutoff::where('exam_id', $m->exam_id)->whereIn('round_id', \App\Models\Counselling\Round::whereIn('cycle_id', $counselling->cycles->pluck('id'))->select('id'))->count()) ? "Remove this exam AND delete its $n cutoffs?" : 'Remove this exam from the counselling?' }}')"><i class="fas fa-trash-alt"></i></button>
+                        <button class="btn btn-sm btn-light border text-danger" form="unmap{{ $m->id }}" data-confirm="{{ ($n = \App\Models\Counselling\Cutoff::where('exam_id', $m->exam_id)->whereIn('round_id', \App\Models\Counselling\Round::whereIn('cycle_id', $counselling->cycles->pluck('id'))->select('id'))->count()) ? "Remove this exam AND delete its $n cutoffs?" : 'Remove this exam from the counselling?' }}"><i class="fas fa-trash-alt"></i></button>
                         @endcan
                     </div>
                     <div class="col-12"><input type="text" name="seat_scope_note" value="{{ $m->seat_scope_note }}" class="form-control form-control-sm" placeholder="Seat scope, e.g. JEE Advanced: IIT seats only"></div>

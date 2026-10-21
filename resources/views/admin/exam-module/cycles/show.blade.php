@@ -73,7 +73,7 @@
             <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="is_qualifying" value="1" @checked($stage->is_qualifying) id="q{{ $stage->id }}"><label class="form-check-label small" for="q{{ $stage->id }}">Qualifying only</label></div></div>
             <div class="col-md-2 text-end">
                 <button class="btn btn-sm btn-light border"><i class="fas fa-save text-primary"></i></button>
-                <button class="btn btn-sm btn-light border text-danger" form="delstage{{ $stage->id }}" onclick="return confirm('Delete stage?')"><i class="fas fa-trash-alt"></i></button>
+                <button class="btn btn-sm btn-light border text-danger" form="delstage{{ $stage->id }}" data-confirm="Delete stage?"><i class="fas fa-trash-alt"></i></button>
             </div>
         </form>
         <form id="delstage{{ $stage->id }}" action="{{ route('admin.exam-module.stages.destroy', $stage) }}" method="POST" class="d-none">@csrf @method('DELETE')</form>
@@ -131,7 +131,7 @@
                         }
                     @endphp
                     <button class="btn btn-sm btn-light border" data-event="{{ json_encode($payload) }}" onclick="openEventModal(JSON.parse(this.dataset.event))"><i class="fas fa-edit text-primary"></i></button>
-                    <form action="{{ route('admin.exam-module.events.destroy', $ev) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this event?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.exam-module.events.destroy', $ev) }}" method="POST" class="d-inline" data-confirm="Delete this event?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                 </td>
             </tr>
         @empty

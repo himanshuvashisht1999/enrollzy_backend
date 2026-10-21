@@ -31,9 +31,12 @@
                 <div class="form-text">Comma separated. Used for search.</div></div>
 
             <div class="col-md-4"><label class="form-label fw-bold">Conducting Body <span class="text-danger">*</span></label>
-                <select name="conducting_body_id" class="form-select" required><option value="">Select</option>
-                    @foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_body_id', $counselling->conducting_body_id) == $b->id)>{{ $b->name }}</option>@endforeach</select>
-                @can('exm-conducting-bodies-add')<div class="form-text"><a href="{{ route('admin.exam-module.conducting-bodies.create') }}" target="_blank">Add a new body</a></div>@endcan</div>
+                <select name="conducting_organisation_id" class="form-select" required><option value="">Select</option>
+                    @foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_organisation_id', $counselling->conducting_organisation_id) == $b->id)>{{ $b->name }}{{ ($b->short_name ?: $b->abbreviation) ? ' (' . ($b->short_name ?: $b->abbreviation) . ')' : '' }}</option>@endforeach</select>
+                <div class="form-text">Organisations of type "Counselling Body". <a href="{{ route('admin.organisations.create', ['organisation_type_id' => \App\Models\Organisation::TYPE_COUNSELLING_BODY]) }}" target="_blank">Add one</a></div>
+                @if(!$counselling->conducting_organisation_id && $counselling->legacyConductingBody)
+                    <div class="form-text text-warning">Earlier set to "{{ $counselling->legacyConductingBody->name }}" (old list). Pick the matching organisation.</div>
+                @endif</div>
             <div class="col-md-4"><label class="form-label fw-bold">Level <span class="text-danger">*</span></label>
                 <select name="level" id="level" class="form-select custom-select2" required>
                     @foreach(\App\Models\Counselling\Counselling::LEVELS as $k => $v)<option value="{{ $k }}" @selected(old('level', $counselling->level) === $k)>{{ $v }}</option>@endforeach</select></div>

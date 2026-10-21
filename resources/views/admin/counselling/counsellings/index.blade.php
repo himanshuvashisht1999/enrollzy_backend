@@ -81,7 +81,7 @@
                     <a href="{{ route('admin.counselling.counsellings.show', $c) }}" class="btn btn-sm btn-light border"><i class="fas fa-eye text-info"></i></a>
                     @can('cns-counsellings-edit')<a href="{{ route('admin.counselling.counsellings.edit', $c) }}" class="btn btn-sm btn-light border"><i class="fas fa-edit text-primary"></i></a>@endcan
                     @can('cns-counsellings-delete')
-                    <form action="{{ route('admin.counselling.counsellings.destroy', $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this counselling? Its cycles and rounds are hidden with it.')">@csrf @method('DELETE')
+                    <form action="{{ route('admin.counselling.counsellings.destroy', $c) }}" method="POST" class="d-inline" data-confirm="Delete this counselling? Its cycles and rounds are hidden with it.">@csrf @method('DELETE')
                         <button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>

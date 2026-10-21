@@ -120,7 +120,7 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ route('admin.counselling.rounds.show', $r) }}" class="btn btn-sm btn-light border"><i class="fas fa-eye text-info"></i></a>
                     @can('cns-counsellings-edit')
-                    <form action="{{ route('admin.counselling.rounds.destroy', $r) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this round and its dates?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.counselling.rounds.destroy', $r) }}" method="POST" class="d-inline" data-confirm="Delete this round and its dates?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>

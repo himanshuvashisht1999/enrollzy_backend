@@ -79,7 +79,7 @@
             @foreach($p['blockers'] as $b)<div class="alert alert-danger py-2 mb-2">{{ $b }}</div>@endforeach
             @foreach($p['warnings'] as $w)<div class="alert alert-warning py-2 mb-2">{{ $w }}</div>@endforeach
             @unless($p['blockers'])
-                <form method="POST" action="{{ route('admin.quality.moves.apply') }}" onsubmit="return confirm('Move these campuses now? You can undo it afterwards.')">
+                <form method="POST" action="{{ route('admin.quality.moves.apply') }}" data-confirm="Move these campuses now? You can undo it afterwards.">
                     @csrf
                     <input type="hidden" name="from_organisation_id" value="{{ $from->id }}">
                     <input type="hidden" name="target_mode" value="{{ $p['request']['target_mode'] }}">
@@ -107,7 +107,7 @@
                 <td>{{ count($mv['campuses'] ?? []) }} <span class="small text-muted">+ {{ number_format(count($mv['departments'] ?? [])) }} dept, {{ number_format(count($mv['organisation_courses'] ?? [])) }} programmes</span></td>
                 <td>{{ \Illuminate\Support\Carbon::parse($m->created_at)->format('d M Y H:i') }}</td>
                 <td><span class="badge {{ $m->status === 'applied' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">{{ ucfirst($m->status) }}</span></td>
-                <td class="text-end pe-4">@if($m->status === 'applied')<form action="{{ route('admin.quality.moves.undo', $m->id) }}" method="POST" onsubmit="return confirm('Undo this move?')">@csrf<button class="btn btn-sm btn-light border">Undo</button></form>@endif</td>
+                <td class="text-end pe-4">@if($m->status === 'applied')<form action="{{ route('admin.quality.moves.undo', $m->id) }}" method="POST" data-confirm="Undo this move?">@csrf<button class="btn btn-sm btn-light border">Undo</button></form>@endif</td>
             </tr>
         @empty
             <tr><td colspan="7" class="text-center text-muted py-4">No moves yet.</td></tr>

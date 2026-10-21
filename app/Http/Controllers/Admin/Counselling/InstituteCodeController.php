@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin\Counselling;
 
 use App\Http\Controllers\Controller;
 use App\Models\Counselling\InstituteCode;
-use App\Models\ExamModule\ConductingBody;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,15 +13,16 @@ class InstituteCodeController extends Controller
 {
     public function index(Request $request)
     {
-        $codes = InstituteCode::with(['organisation:id,name', 'conductingBody:id,name'])
-            ->when($request->body, fn ($q, $b) => $q->where('conducting_body_id', $b))
+        $codes = InstituteCode::with(['organisation:id,name', 'conductingBody:id,name', 'legacyConductingBody:id,name'])
+            ->when($request->body, fn ($q, $b) => $q->where('conducting_organisation_id', $b))
             ->when($request->search, fn ($q, $s) => $q->where(fn ($q) => $q->where('code', 'like', "%$s%")
                 ->orWhereIn('organisation_id', Organisation::where('name', 'like', "%$s%")->select('id'))))
-            ->orderBy('conducting_body_id')->orderBy('code')->paginate(30)->withQueryString();
+            ->orderBy('conducting_organisation_id')->orderBy('code')->paginate(30)->withQueryString();
 
         return view('admin.counselling.codes.index', [
             'codes' => $codes,
-            'bodies' => ConductingBody::where('status', true)->orderBy('name')->get(['id', 'name']),
+            // Counselling bodies = organisations of type "Counselling Body".
+            'bodies' => Organisation::where('organisation_type_id', Organisation::TYPE_COUNSELLING_BODY)->orderBy('name')->get(['id', 'name']),
             'organisations' => Organisation::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -49,11 +49,11 @@ class InstituteCodeController extends Controller
     {
         return $request->validate([
             'organisation_id' => ['required', Rule::exists('organisations', 'id')],
-            'conducting_body_id' => ['required', Rule::exists('exm_conducting_bodies', 'id')],
+            'conducting_organisation_id' => ['required', Rule::exists('organisations', 'id')->where('organisation_type_id', Organisation::TYPE_COUNSELLING_BODY)],
             // A code identifies one college within an authority.
             'code' => ['required', 'string', 'max:60', Rule::unique('cns_institute_codes', 'code')
-                ->where('conducting_body_id', $request->conducting_body_id)->ignore($code?->id)],
+                ->where('conducting_organisation_id', $request->conducting_organisation_id)->ignore($code?->id)],
             'valid_from_year' => 'nullable|integer|min:1990|max:2100',
-        ], ['code.unique' => 'This authority already uses this code for a college.']);
+        ], ['code.unique' => 'This authority already uses this code for a college.', 'conducting_organisation_id.required' => 'Pick the authority (an organisation of type Counselling Body).']);
     }
 }

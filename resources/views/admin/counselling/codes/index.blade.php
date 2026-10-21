@@ -17,7 +17,8 @@
         <div class="col-md-4"><label class="form-label fw-bold">College *</label>
             <select name="organisation_id" class="form-select" required><option value="">Select organisation</option>@foreach($organisations as $o)<option value="{{ $o->id }}" @selected(old('organisation_id') == $o->id)>{{ $o->name }}</option>@endforeach</select></div>
         <div class="col-md-3"><label class="form-label fw-bold">Authority *</label>
-            <select name="conducting_body_id" class="form-select" required><option value="">Select</option>@foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_body_id') == $b->id)>{{ $b->name }}</option>@endforeach</select></div>
+            <select name="conducting_organisation_id" class="form-select" required><option value="">Select</option>@foreach($bodies as $b)<option value="{{ $b->id }}" @selected(old('conducting_organisation_id') == $b->id)>{{ $b->name }}</option>@endforeach</select>
+            <div class="form-text">Organisations of type "Counselling Body". <a href="{{ route('admin.organisations.create', ['organisation_type_id' => \App\Models\Organisation::TYPE_COUNSELLING_BODY]) }}" target="_blank">Add one</a></div></div>
         <div class="col-md-2"><label class="form-label fw-bold">Code *</label><input type="text" name="code" class="form-control" value="{{ old('code') }}" required></div>
         <div class="col-md-1"><label class="form-label fw-bold">From</label><input type="number" name="valid_from_year" class="form-control" value="{{ old('valid_from_year') }}" placeholder="Year"></div>
         <div class="col-md-2"><button class="btn btn-primary w-100">Add code</button></div>
@@ -37,14 +38,14 @@
         @forelse($codes as $c)
             <tr>
                 <form id="ic{{ $c->id }}" action="{{ route('admin.counselling.codes.update', $c) }}" method="POST">@csrf @method('PUT')
-                    <input type="hidden" name="organisation_id" value="{{ $c->organisation_id }}"><input type="hidden" name="conducting_body_id" value="{{ $c->conducting_body_id }}"></form>
+                    <input type="hidden" name="organisation_id" value="{{ $c->organisation_id }}"><input type="hidden" name="conducting_organisation_id" value="{{ $c->conducting_organisation_id }}"></form>
                 <td class="ps-4">{{ $c->organisation->name ?? '(deleted organisation #' . $c->organisation_id . ')' }}</td>
-                <td>{{ $c->conductingBody->name ?? '-' }}</td>
+                <td>@if($c->conductingBody){{ $c->conductingBody->name }}@elseif($c->legacyConductingBody)<span class="text-warning" title="From the old list. Add this code again under the counselling body organisation, then delete this row.">{{ $c->legacyConductingBody->name }} (old list)</span>@else - @endif</td>
                 <td><input form="ic{{ $c->id }}" type="text" name="code" value="{{ $c->code }}" class="form-control form-control-sm" required></td>
                 <td style="width:110px"><input form="ic{{ $c->id }}" type="number" name="valid_from_year" value="{{ $c->valid_from_year }}" class="form-control form-control-sm"></td>
                 <td class="text-end pe-4 text-nowrap">
                     <button form="ic{{ $c->id }}" class="btn btn-sm btn-light border"><i class="fas fa-save text-primary"></i></button>
-                    <form action="{{ route('admin.counselling.codes.destroy', $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this code?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.counselling.codes.destroy', $c) }}" method="POST" class="d-inline" data-confirm="Delete this code?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                 </td>
             </tr>
         @empty

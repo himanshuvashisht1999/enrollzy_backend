@@ -13,7 +13,7 @@ Base URL: `https://<your-backend>/api/v1`. No login, no cookies. Dates are ISO 8
 | Links | Only absolute external `http(s)` links are returned. Files are returned as full URLs. |
 | Caching | Reads are cached for 60 s on the server (`CNS_CACHE_TTL`) and sent with `Cache-Control: public, max-age=60` and an `ETag`; send `If-None-Match` to get `304`. |
 | CORS | `api/v1/*` allows any origin by default. Set `CORS_ALLOWED_ORIGINS=https://your-site.com` to lock it down. |
-| Rate limits | Reads: 120 / minute / IP. Follow: 6 / minute / IP and 5 / hour per email or phone. `429` when exceeded. |
+| Rate limits | Reads: 120 / minute / IP (the website server sends `X-Site-Key: <CNS_SITE_KEY>` and is not limited). Follow: 6 / minute / IP and 5 / hour per email or phone. `429` when exceeded. |
 | Errors | `404 {"message": "..."}`, `422 {"message", "errors": {field: [..]}}`, `401` for an invalid inbox token, `429`. |
 | Pagination | `page`, `per_page` (default 20-30, max 50-100). Response has `meta: {page, per_page, total, last_page}`. |
 | Money / numbers | Numbers are JSON numbers (`25000`, not `"25000.00"`). Ranks and percentiles are numbers too. |
@@ -25,7 +25,8 @@ Base URL: `https://<your-backend>/api/v1`. No login, no cookies. Dates are ISO 8
 | `/counselling` | `GET /counselling` |
 | `/counselling/{slug}` | `GET /counselling/{slug}` (current public cycle) |
 | `/counselling/{slug}/{year}` | `GET /counselling/{slug}?year={year}` |
-| `/exams/{slug}` | the exam's own data, plus the block `GET /exams/{slug}/counselling` |
+| `/exams/{slug}` | `GET /exams/{slug}` (whole exam page, includes its counsellings) |
+| `/counselling/{slug}/cutoffs`, `/seat-matrix`, `/colleges` | `GET /counselling/{slug}/cutoffs`, `/seat-matrix`, `/institutes?group=college` |
 | college page | the block `GET /organisations/{id or slug}/admission-through` |
 | `/alerts?token=...` | the inbox / manage screens (see Follow) |
 
@@ -37,6 +38,7 @@ Base URL: `https://<your-backend>/api/v1`. No login, no cookies. Dates are ISO 8
 Filters: `q` (name, short name, alias), `level` (`national|state|university|institute`), `state`, `program_level` (id), `featured=1`, `page`, `per_page` (max 50).
 Each item: `id, name, short_name, slug, level, states[], mode, conducting_body, logo_url, is_featured, is_archived, program_levels[], exams[{name, slug|null}], current_cycle{year, session_label, status}, current_round, url, api_url`.
 `exams[].slug` is `null` when that exam is not published (show the name, do not link it).
+`now` is the one-line status, calculated from the dates: `{state, label, step, when}` with state `open | upcoming | declared | closed | tba | postponed | cancelled` (e.g. `open`, "Round 2 choice filling", "Open, closes 18 Aug 2027"). `quotas[]` and `colleges_count` come from the participating colleges.
 
 ### `GET /counselling/{slug}?year=&session=`
 The whole page for one cycle. `year` is optional: without it you get the current public cycle (or the latest public one). `404` if the counselling is not public, or the year is not public.
@@ -53,7 +55,8 @@ The whole page for one cycle. `year` is optional: without it you get the current
 | `process[]` | numbered timeline: `step_no, title, description, link_url, date{text,status,start_at,end_at}|null` |
 | `fees[]`, `documents[]`, `rules[]` | cycle-level defaults |
 | `rounds[]` | per round: `status`, `quotas`, `fresh_registration_allowed`, `willingness_options`, `instructions`, `process[]`, **`rules[]` and `fees[]` as they apply in this round** (each has `source`: `inherited | overridden | round`), `extra_documents[]`, `seat_matrix{live, changes_since_previous, versions[]}`, `results[]`, `cutoffs{count, api_url}` |
-| `institutes`, `cutoffs` | counts and the URL of the explorer endpoints |
+| `now` | same one-line status as in the list |
+| `institutes`, `cutoffs` | counts (`institutes.colleges` = distinct colleges, `institutes.quotas`) and the URL of the explorer endpoints |
 | `seo` | `title, description, canonical, robots`. Use as-is in `<head>`. The current cycle is canonical at `/counselling/{slug}`, past years at `/counselling/{slug}/{year}` |
 | `marked` | `null | "cancelled" | "archived"`: show a banner |
 | `last_updated_at` | the "Last updated on" line |
@@ -64,10 +67,22 @@ Deposit rules (`rules[]`): `action`, `quota`, `institute_type`, `deposit{outcome
 Filters: `q`, `quota` (id), `institute_type`, `state` (a state of any of the college's campuses), `year`, `page`, `per_page` (max 100).
 Row: `college{id,name,slug,logo_url,city,state}, course{id,name,slug}, quota, institute_type, authority_code, annual_tuition_fee, other_fees, bond_details, total_seats`. `filters` lists the choices that exist.
 
+**`?group=college`** (colleges explorer): one row per college: `college, quotas[], courses[], institute_types[], fee{min,max}, seats, closing_value`. Extra filters `max_fee`, `category` (id: adds `closing_value`, the most generous closing rank of that category in the latest round that has cutoffs, named in `meta.closing_round`). Sort: `college` (default) `| fee_asc | seats_desc | closing_asc`. `filters`: quotas, states, institute_types, categories.
+
+### `GET /counselling/{slug}/seat-matrix`  (seat matrix explorer)
+The live version of one round (`round` id; default: the latest round with a live version). One row per college + course + quota: `college, course, quota, institute_type, seats{category_id: n}, total, changed` (`changed` = differs from the previous version). `categories[]` gives the columns. Filters: `q, quota, institute_type, state, changed=1, year`. Sort: `total_desc` (default) `| total_asc | college`. `meta` adds `round`, `version{version_no,label,published_on,source_url,total_seats}`, `previous`, `changed_rows`.
+
+### `GET /exams/{slug}?year=`
+The exam page: `exam` (identity, conducting body), `available_years`, `cycle`, `status_card[]` (registration, admit card, exam date, result: `{key,label,state,text,date_text}`), `dates[]` (events as above, plus `stage`), `stages`, `eligibility[]`, `pattern[]`, `syllabus[]`, `fees[]`, `documents[]`, `faqs[]`, `papers[]`, `counsellings[]` (as in the block below), `last_verified_at`, `seo`. `404` unless the exam is published.
+
+### `GET /masters`
+`categories[]` (for a student's "Your details", PwD excluded) and `states[]`.
+
 ### `GET /counselling/{slug}/cutoffs`  (cutoffs explorer)
 Filters: `round` (id), `exam` (id or slug), `quota`, `category` (ids), `gender` (`neutral|male|female`), `pwd` (`0|1`), `institute_type`, `state`, `course` (id), `rank_type` (`air|category_rank|state_merit_rank|score|percentile`), `q` (college or course), `year`.
-Sort: `sort=closing_asc` (default) `| closing_desc | college`. Pagination as above.
-Row: `college, course, round{id,name}, exam, quota, category, gender, pwd, institute_type, rank_type, rank_type_label, opening_value, closing_value`.
+Sort: `sort=closing_asc` (default) `| closing_desc | opening_asc | fee_asc | college | fit`. Pagination as above.
+`rank` (a rank) with `within=1` keeps only rank-type rows (AIR, category rank, state merit rank) whose closing rank is at or above it; `sort=fit` lists those first, then the rest. `max_fee` filters on the annual tuition fee.
+Row: `college{id,name,slug,city,state}, course, round{id,name}, exam, quota, category, gender, pwd, institute_type, rank_type, rank_type_label, higher_is_worse, opening_value, closing_value, annual_tuition_fee`. `filters.rounds[]` carry their `cutoffs` count; `filters.states` lists the states.
 `filters` returns only values that exist in this cycle (build your filter UI from it). Only the cycle's own rounds are searched. Do not mix `rank_type`s when sorting: filter by one.
 
 ### Blocks for other pages
@@ -120,7 +135,7 @@ Only **verified** data. An event fires only when a staff member with the verify 
 
 1. **Cron**, every minute: `php artisan schedule:run` (alerts are created and sent by `cns:dispatch-alerts` every 10 minutes; run it by hand any time, or use *Counselling → Alerts → Run now*).
 2. **Mail**: set `MAIL_MAILER` and the SMTP settings (the default `log` only writes to the log file, nothing is delivered), plus `MAIL_FROM_ADDRESS`.
-3. `FRONTEND_URL` = the website's address; `CORS_ALLOWED_ORIGINS` = the website's origin.
+3. `FRONTEND_URL` = the website's address; `CORS_ALLOWED_ORIGINS` = the website's origin; `CNS_SITE_KEY` = a long random secret, the same value as `CNS_SITE_KEY` in the website's `.env` (its server calls are then not rate limited).
 4. **WhatsApp** is off by default (`WHATSAPP_DRIVER=none`: deliveries are marked *skipped*, never faked). To enable, set `WHATSAPP_DRIVER=cloud`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and have two **approved templates** in the WhatsApp Business account, named as in `WHATSAPP_TEMPLATE_OTP` (default `cns_verify_code`, body parameter: the code) and `WHATSAPP_TEMPLATE_ALERT` (default `cns_alert`, body parameters: title, link). `WHATSAPP_DRIVER=log` only writes messages to the log, for testing. Messages are billed by the provider.
 5. `php artisan storage:link` so uploaded files (bulletins, templates, results) have public URLs.
 6. Run the seeders once after migrating: `php artisan db:seed --class=CounsellingSeeder --force`.

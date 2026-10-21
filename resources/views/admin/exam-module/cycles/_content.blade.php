@@ -62,7 +62,7 @@
                     </div>
                     <div class="text-nowrap">
                         <button class="btn btn-sm btn-light border" data-row="{{ json_encode($payload) }}" onclick="openBlock('{{ $key }}', JSON.parse(this.dataset.row))"><i class="fas fa-edit text-primary"></i></button>
-                        <form action="{{ route('admin.exam-module.content.destroy', [$key, $row->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this {{ strtolower($def['label']) }}?')">
+                        <form action="{{ route('admin.exam-module.content.destroy', [$key, $row->id]) }}" method="POST" class="d-inline" data-confirm="Delete this {{ strtolower($def['label']) }}?">
                             @csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button>
                         </form>
                     </div>

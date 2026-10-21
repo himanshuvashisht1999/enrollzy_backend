@@ -106,6 +106,9 @@ class ImportController extends Controller
         if (!DB::table($table)->where('id', $data['target_id'])->exists()) {
             return back()->with('error', 'That record does not exist.');
         }
+        if ($data['type'] === 'exam' && !in_array((int) $data['target_id'], $this->mappedExamIds($batch), true)) {
+            return back()->with('error', 'That exam is not mapped to this counselling. Map it on the counselling page first.');
+        }
         $this->importer->fix($batch, $data['type'], $data['raw'], (int) $data['target_id']);
 
         return back()->with('success', 'Saved. "' . $data['raw'] . '" will be recognised from now on.');
@@ -162,12 +165,15 @@ class ImportController extends Controller
     {
         $q = trim((string) $request->q);
         $type = $request->type;
+        // In an import preview, only the exams this counselling uses can be picked.
+        $batch = $request->filled('batch') ? ImportBatch::find((int) $request->batch) : null;
         $rows = match ($type) {
             'organisation' => DB::table('organisations')->when($q, fn ($b) => $b->where('name', 'like', "%$q%"))->orderBy('name')->limit(30)->get(['id', 'name as text']),
             'course' => DB::table('courses')->when($q, fn ($b) => $b->where('name', 'like', "%$q%")->orWhere('full_form', 'like', "%$q%"))->orderBy('name')->limit(30)->get(['id', DB::raw("CONCAT(name, ' (#', id, ')') as text")]),
             'quota' => Quota::when($q, fn ($b) => $b->where('name', 'like', "%$q%"))->orderBy('sort_order')->limit(30)->get(['id', 'name as text']),
             'category' => Category::when($q, fn ($b) => $b->where('name', 'like', "%$q%"))->orderBy('sort_order')->limit(30)->get(['id', 'name as text']),
-            'exam' => DB::table('exm_exams')->whereNull('deleted_at')->when($q, fn ($b) => $b->where('name', 'like', "%$q%"))->orderBy('name')->limit(30)->get(['id', 'name as text']),
+            'exam' => DB::table('exm_exams')->whereNull('deleted_at')->when($batch, fn ($b) => $b->whereIn('id', $this->mappedExamIds($batch)))
+                ->when($q, fn ($b) => $b->where('name', 'like', "%$q%"))->orderBy('name')->limit(30)->get(['id', 'name as text']),
             default => abort(404),
         };
         return response()->json(['results' => $rows]);
@@ -184,6 +190,12 @@ class ImportController extends Controller
     private function assertOpen(ImportBatch $batch): void
     {
         abort_unless($batch->status === 'previewed', 422, 'This import has already been ' . $batch->status . '.');
+    }
+
+    /** Exams mapped to the counselling of this import. */
+    private function mappedExamIds(ImportBatch $batch): array
+    {
+        return DB::table('cns_counselling_exams')->where('counselling_id', $batch->cycle?->counselling_id)->pluck('exam_id')->map(fn ($id) => (int) $id)->all();
     }
 
     /** @return array{errors: array, warnings: array} grouped by field and raw value */

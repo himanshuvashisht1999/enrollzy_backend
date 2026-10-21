@@ -322,10 +322,13 @@
 --}}
 
                             <!-- wrapped sublink missing -->
+{{-- Old "Dynamic Exams" module: hidden from the sidebar, replaced by the Exam Module. The pages and data are untouched
+     (still reachable at /admin/dynamic-exams); remove the comment to show the link again.
 @if($user && method_exists($user, 'can') && $user->can('dynamic-exams-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.dynamic-exams.*') ? 'active' : '' }}"
                                     href="{{ route('admin.dynamic-exams.index') }}">Dynamic Exams</a></li>
 @endif
+--}}
 
 @if($user && method_exists($user, 'can') && $user->can('exm-exams-browse'))
 <li><a class="nav-link sub-link {{ request()->routeIs('admin.exam-module.*') ? 'active' : '' }}"
@@ -1766,6 +1769,7 @@
         });
     </script>
 
+    @include('admin.partials.confirm-dialog')
     @yield('scripts')
     @stack('scripts')
 </body>

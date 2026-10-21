@@ -3,6 +3,12 @@
 @section('title', 'Conducting Bodies')
 
 @section('content')
+<div class="alert alert-warning">
+    <b>Old list, no longer used.</b> Exams now pick their conducting body from
+    <a href="{{ route('admin.organisations.index', ['organisation_type_id' => \App\Models\Organisation::TYPE_EXAM_CONDUCTING_BODY]) }}">organisations of type Exam Conducting Body</a>,
+    and counsellings from <a href="{{ route('admin.organisations.index', ['organisation_type_id' => \App\Models\Organisation::TYPE_COUNSELLING_BODY]) }}">organisations of type Counselling Body</a>.
+    This page is kept only so the old entries can still be seen.
+</div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-0 fw-bold">Conducting Bodies</h4>
@@ -28,7 +34,7 @@
                 <td class="text-end pe-4">
                     @can('exm-conducting-bodies-edit')<a href="{{ route('admin.exam-module.conducting-bodies.edit', $b) }}" class="btn btn-sm btn-light border"><i class="fas fa-edit text-primary"></i></a>@endcan
                     @can('exm-conducting-bodies-delete')
-                    <form action="{{ route('admin.exam-module.conducting-bodies.destroy', $b) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                    <form action="{{ route('admin.exam-module.conducting-bodies.destroy', $b) }}" method="POST" class="d-inline" data-confirm="Are you sure?">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>

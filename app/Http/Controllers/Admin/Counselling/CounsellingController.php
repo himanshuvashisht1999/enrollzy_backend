@@ -7,7 +7,6 @@ use App\Models\Counselling\Counselling;
 use App\Models\Counselling\CounsellingExam;
 use App\Models\ExamCategory;
 use App\Models\ExamModule\AuditLog;
-use App\Models\ExamModule\ConductingBody;
 use App\Models\ExamModule\Exam;
 use App\Models\Organisation;
 use App\Models\ProgramLevel;
@@ -63,7 +62,7 @@ class CounsellingController extends Controller
 
     public function edit(Counselling $counselling)
     {
-        return view('admin.counselling.counsellings.form', ['counselling' => $counselling, 'fromExam' => null] + $this->formData());
+        return view('admin.counselling.counsellings.form', ['counselling' => $counselling, 'fromExam' => null] + $this->formData($counselling));
     }
 
     public function update(Request $request, Counselling $counselling)
@@ -176,7 +175,8 @@ class CounsellingController extends Controller
             'short_name' => 'nullable|string|max:100',
             'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('cns_counsellings', 'slug')->ignore($counselling->id)->withoutTrashed()],
             'aliases' => 'nullable|string',
-            'conducting_body_id' => ['required', Rule::exists('exm_conducting_bodies', 'id')],
+            // Conducting body = an organisation of type "Counselling Body".
+            'conducting_organisation_id' => ['required', Rule::exists('organisations', 'id')->where('organisation_type_id', Organisation::TYPE_COUNSELLING_BODY)],
             'level' => ['required', Rule::in(array_keys(Counselling::LEVELS))],
             'states' => 'required_if:level,state|nullable|array',
             'states.*' => ['string', Rule::in(Exam::STATES)],
@@ -238,10 +238,12 @@ class CounsellingController extends Controller
             ->with('success', "Counselling {$verb}.")->with($notice ? 'error' : 'noop', $notice);
     }
 
-    private function formData(): array
+    private function formData(?Counselling $counselling = null): array
     {
         return [
-            'bodies' => ConductingBody::where('status', true)->orderBy('name')->get(),
+            // Organisations of type "Counselling Body" (plus the one already chosen, in case its type changed later).
+            'bodies' => Organisation::where('organisation_type_id', Organisation::TYPE_COUNSELLING_BODY)
+                ->orWhere('id', $counselling?->conducting_organisation_id ?? 0)->orderBy('name')->get(['id', 'name', 'short_name', 'abbreviation']),
             'levels' => ProgramLevel::where('status', 1)->orderBy('title')->get(),
             'categories' => ExamCategory::where('status', 1)->orderBy('title')->get(),
             'organisations' => Organisation::orderBy('name')->get(['id', 'name']),

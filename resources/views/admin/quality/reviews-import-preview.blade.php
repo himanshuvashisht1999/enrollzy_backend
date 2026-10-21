@@ -42,7 +42,7 @@
 @endif
 
 @if($summary['new'])
-<form method="POST" action="{{ route('admin.quality.reviews.import.confirm') }}" onsubmit="return confirm('Create {{ $summary['new'] }} review(s) now? You can undo the whole batch afterwards.')">
+<form method="POST" action="{{ route('admin.quality.reviews.import.confirm') }}" data-confirm="Create {{ $summary['new'] }} review(s) now? You can undo the whole batch afterwards.">
     @csrf <input type="hidden" name="token" value="{{ $token }}">
     <button class="btn btn-success"><i class="fas fa-check me-1"></i> Create {{ number_format($summary['new']) }} review(s)</button>
     @if($summary['error'])<span class="text-muted small ms-2">The {{ number_format($summary['error']) }} rows with errors will be skipped. Fix them in the file and import again if you need them.</span>@endif

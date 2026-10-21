@@ -10,7 +10,8 @@
     </div>
     <div class="d-flex gap-2">
         @can('exm-attention-browse')<a href="{{ route('admin.exam-module.attention') }}" class="btn btn-outline-warning"><i class="fas fa-bell me-1"></i> Needs Attention</a>@endcan
-        @can('exm-conducting-bodies-browse')<a href="{{ route('admin.exam-module.conducting-bodies.index') }}" class="btn btn-light border">Conducting Bodies</a>@endcan
+        {{-- Conducting bodies are organisations of type "Exam Conducting Body" now (Organisations page), so no separate list here. --}}
+        <a href="{{ route('admin.organisations.index', ['organisation_type_id' => \App\Models\Organisation::TYPE_EXAM_CONDUCTING_BODY]) }}" class="btn btn-light border">Conducting Bodies</a>
         @can('exm-event-types-manage')<a href="{{ route('admin.exam-module.event-types.index') }}" class="btn btn-light border">Event Types</a>@endcan
         @can('exm-cities-manage')<a href="{{ route('admin.exam-module.cities.index') }}" class="btn btn-light border">Cities</a>@endcan
         @can('exm-audit-browse')<a href="{{ route('admin.exam-module.audit') }}" class="btn btn-light border">Audit Log</a>@endcan
@@ -63,7 +64,7 @@
                         @can('exm-exams-edit')<a href="{{ route('admin.exam-module.exams.edit', $exam) }}" class="btn btn-sm btn-light border"><i class="fas fa-edit text-primary"></i></a>@endcan
                         @can('cns-counsellings-browse')<a href="{{ route('admin.counselling.exams.counselling', $exam) }}" class="btn btn-sm btn-light border" title="Counselling mapped to this exam"><i class="fas fa-people-arrows text-success"></i> Counselling</a>@endcan
                         @can('exm-exams-delete')
-                        <form action="{{ route('admin.exam-module.exams.destroy', $exam) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this exam?');">
+                        <form action="{{ route('admin.exam-module.exams.destroy', $exam) }}" method="POST" class="d-inline" data-confirm="Delete this exam?">
                             @csrf @method('DELETE')
                             <button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button>
                         </form>

@@ -417,8 +417,10 @@ $(document).ready(function () {
     // Reset default
     $('#btnResetDefault').on('click', function (e) {
         e.preventDefault();
-        if (!confirm('Reset all fields for this organisation type to checked?')) return;
+        appConfirm('Reset all fields for this organisation type to checked?', resetDefaults, { label: 'Yes, reset', style: 'warning' });
+    });
 
+    function resetDefaults() {
         $.ajax({
             url: `{{ url('admin/organisation-fields') }}/${orgTypeId}/reset`,
             type: "POST",
@@ -439,7 +441,7 @@ $(document).ready(function () {
                 alert('Error resetting configuration.');
             }
         });
-    });
+    }
 
     updateSummary();
 });

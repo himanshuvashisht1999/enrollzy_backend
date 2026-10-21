@@ -68,7 +68,7 @@
                                                 }
                                             @endphp
                                             <option value="{{ $type->id }}" data-category="{{ $category }}"
-                                                data-title="{{ $type->title }}" {{ old('organisation_type_id') == $type->id ? 'selected' : '' }}>
+                                                data-title="{{ $type->title }}" {{ old('organisation_type_id', request('organisation_type_id')) == $type->id ? 'selected' : '' }}>
                                                 {{ $type->title }} (ID: {{ $type->id }})
                                             </option>
                                         @endforeach

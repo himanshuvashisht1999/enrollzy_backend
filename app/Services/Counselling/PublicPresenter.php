@@ -71,12 +71,36 @@ class PublicPresenter
             'conducting_body' => $c->conductingBody?->name, 'logo_url' => $this->file($c->logo),
             'is_featured' => $c->is_featured, 'is_archived' => $c->is_archived,
             'program_levels' => $this->names('program_levels', $c->program_levels),
-            'exams' => $this->mappedExams($c)->map(fn ($e) => ['name' => $e['name'], 'slug' => $e['slug']])->all(),
+            'exams' => $this->mappedExams($c)->map(fn ($e) => ['name' => $e['name'], 'short_name' => $e['short_name'], 'slug' => $e['slug']])->all(),
             'current_cycle' => $cycle ? ['year' => $cycle->year, 'session_label' => $cycle->session_label, 'status' => $cycle->cycle_status] : null,
             'current_round' => $bar ? $bar['round']?->name : null,
+            'now' => $this->now($cycle, $bar),
+            'quotas' => $cycle ? $this->cycleQuotas($cycle) : [],
+            'colleges_count' => $cycle ? $this->collegeCount($cycle) : 0,
             'url' => $this->frontend('counselling/' . $c->slug),
             'api_url' => route('api.v1.counselling.show', $c->slug),
         ];
+    }
+
+    /** "Counselling after this exam": the public counsellings mapped to an exam, with their status line. */
+    public function examCounsellings(int $examId): array
+    {
+        return \App\Models\Counselling\CounsellingExam::where('exam_id', $examId)->orderBy('sort_order')->get()
+            ->map(function ($m) {
+                $c = $this->visible()->with('conductingBody')->find($m->counselling_id);
+                if (!$c) return null;
+                $item = $this->listItem($c);
+                $cycle = $this->cycleFor($c);
+                $bar = $cycle ? $cycle->statusBar() : null;
+                return $item + [
+                    'role' => $m->role, 'seat_scope_note' => $m->seat_scope_note,
+                    'status' => $cycle ? (in_array($cycle->cycle_status, ['postponed', 'cancelled'])
+                        ? ['state' => $cycle->cycle_status, 'text' => ucfirst($cycle->cycle_status) . ($cycle->status_note ? ': ' . $cycle->status_note : '')]
+                        : ($bar ? ['state' => 'scheduled', 'text' => ($bar['round'] ? $bar['round']->name : 'Counselling ' . $cycle->title) . ': ' . collect($bar['items'])->map(fn ($s, $l) => "$l - {$s['label']}")->implode(', ')]
+                            : ['state' => 'to_be_announced', 'text' => 'Schedule to be announced']))
+                        : ['state' => 'to_be_announced', 'text' => 'Schedule to be announced'],
+                ];
+            })->filter()->values()->all();
     }
 
     public function page(Counselling $c, ?CounsellingCycle $cycle): array
@@ -87,7 +111,8 @@ class PublicPresenter
             'counselling' => [
                 'id' => $c->id, 'name' => $c->name, 'short_name' => $c->short_name, 'slug' => $c->slug, 'aliases' => $c->aliases ?? [],
                 'level' => $c->level, 'states' => $c->states ?? [], 'mode' => $c->mode,
-                'conducting_body' => $c->conductingBody ? ['name' => $c->conductingBody->name, 'type' => $c->conductingBody->body_type, 'website' => $c->conductingBody->website] : null,
+                'conducting_body' => $c->conductingBody ? ['name' => $c->conductingBody->name, 'short_name' => $c->conductingBody->short_name ?: $c->conductingBody->abbreviation,
+                    'type' => $c->conductingBody->authority_type, 'slug' => $c->conductingBody->slug, 'website' => $this->safeUrl($c->conductingBody->official_website)] : null,
                 'program_levels' => $this->names('program_levels', $c->program_levels),
                 'course_categories' => $this->names('exam_categories', $c->course_categories),
                 'official_website' => $c->official_website, 'registration_portal_url' => $c->registration_portal_url, 'helpline' => $c->helpline,
@@ -118,6 +143,7 @@ class PublicPresenter
             'exam_cycles' => $cycle->examCycles()->with('exam:id,name,slug')->get()->map(fn ($ec) => ['exam' => $ec->exam->name, 'year' => $ec->year, 'session_label' => $ec->session_label])->all(),
         ];
         $payload['status_bar'] = $this->statusBar($cycle);
+        $payload['now'] = $this->now($cycle);
         $payload['dates'] = [
             'cycle' => $this->events($cycle->events()->with(['type', 'quota'])->orderBy('start_at')->get()),
             'rounds' => $rounds->map(fn ($r) => ['round_id' => $r->id, 'name' => $r->name, 'status' => $r->round_status,
@@ -131,6 +157,8 @@ class PublicPresenter
         $payload['rounds'] = $rounds->map(fn ($r) => $this->round($c, $cycle, $r))->all();
         $payload['institutes'] = [
             'count' => Participant::where('cycle_id', $cycle->id)->count(),
+            'colleges' => $this->collegeCount($cycle),
+            'quotas' => $this->cycleQuotas($cycle),
             'api_url' => route('api.v1.counselling.institutes', $c->slug) . ($cycle->is_current ? '' : '?year=' . $cycle->year),
         ];
         $payload['cutoffs'] = ['count' => Cutoff::whereIn('round_id', $rounds->pluck('id'))->count(),
@@ -158,6 +186,62 @@ class PublicPresenter
             'current_round' => $bar['round'] ? ['id' => $bar['round']->id, 'name' => $bar['round']->name] : null,
             'items' => collect($bar['items'])->map(fn ($s, $label) => ['label' => $label, 'state' => $s['state'], 'text' => $s['label']])->values()->all(),
         ];
+    }
+
+    /**
+     * One-line "what is happening now" for lists and banners, calculated from the status bar (never typed):
+     * state open | upcoming | declared | closed | tba | postponed | cancelled, plus the step ("Round 2 choice filling")
+     * and when ("Open, closes 18 Aug 2027"). Open steps win, then upcoming ones, then a declared result.
+     */
+    public function now(?CounsellingCycle $cycle, ?array $bar = null): array
+    {
+        $tba = ['state' => 'tba', 'label' => 'Awaited', 'step' => 'Schedule awaited', 'when' => 'No dates yet'];
+        if (!$cycle) return $tba;
+        if (in_array($cycle->cycle_status, ['postponed', 'cancelled'])) {
+            return ['state' => $cycle->cycle_status, 'label' => ucfirst($cycle->cycle_status), 'step' => 'Counselling ' . $cycle->cycle_status, 'when' => (string) $cycle->status_note];
+        }
+        $bar ??= $cycle->statusBar();
+        if (!$bar) return $tba;
+        $round = $bar['round']?->name;
+        $step = fn ($label) => trim(($round ? $round . ' ' : '') . ($round ? Str::lower($label) : $label));
+        $items = $bar['items'] ?? [];
+
+        // Result declared and reporting still ahead or running: the result is the news, reporting the deadline.
+        $reporting = $items['Reporting'] ?? null;
+        if (($items['Allotment result']['state'] ?? null) === 'declared' && $reporting && in_array($reporting['state'], ['open', 'upcoming'])) {
+            return ['state' => 'declared', 'label' => 'Result out', 'step' => $step('Allotment result') . ' declared', 'when' => 'Reporting: ' . Str::lcfirst($reporting['label'])];
+        }
+        foreach ($items as $label => $s) {
+            if ($s['state'] === 'open') return ['state' => 'open', 'label' => 'Open now', 'step' => $step($label), 'when' => $s['label']];
+        }
+        foreach ($items as $label => $s) {
+            if (in_array($s['state'], ['upcoming', 'expected'])) return ['state' => 'upcoming', 'label' => 'Upcoming', 'step' => $step($label), 'when' => $s['label']];
+        }
+        foreach ($items as $label => $s) {
+            if (in_array($s['state'], ['postponed', 'cancelled', 'withheld'])) return ['state' => $s['state'] === 'withheld' ? 'tba' : $s['state'], 'label' => ucfirst($s['state']), 'step' => $step($label), 'when' => $s['label']];
+        }
+        if (($items['Allotment result']['state'] ?? null) === 'declared') {
+            return ['state' => 'declared', 'label' => 'Result out', 'step' => $step('Allotment result'), 'when' => 'Declared'];
+        }
+        if ($items && collect($items)->every(fn ($s) => in_array($s['state'], ['closed', 'declared']))) {
+            return ['state' => 'closed', 'label' => 'Closed', 'step' => $round ?: 'Counselling ' . $cycle->title, 'when' => 'All steps closed'];
+        }
+        return $tba;
+    }
+
+    /** Quota names that have participating seats in this cycle (for "All India, State quota, Management"). */
+    private function cycleQuotas(CounsellingCycle $cycle): array
+    {
+        return $this->memo['quotas'][$cycle->id] ??= Participant::where('cns_participants.cycle_id', $cycle->id)
+            ->join('cns_quotas', 'cns_quotas.id', '=', 'cns_participants.quota_id')
+            ->groupBy('cns_quotas.id', 'cns_quotas.name', 'cns_quotas.sort_order')->orderBy('cns_quotas.sort_order')->orderBy('cns_quotas.name')
+            ->pluck('cns_quotas.name')->all();
+    }
+
+    /** Distinct colleges taking part in this cycle. */
+    private function collegeCount(CounsellingCycle $cycle): int
+    {
+        return $this->memo['colleges'][$cycle->id] ??= (int) Participant::where('cycle_id', $cycle->id)->distinct()->count('organisation_id');
     }
 
     private function round(Counselling $c, CounsellingCycle $cycle, Round $r): array
@@ -285,7 +369,7 @@ class PublicPresenter
         return $this->memo['exams'][$c->id] ??= $c->mappings()->with('exam')->get()->map(function ($m) {
             $exam = $m->exam;
             $public = $exam && $exam->visibility === 'public' && $exam->status;
-            return ['name' => $exam?->name, 'slug' => $public ? $exam->slug : null, 'role' => $m->role,
+            return ['name' => $exam?->name, 'short_name' => $exam?->short_name, 'slug' => $public ? $exam->slug : null, 'role' => $m->role,
                 'valid_from_year' => $m->valid_from_year, 'valid_to_year' => $m->valid_to_year, 'seat_scope_note' => $m->seat_scope_note];
         })->filter(fn ($e) => $e['name'])->values();
     }
@@ -359,6 +443,220 @@ class PublicPresenter
         ];
     }
 
+    /**
+     * Participating colleges, one row per college (institutes?group=college): its quotas, courses, fee range, seats and,
+     * for a category, the closing rank in the latest round that has cutoffs (the most generous seat at that college).
+     * Filters: q, quota, institute_type, state, max_fee, category. Sort: college (default) | fee_asc | seats_desc | closing_asc.
+     */
+    public function colleges(Counselling $c, CounsellingCycle $cycle, array $f): array
+    {
+        $perPage = max(1, min(100, (int) ($f['per_page'] ?? 24)));
+        $catId = !empty($f['category']) ? (int) $f['category'] : null;
+        $quotaId = !empty($f['quota']) ? (int) $f['quota'] : null;
+        $closingRound = $this->latestCutoffRound($cycle);
+
+        $q = DB::table('cns_participants as p')->where('p.cycle_id', $cycle->id)
+            ->join('organisations', 'organisations.id', '=', 'p.organisation_id')
+            ->join('courses', 'courses.id', '=', 'p.course_id')
+            ->groupBy('p.organisation_id', 'organisations.name', 'organisations.slug', 'organisations.logo_url')
+            ->select('p.organisation_id', 'organisations.name as org_name', 'organisations.slug as org_slug', 'organisations.logo_url as org_logo',
+                DB::raw('MIN(p.annual_tuition_fee) as min_fee'), DB::raw('MAX(p.annual_tuition_fee) as max_fee'),
+                DB::raw('SUM(p.total_seats) as seats'), DB::raw('COUNT(p.total_seats) as seat_rows'),
+                DB::raw('GROUP_CONCAT(DISTINCT p.quota_id) as quota_ids'), DB::raw('GROUP_CONCAT(DISTINCT p.course_id) as course_ids'),
+                DB::raw('GROUP_CONCAT(DISTINCT p.institute_type) as types'));
+        if ($catId && $closingRound) {
+            $q->selectSub(fn ($s) => $s->from('cns_cutoffs as co')->selectRaw('MAX(co.closing_value)')
+                ->whereColumn('co.organisation_id', 'p.organisation_id')->where('co.round_id', $closingRound->id)->where('co.category_id', $catId)
+                ->whereIn('co.rank_type', Cutoff::HIGHER_IS_WORSE)->whereNull('co.gender')->where('co.pwd', false)
+                ->when($quotaId, fn ($s) => $s->where('co.quota_id', $quotaId)), 'closing');
+        } else {
+            $q->addSelect(DB::raw('NULL as closing'));
+        }
+        $this->applyCollegeFilters($q, $f, 'p');
+        if ($quotaId) $q->where('p.quota_id', $quotaId);
+        if (!empty($f['institute_type'])) $q->where('p.institute_type', $f['institute_type']);
+        if (!empty($f['max_fee']) && is_numeric($f['max_fee'])) $q->where('p.annual_tuition_fee', '<=', (float) $f['max_fee']);
+
+        match ($f['sort'] ?? 'college') {
+            'fee_asc' => $q->orderByRaw('MIN(p.annual_tuition_fee) is null')->orderByRaw('MIN(p.annual_tuition_fee)'),
+            'seats_desc' => $q->orderByRaw('SUM(p.total_seats) desc'),
+            'closing_asc' => $catId && $closingRound ? $q->orderByRaw('closing is null')->orderBy('closing') : $q->orderBy('organisations.name'),
+            default => $q->orderBy('organisations.name'),
+        };
+        $page = $q->orderBy('p.organisation_id')->paginate($perPage)->withQueryString();
+        $rows = $page->getCollection();
+        $campus = $this->campusMap($rows->pluck('organisation_id')->all());
+        $courseNames = DB::table('courses')->whereIn('id', $rows->flatMap(fn ($r) => explode(',', (string) $r->course_ids))->filter()->unique()->all())->pluck('name', 'id');
+        $ids = fn ($csv) => array_values(array_filter(explode(',', (string) $csv), 'strlen'));
+
+        $orgIds = DB::table('cns_participants')->where('cycle_id', $cycle->id)->distinct()->pluck('organisation_id')->all();
+        return [
+            'data' => $rows->map(fn ($r) => [
+                'college' => ['id' => $r->organisation_id, 'name' => $r->org_name, 'slug' => $r->org_slug, 'logo_url' => $r->org_logo,
+                    'city' => $campus[$r->organisation_id]['city'] ?? null, 'state' => $campus[$r->organisation_id]['state'] ?? null],
+                'quotas' => collect($ids($r->quota_ids))->map(fn ($id) => $this->name('cns_quotas', $id))->filter()->values()->all(),
+                'courses' => collect($ids($r->course_ids))->map(fn ($id) => $courseNames[$id] ?? null)->filter()->values()->all(),
+                'institute_types' => collect($ids($r->types))->map(fn ($t) => CnsBlocks::INSTITUTE_TYPES[$t] ?? null)->filter()->values()->all(),
+                'fee' => ['min' => $r->min_fee !== null ? (float) $r->min_fee : null, 'max' => $r->max_fee !== null ? (float) $r->max_fee : null],
+                'seats' => $r->seat_rows ? (int) $r->seats : null,
+                'closing_value' => $r->closing !== null ? (float) $r->closing : null,
+            ])->all(),
+            'meta' => $this->meta($page) + ['closing_round' => $closingRound ? ['id' => $closingRound->id, 'name' => $closingRound->name] : null],
+            'filters' => [
+                'quotas' => array_map(fn ($n) => ['id' => $n['id'], 'name' => $n['name']], $this->cycleQuotaRows($cycle)),
+                'states' => $this->statesOf($orgIds),
+                'institute_types' => DB::table('cns_participants')->where('cycle_id', $cycle->id)->whereNotNull('institute_type')->distinct()->pluck('institute_type')
+                    ->map(fn ($k) => ['value' => $k, 'label' => CnsBlocks::INSTITUTE_TYPES[$k] ?? $k])->values()->all(),
+                'categories' => $this->cutoffCategories($cycle),
+            ],
+        ];
+    }
+
+    /**
+     * Seat matrix explorer: the live version of one round (default: the latest round with a live version), one row per
+     * college + course + quota with seats per category and the total. "changed" marks rows that differ from the
+     * previous version. Filters: round, q, quota, institute_type, state, changed=1. Sort: total_desc (default) | total_asc | college.
+     */
+    public function seatMatrix(Counselling $c, CounsellingCycle $cycle, array $f): array
+    {
+        $rounds = $cycle->rounds()->get(['id', 'name']);
+        $lives = SeatMatrixVersion::whereIn('round_id', $rounds->pluck('id'))->where('is_live', true)->get()->keyBy('round_id');
+        $roundFilters = $rounds->filter(fn ($r) => $lives->has($r->id))->map(fn ($r) => ['id' => $r->id, 'name' => $r->name])->values()->all();
+        $round = !empty($f['round']) ? $rounds->firstWhere('id', (int) $f['round']) : $rounds->reverse()->first(fn ($r) => $lives->has($r->id));
+        $live = $round ? $lives->get($round->id) : null;
+
+        $empty = ['data' => [], 'categories' => [], 'meta' => ['page' => 1, 'per_page' => 0, 'total' => 0, 'last_page' => 1, 'round' => $round ? ['id' => $round->id, 'name' => $round->name] : null, 'version' => null],
+            'filters' => ['rounds' => $roundFilters, 'quotas' => [], 'states' => [], 'institute_types' => []]];
+        if (!$live) return $empty;
+
+        $previous = SeatMatrixVersion::where('round_id', $round->id)->where('version_no', '<', $live->version_no)->orderByDesc('version_no')->first();
+        $changedKeys = $previous ? $this->changedSeatGroups($live->id, $previous->id) : [];
+
+        $categories = DB::table('cns_seat_matrix_rows')->where('version_id', $live->id)->join('cns_categories', 'cns_categories.id', '=', 'cns_seat_matrix_rows.category_id')
+            ->groupBy('cns_categories.id', 'cns_categories.name', 'cns_categories.short_name', 'cns_categories.sort_order')->orderBy('cns_categories.sort_order')
+            ->get(['cns_categories.id', 'cns_categories.name', 'cns_categories.short_name']);
+
+        $perPage = max(1, min(100, (int) ($f['per_page'] ?? 25)));
+        $q = DB::table('cns_seat_matrix_rows as r')->where('r.version_id', $live->id)
+            ->join('organisations', 'organisations.id', '=', 'r.organisation_id')
+            ->join('courses', 'courses.id', '=', 'r.course_id')
+            ->join('cns_quotas', 'cns_quotas.id', '=', 'r.quota_id')
+            ->groupBy('r.organisation_id', 'r.course_id', 'r.quota_id', 'organisations.name', 'organisations.slug', 'courses.name', 'courses.slug', 'cns_quotas.name')
+            ->select('r.organisation_id', 'r.course_id', 'r.quota_id', 'organisations.name as org_name', 'organisations.slug as org_slug',
+                'courses.name as course_name', 'courses.slug as course_slug', 'cns_quotas.name as quota_name', DB::raw('SUM(r.seats) as total'));
+        foreach ($categories as $cat) {
+            $q->addSelect(DB::raw('SUM(CASE WHEN r.category_id = ' . (int) $cat->id . ' THEN r.seats ELSE 0 END) as c_' . (int) $cat->id));
+        }
+        $this->applyCollegeFilters($q, $f, 'r');
+        if (!empty($f['quota'])) $q->where('r.quota_id', (int) $f['quota']);
+        if (!empty($f['institute_type'])) {
+            $q->whereExists(fn ($e) => $e->select(DB::raw(1))->from('cns_participants as p')->where('p.cycle_id', $cycle->id)
+                ->whereColumn('p.organisation_id', 'r.organisation_id')->whereColumn('p.course_id', 'r.course_id')->whereColumn('p.quota_id', 'r.quota_id')
+                ->where('p.institute_type', $f['institute_type']));
+        }
+        if (!empty($f['changed'])) {
+            if (!$changedKeys) $q->whereRaw('1 = 0');
+            else $q->whereIn(DB::raw("CONCAT(r.organisation_id, '|', r.course_id, '|', r.quota_id)"), array_keys($changedKeys));
+        }
+        match ($f['sort'] ?? 'total_desc') {
+            'total_asc' => $q->orderByRaw('SUM(r.seats) asc'),
+            'college' => $q->orderBy('organisations.name')->orderBy('courses.name'),
+            default => $q->orderByRaw('SUM(r.seats) desc'),
+        };
+        $page = $q->orderBy('organisations.name')->orderBy('cns_quotas.name')->paginate($perPage)->withQueryString();
+        $rows = $page->getCollection();
+        $campus = $this->campusMap($rows->pluck('organisation_id')->all());
+        $types = DB::table('cns_participants')->where('cycle_id', $cycle->id)->whereIn('organisation_id', $rows->pluck('organisation_id')->unique()->all())
+            ->get(['organisation_id', 'course_id', 'quota_id', 'institute_type'])->mapWithKeys(fn ($p) => ["$p->organisation_id|$p->course_id|$p->quota_id" => $p->institute_type]);
+
+        $orgIds = DB::table('cns_seat_matrix_rows')->where('version_id', $live->id)->distinct()->pluck('organisation_id')->all();
+        return [
+            'data' => $rows->map(function ($r) use ($categories, $campus, $types, $changedKeys) {
+                $key = "$r->organisation_id|$r->course_id|$r->quota_id";
+                return [
+                    'college' => ['id' => $r->organisation_id, 'name' => $r->org_name, 'slug' => $r->org_slug,
+                        'city' => $campus[$r->organisation_id]['city'] ?? null, 'state' => $campus[$r->organisation_id]['state'] ?? null],
+                    'course' => ['id' => $r->course_id, 'name' => $r->course_name, 'slug' => $r->course_slug],
+                    'quota' => $r->quota_name, 'institute_type' => CnsBlocks::INSTITUTE_TYPES[$types[$key] ?? ''] ?? null,
+                    'seats' => $categories->mapWithKeys(fn ($cat) => [$cat->id => (int) $r->{'c_' . $cat->id}])->all(),
+                    'total' => (int) $r->total,
+                    'changed' => isset($changedKeys[$key]),
+                ];
+            })->all(),
+            'categories' => $categories->map(fn ($cat) => ['id' => $cat->id, 'name' => $cat->name, 'short_name' => $cat->short_name ?: $cat->name])->all(),
+            'meta' => $this->meta($page) + [
+                'round' => ['id' => $round->id, 'name' => $round->name],
+                'version' => ['version_no' => $live->version_no, 'label' => $live->label, 'published_on' => $live->published_on?->toDateString(),
+                    'source_url' => $this->safeUrl($live->source_url), 'total_seats' => (int) DB::table('cns_seat_matrix_rows')->where('version_id', $live->id)->sum('seats')],
+                'previous' => $previous ? ['version_no' => $previous->version_no, 'label' => $previous->label, 'published_on' => $previous->published_on?->toDateString()] : null,
+                'changed_rows' => count($changedKeys),
+            ],
+            'filters' => [
+                'rounds' => $roundFilters,
+                'quotas' => DB::table('cns_quotas')->whereIn('id', DB::table('cns_seat_matrix_rows')->where('version_id', $live->id)->distinct()->pluck('quota_id'))
+                    ->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])->all(),
+                'states' => $this->statesOf($orgIds),
+                'institute_types' => DB::table('cns_participants')->where('cycle_id', $cycle->id)->whereNotNull('institute_type')->distinct()->pluck('institute_type')
+                    ->map(fn ($k) => ['value' => $k, 'label' => CnsBlocks::INSTITUTE_TYPES[$k] ?? $k])->values()->all(),
+            ],
+        ];
+    }
+
+    /** College + course + quota groups whose seats differ between two versions (added, removed or changed rows). */
+    private function changedSeatGroups(int $liveId, int $previousId): array
+    {
+        $sig = function (int $versionId) {
+            $out = [];
+            foreach (DB::table('cns_seat_matrix_rows')->where('version_id', $versionId)->orderBy('id')
+                ->get(['organisation_id', 'course_id', 'quota_id', 'category_id', 'gender', 'pwd', 'seats']) as $r) {
+                $out["$r->organisation_id|$r->course_id|$r->quota_id"][$r->category_id . '|' . ($r->gender ?? '*') . '|' . (int) $r->pwd] = (int) $r->seats;
+            }
+            return $out;
+        };
+        $new = $sig($liveId);
+        $old = $sig($previousId);
+        $changed = [];
+        foreach ($new as $k => $cells) {
+            if (!isset($old[$k])) { $changed[$k] = true; continue; }
+            ksort($cells);
+            $o = $old[$k];
+            ksort($o);
+            if ($cells !== $o) $changed[$k] = true;
+        }
+        return $changed;
+    }
+
+    /** The last round (in order) that has any cutoff: its closing ranks are the ones to show next to a college. */
+    public function latestCutoffRound(CounsellingCycle $cycle): ?Round
+    {
+        return $this->memo['cutoffRound'][$cycle->id] ??= $cycle->rounds()->get()->reverse()
+            ->first(fn ($r) => DB::table('cns_cutoffs')->where('round_id', $r->id)->exists());
+    }
+
+    /** Categories that have cutoffs in this cycle (ids + names), in master order. */
+    public function cutoffCategories(CounsellingCycle $cycle): array
+    {
+        $roundIds = $cycle->rounds()->pluck('id');
+        return DB::table('cns_categories')->whereIn('id', DB::table('cns_cutoffs')->whereIn('round_id', $roundIds)->distinct()->pluck('category_id'))
+            ->orderBy('sort_order')->get(['id', 'name', 'short_name'])->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'short_name' => $c->short_name ?: $c->name])->all();
+    }
+
+    private function cycleQuotaRows(CounsellingCycle $cycle): array
+    {
+        return DB::table('cns_participants')->where('cns_participants.cycle_id', $cycle->id)
+            ->join('cns_quotas', 'cns_quotas.id', '=', 'cns_participants.quota_id')
+            ->groupBy('cns_quotas.id', 'cns_quotas.name', 'cns_quotas.sort_order')->orderBy('cns_quotas.sort_order')->orderBy('cns_quotas.name')
+            ->get(['cns_quotas.id', 'cns_quotas.name'])->map(fn ($q) => ['id' => $q->id, 'name' => $q->name])->all();
+    }
+
+    /** States where these colleges have a campus (the "State" filter). */
+    private function statesOf(array $orgIds): array
+    {
+        if (!$orgIds) return [];
+        return DB::table('campuses')->whereIn('organisation_id', array_unique($orgIds))->whereNull('deleted_at')->whereNotNull('state')->where('state', '!=', '')
+            ->distinct()->orderBy('state')->pluck('state')->all();
+    }
+
     public function cutoffs(Counselling $c, CounsellingCycle $cycle, array $f): array
     {
         $roundIds = $cycle->rounds()->pluck('id');
@@ -373,7 +671,8 @@ class PublicPresenter
             ->leftJoin('cns_participants', fn ($j) => $j->on('cns_participants.organisation_id', '=', 'cns_cutoffs.organisation_id')
                 ->on('cns_participants.course_id', '=', 'cns_cutoffs.course_id')->on('cns_participants.quota_id', '=', 'cns_cutoffs.quota_id')->where('cns_participants.cycle_id', $cycle->id))
             ->select('cns_cutoffs.*', 'organisations.name as org_name', 'organisations.slug as org_slug', 'courses.name as course_name', 'courses.slug as course_slug',
-                'cns_quotas.name as quota_name', 'cns_categories.name as category_name', 'exm_exams.name as exam_name', 'cns_rounds.name as round_name', 'cns_participants.institute_type');
+                'cns_quotas.name as quota_name', 'cns_categories.name as category_name', 'exm_exams.name as exam_name', 'cns_rounds.name as round_name', 'cns_participants.institute_type',
+                'cns_participants.annual_tuition_fee');
 
         if (!empty($f['round'])) $q->where('cns_cutoffs.round_id', (int) $f['round']);
         if (!empty($f['exam'])) $q->where(fn ($w) => is_numeric($f['exam']) ? $w->where('cns_cutoffs.exam_id', (int) $f['exam']) : $w->where('exm_exams.slug', $f['exam']));
@@ -387,9 +686,20 @@ class PublicPresenter
         if (isset($f['pwd']) && $f['pwd'] !== '') $q->where('cns_cutoffs.pwd', filter_var($f['pwd'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0);
         $this->applyCollegeFilters($q, $f, 'cns_cutoffs');
 
+        // "Your rank": rank-type rows (AIR, category rank, state merit rank) whose closing rank is at or above it.
+        $rank = isset($f['rank']) && is_numeric($f['rank']) && $f['rank'] > 0 ? (float) $f['rank'] : null;
+        if ($rank && !empty($f['within'])) {
+            $q->whereIn('cns_cutoffs.rank_type', Cutoff::HIGHER_IS_WORSE)->where('cns_cutoffs.closing_value', '>=', $rank);
+        }
+        if (!empty($f['max_fee']) && is_numeric($f['max_fee'])) $q->where('cns_participants.annual_tuition_fee', '<=', (float) $f['max_fee']);
+
         match ($f['sort'] ?? 'closing_asc') {
             'closing_desc' => $q->orderByDesc('cns_cutoffs.closing_value'),
+            'opening_asc' => $q->orderBy('cns_cutoffs.opening_value'),
+            'fee_asc' => $q->orderByRaw('cns_participants.annual_tuition_fee is null')->orderBy('cns_participants.annual_tuition_fee'),
             'college' => $q->orderBy('organisations.name')->orderBy('courses.name'),
+            // Best for my rank: seats that closed at or above the rank first (hardest first), then the rest.
+            'fit' => $rank ? $q->orderByRaw('(cns_cutoffs.closing_value < ?) asc', [$rank])->orderBy('cns_cutoffs.closing_value') : $q->orderBy('cns_cutoffs.closing_value'),
             default => $q->orderBy('cns_cutoffs.closing_value'),
         };
         $page = $q->orderBy('cns_cutoffs.id')->paginate($perPage)->withQueryString();
@@ -398,16 +708,20 @@ class PublicPresenter
         $ranks = DB::table('cns_cutoffs')->whereIn('round_id', $roundIds);
         return [
             'data' => $page->getCollection()->map(fn ($r) => [
-                'college' => ['id' => $r->organisation_id, 'name' => $r->org_name, 'slug' => $r->org_slug, 'state' => $campus[$r->organisation_id]['state'] ?? null],
+                'college' => ['id' => $r->organisation_id, 'name' => $r->org_name, 'slug' => $r->org_slug, 'city' => $campus[$r->organisation_id]['city'] ?? null, 'state' => $campus[$r->organisation_id]['state'] ?? null],
                 'course' => ['id' => $r->course_id, 'name' => $r->course_name, 'slug' => $r->course_slug],
                 'round' => ['id' => $r->round_id, 'name' => $r->round_name], 'exam' => $r->exam_name, 'quota' => $r->quota_name, 'category' => $r->category_name,
                 'gender' => $r->gender ?: 'neutral', 'pwd' => (bool) $r->pwd, 'institute_type' => CnsBlocks::INSTITUTE_TYPES[$r->institute_type] ?? null,
                 'rank_type' => $r->rank_type, 'rank_type_label' => Cutoff::RANK_TYPES[$r->rank_type] ?? $r->rank_type,
+                'higher_is_worse' => in_array($r->rank_type, Cutoff::HIGHER_IS_WORSE, true),
                 'opening_value' => $r->opening_value !== null ? (float) $r->opening_value : null, 'closing_value' => $r->closing_value !== null ? (float) $r->closing_value : null,
+                'annual_tuition_fee' => $r->annual_tuition_fee !== null ? (float) $r->annual_tuition_fee : null,
             ])->all(),
             'meta' => $this->meta($page) + ['cycle' => ['year' => $cycle->year, 'session_label' => $cycle->session_label]],
             'filters' => [
-                'rounds' => $cycle->rounds()->get(['id', 'name'])->map(fn ($r) => ['id' => $r->id, 'name' => $r->name])->all(),
+                'rounds' => $cycle->rounds()->get(['id', 'name'])->map(fn ($r) => ['id' => $r->id, 'name' => $r->name,
+                    'cutoffs' => (int) DB::table('cns_cutoffs')->where('round_id', $r->id)->count()])->all(),
+                'states' => $this->statesOf((clone $ranks)->distinct()->pluck('organisation_id')->all()),
                 'exams' => DB::table('exm_exams')->whereIn('id', (clone $ranks)->distinct()->pluck('exam_id'))->get(['id', 'name', 'slug'])->all(),
                 'quotas' => DB::table('cns_quotas')->whereIn('id', (clone $ranks)->distinct()->pluck('quota_id'))->orderBy('sort_order')->get(['id', 'name'])->all(),
                 'categories' => DB::table('cns_categories')->whereIn('id', (clone $ranks)->distinct()->pluck('category_id'))->orderBy('sort_order')->get(['id', 'name'])->all(),

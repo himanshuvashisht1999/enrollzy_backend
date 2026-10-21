@@ -8,6 +8,10 @@ class Organisation extends Model
 {
     use \App\Models\Quality\Concerns\HasQualityRecords;
 
+    /** organisation_types ids used in code. */
+    public const TYPE_EXAM_CONDUCTING_BODY = 5;
+    public const TYPE_COUNSELLING_BODY = 6;
+
     protected $fillable = [
         'name',
         'sort_order',

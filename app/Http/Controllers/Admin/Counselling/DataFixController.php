@@ -16,7 +16,7 @@ class DataFixController extends Controller
 
     public function run(Request $request, DataFixes $fixes)
     {
-        $result = $fixes->run($request->user('admin')?->id);
+        $result = $fixes->run($request->user('admin')?->id, $request->user('admin') ?? $request->user());
         if (!$result) {
             return back()->with('success', 'Nothing to do: every data fix has already run.');
         }

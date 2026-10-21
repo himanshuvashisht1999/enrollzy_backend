@@ -17,7 +17,7 @@ class Counselling extends Model
     protected $table = 'cns_counsellings';
 
     protected $fillable = [
-        'name', 'short_name', 'slug', 'aliases', 'conducting_body_id', 'level', 'states', 'owning_organisation_id',
+        'name', 'short_name', 'slug', 'aliases', 'conducting_body_id', 'conducting_organisation_id', 'level', 'states', 'owning_organisation_id',
         'program_levels', 'course_categories', 'mode', 'official_website', 'registration_portal_url', 'helpline',
         'logo', 'cover_image', 'about', 'visibility', 'is_active', 'is_archived', 'is_featured', 'sort_order',
     ];
@@ -60,7 +60,7 @@ class Counselling extends Model
     public function missingForPublish(): array
     {
         $missing = [];
-        foreach (['Slug' => $this->slug, 'Conducting body' => $this->conducting_body_id, 'Program level' => $this->program_levels,
+        foreach (['Slug' => $this->slug, 'Conducting body' => $this->conducting_organisation_id, 'Program level' => $this->program_levels,
             'About' => $this->about, 'Official website' => $this->official_website] as $label => $value) {
             if (blank($value)) $missing[] = $label;
         }
@@ -70,7 +70,14 @@ class Counselling extends Model
         return $missing;
     }
 
+    /** The conducting body: an organisation of type "Counselling Body" (Organisation::TYPE_COUNSELLING_BODY). */
     public function conductingBody()
+    {
+        return $this->belongsTo(\App\Models\Organisation::class, 'conducting_organisation_id');
+    }
+
+    /** The value from the old separate conducting-body master (kept, shown only as a hint to re-pick). */
+    public function legacyConductingBody()
     {
         return $this->belongsTo(ConductingBody::class, 'conducting_body_id');
     }

@@ -83,7 +83,7 @@
     <div class="d-flex justify-content-between align-items-center mt-3">
         <div class="d-flex gap-2 flex-wrap align-items-center">
         @can('quality-verify')<button class="btn btn-success" @disabled($status === 'verified')><i class="fas fa-check me-1"></i> Verify selected</button>@endcan
-        @can('quality-verify')<button class="btn btn-outline-danger" formaction="{{ route('admin.quality.review.bulk') }}" name="action" value="reject" @disabled($status === 'rejected') onclick="return confirm('Reject the selected records?')"><i class="fas fa-ban me-1"></i> Reject selected</button>@endcan
+        @can('quality-verify')<button class="btn btn-outline-danger" formaction="{{ route('admin.quality.review.bulk') }}" name="action" value="reject" @disabled($status === 'rejected') data-confirm="Reject the selected records?"><i class="fas fa-ban me-1"></i> Reject selected</button>@endcan
         @if($kind === 'award')@can('quality-edit')
             <select name="value" class="form-select w-auto">@foreach(\App\Models\Quality\EntityAward::SHORT_KINDS as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select>
             <button class="btn btn-outline-secondary" formaction="{{ route('admin.quality.review.bulk') }}" name="action" value="set_kind">Change type of selected</button>

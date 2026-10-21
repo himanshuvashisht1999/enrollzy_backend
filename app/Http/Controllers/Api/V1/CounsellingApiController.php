@@ -53,7 +53,17 @@ class CounsellingApiController extends Controller
     public function institutes(Request $request, string $slug): JsonResponse
     {
         [$c, $cycle] = $this->resolve($request, $slug);
-        return $this->cached($request, fn () => $this->presenter->institutes($c, $cycle, $request->query()));
+        // ?group=college: one row per college (the colleges explorer); otherwise one row per college + course + quota.
+        return $this->cached($request, fn () => $request->input('group') === 'college'
+            ? $this->presenter->colleges($c, $cycle, $request->query())
+            : $this->presenter->institutes($c, $cycle, $request->query()));
+    }
+
+    /** GET /api/v1/counselling/{slug}/seat-matrix : the live seat matrix of a round. filters: round, q, quota, institute_type, state, changed, sort, year */
+    public function seatMatrix(Request $request, string $slug): JsonResponse
+    {
+        [$c, $cycle] = $this->resolve($request, $slug);
+        return $this->cached($request, fn () => $this->presenter->seatMatrix($c, $cycle, $request->query()));
     }
 
     /** GET /api/v1/counselling/{slug}/cutoffs : the cutoffs explorer. filters: round, exam, quota, category, gender, pwd, institute_type, state, course, rank_type, q, sort, year */
@@ -61,6 +71,16 @@ class CounsellingApiController extends Controller
     {
         [$c, $cycle] = $this->resolve($request, $slug);
         return $this->cached($request, fn () => $this->presenter->cutoffs($c, $cycle, $request->query()));
+    }
+
+    /** GET /api/v1/masters : the lists behind a student's "Your details" (categories and states). */
+    public function masters(Request $request): JsonResponse
+    {
+        return $this->cached($request, fn () => [
+            'categories' => \App\Models\Counselling\Category::where('status', true)->where('is_pwd_subcategory', false)->where('slug', '!=', 'pwd')
+                ->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'short_name', 'slug'])->all(),
+            'states' => \App\Models\ExamModule\Exam::STATES,
+        ]);
     }
 
     private function resolve(Request $request, string $slug): array

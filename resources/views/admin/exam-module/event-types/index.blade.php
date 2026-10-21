@@ -38,7 +38,7 @@
                 <td><div class="form-check form-switch"><input form="et{{ $t->id }}" class="form-check-input" type="checkbox" name="status" value="1" @checked($t->status)></div></td>
                 <td class="text-end pe-4">
                     <button form="et{{ $t->id }}" class="btn btn-sm btn-light border"><i class="fas fa-save text-primary"></i></button>
-                    <button form="dt{{ $t->id }}" class="btn btn-sm btn-light border text-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></button>
+                    <button form="dt{{ $t->id }}" class="btn btn-sm btn-light border text-danger" data-confirm="Delete?"><i class="fas fa-trash-alt"></i></button>
                     <form id="dt{{ $t->id }}" action="{{ route('admin.exam-module.event-types.destroy', $t) }}" method="POST" class="d-none">@csrf @method('DELETE')</form>
                 </td>
             </tr>

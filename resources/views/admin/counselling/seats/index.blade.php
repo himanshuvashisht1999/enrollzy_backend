@@ -37,9 +37,9 @@
                     <a href="{{ route('admin.counselling.seats.show', $v) }}" class="btn btn-sm btn-light border"><i class="fas fa-eye text-info"></i></a>
                     @can('cns-counsellings-edit')
                         @unless($v->is_live)
-                        <form action="{{ route('admin.counselling.seats.live', $v) }}" method="POST" class="d-inline" onsubmit="return confirm('Make v{{ $v->version_no }} the live seat matrix?')">@csrf @method('PATCH')<button class="btn btn-sm btn-outline-success">Make live</button></form>
+                        <form action="{{ route('admin.counselling.seats.live', $v) }}" method="POST" class="d-inline" data-confirm="Make v{{ $v->version_no }} the live seat matrix?">@csrf @method('PATCH')<button class="btn btn-sm btn-outline-success">Make live</button></form>
                         @endunless
-                        <form action="{{ route('admin.counselling.seats.destroy', $v) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete v{{ $v->version_no }} and its {{ $v->row_count }} rows?{{ $v->is_live ? ' It is live: the latest remaining version will become live.' : '' }}')">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
+                        <form action="{{ route('admin.counselling.seats.destroy', $v) }}" method="POST" class="d-inline" data-confirm="Delete v{{ $v->version_no }} and its {{ $v->row_count }} rows?{{ $v->is_live ? ' It is live: the latest remaining version will become live.' : '' }}">@csrf @method('DELETE')<button class="btn btn-sm btn-light border text-danger"><i class="fas fa-trash-alt"></i></button></form>
                     @endcan
                 </td>
             </tr>
