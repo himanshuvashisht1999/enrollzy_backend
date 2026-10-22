@@ -187,9 +187,13 @@
                                                 <label class="form-label">University Type</label>
                                                 <select name="university_type" class="form-select">
                                                     <option value="">Select Type</option>
-                                                    @foreach(['Central', 'State', 'Deemed', 'Private', 'International'] as $opt)
+@foreach(\App\Models\Organisation::UNIVERSITY_TYPES as $opt)
                                                         <option value="{{ $opt }}" {{ old('university_type', $organisation->university_type) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
+                                                    {{-- a value saved earlier that is not in the list (e.g. "Government") stays selected, so saving does not erase it --}}
+                                                    @if(filled(old('university_type', $organisation->university_type)) && !in_array(old('university_type', $organisation->university_type), \App\Models\Organisation::UNIVERSITY_TYPES, true))
+                                                        <option value="{{ old('university_type', $organisation->university_type) }}" selected>{{ old('university_type', $organisation->university_type) }}</option>
+                                                    @endif
                                                 </select>
                                             </div>
                                             <div class="col-md-6">

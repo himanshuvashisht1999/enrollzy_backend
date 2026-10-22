@@ -96,7 +96,7 @@ class PublicPresenter
                     'role' => $m->role, 'seat_scope_note' => $m->seat_scope_note,
                     'status' => $cycle ? (in_array($cycle->cycle_status, ['postponed', 'cancelled'])
                         ? ['state' => $cycle->cycle_status, 'text' => ucfirst($cycle->cycle_status) . ($cycle->status_note ? ': ' . $cycle->status_note : '')]
-                        : ($bar ? ['state' => 'scheduled', 'text' => ($bar['round'] ? $bar['round']->name : 'Counselling ' . $cycle->title) . ': ' . collect($bar['items'])->map(fn ($s, $l) => "$l - {$s['label']}")->implode(', ')]
+                        : ($bar ? ['state' => 'scheduled', 'text' => ($bar['round'] ? $bar['round']->name : 'Counselling ' . $cycle->title) . ' — ' . collect($bar['items'])->map(fn ($s, $l) => "$l: {$s['label']}")->implode(' · ')]
                             : ['state' => 'to_be_announced', 'text' => 'Schedule to be announced']))
                         : ['state' => 'to_be_announced', 'text' => 'Schedule to be announced'],
                 ];

@@ -164,12 +164,43 @@ class Importer
     public function process(ImportBatch $batch): void
     {
         $ctx = new ImportContext($batch);
-        $seen = [];
+        $seen = [];    // fully matched key => first row with it
+        $maybe = [];   // key including suggested (not yet confirmed) matches => first row with it
         $counts = ['matched' => 0, 'warning' => 0, 'error' => 0];
 
         foreach (ImportRow::where('batch_id', $batch->id)->orderBy('row_no')->cursor() as $row) {
-            [$resolved, $status, $messages] = $this->resolveRow($batch->type, $row->raw, $ctx, $seen, $row->row_no);
-            $row->update(['resolved' => $resolved, 'status' => $status, 'messages' => $messages ?: null]);
+            [$resolved, $errors, $warnings, $exact, $provisional] = $this->resolveRow($batch->type, $row->raw, $ctx);
+
+            // Duplicates: inside the file and against saved rows. Checked on every pass (after each fix or accepted
+            // match), only on keys whose college, course, quota... are all known, so two different unmatched names never
+            // look alike. A row still waiting for a confirmation is checked with its suggested match, so the admin is
+            // warned BEFORE accepting a suggestion that would turn the row into a duplicate.
+            if (!$errors) {
+                if ($exact !== null) {
+                    if (isset($seen[$exact])) {
+                        $errors[] = 'Duplicate of row ' . $seen[$exact] . ' in this file.';
+                    } elseif ($ctx->exists($exact)) {
+                        $errors[] = $ctx->existsMessage();
+                    } elseif (isset($maybe[$exact])) {
+                        $warnings[] = 'Row ' . $maybe[$exact] . ' becomes the same as this row if its suggested match is accepted.';
+                    }
+                    $seen[$exact] ??= $row->row_no;
+                    $maybe[$exact] ??= $row->row_no;
+                } elseif ($provisional !== null) {
+                    if (isset($maybe[$provisional])) {
+                        $warnings[] = 'Accepting the suggested match makes this row a duplicate of row ' . $maybe[$provisional] . '. Pick a different match, or remove one of the rows.';
+                    } elseif ($ctx->exists($provisional)) {
+                        $warnings[] = 'Accepting the suggested match makes this row a duplicate of a saved row: ' . lcfirst($ctx->existsMessage());
+                    }
+                    $maybe[$provisional] ??= $row->row_no;
+                }
+            }
+
+            $status = $errors ? 'error' : ($warnings ? 'warning' : 'matched');
+            if (empty($resolved['_suggest'])) {
+                unset($resolved['_suggest']);
+            }
+            $row->update(['resolved' => $resolved, 'status' => $status, 'messages' => array_merge($errors, $warnings) ?: null]);
             $counts[$status]++;
         }
         $batch->update(['matched_rows' => $counts['matched'], 'warning_rows' => $counts['warning'], 'error_rows' => $counts['error']]);
@@ -202,8 +233,11 @@ class Importer
 
     // ------------------------------------------------------------------ row resolution
 
-    /** @return array{0: array, 1: string, 2: array} [resolved, status, messages] */
-    private function resolveRow(string $type, array $raw, ImportContext $ctx, array &$seen, int $rowNo): array
+    /**
+     * @return array{0: array, 1: string[], 2: string[], 3: ?string, 4: ?string}
+     *         [resolved, errors, warnings, key when every part is matched, key using suggested matches for pending names]
+     */
+    private function resolveRow(string $type, array $raw, ImportContext $ctx): array
     {
         $errors = [];
         $warnings = [];
@@ -239,7 +273,6 @@ class Importer
                 }
                 $r['total_seats'] = $this->integer($get('total_seats'), 'total_seats', $errors);
                 $r['bond_details'] = $get('bond_details') ?: null;
-                $key = implode('|', [$r['organisation_id'], $r['course_id'], $r['quota_id']]);
                 break;
 
             case 'seats':
@@ -251,7 +284,6 @@ class Importer
                     $errors[] = 'Seats is missing.';
                 }
                 $r['seats'] = $seats;
-                $key = implode('|', [$r['organisation_id'], $r['course_id'], $r['quota_id'], $r['category_id'], $r['gender'] ?? '*', (int) $r['pwd']]);
                 break;
 
             case 'cutoffs':
@@ -283,7 +315,6 @@ class Importer
                         $errors[] = 'Closing ' . $r['rank_type'] . ' must be at most the opening value.';
                     }
                 }
-                $key = implode('|', [$r['exam_id'], $r['organisation_id'], $r['course_id'], $r['quota_id'], $r['category_id'], $r['gender'] ?? '*', (int) $r['pwd'], $r['rank_type']]);
                 break;
         }
 
@@ -293,21 +324,45 @@ class Importer
             $errors[] = $problem;
         }
 
-        // --- duplicates: inside the file, and against rows that already exist
-        if (!$errors) {
-            if (isset($seen[$key])) {
-                $errors[] = 'Duplicate of row ' . $seen[$key] . ' in this file.';
-            } elseif ($ctx->exists($key)) {
-                $errors[] = $ctx->existsMessage();
-            }
-            $seen[$key] ??= $rowNo;
-        }
+        return [$r, $errors, $warnings, $this->rowKey($type, $r, false), $this->rowKey($type, $r, true)];
+    }
 
-        $status = $errors ? 'error' : ($warnings ? 'warning' : 'matched');
-        if (!$r['_suggest']) {
-            unset($r['_suggest']);
+    /** Fields that identify a row (same order as ImportContext::exists() keys). */
+    private const KEY_FIELDS = [
+        'participants' => ['organisation_id', 'course_id', 'quota_id'],
+        'seats' => ['organisation_id', 'course_id', 'quota_id', 'category_id', 'gender', 'pwd'],
+        'cutoffs' => ['exam_id', 'organisation_id', 'course_id', 'quota_id', 'category_id', 'gender', 'pwd', 'rank_type'],
+    ];
+
+    /**
+     * The row's identity key, or null when a part is still unknown. With $withSuggestions, a name waiting for confirmation
+     * counts as its suggested match (and the key is returned only when at least one such suggestion was used).
+     */
+    private function rowKey(string $type, array $r, bool $withSuggestions): ?string
+    {
+        $fromSuggest = ['organisation_id' => 'organisation', 'course_id' => 'course', 'quota_id' => 'quota', 'category_id' => 'category', 'exam_id' => 'exam'];
+        $used = false;
+        $parts = [];
+        foreach (self::KEY_FIELDS[$type] as $f) {
+            $v = $r[$f] ?? null;
+            if ($v === null && $withSuggestions && isset($fromSuggest[$f], $r['_suggest'][$fromSuggest[$f]]['id'])) {
+                $v = $r['_suggest'][$fromSuggest[$f]]['id'];
+                $used = true;
+            }
+            if ($f === 'gender') {
+                $parts[] = $v ?? '*';
+                continue;
+            }
+            if ($f === 'pwd') {
+                $parts[] = (int) $v;
+                continue;
+            }
+            if ($v === null || $v === '') {
+                return null;
+            }
+            $parts[] = $v;
         }
-        return [$r, $status, array_merge($errors, $warnings)];
+        return (!$withSuggestions || $used) ? implode('|', $parts) : null;
     }
 
     /** Resolve one name through the matcher and record any suggestion / error. */

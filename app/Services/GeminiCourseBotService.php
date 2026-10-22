@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Course;
 use App\Models\CourseType;
 use App\Models\Discipline;
-use App\Models\DynamicExam;
 use App\Models\ProgramLevel;
 use App\Models\ProgramType;
 use App\Models\Specialization;
@@ -44,7 +43,8 @@ class GeminiCourseBotService
         $disciplines = Discipline::where('status', true)->pluck('title', 'id')->toArray();
         $courseTypes = CourseType::where('status', true)->orWhere('status', 1)->pluck('title', 'id')->toArray();
         $programTypes = ProgramType::where('status', true)->pluck('title', 'id')->toArray();
-        $exams = DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->pluck('name', 'id')->toArray();
+        // Exam Module exams (the AI answers with their numeric ids; they are saved as "exm:{id}")
+        $exams = \App\Models\ExamModule\Exam::orderBy('name')->pluck('name', 'id')->toArray();
         $specializations = Specialization::where('status', true)->pluck('title', 'id')->toArray();
         $existingCourses = Course::where('status', 1)->pluck('name', 'id')->take(80)->toArray();
 
@@ -323,7 +323,7 @@ PROMPT;
             foreach ($data['common_entrance_exams'] as $exId) {
                 $exId = (int) $exId;
                 if (isset($catalogs['exams'][$exId])) {
-                    $examIds[] = $exId;
+                    $examIds[] = 'exm:' . $exId;
                 }
             }
         }

@@ -11,6 +11,7 @@ use App\Models\ExamModule\Cycle as ExamCycle;
 use App\Models\ExamModule\EventType;
 use App\Models\Counselling\Quota;
 use Illuminate\Http\Request;
+use App\Rules\UniqueCycleYear;
 use Illuminate\Validation\Rule;
 
 class CycleController extends Controller
@@ -76,7 +77,10 @@ class CycleController extends Controller
 
     public function copy(Request $request, CounsellingCycle $cycle)
     {
-        $data = $request->validate(['year' => 'required|integer|min:2000|max:2100', 'session_label' => 'nullable|string|max:100']);
+        $data = $request->validate([
+            'year' => ['required', 'integer', 'min:2000', 'max:2100', new UniqueCycleYear(CounsellingCycle::class, 'counselling_id', $cycle->counselling_id, $request->input('session_label'))],
+            'session_label' => 'nullable|string|max:100',
+        ]);
         $withParticipants = $request->boolean('copy_participants');
         $new = $cycle->copyForward((int) $data['year'], $data['session_label'] ?? null, $withParticipants);
 
@@ -159,7 +163,7 @@ class CycleController extends Controller
     private function validated(Request $request, Counselling $counselling, ?CounsellingCycle $cycle = null): array
     {
         $data = $request->validate([
-            'year' => 'required|integer|min:2000|max:2100',
+            'year' => ['required', 'integer', 'min:2000', 'max:2100', new UniqueCycleYear(CounsellingCycle::class, 'counselling_id', $counselling->id, $request->input('session_label'), $cycle?->id)],
             'session_label' => 'nullable|string|max:100',
             'cycle_status' => ['required', Rule::in(array_keys(CounsellingCycle::STATUSES))],
             'status_note' => 'nullable|string|max:255',

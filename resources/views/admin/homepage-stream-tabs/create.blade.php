@@ -56,6 +56,7 @@
                             <option value="{{ $id }}">{{ $examName }}</option>
                         @endforeach
                     </select>
+                    <div class="form-text">From the Exam Module. Only published exams appear on the homepage.</div>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label fw-bold">Related Courses</label>

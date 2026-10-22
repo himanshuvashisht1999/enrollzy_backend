@@ -146,7 +146,7 @@ class CourseController extends Controller
         $disciplines = \App\Models\Discipline::where('status', true)->get();
         $programTypes = \App\Models\ProgramType::where('status', true)->get();
         $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
-        $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
+        $exams = \App\Models\ExamModule\Exam::pickList();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $allCourses = Course::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
 
@@ -240,7 +240,7 @@ class CourseController extends Controller
         $disciplines = \App\Models\Discipline::where('status', true)->get();
         $programTypes = \App\Models\ProgramType::where('status', true)->get();
         $courseTypes = \App\Models\CourseType::where('status', true)->orWhere('status', 1)->get();
-        $exams = \App\Models\DynamicExam::where('status', 'Active')->orWhere('status', 1)->orWhere('status', '1')->get();
+        $exams = \App\Models\ExamModule\Exam::pickList();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $allCourses = Course::where('id', '!=', $course->id)->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
 

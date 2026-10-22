@@ -98,7 +98,7 @@ class QualitySync
             RankingBody::count() - $before[0], RankingCategory::count() - $before[1], AccreditationBody::count() - $before[2])];
 
         $n1 = 0;
-        foreach (['Central' => 'central', 'Deemed' => 'deemed', 'State' => 'state_public'] as $old => $new) {
+        foreach (['Central' => 'central', 'Deemed' => 'deemed', 'State' => 'state_public', 'Institution of National Importance (Autonomous)' => 'institution_of_national_importance'] as $old => $new) {
             $n1 += DB::table('organisations')->whereNull('legal_entity_type')->where('organisation_type_id', 1)->where('university_type', $old)->update(['legal_entity_type' => $new]);
         }
         $n2 = DB::affectingStatement("UPDATE campuses c JOIN (SELECT organisation_id FROM campuses GROUP BY organisation_id HAVING COUNT(*) = 1) one ON one.organisation_id = c.organisation_id SET c.campus_role = 'main' WHERE c.campus_role IS NULL");
@@ -134,7 +134,7 @@ class QualitySync
 
     private function legalBackfillQuery()
     {
-        return DB::table('organisations')->whereNull('legal_entity_type')->where('organisation_type_id', 1)->whereIn('university_type', ['Central', 'Deemed', 'State']);
+        return DB::table('organisations')->whereNull('legal_entity_type')->where('organisation_type_id', 1)->whereIn('university_type', ['Central', 'Deemed', 'State', 'Institution of National Importance (Autonomous)']);
     }
 
     private function campusRoleQuery()

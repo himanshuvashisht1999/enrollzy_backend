@@ -12,6 +12,9 @@ class Organisation extends Model
     public const TYPE_EXAM_CONDUCTING_BODY = 5;
     public const TYPE_COUNSELLING_BODY = 6;
 
+    /** "University Type" choices (organisation forms, filtered pages). */
+    public const UNIVERSITY_TYPES = ['Central', 'State', 'Deemed', 'Private', 'International', 'Institution of National Importance (Autonomous)'];
+
     protected $fillable = [
         'name',
         'sort_order',

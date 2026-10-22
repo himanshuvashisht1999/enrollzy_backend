@@ -169,11 +169,12 @@
                             <label class="form-label fw-semibold small text-muted">University Type</label>
                             <select name="university_type" class="form-select select2" data-placeholder="Select University Type">
                                 <option value="">Select University Type</option>
-                                <option value="Central" {{ $filteredPage->university_type == 'Central' ? 'selected' : '' }}>Central</option>
-                                <option value="State" {{ $filteredPage->university_type == 'State' ? 'selected' : '' }}>State</option>
-                                <option value="Deemed" {{ $filteredPage->university_type == 'Deemed' ? 'selected' : '' }}>Deemed</option>
-                                <option value="Private" {{ $filteredPage->university_type == 'Private' ? 'selected' : '' }}>Private</option>
-                                <option value="International" {{ $filteredPage->university_type == 'International' ? 'selected' : '' }}>International</option>
+                                @foreach(\App\Models\Organisation::UNIVERSITY_TYPES as $opt)
+                                    <option value="{{ $opt }}" {{ old('university_type', $filteredPage->university_type) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                @endforeach
+                                @if(filled($filteredPage->university_type) && !in_array($filteredPage->university_type, \App\Models\Organisation::UNIVERSITY_TYPES, true))
+                                    <option value="{{ $filteredPage->university_type }}" selected>{{ $filteredPage->university_type }}</option>
+                                @endif
                             </select>
                         </div>
                         <div class="col-md-6">

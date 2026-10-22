@@ -10,7 +10,7 @@
             @if($counselling->is_archived)<span class="badge bg-warning text-dark fs-6 align-middle">Archived</span>@endif
             @if($counselling->is_featured)<span class="badge bg-primary fs-6 align-middle">Featured</span>@endif
         </h4>
-        <div class="text-muted">/{{ $counselling->slug }} · {{ \App\Models\Counselling\Counselling::LEVELS[$counselling->level] }} · {{ $counselling->conductingBody->name ?? '-' }}</div>
+        <div class="text-muted">/{{ $counselling->slug }} · {{ $counselling->summaryLine() }}</div>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('admin.counselling.counsellings.index') }}" class="btn btn-light border"><i class="fas fa-arrow-left me-1"></i> Back</a>
@@ -99,7 +99,10 @@
                 <tbody>
                 @forelse($counselling->cycles as $cycle)
                     <tr>
-                        <td><a href="{{ route('admin.counselling.cycles.show', $cycle) }}" class="fw-semibold text-decoration-none">{{ $cycle->title }}</a></td>
+                        <td><a href="{{ route('admin.counselling.cycles.show', $cycle) }}" class="fw-semibold text-decoration-none">{{ $cycle->title }}</a>
+                            @if($counselling->cycles->filter(fn ($x) => mb_strtolower($x->title) === mb_strtolower($cycle->title))->count() > 1)
+                                <div class="small text-danger">Duplicate year: #{{ $cycle->id }}, created {{ $cycle->created_at?->format('j M Y, H:i') }}. Keep one, delete the other.</div>
+                            @endif</td>
                         <td><span class="badge {{ in_array($cycle->cycle_status, ['postponed', 'cancelled']) ? 'bg-danger-subtle text-danger' : 'bg-light text-dark border' }}">{{ ucfirst($cycle->cycle_status) }}</span></td>
                         <td>{{ $cycle->rounds_count }}</td>
                         <td>

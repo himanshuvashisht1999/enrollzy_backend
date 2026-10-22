@@ -135,11 +135,16 @@
 <div class="modal fade" id="copyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <form method="POST" action="{{ route('admin.counselling.cycles.copy', $cycle) }}">
         @csrf <input type="hidden" name="_dialog" value="copy">
-        @php $copyFailed = old('_dialog') === 'copy'; @endphp
+        @php
+            $copyFailed = old('_dialog') === 'copy';
+            // suggest the first year after this one that has no cycle yet (without a session label)
+            $taken = \App\Models\Counselling\CounsellingCycle::where('counselling_id', $cycle->counselling_id)->where(fn ($q) => $q->whereNull('session_label')->orWhere('session_label', ''))->pluck('year')->all();
+            for ($nextYear = $cycle->year + 1; in_array($nextYear, $taken); $nextYear++);
+        @endphp
         <div class="modal-header"><h5 class="modal-title">Copy Cycle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <p class="small text-muted">Copies eligibility, process, fees, documents (with templates), rules, rounds with their overrides, and the event list <strong>without dates</strong>. Does not copy the bulletin or verification. Date fields inside copied content are cleared and flagged "Needs a new date".</p>
-            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control @if($copyFailed) @error('year') is-invalid @enderror @endif" value="{{ $copyFailed ? old('year') : $cycle->year + 1 }}" required>
+            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control @if($copyFailed) @error('year') is-invalid @enderror @endif" value="{{ $copyFailed ? old('year') : $nextYear }}" required>
                 @if($copyFailed) @error('year')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif</div>
             <div class="mb-3"><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control" value="{{ $copyFailed ? old('session_label') : '' }}"></div>
             <div class="form-check">

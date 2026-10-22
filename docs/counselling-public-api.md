@@ -25,7 +25,8 @@ Base URL: `https://<your-backend>/api/v1`. No login, no cookies. Dates are ISO 8
 | `/counselling` | `GET /counselling` |
 | `/counselling/{slug}` | `GET /counselling/{slug}` (current public cycle) |
 | `/counselling/{slug}/{year}` | `GET /counselling/{slug}?year={year}` |
-| `/exams/{slug}` | `GET /exams/{slug}` (whole exam page, includes its counsellings) |
+| `/top-exams` (listing, homepage boxes, menus) | `GET /exams` |
+| `/exam/{slug}` (old `/exams/{slug}` 301-redirects here) | `GET /exams/{slug}` (whole exam page, includes its counsellings) |
 | `/counselling/{slug}/cutoffs`, `/seat-matrix`, `/colleges` | `GET /counselling/{slug}/cutoffs`, `/seat-matrix`, `/institutes?group=college` |
 | college page | the block `GET /organisations/{id or slug}/admission-through` |
 | `/alerts?token=...` | the inbox / manage screens (see Follow) |
@@ -74,6 +75,13 @@ The live version of one round (`round` id; default: the latest round with a live
 
 ### `GET /exams/{slug}?year=`
 The exam page: `exam` (identity, conducting body), `available_years`, `cycle`, `status_card[]` (registration, admit card, exam date, result: `{key,label,state,text,date_text}`), `dates[]` (events as above, plus `stage`), `stages`, `eligibility[]`, `pattern[]`, `syllabus[]`, `fees[]`, `documents[]`, `faqs[]`, `papers[]`, `counsellings[]` (as in the block below), `last_verified_at`, `seo`. `404` unless the exam is published.
+
+### `GET /exams`  (exam listing)
+Published exams (public + active; archived ones are left out). Filters: `q` (name, short name, alias, conducting body), `type`, `category` (ids), `body` (conducting organisation id), `featured=1`, `frequency` (comma list), `mode` (`cbt | pen_paper | online | offline`, from the public cycle's pattern), `vacancy=1` (recruitment exams), `category_like`, `ids`. Sort: `latest` (default) `| name | featured`.
+Item: `id, name, short_name, slug, url, type, type_label, categories[], program_levels[], frequency, frequency_label, conducting_body{id,name,short_name}, about, logo_url, is_featured, cycle{year,session_label,status}, status{registration|exam-date|result: {label,state,text}}, sections{dates,eligibility,pattern,syllabus,faqs,counselling}`. `filters`: types, categories, bodies, frequencies that exist.
+
+### `GET /exam-lookup?q[]=...`
+Which published exam each term means (exact name / short name / alias / slug, ignoring case and punctuation; nothing is guessed): `{matches: {term: item | null}}`. The website uses it to redirect old exam URLs and to resolve exams saved by name.
 
 ### `GET /masters`
 `categories[]` (for a student's "Your details", PwD excluded) and `states[]`.

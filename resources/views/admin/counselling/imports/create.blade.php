@@ -31,7 +31,11 @@
         <div class="col-md-6"><label class="form-label fw-bold">Counselling cycle *</label>
             <select name="cycle_id" id="cycle_id" class="form-select" required>
                 <option value="">Select</option>
-                @foreach($cycles as $c)<option value="{{ $c->id }}" @selected(old('cycle_id', $cycle?->id) == $c->id)>{{ $c->counselling->name }} · {{ $c->title }}</option>@endforeach
+                @php
+                    // cycles made twice before duplicates were blocked: show which is which
+                    $dupes = collect($cycles)->groupBy(fn ($c) => $c->counselling_id . '|' . mb_strtolower($c->title))->filter(fn ($g) => $g->count() > 1)->keys()->all();
+                @endphp
+                @foreach($cycles as $c)<option value="{{ $c->id }}" @selected(old('cycle_id', $cycle?->id) == $c->id)>{{ $c->counselling->name }} · {{ $c->title }}@if(in_array($c->counselling_id . '|' . mb_strtolower($c->title), $dupes)) (duplicate: #{{ $c->id }}, created {{ $c->created_at?->format('j M Y, H:i') }}{{ $c->is_current ? ', current' : '' }})@endif</option>@endforeach
             </select></div>
         <div class="col-md-6" id="round_box"><label class="form-label fw-bold">Round *</label>
             <select name="round_id" id="round_id" class="form-select"><option value="">Select cycle first</option></select></div>

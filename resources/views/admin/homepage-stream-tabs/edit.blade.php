@@ -58,7 +58,12 @@
                         @foreach($exams as $id => $examName)
                             <option value="{{ $id }}" {{ is_array($selectedExams) && in_array($id, $selectedExams) ? 'selected' : '' }}>{{ $examName }}</option>
                         @endforeach
+                        {{-- values saved before the Exam Module (old exam ids or names): kept so saving does not drop them --}}
+                        @foreach(array_filter((array) $selectedExams, fn ($v) => !str_starts_with((string) $v, 'exm:')) as $old)
+                            <option value="{{ $old }}" selected>{{ is_numeric($old) ? 'Old exam #' . $old : $old }} (old entry, shown on the website only if it matches a published exam)</option>
+                        @endforeach
                     </select>
+                    <div class="form-text">From the Exam Module. Only published exams appear on the homepage.</div>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label fw-bold">Related Courses</label>

@@ -106,7 +106,7 @@
                         <a href="{{ route('admin.counselling.counsellings.show', $c) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a>
                         <span class="badge bg-light text-dark border">{{ ucfirst($m->role) }}</span>
                         <div class="small text-muted">
-                            {{ \App\Models\Counselling\Counselling::LEVELS[$c->level] ?? ucfirst($c->level) }} · {{ $c->conductingBody->name ?? '-' }}
+                            {{ $c->summaryLine() }}
                             @if($m->valid_from_year || $m->valid_to_year) · accepted {{ $m->valid_from_year ?? 'earlier' }}–{{ $m->valid_to_year ?? 'now' }}@endif
                         </div>
                         @if($m->seat_scope_note)<div class="small">{{ $m->seat_scope_note }}</div>@endif
@@ -116,8 +116,13 @@
                             @elseif(in_array($cycle->cycle_status, ['postponed', 'cancelled']))
                                 {{ $cycle->title }}: <span class="badge bg-danger-subtle text-danger">{{ ucfirst($cycle->cycle_status) }}</span>
                             @elseif($bar)
-                                {{ $cycle->title }}{{ $bar['round'] ? ' · ' . $bar['round']->name : '' }}:
-                                @foreach($bar['items'] as $label => $st)<span class="badge bg-light text-dark border me-1">{{ $label }}: {{ $st['label'] }}</span>@endforeach
+                                <div>{{ $cycle->title }}{{ $bar['round'] ? ' · ' . $bar['round']->name : '' }}</div>
+                                {{-- one status per line, so they never run together (also when copied as text) --}}
+                                <ul class="list-unstyled mb-0 ms-2">
+                                    @foreach($bar['items'] as $label => $st)
+                                        <li><span class="text-muted">{{ $label }}:</span> {{ $st['label'] }}</li>
+                                    @endforeach
+                                </ul>
                             @else
                                 {{ $cycle->title }}: <span class="text-muted">schedule to be announced</span>
                             @endif

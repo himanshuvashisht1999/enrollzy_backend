@@ -163,11 +163,9 @@
                             <label class="form-label fw-semibold small text-muted">University Type</label>
                             <select name="university_type" class="form-select select2" data-placeholder="Select University Type">
                                 <option value="">Select University Type</option>
-                                <option value="Central">Central</option>
-                                <option value="State">State</option>
-                                <option value="Deemed">Deemed</option>
-                                <option value="Private">Private</option>
-                                <option value="International">International</option>
+                                @foreach(\App\Models\Organisation::UNIVERSITY_TYPES as $opt)
+                                    <option value="{{ $opt }}" @selected(old('university_type') === $opt)>{{ $opt }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">

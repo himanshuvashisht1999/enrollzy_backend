@@ -18,7 +18,7 @@
             <div>
                 <a href="{{ route('admin.counselling.counsellings.show', $m->counselling) }}" class="fw-semibold text-decoration-none">{{ $m->counselling->name }}</a>
                 <span class="badge bg-light text-dark border">{{ ucfirst($m->role) }}</span>
-                <div class="small text-muted">{{ \App\Models\Counselling\Counselling::LEVELS[$m->counselling->level] }} · {{ $m->counselling->conductingBody->name ?? '-' }}
+                <div class="small text-muted">{{ $m->counselling->summaryLine() }}
                     · current cycle: {{ $m->counselling->currentCycle?->title ?? 'none' }}</div>
             </div>
             <span class="badge {{ $m->counselling->visibility === 'public' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">{{ ucfirst($m->counselling->visibility) }}</span>

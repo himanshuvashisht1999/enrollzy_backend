@@ -158,6 +158,10 @@
                                             {{ $exam->name ?? $exam->title }}
                                         </option>
                                     @endforeach
+                                    {{-- values saved before the Exam Module (old exam ids or names): kept so saving does not drop them --}}
+                                    @foreach(array_filter($selectedExams, fn ($v) => !str_starts_with((string) $v, 'exm:')) as $old)
+                                        <option value="{{ $old }}" selected>{{ is_numeric($old) ? 'Old exam #' . $old : $old }} (old entry)</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>

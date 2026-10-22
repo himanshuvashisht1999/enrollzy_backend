@@ -53,6 +53,18 @@ class Exam extends Model
         });
     }
 
+    /**
+     * Options for pickers in other modules (courses, homepage boxes): value "exm:{id}", so a saved value never mixes
+     * with values saved before the Exam Module (old Dynamic Exam ids or plain names).
+     */
+    public static function pickList(): \Illuminate\Support\Collection
+    {
+        return static::orderBy('name')->get(['id', 'name', 'short_name', 'visibility', 'status'])->map(fn ($e) => (object) [
+            'id' => 'exm:' . $e->id,
+            'name' => $e->name . ($e->short_name ? ' (' . $e->short_name . ')' : '') . ($e->visibility === 'public' && $e->status ? '' : ' - not published'),
+        ]);
+    }
+
     public static function uniqueSlug(string $name, ?int $ignoreId = null): string
     {
         $base = Str::slug($name) ?: 'exam';

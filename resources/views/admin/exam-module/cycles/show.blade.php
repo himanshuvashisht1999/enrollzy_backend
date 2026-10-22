@@ -181,12 +181,17 @@
 <div class="modal fade" id="copyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <form method="POST" action="{{ route('admin.exam-module.cycles.copy', $cycle) }}">
         @csrf <input type="hidden" name="_dialog" value="copy">
-        @php $copyFailed = old('_dialog') === 'copy'; @endphp
+        @php
+            $copyFailed = old('_dialog') === 'copy';
+            // suggest the first year after this one that has no cycle yet (without a session label)
+            $taken = \App\Models\ExamModule\Cycle::where('exam_id', $cycle->exam_id)->where(fn ($q) => $q->whereNull('session_label')->orWhere('session_label', ''))->pluck('year')->all();
+            for ($nextYear = $cycle->year + 1; in_array($nextYear, $taken); $nextYear++);
+        @endphp
         @if($copyFailed && $errors->any())<div class="alert alert-danger small m-3 mb-0">{!! implode('<br>', array_map('e', $errors->all())) !!}</div>@endif
         <div class="modal-header"><h5 class="modal-title">Copy Cycle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <p class="small text-muted">Copies stages and the event list into a new cycle, without dates, links or verification.</p>
-            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control" value="{{ $copyFailed ? old('year') : $cycle->year + 1 }}" required></div>
+            <div class="mb-3"><label class="form-label fw-bold">New year</label><input type="number" name="year" class="form-control" value="{{ $copyFailed ? old('year') : $nextYear }}" required></div>
             <div><label class="form-label fw-bold">Session label</label><input type="text" name="session_label" class="form-control" value="{{ $copyFailed ? old('session_label') : '' }}"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary">Copy</button></div>

@@ -8,6 +8,7 @@ use App\Models\ExamModule\EventType;
 use App\Models\ExamModule\Exam;
 use App\Models\ExamModule\Stage;
 use Illuminate\Http\Request;
+use App\Rules\UniqueCycleYear;
 use Illuminate\Validation\Rule;
 
 class CycleController extends Controller
@@ -21,7 +22,7 @@ class CycleController extends Controller
 
     public function store(Request $request, Exam $exam)
     {
-        $cycle = $exam->cycles()->create($this->validated($request));
+        $cycle = $exam->cycles()->create($this->validated($request, null, $exam));
         return redirect()->route('admin.exam-module.cycles.show', $cycle)->with('success', 'Cycle created.');
     }
 
@@ -65,7 +66,10 @@ class CycleController extends Controller
 
     public function copy(Request $request, Cycle $cycle)
     {
-        $data = $request->validate(['year' => 'required|integer|min:2000|max:2100', 'session_label' => 'nullable|string|max:100']);
+        $data = $request->validate([
+            'year' => ['required', 'integer', 'min:2000', 'max:2100', new UniqueCycleYear(Cycle::class, 'exam_id', $cycle->exam_id, $request->input('session_label'))],
+            'session_label' => 'nullable|string|max:100',
+        ]);
         $new = $cycle->copyForward((int) $data['year'], $data['session_label'] ?? null);
         return redirect()->route('admin.exam-module.cycles.show', $new)
             ->with('success', 'Cycle copied. Stages and events were copied without dates; update what changed.');
@@ -101,10 +105,10 @@ class CycleController extends Controller
         return array_filter($data, fn ($v) => $v !== null);
     }
 
-    private function validated(Request $request, ?Cycle $cycle = null): array
+    private function validated(Request $request, ?Cycle $cycle = null, ?Exam $exam = null): array
     {
         $data = $request->validate([
-            'year' => 'required|integer|min:2000|max:2100',
+            'year' => ['required', 'integer', 'min:2000', 'max:2100', new UniqueCycleYear(Cycle::class, 'exam_id', (int) ($cycle?->exam_id ?? $exam?->id), $request->input('session_label'), $cycle?->id)],
             'session_label' => 'nullable|string|max:100',
             'registration_mode' => ['required', Rule::in(array_keys(Cycle::REGISTRATION_MODES))],
             'result_mode' => ['required', Rule::in(array_keys(Cycle::RESULT_MODES))],

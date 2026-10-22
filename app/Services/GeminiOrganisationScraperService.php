@@ -308,7 +308,9 @@ class GeminiOrganisationScraperService
 
             // Normalize university_type
             $rawUniType = strtolower((string)($org['university_type'] ?? ''));
-            if (str_contains($rawUniType, 'deemed')) {
+            if (str_contains($rawUniType, 'national importance')) {
+                $org['university_type'] = 'Institution of National Importance (Autonomous)';
+            } elseif (str_contains($rawUniType, 'deemed')) {
                 $org['university_type'] = 'Deemed';
             } elseif (str_contains($rawUniType, 'central')) {
                 $org['university_type'] = 'Central';
@@ -2700,7 +2702,8 @@ Extract ONLY the institutional profile for the "organisation" object.
 CRITICAL RESEARCH & WRITING INSTRUCTIONS:
 {$searchInstructions}
 2. STRICT ENUM VALUE MATCHING (CRITICAL FOR DATABASE MAPPING):
-   - `university_type`: STRICT ENUM. Must be EXACTLY ONE of: "Central", "State", "Deemed", "Private", "International".
+   - `university_type`: STRICT ENUM. Must be EXACTLY ONE of: "Central", "State", "Deemed", "Private", "International", "Institution of National Importance (Autonomous)".
+     * NOTE: If it is an Institution of National Importance by Act of Parliament (IITs, IIMs, AIIMS, NITs, IISERs...), return "Institution of National Importance (Autonomous)".
      * NOTE: If the institution is a Deemed-to-be-University (e.g. Thapar, BITS Pilani, NMIMS, Amrita, Manipal), return "Deemed".
      * If it is a State Private University, return "Private".
      * If it is a State Public University, return "State".

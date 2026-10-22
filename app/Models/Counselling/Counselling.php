@@ -56,6 +56,16 @@ class Counselling extends Model
         return $slug;
     }
 
+    /** "State: Karnataka · Karnataka Examinations Authority" for admin lists; parts that are not set are left out (never "-"). */
+    public function summaryLine(): string
+    {
+        $level = self::LEVELS[$this->level] ?? ucfirst((string) $this->level);
+        if ($this->level === 'state' && $this->states) {
+            $level .= ': ' . implode(', ', $this->states);
+        }
+        return implode(' · ', array_filter([$level, $this->conductingBody?->name]));
+    }
+
     /** What is still missing before this counselling may be Public. */
     public function missingForPublish(): array
     {

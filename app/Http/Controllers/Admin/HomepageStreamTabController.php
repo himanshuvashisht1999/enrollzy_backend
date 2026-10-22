@@ -18,7 +18,9 @@ class HomepageStreamTabController extends Controller
     private function getCommonData()
     {
         $organisations = \App\Models\Organisation::where('status', 1)->pluck('name', 'id')->toArray();
-        $exams = \App\Models\DynamicExam::where('status', 'Active')->pluck('name', 'id')->toArray();
+        // Exam Module exams, stored as "exm:{id}" so they never mix with old values (Dynamic Exam ids or plain names).
+        $exams = \App\Models\ExamModule\Exam::orderBy('name')->get(['id', 'name', 'short_name', 'visibility', 'status'])
+            ->mapWithKeys(fn ($e) => ['exm:' . $e->id => $e->name . ($e->short_name ? ' (' . $e->short_name . ')' : '') . ($e->visibility === 'public' && $e->status ? '' : ' - not published')])->toArray();
         $courses = \App\Models\Course::where('status', 1)->pluck('name', 'id')->toArray();
         $states = [
             'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 

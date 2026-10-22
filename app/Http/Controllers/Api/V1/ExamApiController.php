@@ -15,6 +15,21 @@ class ExamApiController extends Controller
     {
     }
 
+    /** GET /api/v1/exams : published exams for listings (filters and sort: see PublicExamPresenter::list). */
+    public function index(Request $request): JsonResponse
+    {
+        $key = 'cns:api:exams:' . sha1(http_build_query($request->query()));
+        return response()->json(Cache::remember($key, config('cns.cache_ttl'), fn () => $this->presenter->list($request->query())));
+    }
+
+    /** GET /api/v1/exam-lookup?q[]=... : which published exam each name / short name / alias / slug means (null = none). */
+    public function lookup(Request $request): JsonResponse
+    {
+        $terms = array_values(array_filter((array) $request->query('q', []), fn ($t) => is_string($t) && trim($t) !== ''));
+        $key = 'cns:api:exam-lookup:' . sha1(json_encode($terms));
+        return response()->json(Cache::remember($key, config('cns.cache_ttl'), fn () => $this->presenter->lookup($terms)));
+    }
+
     public function show(Request $request, string $slug): JsonResponse
     {
         $exam = $this->presenter->find($slug);
