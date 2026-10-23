@@ -172,10 +172,12 @@ class Importer
             [$resolved, $errors, $warnings, $exact, $provisional] = $this->resolveRow($batch->type, $row->raw, $ctx);
 
             // Duplicates: inside the file and against saved rows. Checked on every pass (after each fix or accepted
-            // match), only on keys whose college, course, quota... are all known, so two different unmatched names never
-            // look alike. A row still waiting for a confirmation is checked with its suggested match, so the admin is
-            // warned BEFORE accepting a suggestion that would turn the row into a duplicate.
-            if (!$errors) {
+            // match) and whatever else is wrong with the row ("not a participating institute", a bad seat count...), so
+            // every problem of a row is listed, not only the first. Only keys whose college, course, quota... are all known
+            // are compared, so two different unmatched names never look alike. A row still waiting for a confirmation is
+            // checked with its suggested match, so the admin is warned BEFORE accepting a suggestion that would turn the
+            // row into a duplicate.
+            {
                 if ($exact !== null) {
                     if (isset($seen[$exact])) {
                         $errors[] = 'Duplicate of row ' . $seen[$exact] . ' in this file.';
@@ -200,6 +202,7 @@ class Importer
             if (empty($resolved['_suggest'])) {
                 unset($resolved['_suggest']);
             }
+            unset($resolved['_keyless']);
             $row->update(['resolved' => $resolved, 'status' => $status, 'messages' => array_merge($errors, $warnings) ?: null]);
             $counts[$status]++;
         }
@@ -277,8 +280,10 @@ class Importer
 
             case 'seats':
                 $r['category_id'] = $this->single($ctx, 'category', $get('category'), 'Category', $r, $errors, $warnings);
+                $before = count($errors);
                 $r['gender'] = $this->gender($get('gender'), $errors);
                 $r['pwd'] = $this->pwd($get('pwd'), $errors);
+                $r['_keyless'] = count($errors) > $before;   // an unreadable gender / PwD must not make a false duplicate
                 $seats = $this->integer($get('seats'), 'seats', $errors);
                 if ($get('seats') === '') {
                     $errors[] = 'Seats is missing.';
@@ -298,9 +303,11 @@ class Importer
                     $r['exam_id'] = $this->apply($m, 'exam', $examName, $r, $errors, $warnings, 'Exam');
                 }
                 $r['category_id'] = $this->single($ctx, 'category', $get('category'), 'Category', $r, $errors, $warnings);
+                $before = count($errors);
                 $r['gender'] = $this->gender($get('gender'), $errors);
                 $r['pwd'] = $this->pwd($get('pwd'), $errors);
                 $r['rank_type'] = $this->rankType($get('rank_type'), $errors);
+                $r['_keyless'] = count($errors) > $before;
                 $r['opening_value'] = $this->decimal($get('opening_value'), 'opening_value', $errors);
                 $r['closing_value'] = $this->decimal($get('closing_value'), 'closing_value', $errors);
                 if ($get('closing_value') === '') {
@@ -318,10 +325,18 @@ class Importer
                 break;
         }
 
-        // --- seats and cutoffs only for the cycle's participating institutes
-        if (in_array($type, ['seats', 'cutoffs'], true) && $r['organisation_id'] && $r['course_id'] && $r['quota_id']
-            && ($problem = $ctx->participantProblem($r['organisation_id'], $r['course_id'], $r['quota_id']))) {
-            $errors[] = $problem;
+        // --- seats and cutoffs only for the cycle's participating institutes. A college / course / quota still waiting
+        // for confirmation is checked with its suggested match, so this shows before the match is accepted too.
+        if (in_array($type, ['seats', 'cutoffs'], true)) {
+            $pick = fn ($f, $t) => $r[$f] ?? ($r['_suggest'][$t]['id'] ?? null);
+            [$o, $c, $q] = [$pick('organisation_id', 'organisation'), $pick('course_id', 'course'), $pick('quota_id', 'quota')];
+            if ($o && $c && $q && ($problem = $ctx->participantProblem($o, $c, $q))) {
+                if ($r['organisation_id'] && $r['course_id'] && $r['quota_id']) {
+                    $errors[] = $problem;
+                } else {
+                    $warnings[] = 'If the suggested match is accepted: ' . lcfirst($problem);
+                }
+            }
         }
 
         return [$r, $errors, $warnings, $this->rowKey($type, $r, false), $this->rowKey($type, $r, true)];
@@ -343,6 +358,9 @@ class Importer
         $fromSuggest = ['organisation_id' => 'organisation', 'course_id' => 'course', 'quota_id' => 'quota', 'category_id' => 'category', 'exam_id' => 'exam'];
         $used = false;
         $parts = [];
+        if (!empty($r['_keyless'])) {
+            return null;
+        }
         foreach (self::KEY_FIELDS[$type] as $f) {
             $v = $r[$f] ?? null;
             if ($v === null && $withSuggestions && isset($fromSuggest[$f], $r['_suggest'][$fromSuggest[$f]]['id'])) {

@@ -91,9 +91,10 @@
                     $notParticipant = $r->status === 'error' && collect($r->messages ?? [])->contains(fn ($m) => str_starts_with($m, 'Not a participating institute'));
                     $statusLabel = $notParticipant ? 'Not a participating institute' : ['matched' => 'Ready', 'warning' => 'Needs confirmation', 'error' => 'Error'][$r->status];
                 @endphp
-                <td><span class="badge {{ $tone[$r->status] }}">{{ $statusLabel }}</span></td>
+                <td><span class="badge {{ $tone[$r->status] }}">{{ $statusLabel }}</span>@if(count($r->messages ?? []) > 1)<div class="small text-muted mt-1">{{ count($r->messages) }} problems</div>@endif</td>
                 @foreach(\App\Services\Counselling\Importer::DEFS[$batch->type]['columns'] as $c)<td class="small">{{ \Illuminate\Support\Str::limit($r->raw[$c] ?? '', 40) }}</td>@endforeach
-                <td class="small {{ $r->status === 'error' ? 'text-danger' : 'text-warning' }}">{{ implode(' | ', $r->messages ?? []) }}</td>
+                {{-- every problem of the row, one per line --}}
+                <td class="small {{ $r->status === 'error' ? 'text-danger' : 'text-warning' }}">@if(count($r->messages ?? []) > 1)<ul class="mb-0 ps-3">@foreach($r->messages as $m)<li>{{ $m }}</li>@endforeach</ul>@else{{ $r->messages[0] ?? '' }}@endif</td>
             </tr>
         @empty
             <tr><td colspan="20" class="text-center text-muted py-4">No rows.</td></tr>
