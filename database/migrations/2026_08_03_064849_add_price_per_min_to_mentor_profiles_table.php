@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('mentor_profiles', function (Blueprint $table) {
-            $table->decimal('price_per_min', 10, 2)->default(500.00)->after('professional_headline');
-        });
+        Schema::table('mentor_profiles', function (Blueprint $table) {});
     }
 
     /**

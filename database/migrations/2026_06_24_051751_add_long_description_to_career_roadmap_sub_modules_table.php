@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('career_roadmap_sub_modules', function (Blueprint $table) {
-            $table->longText('long_description')->nullable()->after('description');
-        });
+        Schema::table('career_roadmap_sub_modules', function (Blueprint $table) {});
     }
 
     /**

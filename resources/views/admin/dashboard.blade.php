@@ -310,7 +310,7 @@
         jpeg_quality: 90
     });
 
-    let currentPunchType = 'check-in';
+    let currentPunchType = 'check_in';
 
     function setPunchType(type) {
         currentPunchType = type;
@@ -323,7 +323,7 @@
 
     function captureAndPunch() {
         Webcam.snap(function(data_uri) {
-            let url = currentPunchType === 'check-in' ? "{{ route('admin.hr.clock.check_in') }}" : "{{ route('admin.hr.clock.check_out') }}";
+            let url = (currentPunchType === 'check_in' || currentPunchType === 'check-in') ? "{{ route('admin.hr.clock.check_in') }}" : "{{ route('admin.hr.clock.check_out') }}";
             let payload = {
                 _token: "{{ csrf_token() }}",
                 image_data: data_uri,

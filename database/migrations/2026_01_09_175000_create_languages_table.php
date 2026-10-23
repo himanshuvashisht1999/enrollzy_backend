@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('languages')) {
         Schema::create('languages', function (Blueprint $blade) {
             $blade->id();
             $blade->string('title');
@@ -18,6 +19,7 @@ return new class extends Migration
             $blade->integer('sort_order')->default(0);
             $blade->timestamps();
         });
+        }
     }
 
     /**

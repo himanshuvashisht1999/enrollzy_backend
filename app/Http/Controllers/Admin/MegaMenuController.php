@@ -9,26 +9,31 @@ use Illuminate\Http\Request;
 
 class MegaMenuController extends Controller
 {
-    /**
-     * Show the mega menu manager.
-     * Main categories = active header_links (not mega_menu root items).
-     * Sub items = mega_menu records where parent_id is not null.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Main categories come from header_links table
-        $headerLinks = HeaderLink::where('status', 1)->orderBy('sort_order')->get();
+        $parentLinks = HeaderLink::whereNull('parent_id')->where('status', 1)->orderBy('sort_order')->get();
+        $childLinks = collect();
+        $selectedParent = $request->parent_id;
+        $selectedChild = $request->child_id;
 
-        // For each header_link, load its sub-items from mega_menus
-        // Sub-items are mega_menu records linked via header_link_id and have a parent_id (root entry)
-        // We load by header_link_id directly to group them
-        $subItemsByHeaderLink = MegaMenu::whereNotNull('parent_id')
-            ->whereNotNull('header_link_id')
-            ->orderBy('sort_order')
-            ->get()
-            ->groupBy('header_link_id');
+        if ($selectedParent) {
+            $childLinks = HeaderLink::where('parent_id', $selectedParent)->where('status', 1)->orderBy('sort_order')->get();
+        }
 
-        // Also load root-level mega_menu entries (to know their IDs for parent_id assignment in store)
+        $headerLinks = collect();
+        if ($selectedChild) {
+            $headerLinks = HeaderLink::where('id', $selectedChild)->where('status', 1)->get();
+        }
+
+        $subItemsByHeaderLink = collect();
+        if ($headerLinks->count() > 0) {
+            $subItemsByHeaderLink = MegaMenu::whereNotNull('parent_id')
+                ->whereIn('header_link_id', $headerLinks->pluck('id'))
+                ->orderBy('sort_order')
+                ->get()
+                ->groupBy('header_link_id');
+        }
+
         $rootMegaMenus = MegaMenu::whereNull('parent_id')
             ->whereNotNull('header_link_id')
             ->orderBy('sort_order')
@@ -53,6 +58,10 @@ class MegaMenuController extends Controller
             });
 
         return view('admin.mega-menu.index', compact(
+            'parentLinks',
+            'childLinks',
+            'selectedParent',
+            'selectedChild',
             'headerLinks',
             'subItemsByHeaderLink',
             'rootMegaMenus',
@@ -61,9 +70,6 @@ class MegaMenuController extends Controller
         ));
     }
 
-    /**
-     * Store a new sub-item. Parent = root mega_menu for the given header_link_id.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -75,7 +81,6 @@ class MegaMenuController extends Controller
             'is_highlighted' => 'nullable|boolean',
         ]);
 
-        // Find or auto-create the root mega_menu entry for this header_link
         $rootMenu = MegaMenu::whereNull('parent_id')
             ->where('header_link_id', $request->header_link_id)
             ->first();
@@ -130,7 +135,6 @@ class MegaMenuController extends Controller
             $data['status'] = $request->status ? 1 : 0;
         }
 
-        // If parent category (header_link_id) was changed, update parent_id to point to new root mega_menu
         if ($request->header_link_id && $request->header_link_id != $megaMenu->header_link_id) {
             $rootMenu = MegaMenu::whereNull('parent_id')
                 ->where('header_link_id', $request->header_link_id)
@@ -153,7 +157,6 @@ class MegaMenuController extends Controller
 
     public function destroy(MegaMenu $megaMenu)
     {
-        // Don't allow deleting root entries (those are auto-managed from header_links)
         if (is_null($megaMenu->parent_id)) {
             return redirect()->back()->with('error', 'Root categories are managed from Header Links. Delete sub-options only.');
         }
@@ -161,3 +164,4 @@ class MegaMenuController extends Controller
         return redirect()->back()->with('success', 'Sub option deleted successfully.');
     }
 }
+

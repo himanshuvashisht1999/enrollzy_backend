@@ -16,6 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Create Expert Categories Table
+        if (!Schema::hasTable('expert_categories')) {
         Schema::create('expert_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
@@ -23,14 +24,13 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+        }
 
         // 2. Add Foreign Keys (Nullable first for migration)
-        Schema::table('experts', function (Blueprint $table) {
-            $table->foreignId('expert_category_id')->nullable()->after('role')->constrained('expert_categories')->nullOnDelete();
-        });
+        Schema::table('experts', function (Blueprint $table) {});
 
         Schema::table('commission_policies', function (Blueprint $table) {
-            $table->foreignId('expert_category_id')->nullable()->after('expert_category')->constrained('expert_categories')->nullOnDelete();
+            if (!Schema::hasColumn('commission_policies', 'expert_category_id')) $table->foreignId('expert_category_id')->nullable()->after('expert_category')->constrained('expert_categories')->nullOnDelete();
         });
 
         // 3. Migrate Data

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('pages')) {
         Schema::create('pages', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->boolean('status')->default(1);
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('university_accreditations')) {
         Schema::create('university_accreditations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('university_id')->constrained()->cascadeOnDelete();
             $table->foreignId('accreditation_approval_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('contact_us_details')) {
         Schema::create('contact_us_details', function (Blueprint $table) {
             $table->id();
             $table->string('hero_title')->nullable();
@@ -52,6 +53,7 @@ return new class extends Migration
             
             $table->timestamps();
         });
+        }
     }
 
     /**

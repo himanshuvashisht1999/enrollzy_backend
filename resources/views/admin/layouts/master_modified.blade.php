@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Admin Panel') | {{ config('app.name') }}</title>
+
+    <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/all.min.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        :root {
+            --sidebar-width: 270px;
+            --admin-theme: #1a222b;
+            --admin-dark: #12181f;
+            --admin-hover: #252f3a;
+            --admin-accent: #f39c12;
+            /* Neutral Gold Accent */
+            --sidebar-text: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            overflow-x: hidden;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background-color: var(--admin-theme);
+            color: #fff;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sidebar collapsed state (Desktop) */
+        html.sidebar-collapsed #sidebar,
+        body.sidebar-collapsed #sidebar {
+            margin-left: calc(-1 * var(--sidebar-width));
+        }
+
+        /* Sidebar Scrollbar */
+        #sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: var(--admin-dark);
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #3e4b5b;
+            border-radius: 10px;
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            background-color: var(--admin-dark);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-heading {
+            padding: 12px 20px 4px !important;
+            margin-top: 2px !important;
+            opacity: 0.4;
+            font-size: 9px !important;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        #sidebar .nav-link {
+            color: var(--sidebar-text);
+            padding: 10px 20px;
+            border-radius: 0;
+            margin-bottom: 0;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.92rem;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid transparent;
+        }
+
+        #sidebar .nav-link:hover {
+            color: #fff;
+            background-color: var(--admin-hover);
+            text-decoration: none;
+        }
+
+        #sidebar .nav-link.active {
+            color: #fff;
+            background-color: var(--admin-dark);
+            border-left: 3px solid var(--admin-accent);
+        }
+
+        #sidebar .nav-link i:first-child {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        #sidebar .menu-arrow {
+            margin-left: auto;
+            transition: transform 0.3s;
+            font-size: 0.75rem;
+        }
+
+        #sidebar .nav-link:not(.collapsed) .menu-arrow {
+            transform: rotate(180deg);
+        }
+
+        #sidebar .sub-link {
+            padding: 7px 20px 7px 52px;
+            font-size: 0.85rem;
+            color: var(--sidebar-text);
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar .sub-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        #sidebar .sub-link.active {
+            color: var(--admin-accent);
+            font-weight: 600;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        #content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh;
+        }
+
+        html.sidebar-collapsed #content,
+        body.sidebar-collapsed #content {
+            margin-left: 0 !important;
+        }
+
+        .admin-navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .sidebar-toggle-btn {
+            background-color: #f8f9fa;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            outline: none !important;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            border-color: #cbd5e1;
+            transform: scale(1.03);
+        }
+
+        .sidebar-toggle-btn:active {
+            transform: scale(0.97);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1030;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 991.98px) {
+            #sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            #content {
+                margin-left: 0 !important;
+            }
+            body.sidebar-mobile-open #sidebar {
+                margin-left: 0 !important;
+            }
+            body.sidebar-mobile-open .sidebar-overlay {
+                display: block;
+                opacity: 1;
+            }
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+            border-radius: 10px;
+        }
+
+        /* Fix Select2 dropdown z-index behind Bootstrap modals */
+        .select2-container--open {
+            z-index: 9999999 !important;
+        }
+    </style>
+    <script>
+        (function() {
+            try {
+                if (window.innerWidth >= 992 && localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    @stack('css')
+</head>
+
+<body>
+    @php
+        $user = Auth::guard('admin')->user() ?? Auth::guard('web')->user() ?? Auth::guard('expert')->user() ?? Auth::guard('alumni')->user();
+        $isExpert = Auth::guard('expert')->check();
+        $isAlumni = Auth::guard('alumni')->check();
+        $isAdmin = Auth::guard('admin')->check() || (Auth::guard('web')->check() && $user && ($user->is_admin ?? false));
+    @endphp
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header py-3 text-center">
+            @if($site_settings->logo ?? false)
+                <img src="{{ asset($site_settings->logo) }}" alt="Logo" style="max-height: 40px; max-width: 80%;">
+            @else
+                <h4 class="mb-0 text-white">
+                    <span>{{ explode(' ', $site_settings->site_name ?? 'Admin Panel')[0] }}</span>
+                    {{ implode(' ', array_slice(explode(' ', $site_settings->site_name ?? 'Admin Panel'), 1)) }}
+                </h4>
+            @endif
+        </div>
+        <ul class="nav flex-column mt-2 px-2">
+            {{-- Dashboard --}}
+            <li class="nav-item">
+                @php
+                    $dashRoute = 'admin.dashboard';
+                    if ($isExpert && \Illuminate\Support\Facades\Route::has('expert.dashboard')) {
+                        $dashRoute = 'expert.dashboard';
+                    } elseif ($isAlumni && \Illuminate\Support\Facades\Route::has('alumni.dashboard')) {
+                        $dashRoute = 'alumni.dashboard';
+                    }
+                @endphp
+                <a class="nav-link {{ request()->routeIs($dashRoute) ? 'active' : '' }}"
+                    href="{{ \Illuminate\Support\Facades\Route::has($dashRoute) ? route($dashRoute) : url('/admin/dashboard') }}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+
+            @if($isAdmin)
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">Core Management</div>
+
+                {{-- Academics Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#academicsMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/experts*', 'admin/alumni*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-graduation-cap"></i> Academics</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/organisations*', 'admin/exams*', 'admin/dynamic-exams*', 'admin/organisation-courses*', 'admin/courses*', 'admin/noteworthy*', 'admin/program-levels*', 'admin/program-types*', 'admin/stream-offereds*', 'admin/disciplines*', 'admin/specializations*', 'admin/organisation-types*', 'admin/accreditation-approvals*', 'admin/campus-types*', 'admin/sports*', 'admin/facilities*', 'admin/exam-stages*') ? 'show' : '' }}"
+                        id="academicsMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.organisations.*') || request()->routeIs('admin.organisation-courses.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.organisations.index') }}">Organisations</a></li>
+                            <!-- wrapped sublink missing -->
+{{--
+@can('exams-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.exams.index') }}">Exams List</a></li>
+@endcan
+--}}
+
+                            <!-- wrapped sublink missing -->
+@can('dynamic-exams-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.dynamic-exams.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.dynamic-exams.index') }}">Dynamic Exams</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.courses.index') }}">Course Master</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
+
+                            <!-- wrapped sublink missing -->
+@can('noteworthy-categories-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.noteworthy-categories.index') }}">Noteworthy Categories</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('noteworthy-mentions-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.noteworthy-mentions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.noteworthy-mentions.index') }}">Noteworthy Mentions</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-levels.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.program-levels.index') }}">Program Level</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.program-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.program-types.index') }}">Program Mode</a></li>
+                            <!-- wrapped sublink missing -->
+@can('stream-offereds-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.stream-offereds.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.stream-offereds.index') }}">Stream Offered</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.disciplines.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.disciplines.index') }}">Discipline</a></li>
+                            <!-- wrapped sublink missing -->
+@can('specializations-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.specializations.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.specializations.index') }}">Specialization</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('organisation-types-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.organisation-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.organisation-types.index') }}">Organisation Type</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('accreditation-approvals-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.accreditation-approvals.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.accreditation-approvals.index') }}">Accreditation</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.campus-types.index') }}">Location Type</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.campus_type_new.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.campus_type_new.index') }}">School Type</a></li>
+                            <!-- wrapped sublink missing -->
+@can('facilities-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.facilities.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.facilities.index') }}">Facilities</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('sports-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.sports.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.sports.index') }}">Sports</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.languages.index') }}">Languages</a></li>
+                            <!-- wrapped sublink missing -->
+@can('exam-stages-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.exam-stages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.exam-stages.index') }}">Exam Stages</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.caste-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.caste-categories.index') }}">Caste Categories</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Career Roadmap Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/career-roadmap*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#careerRoadmapMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/career-roadmap*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-map-signs me-2"></i>Career Roadmap</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/career-roadmap*') ? 'show' : '' }}" id="careerRoadmapMenu">
+                        <ul class="nav flex-column ps-3">
+                            <!-- wrapped sublink missing -->
+@can('career-roadmap-categories-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-categories.index') }}">Categories</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('career-roadmap-stages-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-stages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-stages.index') }}">Stages</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('career-roadmap-sub-modules-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.career-roadmap-sub-modules.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.career-roadmap-sub-modules.index') }}">Sub Modules</a></li>
+@endcan
+
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- FAQ Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/faq-*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#faqMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/faq-*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-question-circle me-2"></i>FAQ Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/faq-*') ? 'show' : '' }}" id="faqMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-categories.index') }}">Categories</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.faq-items.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.faq-items.index') }}">FAQs</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Expert Management --}}
+                <li class="nav-item">
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/experts*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'active' : 'collapsed' }}"
+                            data-bs-toggle="collapse" href="#expertMenu" role="button"
+                            aria-expanded="{{ request()->is('admin/experts*') || request()->is('admin/slots*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'true' : 'false' }}">
+                            <span><i class="fas fa-user-tie me-2"></i>Expert Management</span>
+                            <i class="fas fa-chevron-down small menu-arrow"></i>
+                        </a>
+                        <div class="collapse {{ request()->is('admin/experts*') || request()->is('admin/slots*') || (request()->routeIs('leads.index') && request()->type == 'Expert') ? 'show' : '' }}"
+                            id="expertMenu">
+                            <ul class="nav flex-column ps-3">
+                                <!-- wrapped sublink missing -->
+@can('experts-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('experts.*') ? 'active' : '' }}"
+                                        href="{{ route('experts.index') }}">Experts List</a></li>
+@endcan
+
+                                <!-- wrapped sublink missing -->
+@can('expert-categories-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('expert-categories.*') ? 'active' : '' }}"
+                                        href="{{ route('expert-categories.index') }}">Categories</a></li>
+@endcan
+
+                                <li><a class="nav-link sub-link {{ request()->routeIs('admin.slots.*') ? 'active' : '' }}"
+                                        href="{{ route('admin.slots.index') }}">Manage Slots</a></li>
+                                <li><a class="nav-link sub-link {{ request()->routeIs('admin.bookings.index') ? 'active' : '' }}"
+                                        href="{{ route('admin.bookings.index') }}">Bookings</a></li>
+
+                            </ul>
+                        </div>
+                    </li>
+
+                {{-- Alumni Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/alumni*') || (request()->routeIs('leads.index') && request()->type == 'Alumni') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#alumniMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/alumni*') || (request()->routeIs('leads.index') && request()->type == 'Alumni') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-user-friends me-2"></i>Alumni Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/alumni*') || (request()->routeIs('leads.index') && request()->type == 'Alumni') ? 'show' : '' }}"
+                        id="alumniMenu">
+                        <ul class="nav flex-column ps-3">
+                            <!-- wrapped sublink missing -->
+@can('alumni-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.alumni.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.alumni.index') }}">Alumni List</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('leads.index') && request()->type == 'Alumni' ? 'active' : '' }}"
+                                    href="{{ route('leads.index', ['type' => 'Alumni']) }}">Alumni Leads</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Mentor Management --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/mentor*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#mentorMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/mentor*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-chalkboard-teacher me-2"></i>Mentor Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/mentor*') ? 'show' : '' }}" id="mentorMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Mentors</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.profiles.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.profiles.index') }}">All Mentors</a></li>
+                            <li><a class="nav-link sub-link d-flex justify-content-between align-items-center {{ request()->routeIs('admin.mentor.verifications.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.verifications.index') }}">
+                                    Pending Verifications
+                                    @php
+                                        $pendingCount = \App\Models\MentorVerification::where('gov_id_status', 'pending')
+                                            ->orWhere('linkedin_status', 'pending')
+                                            ->orWhere('background_check_status', 'pending')
+                                            ->orWhere('degree_status', 'pending')->count();
+                                    @endphp
+                                    @if($pendingCount > 0)
+                                        <span class="badge bg-danger rounded-pill">{{ $pendingCount }}</span>
+                                    @endif
+                                </a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Masters</div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.languages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.languages.index') }}">Mentor Languages</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.degrees.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.degrees.index') }}">Mentor Degrees</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.industries.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.industries.index') }}">Mentor Industries</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.mentee_levels.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.mentee_levels.index') }}">Mentor Mentee Levels</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mentor.commissions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mentor.commissions.index') }}">General Commission</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Student Management --}}
+                <!-- <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/students*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#studentMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/students*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-user-graduate me-2"></i>Student Management</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/students*') ? 'show' : '' }}" id="studentMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('students.index') ? 'active' : '' }}"
+                                    href="{{ route('students.index') }}">Students List</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('students.create') ? 'active' : '' }}"
+                                    href="{{ route('students.create') }}">Add Student</a></li>
+                        </ul>
+                    </div>
+                </li>  -->
+
+                {{-- Community Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/community*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#communityMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/community*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-users me-2"></i> Community</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/community*') ? 'show' : '' }}" id="communityMenu">
+                        <ul class="nav flex-column ps-3">
+                            <!-- wrapped sublink missing -->
+@can('community-categories-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.community-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.community-categories.index') }}">Categories</a></li>
+@endcan
+
+                            <!-- wrapped sublink missing -->
+@can('community-questions-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.community-questions.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.community-questions.index') }}">Questions</a></li>
+@endcan
+
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.community-replies.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.community-replies.index') }}">Answers</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                {{-- Human Resource Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/hr*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#hrMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/hr*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-users-cog me-2"></i>Human Resource</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/hr*') ? 'show' : '' }}" id="hrMenu">
+                        <ul class="nav flex-column ps-3">
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Leaves Module
+                            </div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leaves.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leaves.index') }}">Applied Leaves</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-settings.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leave-settings.index') }}">Leave Settings</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.leave-policies.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.leave-policies.index') }}">Leave Policies</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.holidays.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.holidays.index') }}">Holidays</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Staff Module
+                            </div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.departments.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.departments.index') }}">Departments</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.designations.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.designations.index') }}">Designations</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff-types.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.staff-types.index') }}">Staff Types</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.staff.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.staff.index') }}">Staff Members</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.roles.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.roles.index') }}">Roles & Permissions</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.banks.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.banks.index') }}">Bank Accounts</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Salary Module
+                            </div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.attendance.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.attendance.index') }}">Attendance</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.advance.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.advance.index') }}">Advance Pay</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payroll.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.payroll.index') }}">Generate PayRoll</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.payout.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.payout.index') }}">View Payout</a></li>
+
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Communication
+                            </div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.whatsapp_template.index') }}">Whatsapp Templates</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.whatsapp_template.report') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.whatsapp_template.report') }}">Whatsapp Report</a></li>
+
+                            {{--
+                            <div class="sidebar-heading px-3 pt-3 pb-2 text-uppercase fw-bold text-white-50">Project & Tasks
+                            </div>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.lead-sources.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.lead-sources.index') }}">Lead Source</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.clients.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.clients.index') }}">Project Users</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.project-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.project-categories.index') }}">Project Category</a>
+                            </li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.index.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.index.index') }}">Project List</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.milestones.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.milestones.index') }}">All Milestones</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hr.projects.tasks.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.hr.projects.tasks.index') }}">Tasks Board</a></li>
+                            --}}
+
+                        </ul>
+                    </div>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Customers</div>
+@can('customer-browse')
+<li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && !request()->get('type') ? 'active' : '' }}"
+                        href="{{ route('admin.customers.main.index.index') }}">
+                        <i class="fas fa-users me-2"></i> Students list
+                    </a>
+                </li>
+@endcan
+@can('customer-category-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-categories.*') ? 'active' : '' }}"
+                        href="{{ route('admin.customer-categories.index') }}">
+                        <i class="fas fa-tags me-2"></i> Students Category
+                    </a>
+                </li>
+@endcan
+@can('customer-fields-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-fields.*') ? 'active' : '' }}"
+                        href="{{ route('admin.customer-fields.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Students Fields
+                    </a>
+                </li>
+@endcan
+
+
+
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.institutes.*') ? 'active' : '' }}"
+                        href="{{ route('admin.institutes.index') }}">
+                        <i class="fas fa-university me-2"></i> Institutes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.interested-ins.*') ? 'active' : '' }}"
+                        href="{{ route('admin.interested-ins.index') }}">
+                        <i class="fas fa-thumbs-up me-2"></i> Interested In
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-sessions.*') ? 'active' : '' }}"
+                        href="{{ route('admin.customer-sessions.index') }}">
+                        <i class="fas fa-calendar-alt me-2"></i> Sessions
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Consultants</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultants.*') ? 'active' : '' }}"
+                        href="{{ route('admin.consultants.index') }}">
+                        <i class="fas fa-user-tie me-2"></i> Consultants list
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-categories.*') ? 'active' : '' }}"
+                        href="{{ route('admin.consultant-categories.index') }}">
+                        <i class="fas fa-folder me-2"></i> Consultant Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.consultant-settings.*') ? 'active' : '' }}"
+                        href="{{ route('admin.consultant-settings.index') }}">
+                        <i class="fas fa-cog me-2"></i> Consultant Settings
+                    </a>
+                </li>
+
+                <div class="sidebar-heading px-3 pt-4 pb-2 text-uppercase fw-bold text-white-50">Students</div>
+                {{--
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('admin/customers*') && request()->get('type') == 'class' ? 'active' : '' }}"
+                        href="{{ route('admin.customers.main.index.index', ['type' => 'class']) }}">
+                        <i class="fas fa-school me-2"></i> Classes
+                    </a>
+                </li>
+                --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-statuses.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-statuses.index') }}">
+                        <i class="fas fa-check-circle me-2"></i> Calling Status
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-actions.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-actions.index') }}">
+                        <i class="fas fa-phone-square me-2"></i> Calling Action
+                    </a>
+                </li>
+                @if($user && method_exists($user, 'can') && $user->can('lead-quality-browse'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-qualities.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-qualities.index') }}">
+                        <i class="fas fa-star me-2"></i> Lead Quality
+                    </a>
+                </li>
+                @endif
+                @can('lead-assign-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-assign.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-assign.index') }}">
+                        <i class="fas fa-tasks me-2"></i> Lead Assign
+                    </a>
+                </li>
+                @endcan
+                
+                @can('lead-activity-logs-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.lead-activity-logs.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.lead-activity-logs.index') }}">
+                        <i class="fas fa-list-alt me-2"></i> Lead Activity Logs
+                    </a>
+                </li>
+                @endcan
+                @can('calling-dashboard-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-dashboard.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-dashboard.index') }}">
+                        <i class="fas fa-chart-pie me-2"></i> Calling Dashboard
+                    </a>
+                </li>
+                @endcan
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-module.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-module.index') }}">
+                        <i class="fas fa-phone-alt me-2"></i> Calling Module
+                    </a>
+                </li>
+                @if($user && method_exists($user, 'can') && ($user->can('calling-history-browse') || in_array($user->role, ['staff', 'Telle Caller'])))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.students-crm.calling-history.*') ? 'active' : '' }}"
+                        href="{{ route('admin.students-crm.calling-history.index') }}">
+                        <i class="fas fa-history me-2"></i> Calling History
+                    </a>
+                </li>
+                @endif
+
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">Marketing & Content</div>
+
+                {{-- Content Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#contentMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-copy"></i> Content</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/blogs*', 'admin/categories*', 'admin/faqs*', 'admin/testimonials*', 'admin/video-testimonials*', 'admin/contact-us*') ? 'show' : '' }}"
+                        id="contentMenu">
+                        <ul class="nav flex-column ps-3">
+                            <!-- wrapped cms missing -->
+@can('blogs-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('blogs.index') ? 'active' : '' }}"
+                                    href="{{ route('blogs.index') }}">Blogs</a></li>
+@endcan
+
+                            <!-- wrapped cms missing -->
+@can('categories-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('categories.index') ? 'active' : '' }}"
+                                    href="{{ route('categories.index') }}">Blog Categories</a></li>
+@endcan
+
+                            <!-- wrapped cms missing -->
+@can('faqs-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('faqs.index') ? 'active' : '' }}"
+                                    href="{{ route('faqs.index') }}">FAQs</a></li>
+@endcan
+
+                            <!-- wrapped cms missing -->
+@can('testimonials-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('testimonials.index') ? 'active' : '' }}"
+                                    href="{{ route('testimonials.index') }}">Testimonials</a></li>
+@endcan
+
+                            <!-- wrapped cms missing -->
+@can('video-testimonials-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.video-testimonials.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.video-testimonials.index') }}">Video Stories</a></li>
+@endcan
+
+                            <!-- wrapped cms missing -->
+@can('contact-us-browse')
+<li><a class="nav-link sub-link {{ request()->routeIs('admin.contact-us.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.contact-us.edit') }}">Contact Us</a></li>
+@endcan
+
+                        </ul>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.about_us.*') ? 'active' : '' }}"
+                        href="{{ route('admin.about_us.edit') }}">
+                        <i class="fas fa-info-circle"></i> About Us Page
+                    </a>
+                </li>
+
+                {{-- Frontend Setup Group --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'active' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#homepageMenu" role="button"
+                        aria-expanded="{{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'true' : 'false' }}">
+                        <span><i class="fas fa-home"></i> Frontend Setup</span>
+                        <i class="fas fa-chevron-down small menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->is('admin/homepage-sections*', 'admin/hero-sliders*', 'admin/home-services*', 'admin/home-benefits*', 'admin/trending-skills*', 'admin/school-marquees*', 'admin/institute-marquees*', 'admin/header-links*', 'admin/pages*') ? 'show' : '' }}"
+                        id="homepageMenu">
+                        <ul class="nav flex-column ps-3">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('homepage-sections.index') ? 'active' : '' }}"
+                                    href="{{ route('homepage-sections.index') }}">Manage Sections</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.homepage-stream-tabs.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.homepage-stream-tabs.index') }}">Stream Tabs</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-links.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-links.index') }}">Header Links</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.mega-menu.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.mega-menu.index') }}">Mega Dropdown Menu</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.header-menus.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.header-menus.index') }}">Main Header Menus</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.footer-setup.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.footer-setup.index') }}">Footer Setup</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.hero-sliders.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.hero-sliders.index') }}">Hero Sliders</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-skills.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.trending-skills.index') }}">Trending Skills</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.trending-courses.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.trending-courses.index') }}">Trending Courses</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.school-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.school-marquees.index') }}">School Marquee</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.institute-marquees.index') ? 'active' : '' }}"
+                                    href="{{ route('admin.institute-marquees.index') }}">Institute Marquee</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.home-services.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.home-services.index') }}">Why Choose Us</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.scholarships.index') }}">Scholarships</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.pages.index') }}">Dynamic Pages</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">Billing</div>
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.billing.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#billingMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('admin.billing.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Billing Module</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.billing.*') ? 'show' : '' }}" id="billingMenu">
+                        <ul class="nav flex-column">
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.services.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.services.index') }}">Services</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.invoices.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.invoices.index') }}">Invoices</a></li>
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.billing.payments.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.billing.payments.index') }}">Payments</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- Scholarships Top-Level Nav -->
+                <!-- wrapped toplevel missing -->
+@can('settings-browse')
+<li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.scholarships.*') ? 'active' : '' }}" href="{{ route('admin.scholarships.index') }}">
+                        <i class="fas fa-graduation-cap"></i> Scholarships
+                    </a>
+                </li>
+
+                <!-- wrapped heading -->
+                @canany(['lead-browse', 'settings-browse', 'seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse', 'commission-browse'])
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">System</div>
+                @endcanany
+
+                {{-- Student Leads --}}
+                @can('lead-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('leads.index') ? 'active' : '' }}"
+                        href="{{ route('leads.index') }}">
+                        <i class="fas fa-envelope-open-text"></i> Student Leads
+                    </a>
+                </li>
+                @endcan
+
+                @can('settings-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"
+                        href="{{ route('admin.settings.index') }}">
+                        <i class="fas fa-tools"></i> General Settings
+                    </a>
+                </li>
+                @endcan
+
+                @canany(['seo-organization-browse', 'seo-homepage-browse', 'seo-defaults-browse'])
+                <!-- SEO Settings Dropdown -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'active' : '' }}"
+                        data-bs-toggle="collapse" href="#seoSettingsMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'true' : 'false' }}"
+                        aria-controls="seoSettingsMenu">
+                        <i class="fas fa-search"></i> SEO
+                        <i
+                            class="fas fa-chevron-down ms-auto menu-arrow {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'rotate-180' : '' }}"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.seo_organization.*') || request()->routeIs('admin.seo_homepage.*') || request()->routeIs('admin.seo_defaults.*') ? 'show' : '' }}"
+                        id="seoSettingsMenu">
+                        <ul class="nav flex-column sub-menu">
+                            @can('seo-organization-browse')
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_organization.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_organization.edit') }}">Global Organization</a></li>
+                            @endcan
+                            @can('seo-homepage-browse')
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_homepage.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_homepage.edit') }}">Homepage SEO</a></li>
+                            @endcan
+                            @can('seo-defaults-browse')
+                            <li><a class="nav-link sub-link {{ request()->routeIs('admin.seo_defaults.edit') ? 'active' : '' }}"
+                                    href="{{ route('admin.seo_defaults.edit') }}">Global Defaults</a></li>
+                            @endcan
+                        </ul>
+                    </div>
+                </li>
+                @endcanany
+
+                @can('commission-browse')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.commission.index') ? 'active' : '' }}"
+                        href="{{ route('admin.commission.index') }}">
+                        <i class="fas fa-percent"></i> Commission Rules
+                    </a>
+                </li>
+                @endcan
+            @endif
+
+            @if($isExpert || $isAlumni)
+                <div class="sidebar-heading px-3 text-uppercase fw-bold">My Guidance Panel</div>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('expert.slots.*') ? 'active' : '' }}"
+                        href="{{ route('expert.slots.index') }}">
+                        <i class="fas fa-clock"></i> My Slots
+                    </a>
+                </li>
+                @if($isExpert)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.leads.*') || request()->routeIs('leads.*') ? 'active' : '' }}"
+                            href="{{ \Illuminate\Support\Facades\Route::has('expert.leads.index') ? route('expert.leads.index') : (\Illuminate\Support\Facades\Route::has('leads.index') ? route('leads.index', ['type' => 'Expert']) : '#') }}">
+                            <i class="fas fa-envelope-open-text"></i> My Leads
+                        </a>
+                    </li>
+                @endif
+
+
+                @if($isExpert)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.bookings.*') ? 'active' : '' }}"
+                            href="{{ route('expert.bookings.index') }}">
+                            <i class="fas fa-calendar-check"></i> Bookings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('expert.payouts.*') ? 'active' : '' }}"
+                            href="{{ \Illuminate\Support\Facades\Route::has('expert.payouts.index') ? route('expert.payouts.index') : '#' }}">
+                            <i class="fas fa-wallet"></i> Payouts
+                        </a>
+                    </li>
+                @else
+                    {{-- Fallback for Alumni if needed, or hide until Alumni module is updated --}}
+                    {{--
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-calendar-check"></i> Appointments
+                        </a>
+                    </li>
+                    --}}
+                @endif
+            @endif
+
+            <li class="nav-item mt-3 mb-4">
+                @php
+                    $logoutRoute = \Illuminate\Support\Facades\Route::has('logout') ? route('logout') : url('/logout');
+                    if ($isExpert && \Illuminate\Support\Facades\Route::has('expert.logout')) {
+                        $logoutRoute = route('expert.logout');
+                    } elseif ($isAlumni && \Illuminate\Support\Facades\Route::has('alumni.logout')) {
+                        $logoutRoute = route('alumni.logout');
+                    }
+                @endphp
+                <form action="{{ $logoutRoute }}" method="POST" id="logout-form">
+                    @csrf
+                    <a class="nav-link text-danger" href="javascript:void(0)"
+                        onclick="document.getElementById('logout-form').submit();">
+                        <i class="fas fa-power-off"></i> Logout
+                    </a>
+                </form>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <div id="content">
+        <div class="admin-navbar d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" id="sidebarToggle" class="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+                    <i class="fas fa-bars fs-5"></i>
+                </button>
+                <h5 class="mb-0 fw-semibold">@yield('title')</h5>
+            </div>
+            <div class="user-info d-flex align-items-center">
+                <span>Welcome, {{ $user->name ?? 'User' }}</span>
+                @if($isAdmin) <span class="badge bg-danger ms-2">Admin</span> @endif
+                @if($isExpert) <span class="badge bg-primary ms-2">Expert</span> @endif
+                @if($isAlumni) <span class="badge bg-success ms-2">Alumni</span> @endif
+            </div>
+        </div>
+
+
+
+        @yield('content')
+    </div>
+
+    <script src="{{ asset('js/jquery-3.7.1.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.0.0/tinymce.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        function initializeTinyMCE(selector = '.editor', height = 300) {
+            tinymce.init({
+                selector: selector,
+                height: height,
+                menubar: 'file edit view insert format tools table help',
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+                    'codesample', 'accordion', 'quickbars'
+                ],
+                toolbar: 'undo redo | accordion | blocks | ' +
+                    'bold italic backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'emoticons codesample | removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+                setup: function (editor) {
+                    editor.on('change', function () {
+                        editor.save();
+                        $(editor.getElement()).trigger('change');
+                    });
+                }
+            });
+        }
+    </script>
+    @stack('js')
+    <script>
+
+        // Smoothly handle collapse arrows, active states, and sidebar toggle
+        $(document).ready(function () {
+            // Restore body class on ready
+            if (window.innerWidth >= 992 && localStorage.getItem('sidebar_collapsed') === 'true') {
+                $('body').addClass('sidebar-collapsed');
+            }
+
+            // Sidebar toggle open / close
+            $('#sidebarToggle').on('click', function (e) {
+                e.preventDefault();
+                if (window.innerWidth < 992) {
+                    $('body').toggleClass('sidebar-mobile-open');
+                } else {
+                    $('body').toggleClass('sidebar-collapsed');
+                    $('html').toggleClass('sidebar-collapsed', $('body').hasClass('sidebar-collapsed'));
+                    localStorage.setItem('sidebar_collapsed', $('body').hasClass('sidebar-collapsed'));
+                }
+                setTimeout(function() {
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
+            });
+
+            // Close sidebar when clicking outside overlay on mobile
+            $('#sidebarOverlay').on('click', function () {
+                $('body').removeClass('sidebar-mobile-open');
+            });
+
+            // Fix Bootstrap 5 Modal Select2 focus issue
+            if ($.fn.modal && $.fn.modal.Constructor) {
+                $.fn.modal.Constructor.prototype.enforceFocus = function() {};
+                $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+            }
+            
+            // Initialize Select2 globally for all select dropdowns
+            $('select.form-select:not(.custom-select2)').each(function() {
+                let $this = $(this);
+                let modal = $this.closest('.modal');
+                if (modal.length) {
+                    $this.select2({
+                        width: '100%',
+                        dropdownParent: modal
+                    });
+                } else {
+                    $this.select2({
+                        width: '100%'
+                    });
+                }
+            });
+
+            $('.nav-link[data-bs-toggle="collapse"]').on('click', function () {
+                $(this).find('.menu-arrow').toggleClass('rotate-180');
+            });
+
+            // Toastr Notifications
+            @if(session('success'))
+                toastr.success("{{ session('success') }}");
+            @endif
+
+            @if(session('error'))
+                toastr.error("{{ session('error') }}");
+            @endif
+
+            @if(isset($errors) && is_object($errors) && method_exists($errors, 'any') && $errors->any())
+                @foreach($errors->all() as $error)
+                    toastr.warning("{{ $error }}");
+                @endforeach
+            @endif
+        });
+    </script>
+
+    @yield('scripts')
+</body>
+
+</html>

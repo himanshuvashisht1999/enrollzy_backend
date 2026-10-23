@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('exams', function (Blueprint $table) {
-            $table->longText('admit_card_download_procedure')->nullable()->after('application_helpdesk_details');
-            $table->longText('result_check_procedure')->nullable()->after('admit_card_download_procedure');
-        });
+        Schema::table('exams', function (Blueprint $table) {});
 
         Schema::table('exam_sessions', function (Blueprint $table) {
-            $table->string('admit_card_url')->nullable()->after('admit_card_release_date');
-            $table->string('result_url')->nullable()->after('result_declaration_date');
+            if (!Schema::hasColumn('exam_sessions', 'admit_card_url')) $table->string('admit_card_url')->nullable()->after('admit_card_release_date');
+            if (!Schema::hasColumn('exam_sessions', 'result_url')) $table->string('result_url')->nullable()->after('result_declaration_date');
         });
     }
 

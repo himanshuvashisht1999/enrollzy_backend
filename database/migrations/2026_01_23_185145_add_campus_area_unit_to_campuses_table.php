@@ -10,9 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            $table->string('campus_area_unit')->default('Acres')->after('campus_area_acres');
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

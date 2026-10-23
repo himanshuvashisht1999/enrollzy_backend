@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
+        if (!Schema::hasTable('about_us_features')) {
         Schema::create('about_us_features', function (Blueprint $table) {
             $table->id();
             $table->string('icon_image')->nullable();
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     public function down()

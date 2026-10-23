@@ -12,41 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Personal Details
-            $table->date('dob')->nullable();
-            $table->string('gender')->nullable();
-            $table->string('aadhaar_number')->nullable();
-            $table->string('alternate_mobile')->nullable();
-            
-            // Course / Program of Interest
-            $table->json('interested_in_ids')->nullable(); // Multi-select
-            $table->string('interested_in_course')->nullable();
-            $table->string('program_level')->nullable();
-            $table->string('mode')->nullable(); // Offline, Online, Hybrid
-            $table->json('session_ids')->nullable(); // Multi-select
-            
-            // Parents / Guardian Details
-            $table->string('father_name')->nullable();
-            $table->string('father_mobile')->nullable();
-            $table->string('father_email')->nullable();
-            $table->string('father_occupation')->nullable();
-            $table->string('mother_name')->nullable();
-            $table->string('mother_mobile')->nullable();
-            $table->string('mother_email')->nullable();
-            $table->string('mother_occupation')->nullable();
-            
-            // Additional Information
-            $table->boolean('sibling_enrolled')->default(false);
-            $table->string('referred_by')->nullable();
-            $table->string('source')->nullable();
-            
-            // Office Use
-            $table->string('registration_no')->nullable();
-            $table->string('class_batch')->nullable();
-            $table->string('counselor_name')->nullable();
-            $table->date('registration_date')->nullable();
-            $table->string('payment_status')->nullable();
-            $table->text('remarks')->nullable();
+            $cols = [
+                'dob' => 'date', 'gender' => 'string', 'aadhaar_number' => 'string', 'alternate_mobile' => 'string',
+                'interested_in_ids' => 'json', 'interested_in_course' => 'string', 'program_level' => 'string', 'mode' => 'string', 'session_ids' => 'json',
+                'father_name' => 'string', 'father_mobile' => 'string', 'father_email' => 'string', 'father_occupation' => 'string',
+                'mother_name' => 'string', 'mother_mobile' => 'string', 'mother_email' => 'string', 'mother_occupation' => 'string',
+                'sibling_enrolled' => 'string', 'referred_by' => 'string', 'source' => 'string',
+                'registration_no' => 'string', 'class_batch' => 'string', 'counselor_name' => 'string', 'registration_date' => 'date', 'payment_status' => 'string', 'remarks' => 'text'
+            ];
+            foreach ($cols as $col => $type) {
+                if (!Schema::hasColumn('users', $col)) {
+                    if ($type === 'date') $table->date($col)->nullable();
+                    elseif ($type === 'json') $table->json($col)->nullable();
+                    elseif ($type === 'text') $table->text($col)->nullable();
+                    else $table->string($col)->nullable();
+                }
+            }
         });
     }
 

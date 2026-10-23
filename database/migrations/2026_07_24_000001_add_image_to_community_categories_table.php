@@ -9,9 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         if (!Schema::hasColumn('community_categories', 'image')) {
-            Schema::table('community_categories', function (Blueprint $table) {
-                $table->string('image')->nullable()->after('description');
-            });
+            Schema::table('community_categories', function (Blueprint $table) {});
         }
     }
 

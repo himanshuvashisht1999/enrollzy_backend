@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('mentor_pricing_details', function (Blueprint $table) {
-            $table->string('upi_qr_code')->nullable();
-            $table->string('bank_account_holder_name')->nullable();
-            $table->string('bank_account_number')->nullable();
-            $table->string('bank_name')->nullable();
-            $table->string('bank_ifsc_code')->nullable();
-        });
+        Schema::table('mentor_pricing_details', function (Blueprint $table) {});
     }
 
     /**

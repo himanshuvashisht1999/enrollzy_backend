@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('organisation_fees')) {
         Schema::create('organisation_fees', function (Blueprint $table) {
             $table->id();
             $table->foreignId('organisation_id')->constrained()->cascadeOnDelete();
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->text('scholarship_details')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

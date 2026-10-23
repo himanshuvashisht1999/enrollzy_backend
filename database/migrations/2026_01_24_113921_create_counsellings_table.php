@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('counsellings')) {
         Schema::create('counsellings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
@@ -108,6 +109,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+        }
     }
 
     /**

@@ -20,4 +20,19 @@ class HrDepartment extends Model
     {
         return $this->belongsTo(HrDepartment::class, 'parent_id');
     }
+
+    public function staff()
+    {
+        return $this->hasMany(Admin::class, 'department_id');
+    }
+
+    public function teams()
+    {
+        return $this->hasMany(Team::class, 'department_id');
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'department_id');
+    }
 }

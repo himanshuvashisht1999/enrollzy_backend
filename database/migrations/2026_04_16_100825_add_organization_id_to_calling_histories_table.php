@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('calling_histories', function (Blueprint $table) {
-            if (!Schema::hasColumn('calling_histories', 'organization_id')) {
-                $table->integer('organization_id')->nullable()->after('id');
-            }
-        });
+        Schema::table('calling_histories', function (Blueprint $table) {});
     }
 
     /**

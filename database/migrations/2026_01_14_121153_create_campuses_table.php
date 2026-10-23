@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('campuses')) {
         Schema::create('campuses', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('organisation_id')->constrained()->onDelete('cascade');
@@ -74,6 +75,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+        }
     }
 
     /**

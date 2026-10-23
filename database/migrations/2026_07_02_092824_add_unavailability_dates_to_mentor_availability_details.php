@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('mentor_availability_details', function (Blueprint $table) {
-            $table->text('unavailability_dates')->nullable();
-        });
+        Schema::table('mentor_availability_details', function (Blueprint $table) {});
     }
 
     /**

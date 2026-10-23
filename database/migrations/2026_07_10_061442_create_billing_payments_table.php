@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('billing_payments')) {
         Schema::create('billing_payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invoice_id')->constrained('billing_invoices')->onDelete('cascade');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\DepartmentDocument;
 use App\Models\Organisation;
 use App\Models\Campus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DepartmentController extends Controller
 {
@@ -18,7 +20,7 @@ class DepartmentController extends Controller
         $organisationId = $request->query('organisation_id');
         $campusId = $request->query('campus_id');
 
-        $query = Department::with(['organisation', 'campus'])->latest();
+        $query = Department::with(['organisation', 'campus'])->withCount('courses')->latest();
 
         if ($organisationId) {
             $query->where('organisation_id', $organisationId);
@@ -55,7 +57,7 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
-            'campus_id' => 'required|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_name' => 'required|string|max:255',
             'department_code' => 'nullable|string|max:50',
             'department_type' => 'required|in:Academic,Clinical,Research,Interdisciplinary',
@@ -100,6 +102,13 @@ class DepartmentController extends Controller
             'funded_projects_count' => 'nullable|integer|min:0',
             'patents_filed_count' => 'nullable|integer|min:0',
             'industry_projects_count' => 'nullable|integer|min:0',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
         ]);
 
         // Handle array inputs
@@ -134,12 +143,15 @@ class DepartmentController extends Controller
             $request->merge([$field => $request->has($field) ? 1 : 0]);
         }
 
-        $department = Department::create($request->all());
+        $department = Department::create($request->except(['documents', 'has_documents_form']));
+        $this->syncDocuments($request, $department);
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $department->organisation_id,
-            'campus_id' => $department->campus_id
-        ])->with('success', 'Department created successfully.');
+        $redirectParams = ['organisation_id' => $department->organisation_id];
+        if ($department->campus_id) {
+            $redirectParams['campus_id'] = $department->campus_id;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department created successfully.');
     }
 
     public function show(Department $department)
@@ -149,6 +161,7 @@ class DepartmentController extends Controller
 
     public function edit(Department $department)
     {
+        $department->load('documents');
         $organisations = Organisation::select('id', 'name')->where('status', 1)->get();
         $campuses = Campus::where('organisation_id', $department->organisation_id)->get();
         return view('admin.departments.edit', compact('department', 'organisations', 'campuses'));
@@ -158,7 +171,7 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
-            'campus_id' => 'required|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_name' => 'required|string|max:255',
             'department_code' => 'nullable|string|max:50',
             'department_type' => 'required|in:Academic,Clinical,Research,Interdisciplinary',
@@ -203,6 +216,13 @@ class DepartmentController extends Controller
             'funded_projects_count' => 'nullable|integer|min:0',
             'patents_filed_count' => 'nullable|integer|min:0',
             'industry_projects_count' => 'nullable|integer|min:0',
+            'documents' => 'nullable|array',
+            'documents.*.id' => 'nullable|integer',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
+            'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
         ]);
 
         // Handle array inputs
@@ -236,7 +256,7 @@ class DepartmentController extends Controller
             $request->merge([$field => $request->has($field) ? 1 : 0]);
         }
 
-        $data = $request->all();
+        $data = $request->except(['documents', 'has_documents_form']);
 
         // Handle slug: if empty, let model handle it (or use existing one)
         if (array_key_exists('slug', $data) && empty($data['slug'])) {
@@ -244,30 +264,80 @@ class DepartmentController extends Controller
         }
 
         $department->update($data);
+        $this->syncDocuments($request, $department);
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $department->organisation_id,
-            'campus_id' => $department->campus_id
-        ])->with('success', 'Department updated successfully.');
+        $redirectParams = ['organisation_id' => $department->organisation_id];
+        if ($department->campus_id) {
+            $redirectParams['campus_id'] = $department->campus_id;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department updated successfully.');
     }
 
     public function destroy(Department $department)
     {
         $orgId = $department->organisation_id;
         $campusId = $department->campus_id;
-        $department->delete();
 
-        return redirect()->route('admin.departments.index', [
-            'organisation_id' => $orgId,
-            'campus_id' => $campusId
-        ])->with('success', 'Department deleted successfully.');
+        DB::transaction(function () use ($department) {
+            $department->delete();
+        });
+
+        $redirectParams = ['organisation_id' => $orgId];
+        if ($campusId) {
+            $redirectParams['campus_id'] = $campusId;
+        }
+
+        return redirect()->route('admin.departments.index', $redirectParams)->with('success', 'Department and all associated courses deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        if ($request->boolean('delete_all_for_campus') && $request->filled('campus_id')) {
+            $campusId = $request->input('campus_id');
+            $departments = Department::where('campus_id', $campusId)->get();
+            $count = $departments->count();
+
+            if ($count === 0) {
+                return redirect()->back()->with('warning', 'No departments found to delete.');
+            }
+
+            DB::transaction(function () use ($departments) {
+                $departments->each(function ($department) {
+                    $department->delete();
+                });
+            });
+
+            return redirect()->back()->with('success', "All {$count} department(s) and their associated courses in this campus were deleted successfully.");
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|string',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $departments = Department::whereIn('id', $ids)->get();
+        $count = $departments->count();
+
+        if ($count === 0) {
+            return redirect()->back()->with('warning', 'No matching departments found to delete.');
+        }
+
+        DB::transaction(function () use ($departments) {
+            $departments->each(function ($department) {
+                $department->delete();
+            });
+        });
+
+        return redirect()->back()->with('success', "{$count} department(s) and their associated courses were successfully deleted.");
     }
 
     public function storeDraft(Request $request)
     {
         $request->validate([
             'organisation_id' => 'required',
-            'campus_id' => 'required',
+            'campus_id' => 'nullable',
             'department_name' => 'required',
         ]);
 
@@ -348,5 +418,97 @@ class DepartmentController extends Controller
         $department->update($data);
 
         return response()->json(['success' => true]);
+    }
+
+    protected function syncDocuments(Request $request, Department $department): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/departments/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $department->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/departments/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/departments/documents/' . $fileName;
+
+                        $newDoc = $department->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $department->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(Department $department, DepartmentDocument $document)
+    {
+        if ($document->department_id !== $department->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this department.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
     }
 }

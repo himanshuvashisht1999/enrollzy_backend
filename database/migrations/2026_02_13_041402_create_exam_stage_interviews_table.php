@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_stage_interviews')) {
         Schema::create('exam_stage_interviews', function (Blueprint $table) {
             $table->id();
             $table->uuid('interview_stage_id')->unique();
@@ -103,6 +104,7 @@ return new class extends Migration {
 
             $table->timestamps();
         });
+        }
     }
 
     /**

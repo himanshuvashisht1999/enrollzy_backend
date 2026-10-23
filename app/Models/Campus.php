@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class Campus extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Models\Quality\Concerns\HasQualityRecords;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -44,6 +44,20 @@ class Campus extends Model
         'target_classes' => 'array',
         'class_profile' => 'array',
         'facilities' => 'array',
+        'campus_type_new_id' => 'array',
+        'coaching_category_ids' => 'array',
+        'total_appointed_teachers' => 'integer',
+        'male_staff' => 'integer',
+        'female_staff' => 'integer',
+        'total_enrolled_students' => 'integer',
+        'enrolled_boys' => 'integer',
+        'enrolled_girls' => 'integer',
+        'school_classes' => 'array',
+        'reviews' => 'array',
+        'events_and_activities' => 'array',
+        'notable_alumni' => 'array',
+        'clubs_and_committees' => 'array',
+        'faqs' => 'array',
     ];
 
     protected static function boot()
@@ -61,11 +75,49 @@ class Campus extends Model
         static::saving(function ($campus) {
             // Basic verification logic if needed
         });
+
+        static::deleting(function ($campus) {
+            if ($campus->isForceDeleting()) {
+                $campus->departments()->withTrashed()->get()->each(function ($department) {
+                    $department->forceDelete();
+                });
+            } else {
+                $campus->departments()->get()->each(function ($department) {
+                    $department->delete();
+                });
+            }
+            $campus->organisationCourses()->delete();
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')
+                    ->where('campus_id', $campus->id)
+                    ->delete();
+            }
+
+            if (method_exists($campus, 'documents')) {
+                $campus->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $campus->documents()->delete();
+            }
+        });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(CampusDocument::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
     }
 
     public function departments()
     {
-        return $this->hasMany(Department::class);
+        return $this->hasMany(Department::class)->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
     }
 
     public function organisation()
@@ -75,6 +127,23 @@ class Campus extends Model
 
     public function courses()
     {
-        return $this->hasMany(OrganisationCourse::class);
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function organisationCourses()
+    {
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'campus_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'campus_id', 'faculty_id')
+                    ->withPivot('designation_id', 'department_id', 'is_primary_department', 'status');
     }
 }
+

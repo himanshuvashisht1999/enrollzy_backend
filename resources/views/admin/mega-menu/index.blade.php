@@ -33,7 +33,43 @@
         </div>
     @endif
 
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.mega-menu.index') }}" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Select Parent Category</label>
+                        <select name="parent_id" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                            <option value="">-- Select Parent --</option>
+                            @foreach($parentLinks as $parent)
+                                <option value="{{ $parent->id }}" {{ $selectedParent == $parent->id ? 'selected' : '' }}>{{ $parent->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @if($selectedParent)
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Select Child Category</label>
+                        <select name="child_id" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                            <option value="">-- Select Child --</option>
+                            @foreach($childLinks as $child)
+                                <option value="{{ $child->id }}" {{ $selectedChild == $child->id ? 'selected' : '' }}>{{ $child->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="row g-4">
+        @if(!$selectedChild)
+            <div class="col-12">
+                <div class="alert alert-info border-0 shadow-sm">
+                    <i class="fas fa-info-circle me-2"></i> Please select a Parent and then a Child category above to manage its Mega Menu.
+                </div>
+            </div>
+        @endif
         @forelse($headerLinks as $hl)
             @php
                 $items = $subItemsByHeaderLink->get($hl->id, collect());
@@ -68,9 +104,17 @@
                                 @foreach($groupedSubItems as $columnHeading => $colItems)
                                     <div class="col-md-4 col-lg-3">
                                         <div class="p-3 bg-white rounded border h-100">
-                                            <h6 class="fw-bold text-uppercase text-primary border-bottom pb-2 mb-3">
-                                                <i class="fas fa-list-ul me-1"></i>
-                                                {{ $columnHeading ?: 'General Links' }}
+                                            <h6 class="fw-bold text-uppercase text-primary border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <i class="fas fa-list-ul me-1"></i>
+                                                    {{ $columnHeading ?: 'General Links' }}
+                                                </span>
+                                                <button type="button" class="btn btn-sm btn-link text-success p-0 add-col-sub-btn" 
+                                                    title="Add link to this column"
+                                                    data-header-link-id="{{ $hl->id }}" 
+                                                    data-column-title="{{ $columnHeading }}">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
                                             </h6>
                                             <ul class="list-unstyled mb-0">
                                                 @foreach($colItems as $item)
@@ -277,6 +321,16 @@
                     const hlId = String($(this).attr('data-header-link-id'));
                     $('#addHeaderLinkId').val(hlId).trigger('change');
                     updateDatalistOptions(hlId);
+                    $('input[name="column_title"]').first().val('');
+                    $('#addItemModal').modal('show');
+                });
+                
+                $(document).on('click', '.add-col-sub-btn', function () {
+                    const hlId = String($(this).attr('data-header-link-id'));
+                    const colTitle = $(this).attr('data-column-title');
+                    $('#addHeaderLinkId').val(hlId).trigger('change');
+                    updateDatalistOptions(hlId);
+                    $('input[name="column_title"]').first().val(colTitle);
                     $('#addItemModal').modal('show');
                 });
 

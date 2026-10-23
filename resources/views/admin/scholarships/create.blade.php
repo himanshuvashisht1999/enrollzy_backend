@@ -2,6 +2,38 @@
 
 @section('title', 'Add New Scholarship')
 
+@push('css')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container { width: 100% !important; }
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        min-height: 38px;
+        padding: 3px 6px;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #e0e7ff;
+        border: 1px solid #c7d2fe;
+        color: #3730a3;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: #4338ca;
+        margin-right: 5px;
+        font-weight: bold;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="mb-4 d-flex justify-content-between align-items-center">
     <a href="{{ route('admin.scholarships.index') }}" class="btn btn-outline-secondary">
@@ -135,16 +167,13 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Scholarship Type <small class="text-muted">(badge)</small></label>
-                            <select name="scholarship_type" class="form-select">
-                                <option value="">Select Type</option>
-                                <option value="Merit">Merit Based</option>
-                                <option value="Need Based">Need Based</option>
-                                <option value="Sports">Sports Based</option>
-                                <option value="Minority">Minority Based</option>
-                                <option value="Government">Government</option>
-                                <option value="Private">Private / CSR</option>
-                                <option value="Corporate">Corporate</option>
-                                <option value="International">International</option>
+                            @php
+                                $selectedTypes = (array) old('scholarship_type', []);
+                            @endphp
+                            <select name="scholarship_type[]" class="form-select select2-type" multiple="multiple" data-placeholder="Select Scholarship Types">
+                                @foreach(['Merit' => 'Merit Based', 'Need Based' => 'Need Based', 'Sports' => 'Sports Based', 'Minority' => 'Minority Based', 'Government' => 'Government', 'Private' => 'Private / CSR', 'Corporate' => 'Corporate', 'International' => 'International'] as $val => $label)
+                                    <option value="{{ $val }}" {{ in_array($val, $selectedTypes) ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -742,7 +771,19 @@ $(document).ready(function () {
         });
     }
 
+    // Initialize Select2 for multiple scholarship type badges
+    $('.select2-type').select2({
+        placeholder: 'Select Scholarship Types',
+        allowClear: true,
+        width: '100%'
+    });
+
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
+        $('.select2-type').select2({
+            placeholder: 'Select Scholarship Types',
+            allowClear: true,
+            width: '100%'
+        });
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(doAutosave, 600);
     });
@@ -754,4 +795,5 @@ $(document).ready(function () {
 
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 @endsection

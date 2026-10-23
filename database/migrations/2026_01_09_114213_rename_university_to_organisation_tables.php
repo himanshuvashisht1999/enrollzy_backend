@@ -19,18 +19,10 @@ return new class extends Migration
         Schema::rename('university_accreditations', 'organisation_accreditations');
 
         // Rename Foreign Keys
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            $table->renameColumn('university_id', 'organisation_id');
-        });
-        Schema::table('organisation_awards', function (Blueprint $table) {
-            $table->renameColumn('university_id', 'organisation_id');
-        });
-        Schema::table('organisation_sports', function (Blueprint $table) {
-            $table->renameColumn('university_id', 'organisation_id');
-        });
-        Schema::table('organisation_accreditations', function (Blueprint $table) {
-            $table->renameColumn('university_id', 'organisation_id');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
+        Schema::table('organisation_awards', function (Blueprint $table) {});
+        Schema::table('organisation_sports', function (Blueprint $table) {});
+        Schema::table('organisation_accreditations', function (Blueprint $table) {});
     }
 
     /**

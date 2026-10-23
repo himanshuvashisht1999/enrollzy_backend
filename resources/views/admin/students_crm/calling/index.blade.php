@@ -13,26 +13,12 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="form-group col-lg-3 mb-3">
-        <div class="radio-group">
-            <div>
-                <input type="radio" id="option1" name="group" value="1" {{ request('group') != 2 ? 'checked' : '' }}>
-                <label for="option1">Admin Data</label>
-            </div>
-            <div>
-                <input type="radio" id="option2" name="group" value="2" {{ request('group') == 2 ? 'checked' : '' }}>
-                <label for="option2">Private Data</label>
-            </div>
-        </div>
-    </div>
-
     <div class="card shadow mb-4 border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between">
             <h6 class="m-0 fw-bold text-primary">Find Calling User</h6>
         </div>
         <div class="card-body">
-            <form id="filterForm" class="row">
-                <input type="hidden" name="group" value="{{ request('group', 1) }}">
+            <form id="filterForm" class="row" action="{{ route('admin.students-crm.calling-module.index') }}" method="GET">
                 
                 <div class="form-group col-lg-3 mb-3">
                     <select name="category" class="form-select rounded-3" id="categoryFilter">
@@ -56,6 +42,19 @@
                 </div>
 
                 <div class="form-group col-lg-3 mb-3">
+                    <select name="session_id" class="form-select rounded-3" id="sessionFilter">
+                        <option value="">Select Session</option>
+                        @if(isset($sessions))
+                            @foreach($sessions as $session)
+                                <option value="{{ $session->id }}" {{ request('session_id') == $session->id ? 'selected' : '' }}>
+                                    {{ $session->name }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
                     <select name="country" class="form-select rounded-3" id="countryFilter">
                         <option value="">Select Country</option>
                     </select>
@@ -71,6 +70,14 @@
                     <select name="city" class="form-select rounded-3" id="cityFilter">
                         <option value="">Select City</option>
                     </select>
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
+                    <input type="text" name="filter_name" id="nameFilter" class="form-control rounded-3" placeholder="Search by Full Name">
+                </div>
+
+                <div class="form-group col-lg-3 mb-3">
+                    <input type="text" name="filter_phone" id="phoneFilter" class="form-control rounded-3" placeholder="Search by Phone Number">
                 </div>
 
                 <div class="form-group col-lg-3 mb-3">
@@ -95,39 +102,57 @@
 
                 <div class="col-lg-12 d-flex gap-2">
                     <button class="btn btn-primary px-4 rounded-pill" type="submit" id="submitSearchButton">Search</button>
-                    <button type="button" class="btn btn-info px-4 rounded-pill text-white" id="resetBtn">Reset</button>
+                    <a href="{{ route('admin.students-crm.calling-module.index') }}" class="btn btn-info px-4 rounded-pill text-white" id="resetBtn">Reset</a>
                     <button type="button" class="btn btn-secondary px-4 rounded-pill" id="restartBtn">Re-Start</button>
                 </div>
             </form>
         </div>
     </div>
 
+    @if(isset($data) && $data->count() > 0)
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-primary">All Users</h6>
+            <h6 class="m-0 fw-bold text-primary">Calling User</h6>
             <span class="text-muted small">Total number of contacts are <span id="totalContacts">{{ $count }}</span></span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle" id="callingTable" width="100%">
+                <table class="table table-hover align-middle" width="100%">
                     <thead class="bg-light">
                         <tr>
-                            <th>#</th>
                             <th>Student / Contact</th>
                             <th>Category</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @foreach($data as $item)
+                        <tr>
+                            <td><b>{{ $item->name }}</b><br><small class="text-muted">{{ $item->phone }}</small></td>
+                            <td>{{ $item->category->name ?? '<span class="text-muted small">No Category</span>' }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" 
+                                    data-id="{{ $item->id }}" 
+                                    data-name="{{ $item->name }}" 
+                                    data-phone="{{ $item->phone }}" 
+                                    data-category="{{ $item->category_id ?? '' }}">
+                                    <i class="fas fa-phone-alt"></i> Update Status
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+    @elseif(request()->has('category') || request()->has('country') || request()->has('state') || request()->has('city') || request()->has('filter_name') || request()->has('filter_phone') || request()->has('sequence_mode') || request()->has('user_with_out_status'))
+    <div class="alert alert-info mt-3 shadow-sm border-0 rounded-4">No more users found for the selected filters.</div>
+    @endif
 </div>
 
 <!-- Update Calling Status Modal -->
-<div class="modal fade" id="callModal" tabindex="-1">
+<div class="modal fade" id="callModal">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">
             <div class="modal-header border-0 pb-0">
@@ -142,31 +167,149 @@
                 <input type="hidden" id="category_val" name="category">
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-lg-3">
+                        <div class="col-lg-6">
                             <label class="form-label small fw-bold">Name</label>
                             <input type="text" class="form-control rounded-3" name="name" id="user_name" readonly>
                         </div>
-                        <div class="col-lg-3">
+                        <div class="col-lg-6">
                             <label class="form-label small fw-bold">Call Status <span class="text-danger">*</span></label>
                             <select name="status_id" class="form-select rounded-3" id="status_id" required>
                                 <option value="" selected disabled>Select</option>
                                 @foreach($statuses as $status)
-                                    <option value="{{ $status->id }}">{{ $status->name }}</option>
+                                    <option value="{{ $status->id }}" data-action="{{ $status->calling_action_id }}" data-more-details="{{ $status->is_more_details }}" data-date-require="{{ $status->date_require }}" data-comment-require="{{ $status->comment_require ?? 'no' }}">{{ $status->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-3" id="date-field">
+                        
+                        <!-- More Details Container -->
+                        <div id="more-details-container" class="col-12" style="display:none; margin-top: 0px;">
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <label class="form-label small fw-bold">Program Level</label>
+                                    <select name="program_level_id" id="program_level_id" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Program Level</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @if(isset($program_levels))
+                                            @foreach($program_levels as $pl)
+                                                <option value="{{ $pl->id }}">{{ $pl->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="school_type_container" style="display:none;">
+                                    <label class="form-label small fw-bold">School Type</label>
+                                    <select name="school_type" id="school_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type School Type</option>
+                                        @if(isset($school_types))
+                                            @foreach($school_types as $st)
+                                                <option value="{{ $st->id }}">{{ $st->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="course_container">
+                                    <label class="form-label small fw-bold" id="course_label">Course</label>
+                                    <select name="course_input" id="course_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Course</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @foreach($courses as $course)
+                                            <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-4" id="course_type_container">
+                                    <label class="form-label small fw-bold">Program Mode</label>
+                                    <select name="course_type" id="course_type" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type Program Mode</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @if(isset($program_types))
+                                            @foreach($program_types as $pt)
+                                                <option value="{{ $pt->title }}" data-db-id="{{ $pt->id }}">{{ $pt->title }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-lg-6" id="university_container">
+                                    <label class="form-label small fw-bold" id="university_label">University / Organization</label>
+                                    <select name="university_input" id="university_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select or Type University</option>
+                                        <option value="Not decided yet">Not decided yet</option>
+                                        @foreach($universities as $uni)
+                                            @php
+                                                $types = [];
+                                                $orgType = is_array($uni->campus_type_new_id) ? $uni->campus_type_new_id : json_decode($uni->campus_type_new_id, true) ?? [$uni->campus_type_new_id];
+                                                if(is_array($orgType)) {
+                                                    $types = array_merge($types, $orgType);
+                                                }
+                                                if ($uni->campuses) {
+                                                    foreach($uni->campuses as $campus) {
+                                                        $campType = is_array($campus->campus_type_new_id) ? $campus->campus_type_new_id : json_decode($campus->campus_type_new_id, true) ?? [$campus->campus_type_new_id];
+                                                        if(is_array($campType)) {
+                                                            $types = array_merge($types, $campType);
+                                                        }
+                                                    }
+                                                }
+                                                // Clean up array
+                                                $types = array_values(array_unique(array_filter($types)));
+                                            @endphp
+                                            <option value="{{ $uni->id }}" data-type-id="{{ $uni->organisation_type_id }}" data-school-type-id="{{ json_encode($types) }}">{{ $uni->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="form-label small fw-bold">Session</label>
+                                    <select name="session" id="session_input" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select Session</option>
+                                        @if(isset($sessions))
+                                            @foreach($sessions as $session)
+                                                <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6" id="date-field" style="display:none;">
                             <label class="form-label small fw-bold">Reminder Date</label>
                             <input type="date" name="next_call_date" class="form-control rounded-3" id="call_date">
                         </div>
-                        <div class="col-lg-3">
-                            <label class="form-label small fw-bold">Action Taken <span class="text-danger">*</span></label>
-                            <select name="action_id" class="form-select rounded-3" required>
+
+                        <div class="col-lg-6">
+                            <label class="form-label small fw-bold">Action Taken</label>
+                            <select name="action_id" id="action_id" class="form-select rounded-3">
                                 <option value="">Select Action</option>
                                 @foreach($actions as $action)
                                     <option value="{{ $action->id }}">{{ $action->name }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        
+                        <!-- Video Meeting Container -->
+                        <div id="video-meeting-container" class="col-12" style="display:none; margin-top: 0px;">
+                            <div class="row g-3">
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Meeting Date</label>
+                                    <input type="date" name="meeting_date" id="meeting_date" class="form-control rounded-3">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Time Slot</label>
+                                    <input type="time" name="time_slot" id="time_slot" class="form-control rounded-3">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Google Meeting Link</label>
+                                    <input type="url" name="meeting_link" id="meeting_link" class="form-control rounded-3" placeholder="https://meet.google.com/...">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label small fw-bold">Assign Lead to Staff</label>
+                                    <select name="assign_to_staff_id" id="assign_to_staff_id" class="form-select rounded-3 custom-select2">
+                                        <option value="">Select Staff</option>
+                                        @foreach($staffs as $staff)
+                                            <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="col-12">
@@ -231,52 +374,21 @@
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
     $(document).ready(function() {
-        let table = $('#callingTable').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: "{{ route('admin.students-crm.calling-module.index') }}",
-                data: function(d) {
-                    d.category = $('#categoryFilter').val();
-                    d.country = $('#countryFilter').val();
-                    d.state = $('#stateFilter').val();
-                    d.city = $('#cityFilter').val();
-                    d.user_with_out_status = $('#toggleUserWithoutStatus').is(':checked') ? 1 : 0;
-                    d.sequence_mode = $('#toggleSequence').is(':checked') ? 1 : 0;
-                }
-            },
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'contact', name: 'contact' },
-                { data: 'category_name', name: 'category_name' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ],
-            drawCallback: function(settings) {
-                $('#totalContacts').text(settings.json.recordsFiltered);
-            }
-        });
-
-        $('#filterForm').on('submit', function(e) {
-            e.preventDefault();
-            table.draw();
-        });
-
-        $('#resetBtn').on('click', function() {
-            $('#filterForm')[0].reset();
-            $('#stateFilter').html('<option value="">Select State</option>');
-            $('#cityFilter').html('<option value="">Select City</option>');
-            $('#toggleLabel').text('No');
-            $('#sequenceLabel').text('OFF (Normal)');
-            table.draw();
-        });
-
         $('#restartBtn').on('click', function() {
             let cat = $('#categoryFilter').val();
+            let group = '{{ request('group', 1) }}';
+            let baseUrl = '{{ route('admin.students-crm.calling-module.restart') }}';
+            
             if(!cat) {
                 Swal.fire('Warning', 'Please select a category first before clicking Re-Start.', 'warning');
                 return;
             }
-            table.draw();
+            
+            var params = new URLSearchParams();
+            params.set('group', group);
+            params.set('category', cat);
+            
+            window.location.href = baseUrl + '?' + params.toString();
         });
 
         $(document).on('click', '.open-calling-modal', function() {
@@ -310,8 +422,16 @@
                     if(res.status == 1) {
                         $('#callModal').modal('hide');
                         $('#callForm')[0].reset();
-                        table.ajax.reload();
-                        Swal.fire('Interactions Logged', res.message, 'success');
+                        $('#university_input').val(null).trigger('change');
+                        $('#course_input').val(null).trigger('change');
+                        $('#assign_to_staff_id').val(null).trigger('change');
+                        $('#more-details-container').hide();
+                        $('#video-meeting-container').hide();
+                        $('#date-field').hide();
+                        $('#call_date').prop('required', false);
+                        Swal.fire('Interactions Logged', res.message, 'success').then(() => {
+                            window.location.reload();
+                        });
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
@@ -352,7 +472,10 @@
 
         // CKEditor Init
         if (typeof CKEDITOR !== 'undefined') {
-            CKEDITOR.replace('message-editor', {});
+            CKEDITOR.config.versionCheck = false;
+            CKEDITOR.replace('message-editor', {
+                versionCheck: false
+            });
         }
 
         $('#whatsapp_template_id').on('change', function() {
@@ -363,6 +486,271 @@
             $('#caption').val(caption);
             if (CKEDITOR.instances['message-editor']) {
                 CKEDITOR.instances['message-editor'].setData(msg);
+            }
+        });
+
+        $('#status_id').on('change', function() {
+            let selected = $(this).find('option:selected');
+            let actionId = selected.data('action');
+            let moreDetails = selected.data('more-details');
+            let dateRequire = selected.data('date-require');
+            let commentRequire = selected.data('comment-require');
+            
+            if(actionId) {
+                $('#action_id').val(actionId).trigger('change');
+            } else {
+                $('#action_id').val('').trigger('change');
+            }
+            
+            if(moreDetails === 'yes') {
+                $('#more-details-container').show();
+            } else {
+                $('#more-details-container').hide();
+            }
+            
+            if(dateRequire === 'yes') {
+                $('#date-field').show();
+                $('#call_date').prop('required', true);
+            } else {
+                $('#date-field').hide();
+                $('#call_date').prop('required', false);
+            }
+
+            if(commentRequire === 'yes') {
+                $('#message').prop('required', true);
+            } else {
+                $('#message').prop('required', false);
+            }
+        });
+        
+        $('#university_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type University",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_input').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#program_level_id').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Program Level",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#course_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type Course Type",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#assign_to_staff_id').select2({
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select Staff",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#action_id').on('change', function() {
+            let actionText = $(this).find('option:selected').text().trim().toLowerCase();
+            if(actionText === 'arrange video meeting') {
+                $('#video-meeting-container').show();
+            } else {
+                $('#video-meeting-container').hide();
+            }
+        });
+        
+        let allUniversities = [];
+        let allCourseTypes = [];
+        let allCourses = [];
+        let courseProgramTypes = @json($course_program_types ?? []);
+        
+        $(document).ready(function() {
+            $('#university_input option').each(function() {
+                let stid = $(this).attr('data-school-type-id');
+                try {
+                    stid = JSON.parse(stid);
+                } catch(e) {}
+                allUniversities.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    typeId: $(this).data('type-id'),
+                    schoolTypeId: stid
+                });
+            });
+            
+            $('#course_type option').each(function() {
+                allCourseTypes.push({
+                    id: $(this).val(),
+                    text: $(this).text(),
+                    dbId: $(this).data('db-id')
+                });
+            });
+
+            $('#course_input option').each(function() {
+                allCourses.push({
+                    id: $(this).val(),
+                    text: $(this).text()
+                });
+            });
+        });
+
+        $('#school_type').select2({
+            tags: true,
+            dropdownParent: $('#callModal .modal-content'),
+            placeholder: "Select or Type School Type",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#program_level_id').on('change', function() {
+            let levelId = $(this).val();
+            let selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+            
+            let universitySelect = $('#university_input');
+            universitySelect.empty();
+
+            if (selectedText === 'school') {
+                $('#school_type_container').show();
+                $('#course_label').text('Choose Class');
+                $('#course_type_container').hide();
+                $('#university_label').text('School Name');
+                
+                $('#school_type').val('');
+                // Let the school_type change event handle populating universitySelect
+                setTimeout(function() {
+                    $('#school_type').trigger('change');
+                }, 10);
+            } else if (selectedText === 'competetive coaching' || selectedText === 'competitive coaching') {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('Choose institute');
+                
+                allUniversities.forEach(function(u) {
+                    if (!u.id || u.id === 'Not decided yet' || u.typeId == 3) {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            } else {
+                $('#school_type_container').hide();
+                $('#course_label').text('Course');
+                $('#course_type_container').show();
+                $('#university_label').text('University / Organization');
+                
+                allUniversities.forEach(function(u) {
+                    if (u.typeId != 4 || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    }
+                });
+            }
+            universitySelect.trigger('change');
+
+            let courseSelect = $('#course_input');
+            courseSelect.html('<option value="">Loading...</option>').trigger('change');
+            
+            $.ajax({
+                url: '{{ route("admin.students-crm.calling-module.get-courses") }}',
+                type: 'GET',
+                data: { program_level_id: levelId },
+                success: function(res) {
+                    let html = '<option value="">Select or Type Course</option>';
+                    html += '<option value="Not decided yet">Not decided yet</option>';
+                    if(res && res.length > 0) {
+                        res.forEach(c => {
+                            html += `<option value="${c.id}">${c.name}</option>`;
+                        });
+                    } else {
+                        allCourses.forEach(function(c) {
+                            if (c.id && c.id !== 'Not decided yet') {
+                                html += `<option value="${c.id}">${c.text}</option>`;
+                            }
+                        });
+                    }
+                    courseSelect.html(html).trigger('change');
+                },
+                error: function() {
+                    courseSelect.html('<option value="">Select or Type Course</option><option value="Not decided yet">Not decided yet</option>').trigger('change');
+                }
+            });
+        });
+
+        $('#school_type').on('change', function() {
+            let schoolTypeId = $(this).val();
+            let universitySelect = $('#university_input');
+            let currentVal = universitySelect.val();
+            universitySelect.empty();
+            
+            allUniversities.forEach(function(u) {
+                if (!u.id || u.id === 'Not decided yet' || u.typeId == 4) {
+                    if (!schoolTypeId || !u.id || u.id === 'Not decided yet') {
+                        let option = new Option(u.text, u.id, false, false);
+                        $(option).attr('data-type-id', u.typeId);
+                        universitySelect.append(option);
+                    } else {
+                        let sTypes = Array.isArray(u.schoolTypeId) ? u.schoolTypeId.map(String) : (u.schoolTypeId ? [String(u.schoolTypeId)] : []);
+                        if (sTypes.includes(String(schoolTypeId))) {
+                            let option = new Option(u.text, u.id, false, false);
+                            $(option).attr('data-type-id', u.typeId);
+                            universitySelect.append(option);
+                        }
+                    }
+                }
+            });
+            universitySelect.val(currentVal).trigger('change');
+        });
+
+        $('#course_input').on('change', function() {
+            let courseId = $(this).val();
+            let programLevelText = $('#program_level_id').find('option:selected').text().trim().toLowerCase();
+            
+            let courseTypeSelect = $('#course_type');
+            
+            if (programLevelText === 'competetive coaching' || programLevelText === 'competitive coaching') {
+                courseTypeSelect.empty();
+                
+                let option1 = new Option('Select or Type Program Mode', '', false, false);
+                let option2 = new Option('Not decided yet', 'Not decided yet', false, false);
+                courseTypeSelect.append(option1).append(option2);
+
+                if (courseId && courseId !== 'Not decided yet') {
+                    let allowedTypeIds = courseProgramTypes
+                        .filter(cpt => cpt.course_id == courseId)
+                        .map(cpt => parseInt(cpt.program_type_id));
+                        
+                    allCourseTypes.forEach(function(ct) {
+                        if (ct.id && ct.id !== 'Not decided yet' && allowedTypeIds.includes(parseInt(ct.dbId))) {
+                            let option = new Option(ct.text, ct.id, false, false);
+                            $(option).attr('data-db-id', ct.dbId);
+                            courseTypeSelect.append(option);
+                        }
+                    });
+                }
+                courseTypeSelect.trigger('change');
+            } else {
+                // Restore all course types if not coaching
+                courseTypeSelect.empty();
+                allCourseTypes.forEach(function(ct) {
+                    let option = new Option(ct.text, ct.id, false, false);
+                    if (ct.dbId) $(option).attr('data-db-id', ct.dbId);
+                    courseTypeSelect.append(option);
+                });
+                courseTypeSelect.trigger('change');
             }
         });
 

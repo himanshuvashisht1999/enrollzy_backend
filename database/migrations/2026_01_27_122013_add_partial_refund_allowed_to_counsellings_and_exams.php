@@ -10,13 +10,9 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('counsellings', function (Blueprint $table) {
-            $table->boolean('partial_refund_allowed')->default(false)->after('security_deposit_required');
-        });
+        Schema::table('counsellings', function (Blueprint $table) {});
 
-        Schema::table('exams', function (Blueprint $table) {
-            $table->boolean('partial_refund_allowed')->default(false)->after('security_deposit_required');
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**

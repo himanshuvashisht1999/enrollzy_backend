@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exam_selected_stages')) {
         Schema::create('exam_selected_stages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
@@ -20,6 +21,7 @@ return new class extends Migration {
 
             $table->unique(['exam_id', 'exam_stage_id']);
         });
+        }
     }
 
     /**

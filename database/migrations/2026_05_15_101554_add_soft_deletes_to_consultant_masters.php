@@ -11,23 +11,32 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultant_statuses', function (Blueprint $table) {
-            $table->dropColumn('color');
-            $table->softDeletes();
-        });
+        if (Schema::hasTable('consultant_lead_visibilities')) {
+            Schema::table('consultant_lead_visibilities', function (Blueprint $table) {
+                if (Schema::hasColumn('consultant_lead_visibilities', 'key')) {
+                    $table->dropColumn('key');
+                }
+                if (!Schema::hasColumn('consultant_lead_visibilities', 'deleted_at')) {
+                    $table->softDeletes();
+                }
+            });
+        }
 
-        Schema::table('consultant_lead_visibilities', function (Blueprint $table) {
-            $table->dropColumn('key');
-            $table->softDeletes();
-        });
+        if (Schema::hasTable('consultant_types')) {
+            Schema::table('consultant_types', function (Blueprint $table) {
+                if (!Schema::hasColumn('consultant_types', 'deleted_at')) {
+                    $table->softDeletes();
+                }
+            });
+        }
 
-        Schema::table('consultant_types', function (Blueprint $table) {
-            $table->softDeletes();
-        });
-
-        Schema::table('consultant_access_levels', function (Blueprint $table) {
-            $table->softDeletes();
-        });
+        if (Schema::hasTable('consultant_access_levels')) {
+            Schema::table('consultant_access_levels', function (Blueprint $table) {
+                if (!Schema::hasColumn('consultant_access_levels', 'deleted_at')) {
+                    $table->softDeletes();
+                }
+            });
+        }
     }
 
     /**
@@ -36,12 +45,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('consultant_statuses', function (Blueprint $table) {
-            $table->string('color')->nullable();
+            if (!Schema::hasColumn('consultant_statuses', 'color')) $table->string('color')->nullable();
             $table->dropSoftDeletes();
         });
 
         Schema::table('consultant_lead_visibilities', function (Blueprint $table) {
-            $table->string('key')->unique();
+            if (!Schema::hasColumn('consultant_lead_visibilities', 'key')) $table->string('key')->unique();
             $table->dropSoftDeletes();
         });
 

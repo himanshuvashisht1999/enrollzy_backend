@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('leads', function (Blueprint $table) {
-            $table->enum('type', ['Student', 'Expert', 'Alumni'])->default('Student')->after('subject');
-            $table->nullableMorphs('leadable');
-        });
+        Schema::table('leads', function (Blueprint $table) {});
     }
 
     /**

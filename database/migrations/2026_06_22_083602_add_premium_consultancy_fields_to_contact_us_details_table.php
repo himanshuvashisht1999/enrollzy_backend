@@ -11,39 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('contact_us_details', function (Blueprint $table) {
-            // Hero Section
-            $table->string('hero_badge')->nullable();
-            $table->text('hero_description')->nullable();
-            $table->json('hero_trust_points')->nullable();
-            $table->string('hero_image')->nullable();
-            $table->string('btn_hero_primary_text')->nullable();
-            $table->string('btn_hero_primary_url')->nullable();
-            $table->string('btn_hero_secondary_text')->nullable();
-            $table->string('btn_hero_secondary_url')->nullable();
-            
-            // Contact Info
-            $table->string('phone_sales')->nullable();
-            $table->string('email_sales')->nullable();
-            
-            // Founder Spotlight
-            $table->string('founder_badge')->nullable();
-            $table->string('founder_heading')->nullable();
-            $table->string('btn_founder_book_text')->nullable();
-            $table->string('btn_founder_book_url')->nullable();
-            
-            // Form Section
-            $table->json('form_trust_points')->nullable();
-            
-            // Why Contact Us
-            $table->string('why_contact_heading')->nullable();
-            $table->json('why_contact_cards')->nullable();
-            
-            // Consultation CTA
-            $table->string('cta_heading')->nullable();
-            $table->string('btn_cta_secondary_text')->nullable();
-            $table->string('btn_cta_secondary_url')->nullable();
-        });
+        Schema::table('contact_us_details', function (Blueprint $table) {});
     }
 
     /**

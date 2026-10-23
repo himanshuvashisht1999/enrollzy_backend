@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('attendance', function (Blueprint $table) {
-            $table->string('check_in_image')->nullable()->after('check_in');
-            $table->string('check_out_image')->nullable()->after('check_out');
-        });
+        Schema::table('attendance', function (Blueprint $table) {});
     }
 
     /**

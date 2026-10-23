@@ -7,9 +7,11 @@ use App\Models\Organisation;
 use App\Models\OrganisationCourse;
 use App\Models\OrganisationSchoolCourse;
 use App\Models\Course;
+use App\Models\OrganisationCourseDocument;
 use Illuminate\Support\Str;
 use App\Models\Exam; // Import Exam
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrganisationCourseController extends Controller
 {
@@ -21,7 +23,7 @@ class OrganisationCourseController extends Controller
 
         $organisation = Organisation::with('organisationType')->findOrFail($organisationId);
 
-        $query = $organisation->courses()->with(['course', 'campus', 'department', 'entranceExam']);
+        $query = $organisation->courses()->with(['course', 'campus', 'department', 'entranceExam'])->orderBy('sort_order', 'asc');
 
         if ($campusId) {
             $query->where('campus_id', $campusId);
@@ -31,7 +33,7 @@ class OrganisationCourseController extends Controller
             $query->where('department_id', $departmentId);
         }
 
-        $courses = $query->latest()->paginate(10);
+        $courses = $query->paginate(10);
         $organisationTypeId = $organisation->organisation_type_id;
 
         // Populate schoolCourses if it's a school to maintain view compatibility
@@ -40,8 +42,10 @@ class OrganisationCourseController extends Controller
         $department = $departmentId ? \App\Models\Department::find($departmentId) : null;
         $campus = $campusId ? \App\Models\Campus::find($campusId) : null;
         $allSpecializations = \App\Models\Specialization::pluck('title', 'id');
+        $allCampuses = $organisation->campuses()->where('status', true)->orderBy('campus_name')->get();
+        $allDepartments = $organisation->departments()->where('status', 'Active')->orderBy('department_name')->get();
 
-        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus', 'allSpecializations'));
+        return view('admin.organisation-courses.index', compact('organisation', 'courses', 'schoolCourses', 'campusId', 'departmentId', 'organisationTypeId', 'department', 'campus', 'allSpecializations', 'allCampuses', 'allDepartments'));
     }
 
     public function create(Request $request)
@@ -52,7 +56,7 @@ class OrganisationCourseController extends Controller
 
         $organisation = Organisation::findOrFail($organisationId);
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('name')->get();
+        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();
@@ -66,6 +70,7 @@ class OrganisationCourseController extends Controller
             ->filter()
             ->values();
         $exams = Exam::select('id', 'name', 'exam_category')->orderBy('name')->get();
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
 
         return view('admin.organisation-courses.create', compact(
             'organisation',
@@ -77,7 +82,8 @@ class OrganisationCourseController extends Controller
             'examCategories',
             'departments',
             'campusId',
-            'departmentId'
+            'departmentId',
+            'academicClasses'
         ));
     }
 
@@ -90,13 +96,22 @@ class OrganisationCourseController extends Controller
         $rules = [
             'organisation_id' => 'required|exists:organisations,id',
             'status' => 'boolean',
-            'campus_id' => ($typeId == 1 || $typeId == 2) ? 'required|exists:campuses,id' : 'nullable|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'program_level_id' => 'nullable|exists:program_levels,id',
+            'stream_offered_id' => 'nullable|exists:stream_offereds,id',
+            'discipline_id' => 'nullable|exists:disciplines,id',
+            'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
+            'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         // Type Specific Rules
@@ -111,6 +126,10 @@ class OrganisationCourseController extends Controller
         } elseif ($typeId == 4) {
             // School
             $rules['academic_unit_name'] = 'required|string|max:255';
+        } elseif ($typeId == 9) {
+            // E-Learning Platform: Direct Course
+            $rules['course_id'] = 'required|exists:courses,id';
+            $rules['sort_order'] = 'required|integer';
         }
 
         $request->validate($rules);
@@ -147,8 +166,10 @@ class OrganisationCourseController extends Controller
             'hostel_fee'
         ];
 
+        // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
         foreach ($booleans as $field) {
-            $data[$field] = $request->has($field);
+            if ($request->has($field)) $data[$field] = $request->boolean($field);
+            else unset($data[$field]);
         }
 
         // Slug generation if not provided
@@ -156,7 +177,18 @@ class OrganisationCourseController extends Controller
             $data['slug'] = Str::slug($data['academic_unit_name']);
         }
 
-        OrganisationCourse::create($data);
+        unset($data['documents'], $data['has_documents_form']);
+
+        // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
+        foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = ($data[$field] === null || $data[$field] === '') ? null : max(0, (int) $data[$field]);
+        }
+        foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
+        }
+
+        $course = OrganisationCourse::create($data);
+        $this->syncDocuments($request, $course);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $request->organisation_id,
@@ -168,8 +200,9 @@ class OrganisationCourseController extends Controller
     public function edit(Request $request, OrganisationCourse $organisationCourse)
     {
         $organisation = $organisationCourse->organisation;
+        $organisationCourse->load('documents');
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('name')->get();
+        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();
@@ -186,6 +219,8 @@ class OrganisationCourseController extends Controller
         $campusId = $request->query('campus_id');
         $departmentId = $request->query('department_id');
 
+        $academicClasses = \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
+
         return view('admin.organisation-courses.edit', compact(
             'organisationCourse',
             'organisation',
@@ -197,7 +232,8 @@ class OrganisationCourseController extends Controller
             'examCategories',
             'departments',
             'campusId',
-            'departmentId'
+            'departmentId',
+            'academicClasses'
         ));
     }
 
@@ -209,13 +245,22 @@ class OrganisationCourseController extends Controller
         // Base Rules
         $rules = [
             'status' => 'boolean',
-            'campus_id' => ($typeId == 1 || $typeId == 2) ? 'required|exists:campuses,id' : 'nullable|exists:campuses,id',
+            'campus_id' => 'nullable|exists:campuses,id',
             'department_id' => 'nullable|exists:departments,id',
             'course_languages' => 'nullable|array',
             'entrance_exam_ids' => 'nullable|array',
             'entrance_exam_category' => 'nullable|string|max:255',
             'specialization_ids' => 'nullable|array',
             'total_fees' => 'nullable|numeric',
+            'program_level_id' => 'nullable|exists:program_levels,id',
+            'stream_offered_id' => 'nullable|exists:stream_offereds,id',
+            'discipline_id' => 'nullable|exists:disciplines,id',
+            'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
+            'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
+            'documents' => 'nullable|array',
+            'documents.*.title' => 'nullable|string|max:255',
+            'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
         // Type Specific Rules
@@ -227,6 +272,9 @@ class OrganisationCourseController extends Controller
             $rules['course_id'] = 'required|exists:courses,id';
         } elseif ($typeId == 4) {
             $rules['academic_unit_name'] = 'required|string|max:255';
+        } elseif ($typeId == 9) {
+            $rules['course_id'] = 'required|exists:courses,id';
+            $rules['sort_order'] = 'required|integer';
         }
 
         $request->validate($rules);
@@ -271,15 +319,28 @@ class OrganisationCourseController extends Controller
             'hostel_fee'
         ];
 
+        // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
         foreach ($booleans as $field) {
-            $data[$field] = $request->has($field);
+            if ($request->has($field)) $data[$field] = $request->boolean($field);
+            else unset($data[$field]);
         }
 
         if (empty($data['slug']) && !empty($data['academic_unit_name'])) {
             $data['slug'] = Str::slug($data['academic_unit_name']);
         }
 
+        unset($data['documents'], $data['has_documents_form']);
+
+        // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
+        foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = ($data[$field] === null || $data[$field] === '') ? null : max(0, (int) $data[$field]);
+        }
+        foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
+        }
+
         $organisationCourse->update($data);
+        $this->syncDocuments($request, $organisationCourse);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $organisation->id,
@@ -302,6 +363,45 @@ class OrganisationCourseController extends Controller
         ])->with('success', 'Deleted successfully.');
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        if ($request->boolean('delete_all_for_department') && $request->filled('department_id')) {
+            $departmentId = $request->input('department_id');
+            $count = OrganisationCourse::where('department_id', $departmentId)->count();
+
+            if ($count === 0) {
+                return redirect()->back()->with('warning', 'No courses found to delete for this department.');
+            }
+
+            DB::transaction(function () use ($departmentId) {
+                OrganisationCourse::where('department_id', $departmentId)->delete();
+            });
+
+            return redirect()->back()->with('success', "All {$count} course(s) in this department were deleted successfully.");
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $count = count($ids);
+
+        if ($count === 0) {
+            return redirect()->back()->with('warning', 'No courses selected to delete.');
+        }
+
+        DB::transaction(function () use ($ids) {
+            OrganisationCourse::whereIn('id', $ids)->delete();
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')->whereIn('id', $ids)->delete();
+            }
+        });
+
+        return redirect()->back()->with('success', "{$count} course(s) deleted successfully.");
+    }
+
     public function duplicate($id)
     {
         $originalCourse = OrganisationCourse::findOrFail($id);
@@ -320,5 +420,97 @@ class OrganisationCourseController extends Controller
             'campus_id' => $originalCourse->campus_id,
             'department_id' => $originalCourse->department_id
         ])->with('success', 'Course duplicated successfully.');
+    }
+
+    protected function syncDocuments(Request $request, OrganisationCourse $organisationCourse): void
+    {
+        $documents = $request->input('documents', []);
+        $keptIds = [];
+        $docDir = public_path('media/organisation_courses/documents');
+
+        if (!file_exists($docDir)) {
+            @mkdir($docDir, 0777, true);
+        }
+
+        if (is_array($documents)) {
+            $order = 0;
+            foreach ($documents as $index => $docData) {
+                $docId = $docData['id'] ?? null;
+                $title = isset($docData['title']) ? trim((string)$docData['title']) : '';
+                $uploadedFile = $request->file("documents.{$index}.file");
+
+                if (!empty($docId)) {
+                    $existingDoc = $organisationCourse->documents()->where('id', $docId)->first();
+                    if ($existingDoc) {
+                        $existingDoc->title = !empty($title) ? $title : ($existingDoc->title ?: 'Document');
+                        $existingDoc->sort_order = $order++;
+
+                        if ($uploadedFile && $uploadedFile->isValid()) {
+                            if ($existingDoc->file_path && file_exists(public_path($existingDoc->file_path))) {
+                                @unlink(public_path($existingDoc->file_path));
+                            }
+
+                            $origName = $uploadedFile->getClientOriginalName();
+                            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                            $uploadedFile->move($docDir, $fileName);
+                            $savedPath = 'media/organisation_courses/documents/' . $fileName;
+
+                            $existingDoc->file_path = $savedPath;
+                            $existingDoc->file_name = $origName;
+                            $existingDoc->file_size = @filesize(public_path($savedPath)) ?: null;
+                        }
+
+                        $existingDoc->save();
+                        $keptIds[] = $existingDoc->id;
+                    }
+                } else {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $origName = $uploadedFile->getClientOriginalName();
+                        $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                        $uploadedFile->move($docDir, $fileName);
+                        $savedPath = 'media/organisation_courses/documents/' . $fileName;
+
+                        $newDoc = $organisationCourse->documents()->create([
+                            'title' => !empty($title) ? $title : pathinfo($origName, PATHINFO_FILENAME),
+                            'file_path' => $savedPath,
+                            'file_name' => $origName,
+                            'file_size' => @filesize(public_path($savedPath)) ?: null,
+                            'sort_order' => $order++,
+                        ]);
+                        $keptIds[] = $newDoc->id;
+                    }
+                }
+            }
+        }
+
+        if ($request->has('has_documents_form')) {
+            $organisationCourse->documents()->whereNotIn('id', $keptIds)->get()->each(function ($doc) {
+                if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                    @unlink(public_path($doc->file_path));
+                }
+                $doc->delete();
+            });
+        }
+    }
+
+    public function destroyDocument(OrganisationCourse $organisationCourse, OrganisationCourseDocument $document)
+    {
+        if ($document->organisation_course_id != $organisationCourse->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document does not belong to this course.'
+            ], 403);
+        }
+
+        if ($document->file_path && file_exists(public_path($document->file_path))) {
+            @unlink(public_path($document->file_path));
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully.'
+        ]);
     }
 }

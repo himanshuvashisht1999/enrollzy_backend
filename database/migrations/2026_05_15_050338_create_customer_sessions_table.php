@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('customer_sessions')) {
         Schema::create('customer_sessions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

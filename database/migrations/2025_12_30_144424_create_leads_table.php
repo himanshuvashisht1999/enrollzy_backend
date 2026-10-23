@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('leads')) {
         Schema::create('leads', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->string('status')->default('New'); // New, Contacted, Converted, Rejected
             $table->timestamps();
         });
+        }
     }
 
     /**

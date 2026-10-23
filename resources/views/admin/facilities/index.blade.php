@@ -34,14 +34,15 @@
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered table-striped align-middle">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">#</th>
-                                <th style="width: 100px;">Icon</th>
-                                <th>Name</th>
+                                <th style="width: 80px;">Icon</th>
+                                <th style="min-width: 150px;">Name</th>
+                                <th>Organisation Types</th>
                                 <th style="width: 100px;">Status</th>
-                                <th style="width: 150px;">Actions</th>
+                                <th style="width: 130px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,7 +56,20 @@
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td>{{ $facility->name }}</td>
+                                    <td class="fw-bold">{{ $facility->name }}</td>
+                                    <td>
+                                        @if($facility->organisationTypes->count() === $organisationTypes->count() && $organisationTypes->count() > 0)
+                                            <span class="badge bg-primary">All Organisation Types</span>
+                                        @else
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @forelse($facility->organisationTypes as $type)
+                                                    <span class="badge bg-light text-dark border">{{ $type->title }}</span>
+                                                @empty
+                                                    <span class="badge bg-secondary">None</span>
+                                                @endforelse
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if($facility->status)
                                             <span class="badge bg-success">Active</span>
@@ -64,7 +78,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-info text-white" onclick="editFacility({{ json_encode($facility) }})">
+                                        <button class="btn btn-sm btn-info text-white me-1" data-facility='@json($facility)' onclick="editFacility(this)">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form action="{{ route('admin.facilities.destroy', $facility->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this facility?');">
@@ -78,7 +92,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4">No facilities added yet.</td>
+                                    <td colspan="6" class="text-center py-4">No facilities added yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -91,7 +105,7 @@
 
 <!-- Modal -->
 <div class="modal fade" id="facilityModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <form id="facilityForm" method="POST" action="{{ route('admin.facilities.store') }}">
             @csrf
             <input type="hidden" name="_method" id="formMethod" value="POST">
@@ -101,18 +115,50 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" id="name" class="form-control" required placeholder="e.g. Wifi, Library">
+                    <div class="row">
+                        <div class="col-md-7 mb-3">
+                            <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="name" class="form-control" required placeholder="e.g. Wifi, Library">
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label fw-semibold">Icon Class</label>
+                            <input type="text" name="icon" id="icon" class="form-control" placeholder="e.g. fas fa-wifi">
+                            <small class="text-muted">Use FontAwesome 5 class names.</small>
+                        </div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Icon Class</label>
-                        <input type="text" name="icon" id="icon" class="form-control" placeholder="e.g. fas fa-wifi">
-                        <small class="text-muted">Use FontAwesome 5 class names.</small>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-semibold mb-0">Show in Organisation Types</label>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" id="btnSelectAllOrgTypes">
+                                    <i class="fas fa-check-double me-1"></i>Select All
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="btnDeselectAllOrgTypes">
+                                    <i class="fas fa-times me-1"></i>Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card p-3 bg-light border">
+                            <div class="row g-2">
+                                @foreach($organisationTypes as $orgType)
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input org-type-check" type="checkbox" name="organisation_type_ids[]" value="{{ $orgType->id }}" id="org_type_{{ $orgType->id }}">
+                                            <label class="form-check-label cursor-pointer" for="org_type_{{ $orgType->id }}">
+                                                {{ $orgType->title }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <small class="text-muted">This facility will only be available for selected organisation types when adding or editing campuses.</small>
                     </div>
+
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="status" id="status" value="1" checked>
-                        <label class="form-check-label" for="status">Active</label>
+                        <label class="form-check-label fw-semibold" for="status">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -134,16 +180,36 @@
         $('#name').val('');
         $('#icon').val('');
         $('#status').prop('checked', true);
+        $('.org-type-check').prop('checked', true);
     }
 
-    function editFacility(facility) {
+    function editFacility(element) {
+        const facility = typeof element === 'object' && element.dataset ? JSON.parse(element.dataset.facility) : element;
         $('#facilityForm').attr('action', `/masters/facilities/${facility.id}`);
         $('#formMethod').val('PUT');
         $('#modalTitle').text('Edit Facility');
         $('#name').val(facility.name);
         $('#icon').val(facility.icon);
-        $('#status').prop('checked', facility.status);
+        $('#status').prop('checked', !!facility.status);
+
+        const assignedIds = (facility.organisation_types || []).map(function(item) {
+            return String(item.id);
+        });
+
+        $('.org-type-check').each(function() {
+            const val = String($(this).val());
+            $(this).prop('checked', assignedIds.includes(val));
+        });
+
         $('#facilityModal').modal('show');
     }
+
+    $(document).on('click', '#btnSelectAllOrgTypes', function() {
+        $('.org-type-check').prop('checked', true);
+    });
+
+    $(document).on('click', '#btnDeselectAllOrgTypes', function() {
+        $('.org-type-check').prop('checked', false);
+    });
 </script>
 @endpush

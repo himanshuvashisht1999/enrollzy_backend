@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('homepage_sections', function (Blueprint $table) {
-            $table->string('image')->nullable()->after('cta_url');
-        });
+        Schema::table('homepage_sections', function (Blueprint $table) {});
     }
 
     /**

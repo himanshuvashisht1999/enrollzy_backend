@@ -12,6 +12,8 @@ class BillingInvoice extends Model
 
     protected $fillable = [
         'invoice_number',
+        'client_type', // 'organisation' or 'client'
+        'billing_client_id',
         'organisation_id',
         'campus_id',
         'issue_date',
@@ -45,6 +47,16 @@ class BillingInvoice extends Model
         return $this->belongsTo(Organisation::class);
     }
 
+    public function client()
+    {
+        return $this->belongsTo(BillingClient::class, 'billing_client_id');
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
     public function items()
     {
         return $this->hasMany(BillingInvoiceItem::class, 'invoice_id');
@@ -55,8 +67,19 @@ class BillingInvoice extends Model
         return $this->hasMany(BillingPayment::class, 'invoice_id');
     }
 
-    public function campus()
+    /**
+     * Get the recipient entity display name
+     */
+    public function getRecipientNameAttribute(): string
     {
-        return $this->belongsTo(Campus::class);
+        if ($this->client_type === 'client' && $this->client) {
+            return $this->client->name;
+        }
+
+        if ($this->organisation) {
+            return $this->campus ? $this->organisation->name . ' (' . $this->campus->campus_name . ')' : $this->organisation->name;
+        }
+
+        return 'N/A';
     }
 }

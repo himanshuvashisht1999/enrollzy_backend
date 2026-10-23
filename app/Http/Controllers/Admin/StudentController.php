@@ -39,7 +39,7 @@ class StudentController extends Controller
      */
     public function create()
     {
-        $organisations = Organisation::where('status', 1)->orderBy('name')->pluck('name', 'id');
+        $organisations = Organisation::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->pluck('name', 'id');
         return view('admin.students.create', compact('organisations'));
     }
 
@@ -103,7 +103,7 @@ class StudentController extends Controller
     public function edit(string $id)
     {
         $student = Student::findOrFail($id);
-        $organisations = Organisation::where('status', 1)->orderBy('name')->pluck('name', 'id');
+        $organisations = Organisation::where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->pluck('name', 'id');
         return view('admin.students.edit', compact('student', 'organisations'));
     }
 

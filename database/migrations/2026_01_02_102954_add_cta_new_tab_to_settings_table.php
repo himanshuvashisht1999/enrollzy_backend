@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings', function (Blueprint $table) {
-            $table->boolean('hero_cta_1_new_tab')->default(0)->after('hero_cta_1_link');
-            $table->boolean('hero_cta_2_new_tab')->default(0)->after('hero_cta_2_link');
-        });
+        Schema::table('settings', function (Blueprint $table) {});
     }
 
     /**

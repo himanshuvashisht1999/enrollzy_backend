@@ -96,7 +96,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.departments.store') }}" id="department-form" method="POST">
+            <form action="{{ route('admin.departments.store') }}" id="department-form" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="card">
@@ -137,6 +137,9 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="#settings" role="tab">Settings</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#documents-tab" role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -158,6 +161,26 @@
                                             <input type="hidden" name="organisation_id" value="{{ $selectedOrganisation->id }}">
                                             <input type="hidden" name="campus_id" value="{{ $selectedCampus->id }}">
                                         </div>
+                                    @elseif(isset($selectedOrganisation))
+                                        <div class="col-12">
+                                            <div class="alert alert-soft-primary border-primary d-flex align-items-center"
+                                                role="alert">
+                                                <i class="fas fa-university me-2 fs-4"></i>
+                                                <div>
+                                                    Creating Department under: <strong>{{ $selectedOrganisation->name }}</strong>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" name="organisation_id" value="{{ $selectedOrganisation->id }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                            <select name="campus_id" id="campus_id" class="form-select">
+                                                <option value="">Direct to Organisation (No Campus)</option>
+                                                @foreach($campuses as $campus)
+                                                    <option value="{{ $campus->id }}" {{ (old('campus_id') == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     @else
                                         <div class="col-md-6">
                                             <label class="form-label">Organisation <span class="text-danger">*</span></label>
@@ -169,10 +192,10 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Campus <span class="text-danger">*</span></label>
-                                            <select name="campus_id" id="campus_id" class="form-select" required
+                                            <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                            <select name="campus_id" id="campus_id" class="form-select"
                                                 {{ old('organisation_id') ? '' : 'disabled' }}>
-                                                <option value="">Select Campus</option>
+                                                <option value="">Direct to Organisation (No Campus)</option>
                                                 @if(isset($campuses) && !isset($selectedCampus))
                                                     @foreach($campuses as $campus)
                                                         <option value="{{ $campus->id }}" {{ (old('campus_id') == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
@@ -579,6 +602,11 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 8. Documents -->
+                            <div class="tab-pane fade" id="documents-tab" role="tabpanel">
+                                @include('admin.departments.partials.documents')
+                            </div>
                         </div> <!-- End Tab Content -->
 
                         <!-- Footer Navigation -->
@@ -606,7 +634,7 @@
             @if(!isset($selectedOrganisation))
             $('#organisation_id').on('change', function () {
                 const orgId = $(this).val();
-                $('#campus_id').html('<option value="">Select Campus</option>').prop('disabled', true);
+                $('#campus_id').html('<option value="">Direct to Organisation (No Campus)</option>').prop('disabled', true);
                 if (orgId) {
                     $('#campus_id').prop('disabled', false);
                     $.get(`/admin/organisations/${orgId}/campuses-json`, function (data) {
@@ -674,6 +702,7 @@
             function saveStepData() {
                 if (isSaving) return;
                 const currentTabId = $(tabs[currentTab]).attr('href').substring(1);
+                if (currentTabId === 'documents-tab') return;
 
                 if (!departmentId && currentTabId === 'core') {
                     // Create Draft
@@ -685,7 +714,7 @@
                         _token: '{{ csrf_token() }}'
                     };
 
-                    if (!formData.department_name || !formData.organisation_id || !formData.campus_id) return;
+                    if (!formData.department_name || !formData.organisation_id) return;
 
                     isSaving = true;
                     showAutoSaveStatus('saving');

@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('noteworthy_mentions', function (Blueprint $table) {
-            $table->string('slug')->nullable()->unique()->after('title');
-            $table->text('description')->nullable()->after('subtitle');
-        });
+        Schema::table('noteworthy_mentions', function (Blueprint $table) {});
     }
 
     /**

@@ -10,9 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('exams', function (Blueprint $table) {
-            $table->boolean('has_stages')->default(false)->after('featured_exam');
-        });
+        Schema::table('exams', function (Blueprint $table) {});
     }
 
     /**

@@ -15,23 +15,35 @@ use App\Imports\CustomerImport;
 use App\Exports\CustomerSampleExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CustomerController extends Controller
+class CustomerController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('can:customer-browse', only: ['index']),
+            new Middleware('can:customer-read', only: ['show']),
+            new Middleware('can:customer-add', only: ['create', 'store', 'import', 'downloadSample']),
+            new Middleware('can:customer-edit', only: ['edit', 'update']),
+            new Middleware('can:customer-delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $organization_id = auth()->user()->organization_id;
-            $data = Customer::where('organization_id', $organization_id)->with('category');
+            $data = Customer::with('category');
 
             if (!$request->filled('filter_name') && !$request->filled('filter_phone')) {
                 $data->whereRaw('1 = 0');
             } else {
                 if ($request->filled('filter_name')) {
-                    $data->where('name', 'like', '%' . $request->filter_name . '%');
+                    $data->where('name', $request->filter_name);
                 }
                 if ($request->filled('filter_phone')) {
-                    $data->where('phone', 'like', '%' . $request->filter_phone . '%');
+                    $data->where('phone', $request->filter_phone);
                 }
             }
 
@@ -55,26 +67,36 @@ class CustomerController extends Controller
                 ->make(true);
         }
 
-        return view('admin.customers.index');
+        $master_categories = CustomerCategory::where('parent_id', 0)
+            ->where('status', 'active')
+            ->get();
+
+        return view('admin.customers.index', compact('master_categories'));
     }
 
     public function create()
     {
-        $organization_id = auth()->user()->organization_id;
-        $institutes = Institute::where('organization_id', $organization_id)->get();
+        $institutes = Institute::all();
         $categories = CustomerCategory::where('parent_id', 0)
-            ->where('organization_id', $organization_id)
             ->with('childrenRecursive')
             ->get();
-        $interested_ins = \App\Models\InterestedIn::where('organization_id', $organization_id)->where('status', 'active')->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', $organization_id)->where('status', 'active')->get();
+        $interested_ins = \App\Models\InterestedIn::where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where(function($q) {
+            $q->where('status', 1)->orWhere('status', 'active');
+        })->get();
         
         $fields = CustomerField::where('status', 'active')
-            ->where('organization_id', $organization_id)
             ->orderBy('sequence', 'asc')
             ->get();
 
-        return view('admin.customers.create', compact('institutes', 'categories', 'fields', 'interested_ins', 'sessions'));
+        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
+        $courses = \App\Models\Course::where('status', 1)->get();
+        $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
+        $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
+        $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
+
+        return view('admin.customers.create', compact('institutes', 'categories', 'fields', 'interested_ins', 'sessions', 'universities', 'courses', 'program_levels', 'program_types', 'school_types', 'course_program_types'));
     }
 
     public function store(Request $request)
@@ -98,6 +120,54 @@ class CustomerController extends Controller
             if (($data['sibling_enrolled'] ?? '0') != '1') {
                 $data['sibling_name'] = null;
                 $data['sibling_age'] = null;
+            }
+
+            // Process Current Academic Details
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $data['current_university_id'] = $request->current_university;
+                    $data['current_university_text'] = null;
+                } else {
+                    $data['current_university_id'] = null;
+                    $data['current_university_text'] = $request->current_university;
+                }
+            } else {
+                $data['current_university_id'] = null;
+                $data['current_university_text'] = null;
+            }
+
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $data['current_course_id'] = $request->current_course;
+                    $data['current_course_text'] = null;
+                } else {
+                    $data['current_course_id'] = null;
+                    $data['current_course_text'] = $request->current_course;
+                }
+            } else {
+                $data['current_course_id'] = null;
+                $data['current_course_text'] = null;
+            }
+
+            $data['current_course_type'] = $request->current_program_mode;
+            $data['current_session'] = $request->current_session;
+
+            // Process Program of Interest Mappings
+            $data['program_level'] = $request->program_level_id;
+            $data['school_type'] = $request->school_type;
+            $data['interested_in_course'] = $request->course_input;
+            $data['mode'] = $request->course_type;
+            
+            if ($request->filled('university_input')) {
+                $data['interested_in_ids'] = [$request->university_input];
+            } else {
+                $data['interested_in_ids'] = null;
+            }
+
+            if ($request->filled('session_id')) {
+                $data['session_ids'] = [$request->session_id];
+            } else {
+                $data['session_ids'] = null;
             }
 
             // Handle Image
@@ -163,32 +233,39 @@ class CustomerController extends Controller
     public function edit($id)
     {
         $id = decrypt($id);
-        $customer = Customer::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
-        $institutes = Institute::where('organization_id', auth()->user()->organization_id)->get();
+        $customer = Customer::findOrFail($id);
+        $institutes = Institute::all();
         $categories = CustomerCategory::where('parent_id', 0)
-            ->where('organization_id', auth()->user()->organization_id)
             ->with('childrenRecursive')
             ->get();
         $fields = CustomerField::where('status', 'active')
-            ->where('organization_id', auth()->user()->organization_id)
             ->orderBy('sequence', 'asc')
             ->get();
         
         $fieldValues = UserCustomerField::where('user_id', $id)->pluck('value', 'customer_field_id')->toArray();
-        $interested_ins = \App\Models\InterestedIn::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
-        $sessions = \App\Models\CustomerSession::where('organization_id', auth()->user()->organization_id)->where('status', 'active')->get();
+        $interested_ins = \App\Models\InterestedIn::where('status', 'active')->get();
+        $sessions = \App\Models\CustomerSession::where(function($q) {
+            $q->where('status', 1)->orWhere('status', 'active');
+        })->get();
 
-        return view('admin.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues', 'interested_ins', 'sessions'));
+        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
+        $courses = \App\Models\Course::where('status', 1)->get();
+        $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
+        $program_types = \App\Models\ProgramType::where('status', 1)->get();
+        $school_types = \App\Models\CampusTypeNew::where('status', 1)->get();
+        $course_program_types = \Illuminate\Support\Facades\DB::table('course_program_type')->get();
+
+        return view('admin.customers.edit', compact('customer', 'institutes', 'categories', 'fields', 'fieldValues', 'interested_ins', 'sessions', 'universities', 'courses', 'program_levels', 'program_types', 'school_types', 'course_program_types'));
     }
 
     public function update(Request $request, $id)
     {
         $id = decrypt($id);
-        $customer = Customer::where('organization_id', auth()->user()->organization_id)->findOrFail($id);
+        $customer = Customer::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'phone' => 'required',
+            'name' => $request->from === 'calling_dashboard' ? 'nullable|string|max:255' : 'required|string|max:255',
+            'phone' => $request->from === 'calling_dashboard' ? 'nullable' : 'required',
         ]);
 
         if ($validator->fails()) {
@@ -198,9 +275,64 @@ class CustomerController extends Controller
         try {
             $data = $request->all();
 
+            // When editing from calling dashboard, preserve original name, phone and email to prevent tampering
+            if ($request->from === 'calling_dashboard') {
+                $data['name'] = $customer->name;
+                $data['phone'] = $customer->phone;
+                $data['email'] = $customer->email;
+            }
+
             if (($data['sibling_enrolled'] ?? '0') != '1') {
                 $data['sibling_name'] = null;
                 $data['sibling_age'] = null;
+            }
+
+            // Process Current Academic Details
+            if ($request->filled('current_university')) {
+                if (is_numeric($request->current_university)) {
+                    $data['current_university_id'] = $request->current_university;
+                    $data['current_university_text'] = null;
+                } else {
+                    $data['current_university_id'] = null;
+                    $data['current_university_text'] = $request->current_university;
+                }
+            } else {
+                $data['current_university_id'] = null;
+                $data['current_university_text'] = null;
+            }
+
+            if ($request->filled('current_course')) {
+                if (is_numeric($request->current_course)) {
+                    $data['current_course_id'] = $request->current_course;
+                    $data['current_course_text'] = null;
+                } else {
+                    $data['current_course_id'] = null;
+                    $data['current_course_text'] = $request->current_course;
+                }
+            } else {
+                $data['current_course_id'] = null;
+                $data['current_course_text'] = null;
+            }
+
+            $data['current_course_type'] = $request->current_program_mode;
+            $data['current_session'] = $request->current_session;
+
+            // Process Program of Interest Mappings
+            $data['program_level'] = $request->program_level_id;
+            $data['school_type'] = $request->school_type;
+            $data['interested_in_course'] = $request->course_input;
+            $data['mode'] = $request->course_type;
+            
+            if ($request->filled('university_input')) {
+                $data['interested_in_ids'] = [$request->university_input];
+            } else {
+                $data['interested_in_ids'] = null;
+            }
+
+            if ($request->filled('session_id')) {
+                $data['session_ids'] = [$request->session_id];
+            } else {
+                $data['session_ids'] = null;
             }
 
             // Handle Profile Image
@@ -262,6 +394,9 @@ class CustomerController extends Controller
                 }
             }
 
+            if ($request->from === 'calling_dashboard') {
+                return redirect()->route('admin.students-crm.calling-dashboard.index')->with('success', 'Student profile updated successfully');
+            }
             return redirect()->route('admin.customers.main.index.index')->with('success', 'Customer updated successfully');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
@@ -272,7 +407,6 @@ class CustomerController extends Controller
     {
         $parentId = $request->parent_id;
         $categories = CustomerCategory::where('parent_id', $parentId)
-            ->where('organization_id', auth()->user()->organization_id)
             ->where('status', 'active')
             ->get(['id', 'name']);
 
@@ -285,7 +419,8 @@ class CustomerController extends Controller
     public function import(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'file' => 'required|mimes:xlsx,xls,csv'
+            'file' => 'required|mimes:xlsx,xls,csv',
+            'category_id' => 'nullable|exists:customer_categories,id'
         ]);
 
         if ($validator->fails()) {
@@ -298,10 +433,23 @@ class CustomerController extends Controller
             ignore_user_abort(true);
             \Illuminate\Support\Facades\DB::disableQueryLog();
 
-            Excel::import(new CustomerImport(auth()->user()->organization_id), $request->file('file'));
-            return response()->json(['status' => 1, 'message' => 'Students imported successfully']);
+            $organization_id = auth()->user()->organization_id;
+            $default_category_id = $request->input('category_id');
+
+            $import = new CustomerImport($organization_id, $default_category_id);
+            Excel::import($import, $request->file('file'));
+
+            $imported = $import->getImportedCount();
+            $skipped = $import->getSkippedCount();
+
+            $msg = "Successfully imported {$imported} student(s).";
+            if ($skipped > 0) {
+                $msg .= " ({$skipped} invalid/duplicate records skipped)";
+            }
+
+            return response()->json(['status' => 1, 'message' => $msg]);
         } catch (\Exception $e) {
-            return response()->json(['status' => 0, 'message' => $e->getMessage()]);
+            return response()->json(['status' => 0, 'message' => 'Import error: ' . $e->getMessage()]);
         }
     }
 

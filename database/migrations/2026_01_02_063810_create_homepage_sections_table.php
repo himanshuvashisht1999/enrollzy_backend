@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('homepage_sections')) {
         Schema::create('homepage_sections', function (Blueprint $table) {
             $table->id();
             $table->string('section_key')->unique();
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->boolean('is_visible')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -80,6 +80,7 @@
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                 <h4 class="mb-sm-0">Edit Department</h4>
+                @can('quality-browse')<a href="{{ route('admin.quality.entity', ['department', $department->id]) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-medal me-1"></i> Rankings & Accreditation</a>@endcan
             </div>
         </div>
     </div>
@@ -96,7 +97,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.departments.update', $department->id) }}" id="department-form" method="POST">
+            <form action="{{ route('admin.departments.update', $department->id) }}" id="department-form" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -138,6 +139,9 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="#settings" role="tab">Settings</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#documents-tab" role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -152,13 +156,26 @@
                                             <i class="fas fa-university me-2 fs-4"></i>
                                             <div>
                                                 Editing Department under:
-                                                <strong>{{ $department->organisation->name ?? 'N/A' }}</strong> -
-                                                <strong>{{ $department->campus->campus_name ?? 'N/A' }}</strong>
+                                                <strong>{{ $department->organisation->name ?? 'N/A' }}</strong>
+                                                @if($department->campus)
+                                                    - <strong>{{ $department->campus->campus_name }}</strong>
+                                                @else
+                                                    - <em>Direct (No Campus)</em>
+                                                @endif
                                             </div>
                                         </div>
                                         <input type="hidden" name="organisation_id"
                                             value="{{ $department->organisation_id }}">
-                                        <input type="hidden" name="campus_id" value="{{ $department->campus_id }}">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Campus <small class="text-muted">(Optional - leave empty for direct department)</small></label>
+                                        <select name="campus_id" id="campus_id" class="form-select">
+                                            <option value="">Direct to Organisation (No Campus)</option>
+                                            @foreach($campuses as $campus)
+                                                <option value="{{ $campus->id }}" {{ (old('campus_id', $department->campus_id) == $campus->id) ? 'selected' : '' }}>{{ $campus->campus_name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
                                     <div class="col-md-6">
@@ -569,6 +586,11 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 8. Documents -->
+                            <div class="tab-pane fade" id="documents-tab" role="tabpanel">
+                                @include('admin.departments.partials.documents')
+                            </div>
                         </div> <!-- End Tab Content -->
 
                         <!-- Footer Navigation -->
@@ -648,6 +670,7 @@
             function saveStepData() {
                 if (isSaving) return;
                 const currentTabId = $(tabs[currentTab]).attr('href');
+                if (currentTabId === '#documents-tab' || currentTabId === 'documents-tab') return;
 
                 isSaving = true;
                 showAutoSaveStatus('saving');

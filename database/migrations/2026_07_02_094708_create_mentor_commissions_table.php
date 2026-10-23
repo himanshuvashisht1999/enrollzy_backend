@@ -8,11 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('mentor_commissions')) {
         Schema::create('mentor_commissions', function (Blueprint $table) {
             $table->id();
             $table->decimal('commission_percentage', 5, 2)->default(15);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

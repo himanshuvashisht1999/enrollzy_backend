@@ -31,9 +31,10 @@
             <i class="fas fa-arrow-left me-1"></i> Back to Courses
         </a>
         <h3 class="fw-bold mt-2">Edit Course: {{ $organisationCourse->course->name ?? 'Unknown' }}</h3>
+        @can('quality-browse')<a href="{{ route('admin.quality.entity', ['course', $organisationCourse->id]) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-medal me-1"></i> Rankings & Accreditation</a>@endcan
     </div>
 
-    <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST">
+    <form action="{{ route('admin.organisation-courses.update', $organisationCourse->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -186,6 +187,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="status" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="status">Active</label>
                                     </div>
@@ -193,6 +195,7 @@
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Provisional Admission</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="provisional_admission" value="0">
                                         <input class="form-check-input" type="checkbox" name="provisional_admission"
                                             id="provisional_admission" value="1" {{ old('provisional_admission', $organisationCourse->provisional_admission) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="provisional_admission">Available</label>
@@ -360,6 +363,14 @@
                                     <input type="number" step="0.01" name="total_fees" class="form-control"
                                         value="{{ old('total_fees', $organisationCourse->total_fees) }}">
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
+                                        <input class="form-check-input" type="checkbox" name="status" id="status_type3" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="status_type3">Active</label>
+                                    </div>
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">Course Languages (Multiple)</label>
                                     <select name="course_languages[]" class="form-select select2" multiple>
@@ -500,6 +511,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Status</label>
                                     <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
                                         <input class="form-check-input" type="checkbox" name="status" id="school_status"
                                             value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="school_status">Active</label>
@@ -579,6 +591,7 @@
 
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="transport_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="transport_fee" value="1" {{ old('transport_fee', $organisationCourse->transport_fee) ? 'checked' : '' }}>
                                         <!-- Assuming transport_fee is treated as presence boolean temporarily based on previous logic, or adjust to input if it's amount strings -->
                                         <label class="form-check-label">Transport Available</label>
@@ -586,6 +599,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-check form-switch">
+                                        <input type="hidden" name="hostel_fee" value="0">
                                         <input class="form-check-input" type="checkbox" name="hostel_fee" value="1" {{ old('hostel_fee', $organisationCourse->hostel_fee) ? 'checked' : '' }}>
                                         <label class="form-check-label">Hostel Available</label>
                                     </div>
@@ -593,7 +607,138 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            {{-- ========================================== --}}
+            {{-- E-LEARNING PLATFORM (Type 9) DIRECT COURSE --}}
+            {{-- ========================================== --}}
+            @elseif($typeId == 9)
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-laptop-code me-2"></i>E-Learning Course Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Select Master Course <span class="text-danger">*</span></label>
+                                    <select name="course_id" class="form-select select2" required>
+                                        <option value="">-- Select Master Course --</option>
+                                        @foreach($masterCourses as $master)
+                                            <option value="{{ $master->id }}" {{ old('course_id', $organisationCourse->course_id) == $master->id ? 'selected' : '' }}>
+                                                {{ $master->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">If not listed, add to <a href="{{ route('admin.courses.index') }}" target="_blank">Master Course List</a>.</div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Delivery Mode</label>
+                                    <select name="mode" class="form-select">
+                                        <option value="">Select Mode</option>
+                                        @foreach(['100% Online', 'Live Online Classes', 'Self-Paced Learning', 'Cohort-Based Live', 'Blended / Hybrid'] as $m)
+                                            <option value="{{ $m }}" {{ old('mode', $organisationCourse->mode) == $m ? 'selected' : '' }}>{{ $m }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Duration</label>
+                                    <input type="text" name="duration" class="form-control" value="{{ old('duration', $organisationCourse->duration) }}" placeholder="e.g. 6 Months / 2 Years / 12 Weeks">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Program Fees (₹ / $)</label>
+                                    <input type="number" step="0.01" name="total_fees" class="form-control" value="{{ old('total_fees', $organisationCourse->total_fees) }}" placeholder="e.g. 150000">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Specialization Area (Multiple)</label>
+                                    <select name="specialization_ids[]" class="form-select select2" multiple data-placeholder="Select specializations">
+                                        @php $currentSpecs = is_array($organisationCourse->specialization_ids) ? $organisationCourse->specialization_ids : []; @endphp
+                                        @foreach($specializations as $spec)
+                                            <option value="{{ $spec->id }}" {{ in_array($spec->id, old('specialization_ids', $currentSpecs)) ? 'selected' : '' }}>
+                                                {{ $spec->title }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Course Languages (Multiple)</label>
+                                    <select name="course_languages[]" class="form-select select2" multiple data-placeholder="Select languages">
+                                        @php $currentLangs = is_array($organisationCourse->course_languages) ? $organisationCourse->course_languages : []; @endphp
+                                        @foreach($languages as $lang)
+                                            <option value="{{ $lang->id }}" {{ in_array($lang->id, old('course_languages', $currentLangs)) ? 'selected' : '' }}>
+                                                {{ $lang->title }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Course Rating (0 - 5.0)</label>
+                                    <input type="number" step="0.1" min="0" max="5" name="rating" class="form-control" value="{{ old('rating', $organisationCourse->rating) }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">ROI Category</label>
+                                    <select name="roi" class="form-select">
+                                        <option value="">Select ROI</option>
+                                        <option value="High" {{ old('roi', $organisationCourse->roi) == 'High' ? 'selected' : '' }}>High</option>
+                                        <option value="Medium" {{ old('roi', $organisationCourse->roi) == 'Medium' ? 'selected' : '' }}>Medium</option>
+                                        <option value="Low" {{ old('roi', $organisationCourse->roi) == 'Low' ? 'selected' : '' }}>Low</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Sort Order</label>
+                                    <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', $organisationCourse->sort_order) }}" required>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input type="hidden" name="status" value="0">
+                                        <input class="form-check-input" type="checkbox" name="status" id="el_status" value="1" {{ old('status', $organisationCourse->status) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="el_status">Active / Published</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-header bg-white border-bottom-0 py-3">
+                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-file-alt me-2"></i>Curriculum & Admissions Details</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Eligibility Criteria</label>
+                                    <textarea name="eligibility" class="form-control editor" rows="3">{{ old('eligibility', $organisationCourse->eligibility) }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Curriculum & Syllabus Highlights</label>
+                                    <textarea name="curriculum" class="form-control editor" rows="4">{{ old('curriculum', $organisationCourse->curriculum) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Career Prospects & Outcomes</label>
+                                    <textarea name="career_prospects" class="form-control" rows="3">{{ old('career_prospects', $organisationCourse->career_prospects) }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Fees Breakdown & EMI Structure</label>
+                                    <textarea name="fees_structure" class="form-control" rows="3">{{ old('fees_structure', $organisationCourse->fees_structure) }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
+
+                @include('admin.organisation-courses.partials.extra-fields')
+
+                @include('admin.organisation-courses.partials.documents')
 
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary btn-lg px-5">

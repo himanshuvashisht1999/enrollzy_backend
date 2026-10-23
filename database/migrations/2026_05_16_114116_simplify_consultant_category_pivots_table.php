@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultant_category_pivots', function (Blueprint $table) {
-            $table->dropColumn(['sub_category_id', 'sub_sub_category_id']);
-        });
+        Schema::table('consultant_category_pivots', function (Blueprint $table) {});
     }
 
     /**
@@ -22,8 +20,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('consultant_category_pivots', function (Blueprint $table) {
-            $table->unsignedBigInteger('sub_category_id')->nullable()->after('category_id');
-            $table->unsignedBigInteger('sub_sub_category_id')->nullable()->after('sub_category_id');
+            if (!Schema::hasColumn('consultant_category_pivots', 'sub_category_id')) $table->unsignedBigInteger('sub_category_id')->nullable()->after('category_id');
+            if (!Schema::hasColumn('consultant_category_pivots', 'sub_sub_category_id')) $table->unsignedBigInteger('sub_sub_category_id')->nullable()->after('sub_category_id');
         });
     }
 };

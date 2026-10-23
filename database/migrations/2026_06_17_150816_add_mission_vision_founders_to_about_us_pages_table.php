@@ -11,25 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('about_us_pages', function (Blueprint $table) {
-            $table->text('mission_text')->nullable();
-            $table->text('vision_text')->nullable();
-            $table->text('philosophy_text')->nullable();
-            
-            $table->string('founder_1_name')->nullable();
-            $table->string('founder_1_image')->nullable();
-            $table->string('founder_1_facebook')->nullable();
-            $table->string('founder_1_linkedin')->nullable();
-            $table->string('founder_1_twitter')->nullable();
-            
-            $table->string('founder_2_name')->nullable();
-            $table->string('founder_2_image')->nullable();
-            $table->string('founder_2_facebook')->nullable();
-            $table->string('founder_2_linkedin')->nullable();
-            $table->string('founder_2_twitter')->nullable();
-            
-            $table->text('founders_common_message')->nullable();
-        });
+        Schema::table('about_us_pages', function (Blueprint $table) {});
     }
 
     /**

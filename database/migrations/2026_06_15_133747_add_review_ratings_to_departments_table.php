@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('departments', function (Blueprint $table) {
-            $table->decimal('rating_infrastructure', 3, 1)->nullable();
-            $table->decimal('rating_campus_life', 3, 1)->nullable();
-            $table->decimal('rating_academics', 3, 1)->nullable();
-            $table->decimal('rating_placements', 3, 1)->nullable();
-            $table->decimal('rating_value_for_money', 3, 1)->nullable();
-        });
+        Schema::table('departments', function (Blueprint $table) {});
     }
 
     /**

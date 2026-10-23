@@ -10,9 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            $table->json('bus_routes')->nullable()->after('bus_routes_count');
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

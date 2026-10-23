@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('counsellings', function (Blueprint $table) {
-            $table->unsignedBigInteger('dynamic_exam_id')->nullable()->after('exam_id');
-            $table->foreign('dynamic_exam_id')->references('id')->on('dynamic_exams')->onDelete('cascade');
-        });
+        Schema::table('counsellings', function (Blueprint $table) {});
     }
 
     public function down(): void

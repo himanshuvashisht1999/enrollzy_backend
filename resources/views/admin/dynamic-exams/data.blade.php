@@ -144,8 +144,8 @@
                             <label class="form-label">Exam Category</label>
                             @php $cats = is_array($dynamicExam->exam_category) ? $dynamicExam->exam_category : []; @endphp
                             <select name="exam_category[]" class="form-select select2-multi" multiple data-placeholder="Select Category">
-                                @foreach(['Engineering', 'Medical', 'Management', 'Law', 'School Admission', 'Arts', 'Commerce', 'Civil Services', 'Design', 'Media & Journalism'] as $opt)
-                                    <option value="{{ $opt }}" {{ in_array($opt, $cats) ? 'selected' : '' }}>{{ $opt }}</option>
+                                @foreach($examCategories as $opt)
+                                    <option value="{{ $opt->title }}" {{ in_array($opt->title, $cats) ? 'selected' : '' }}>{{ $opt->title }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -167,7 +167,17 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
+                            <label class="form-label">Results</label>
+                            <input type="text" name="result_status" class="form-control" placeholder="e.g. Declared / TBA"
+                                value="{{ $dynamicExam->result_status }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Registration</label>
+                            <input type="text" name="registration_status" class="form-control" placeholder="e.g. Open"
+                                value="{{ $dynamicExam->registration_status }}">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">Conducting Authority Name</label>
                             <input type="text" name="conducting_authority_name" class="form-control"
                                 value="{{ $dynamicExam->conducting_authority_name }}">

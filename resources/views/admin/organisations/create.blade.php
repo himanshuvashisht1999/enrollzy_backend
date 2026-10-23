@@ -5,10 +5,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Add New Organisation</h4>
-                        <a href="{{ route('admin.organisations.index') }}"
-                            class="btn btn-secondary btn-sm float-end">Back</a>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h4 class="card-title mb-0">Add New Organisation</h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
+                                <i class="fas fa-magic me-1"></i> Auto-Create via AI from URL
+                            </a>
+                            <a href="{{ route('admin.organisations.index') }}" class="btn btn-secondary">Back</a>
+                        </div>
                     </div>
                     <div class="card-body">
                         @if ($errors->any())
@@ -59,10 +63,12 @@
                                                     $category = 'counselling';
                                                 } elseif (str_contains($title, 'regulatory') || $type->id == 7) {
                                                     $category = 'regulatory';
+                                                } elseif (str_contains($title, 'e-learning') || str_contains($title, 'elearning') || $type->id == 9) {
+                                                    $category = 'elearning';
                                                 }
                                             @endphp
                                             <option value="{{ $type->id }}" data-category="{{ $category }}"
-                                                data-title="{{ $type->title }}" {{ old('organisation_type_id') == $type->id ? 'selected' : '' }}>
+                                                data-title="{{ $type->title }}" {{ old('organisation_type_id', request('organisation_type_id')) == $type->id ? 'selected' : '' }}>
                                                 {{ $type->title }} (ID: {{ $type->id }})
                                             </option>
                                         @endforeach
@@ -111,6 +117,9 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                {{-- Organisation Documents (PDF Only, for all types) --}}
+                                @include('admin.organisations.partials.documents')
 
                                 <!-- University Specific Fields Section -->
                                 <div id="university-fields" class="col-12" style="display: none;">
@@ -164,11 +173,9 @@
                                                     <label class="form-label">University Type</label>
                                                     <select name="university_type" class="form-select">
                                                         <option value="">Select Type</option>
-                                                        <option value="Central">Central</option>
-                                                        <option value="State">State</option>
-                                                        <option value="Deemed">Deemed</option>
-                                                        <option value="Private">Private</option>
-                                                        <option value="International">International</option>
+                                                        @foreach(\App\Models\Organisation::UNIVERSITY_TYPES as $opt)
+                                                            <option value="{{ $opt }}" @selected(old('university_type') === $opt)>{{ $opt }}</option>
+                                                        @endforeach
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6">
@@ -178,7 +185,7 @@
                                                         <option value="Government">Government</option>
                                                         <option value="Private">Private</option>
                                                         <option value="Trust">Trust</option>
-                                                        <option value="PPP">PPP</option>
+                                                        <option value="Minority">Minority</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-md-12">
@@ -1611,6 +1618,8 @@
                                             type="number" name="years_of_operation" class="form-control"></div>
                                     <div class="col-md-6"><label class="form-label">Annual Candidate Volume</label><input
                                             type="text" name="annual_candidate_volume" class="form-control"></div>
+                                    <div class="col-md-4"><label class="form-label">Regulated Institutions Covered</label><input type="number" min="0" name="institutions_covered_count" class="form-control" value="{{ old('institutions_covered_count') }}"></div>
+                                    <div class="col-md-4"><label class="form-label">Jurisdiction States Count</label><input type="number" min="0" name="states_covered_count" class="form-control" value="{{ old('states_covered_count') }}"></div>
                                     <div class="col-md-4"><label class="form-label">Trust Rating</label><input type="number"
                                             step="0.1" name="public_trust_rating" class="form-control"></div>
                                 </div>
@@ -1651,6 +1660,9 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- E-Learning Platform Fields --}}
+                    @include('admin.organisations.partials.elearning_fields')
                 </div> <!-- End Row -->
 
                 <div class="col-12 mt-4 mb-4 text-end">
@@ -1695,7 +1707,8 @@
                         'school': 'school-fields',
                         'ecb': 'exam-conducting-body-fields',
                         'counselling': 'counselling-body-fields',
-                        'regulatory': 'regulatory-body-fields'
+                        'regulatory': 'regulatory-body-fields',
+                        'elearning': 'elearning-fields'
                     };
 
                     // Determine active section
@@ -1707,6 +1720,7 @@
                         else if (title.includes('exam') || title.includes('conducting')) activeSectionId = 'exam-conducting-body-fields';
                         else if (title.includes('counselling') || val == '6') activeSectionId = 'counselling-body-fields';
                         else if (title.includes('regulatory') || val == '7') activeSectionId = 'regulatory-body-fields';
+                        else if (title.includes('e-learning') || title.includes('elearning') || val == '9') activeSectionId = 'elearning-fields';
                     }
 
                     const sections = [
@@ -1715,7 +1729,8 @@
                         'school-fields',
                         'exam-conducting-body-fields',
                         'counselling-body-fields',
-                        'regulatory-body-fields'
+                        'regulatory-body-fields',
+                        'elearning-fields'
                     ];
 
                     sections.forEach(id => {
@@ -1909,8 +1924,14 @@
                     setTimeout(() => statusDiv.innerHTML = '', 3000);
                 }
 
+                let isCreatingDraft = false;
+
                 function tryCreateDraft() {
-                    if (!orgIdInput.value && nameInput.value && typeInput.value) {
+                    if (isCreatingDraft || orgIdInput.value) {
+                        return;
+                    }
+                    if (nameInput.value && typeInput.value) {
+                        isCreatingDraft = true;
                         showStatus('Creating Draft...', 'warning');
                         fetch("{{ route('admin.organisations.store-draft') }}", {
                             method: 'POST',
@@ -1920,17 +1941,22 @@
                             },
                             body: JSON.stringify({
                                 name: nameInput.value,
-                                organisation_type_id: typeInput.value
+                                organisation_type_id: typeInput.value,
+                                organisation_id: orgIdInput.value || null
                             })
                         })
                             .then(response => response.json())
                             .then(data => {
+                                isCreatingDraft = false;
                                 if (data.status === 'success') {
                                     orgIdInput.value = data.organisation_id;
                                     showStatus('Draft Created', 'success');
                                 }
                             })
-                            .catch(err => console.error(err));
+                            .catch(err => {
+                                isCreatingDraft = false;
+                                console.error(err);
+                            });
                     }
                 }
 
@@ -1942,6 +1968,7 @@
                 const inputs = document.querySelectorAll('input, select, textarea');
                 inputs.forEach(input => {
                     input.addEventListener('change', function () {
+                        if (this.closest('.doc-repeater-row') || this.classList.contains('no-autosave')) return;
                         const orgId = orgIdInput.value;
                         if (!orgId) return;
 
@@ -1995,6 +2022,29 @@
                         }
                     });
                 });
+
+                // Prevent double submissions and wait for pending draft creation
+                const form = document.querySelector('form[action="{{ route('admin.organisations.store') }}"]');
+                if (form) {
+                    form.addEventListener('submit', function (e) {
+                        if (isCreatingDraft) {
+                            e.preventDefault();
+                            showStatus('Saving draft first, please wait...', 'warning');
+                            const checkInterval = setInterval(() => {
+                                if (!isCreatingDraft) {
+                                    clearInterval(checkInterval);
+                                    form.submit();
+                                }
+                            }, 100);
+                            return;
+                        }
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving Organisation...';
+                        }
+                    });
+                }
             });
 
         </script>

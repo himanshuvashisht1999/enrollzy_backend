@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('homepage_sections', function (Blueprint $table) {
-            $table->json('settings')->nullable()->after('image');
-        });
+        Schema::table('homepage_sections', function (Blueprint $table) {});
     }
 
     public function down(): void

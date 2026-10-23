@@ -20,20 +20,16 @@
                         @method('PUT')
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Select Mentor (For whom this review is)</label>
-                                <select name="mentor_profile_id" class="form-select @error('mentor_profile_id') is-invalid @enderror">
-                                    <option value="">-- Select Mentor --</option>
-                                    @foreach($mentors as $mentor)
-                                        @php
-                                            $mName = trim(($mentor->first_name ?? '') . ' ' . ($mentor->last_name ?? ''));
-                                            if (empty($mName)) { $mName = $mentor->user->name ?? 'Mentor #' . $mentor->id; }
-                                        @endphp
-                                        <option value="{{ $mentor->id }}" {{ old('mentor_profile_id', $testimonial->mentor_profile_id) == $mentor->id ? 'selected' : '' }}>
-                                            {{ $mName }} ({{ $mentor->professional_headline ?? 'Mentor' }})
+                                <label class="form-label fw-bold">Select Expert (For whom this review is)</label>
+                                <select name="expert_id" class="form-select @error('expert_id') is-invalid @enderror">
+                                    <option value="">-- Select Expert --</option>
+                                    @foreach($experts as $expert)
+                                        <option value="{{ $expert->id }}" {{ old('expert_id', $testimonial->expert_id) == $expert->id ? 'selected' : '' }}>
+                                            {{ $expert->name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('mentor_profile_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('expert_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-6">

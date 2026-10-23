@@ -32,6 +32,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Exam Name</th>
+                        <th style="width: 90px;" class="text-center">Sort Order</th>
                         <th>Type</th>
                         <th>Category</th>
                         <th>Status</th>
@@ -48,6 +49,14 @@
                             @if($exam->short_name)
                                 <small class="text-muted">({{ $exam->short_name }})</small>
                             @endif
+                        </td>
+                        <td class="text-center" style="width: 100px;">
+                            <input type="number" 
+                                   class="form-control form-control-sm text-center dynamic-exam-sort-input" 
+                                   data-id="{{ $exam->id }}" 
+                                   value="{{ $exam->sort_order ?? 1 }}" 
+                                   min="0"
+                                   style="width: 70px; margin: 0 auto; font-weight: 600; font-size: 13px; border-radius: 6px;">
                         </td>
                         <td>
                             <span class="badge bg-secondary">{{ $exam->exam_type ?? 'N/A' }}</span>
@@ -86,7 +95,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">No dynamic exams found.</td>
+                        <td colspan="8" class="text-center text-muted">No dynamic exams found.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -98,3 +107,55 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+$(document).ready(function() {
+    $(document).on('change', '.dynamic-exam-sort-input', function() {
+        const input = $(this);
+        const id = input.data('id');
+        const sortOrder = parseInt(input.val()) || 0;
+
+        input.prop('disabled', true).css('opacity', '0.6');
+
+        $.ajax({
+            url: "{{ route('admin.dynamic-exams.update-sort-order') }}",
+            type: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                id: id,
+                sort_order: sortOrder
+            },
+            success: function(res) {
+                input.prop('disabled', false).css('opacity', '1');
+                if (res.status === 1) {
+                    input.css({
+                        'border-color': '#10b981',
+                        'box-shadow': '0 0 0 2px rgba(16, 185, 129, 0.25)'
+                    });
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.message || 'Sort order updated successfully');
+                    }
+                    setTimeout(() => {
+                        input.css({
+                            'border-color': '',
+                            'box-shadow': ''
+                        });
+                    }, 1200);
+                }
+            },
+            error: function() {
+                input.prop('disabled', false).css('opacity', '1');
+                input.css({
+                    'border-color': '#ef4444',
+                    'box-shadow': '0 0 0 2px rgba(239, 68, 68, 0.25)'
+                });
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Failed to update sort order');
+                }
+            }
+        });
+    });
+});
+</script>
+@endpush

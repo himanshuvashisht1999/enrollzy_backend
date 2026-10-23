@@ -1,0 +1,4633 @@
+@extends('admin.layouts.master')
+
+@section('content')
+<style>
+/* Highlight styling for fields NOT auto-filled by AI */
+.field-not-autofilled {
+    background-color: #fffdf0 !important;
+    border: 1.5px solid #f59e0b !important;
+    box-shadow: 0 0 0 0.15rem rgba(245, 158, 11, 0.18) !important;
+    transition: all 0.2s ease-in-out;
+}
+.field-not-autofilled:focus {
+    background-color: #ffffff !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.3) !important;
+}
+.badge-not-autofilled {
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d !important;
+    padding: 2px 7px !important;
+    border-radius: 4px;
+}
+.tab-unfilled-pill {
+    font-size: 0.68rem !important;
+    padding: 0.22em 0.55em !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+/* Inner campus tabs matching Edit Campus page */
+.campus-inner-tabs .nav-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 14px;
+    transition: all 0.2s ease-in-out;
+}
+.campus-inner-tabs .nav-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+}
+.campus-inner-tabs .nav-link.active {
+    color: #0d6efd !important;
+    border-bottom: 2px solid #0d6efd;
+    background: none;
+    font-weight: 700;
+}
+.facility-select-card {
+    transition: all 0.2s ease-in-out;
+}
+.facility-select-card:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+</style>
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1">AI Organisation Auto-Creation</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.organisations.index') }}">Organisations</a></li>
+                        <li class="breadcrumb-item active">AI Auto-Creation</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('admin.organisations.index') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Organisations
+                </a>
+                <a href="{{ route('admin.organisations.create') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit me-1"></i> Manual Form
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 1: URL INPUT CARD -->
+    <div id="aiStepInput" class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title mb-0 fw-bold"><i class="fas fa-magic text-primary me-2"></i>AI Auto-Creation</h5>
+        </div>
+        <div class="card-body">
+            <!-- Mode Selector Bar -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark mb-2">
+                    <i class="fas fa-layer-group text-primary me-1"></i> What do you want to import / create? <span class="text-danger">*</span>
+                </label>
+                <div class="row g-2">
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeOrganisation" value="organisation" checked autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeOrganisation">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-university fa-lg me-2"></i>
+                                <span class="fw-bold">Organisation</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">New Institution Profile</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeCampus" value="campus" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeCampus">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-city fa-lg me-2"></i>
+                                <span class="fw-bold">Campus</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Campus Locations</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeDepartment" value="department" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeDepartment">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-building fa-lg me-2"></i>
+                                <span class="fw-bold">Department</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Academic Faculties</div>
+                        </label>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <input type="radio" class="btn-check entity-mode-radio" name="aiEntityMode" id="modeCourse" value="course" autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 p-3 text-start rounded-3 h-100 shadow-sm" for="modeCourse">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-graduation-cap fa-lg me-2"></i>
+                                <span class="fw-bold">Course / Program</span>
+                            </div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Add Degrees & Programs</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Cascading Selectors and URL Inputs -->
+            <div class="row g-3 align-items-start">
+                <!-- Target Organisation (for Campus, Department, Course) -->
+                <div class="col-md-4 d-none" id="groupTargetOrg">
+                    <label class="form-label fw-bold" id="labelTargetOrg">
+                        Target Organisation <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetOrg" class="form-select">
+                        <option value="">-- Select Organisation * --</option>
+                        @if(isset($organisations))
+                            @foreach($organisations as $org)
+                                <option value="{{ $org->id }}" data-type-id="{{ $org->organisation_type_id }}" data-website="{{ $org->official_website }}">{{ $org->name }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <!-- Target Campus (for Department, Course) -->
+                <div class="col-md-4 d-none" id="groupTargetCampus">
+                    <label class="form-label fw-bold" id="labelTargetCampus">
+                        Target Campus <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetCampus" class="form-select">
+                        <option value="">-- Select Campus * --</option>
+                    </select>
+                </div>
+
+                <!-- Target Department (for Course) -->
+                <div class="col-md-4 d-none" id="groupTargetDept">
+                    <label class="form-label fw-bold" id="labelTargetDept">
+                        Target Department <span class="text-danger">*</span>
+                    </label>
+                    <select id="aiInputTargetDept" class="form-select">
+                        <option value="">-- Select Department * --</option>
+                    </select>
+                </div>
+
+                <!-- Organisation Type (for Organisation) -->
+                <div class="col-md-4" id="groupOrgType">
+                    <label class="form-label fw-bold">Organisation Type <span class="text-danger">*</span></label>
+                    <select id="aiInputOrgType" class="form-select" required>
+                        <option value="">-- Select Type * --</option>
+                        @if(isset($organisationTypes))
+                            @foreach($organisationTypes as $type)
+                                @if(in_array(strtolower($type->title), ['university', 'college', 'school']))
+                                    <option value="{{ $type->id }}" {{ $loop->first ? 'selected' : '' }}>{{ $type->title }}</option>
+                                @endif
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <!-- Website URL -->
+                <div class="col-md-8" id="groupWebsiteUrl">
+                    <label class="form-label fw-bold" id="labelWebsiteUrl">Official Website URL <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-globe text-muted"></i></span>
+                        <input type="url" id="aiInputUrl" class="form-control" placeholder="https://www.example.edu.in" required>
+                    </div>
+                </div>
+
+                <!-- Google Search Grounding Option -->
+                <div class="col-12 mt-2">
+                    <div class="card bg-light border-0 shadow-none p-2 rounded-3">
+                        <div class="form-check form-switch d-flex align-items-center gap-2 mb-0 ps-0">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="aiSearchGoogleCheck" style="width: 2.3em; height: 1.25em; cursor: pointer;">
+                            <div>
+                                <label class="form-check-label fw-bold text-dark small mb-0" for="aiSearchGoogleCheck" style="cursor: pointer;">
+                                    <i class="fab fa-google text-primary me-1"></i> Search Google for missing/additional details
+                                </label>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    When enabled, AI will query Google for missing rankings and address data. Keep unchecked for fast extraction from department / course directories to prevent gateway timeouts.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Reference URLs Section -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-bold mb-0 text-dark small">
+                        <i class="fas fa-link text-primary me-1"></i> Additional Reference URLs <span class="text-muted fw-normal">(Optional: Wikipedia, NIRF, Admissions page)</span>
+                    </label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddReferenceUrl">
+                        <i class="fas fa-plus me-1"></i> Add URL
+                    </button>
+                </div>
+
+                <div id="referenceUrlsContainer" class="d-flex flex-column gap-2">
+                    <div class="input-group input-group-sm reference-url-row">
+                        <span class="input-group-text bg-light text-muted"><i class="fas fa-external-link-alt"></i></span>
+                        <input type="url" class="form-control ref-url-input" placeholder="e.g. Wikipedia, NAAC or campus brochure link">
+                        <button type="button" class="btn btn-outline-danger btn-remove-ref-url" title="Remove URL">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Prompt Preview & Customization Section -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <label class="form-label fw-bold mb-0 text-dark small">
+                        <i class="fas fa-terminal text-primary me-1"></i> AI Prompt & Custom Instructions
+                        <span class="badge bg-light text-dark border ms-1 fw-normal" id="badgePromptMode">Organisation Only</span>
+                    </label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none text-danger py-0 d-none" id="btnResetPrompt" title="Reset prompt to default">
+                            <i class="fas fa-undo me-1"></i> Reset Prompt
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTogglePromptView">
+                            <i class="fas fa-code me-1"></i> <span id="textTogglePrompt">View / Edit Prompt</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="promptContainer" class="d-none mt-2">
+                    <div class="position-relative">
+                        <textarea id="aiCustomPrompt" class="form-control font-monospace small bg-light" rows="9" placeholder="AI prompt will be generated here automatically..."></textarea>
+                        <div id="promptLoadingSpinner" class="position-absolute top-50 start-50 translate-middle d-none">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        </div>
+                    </div>
+                    <div class="form-text small mt-1 text-muted d-flex justify-content-between">
+                        <span><i class="fas fa-info-circle me-1"></i> You can edit this prompt or add custom rules before clicking Extract Data.</span>
+                        <span id="promptCharCount" class="text-secondary">0 chars</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 text-end">
+                <button type="button" id="btnRunAiExtraction" class="btn btn-primary px-4 fw-bold shadow-sm">
+                    <i class="fas fa-bolt me-1"></i> Extract Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: LOADING CARD -->
+    <div id="aiStepLoading" class="card shadow-sm mb-4 p-5 d-none text-center">
+        <div class="py-4">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="fw-bold mb-2">Extracting Institutional Data...</h5>
+            <p class="text-muted mb-0" id="aiLoadingStatusText">
+                Researching website, extracting departments, campuses, rankings, and matching master degree courses. Please wait...
+            </p>
+        </div>
+    </div>
+
+    <!-- STEP 3: PREVIEW & REVIEW WORKSPACE -->
+    <div id="aiStepPreview" class="d-none">
+        <div class="card shadow-sm mb-4">
+            <!-- Card Header Actions -->
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                <div>
+                    <h5 class="card-title mb-0" id="previewOrgHeaderTitle">Institutional Details Preview</h5>
+                    <small class="text-muted" id="previewOrgNameBadge"></small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" id="btnRestartExtraction" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-redo me-1"></i> Extract Another URL
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm px-3 btn-confirm-save-action">
+                        <i class="fas fa-save me-1"></i> Save All Records
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Header Tabs -->
+            <div class="card-header bg-light border-bottom px-3 pt-2">
+                <ul class="nav nav-tabs card-header-tabs" id="aiReviewTabs" role="tablist">
+                    <li class="nav-item" id="tab-item-org">
+                        <button class="nav-link active fw-bold" id="tab-org-btn" data-bs-toggle="tab" data-bs-target="#tab-org" type="button" role="tab">
+                            <i class="fas fa-university me-1" id="tab-org-icon"></i> <span id="tab-org-title">Organisation</span> <span class="badge bg-warning text-dark ms-1 d-none" id="badgeOrgUnfilledCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" id="tab-item-campuses">
+                        <button class="nav-link fw-bold" id="tab-campuses-btn" data-bs-toggle="tab" data-bs-target="#tab-campuses" type="button" role="tab">
+                            <i class="fas fa-city me-1" id="tab-campuses-icon"></i> <span id="tab-campuses-title">Campuses</span> <span class="badge bg-secondary ms-1" id="badgeCampusesCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" id="tab-item-depts">
+                        <button class="nav-link fw-bold" id="tab-depts-btn" data-bs-toggle="tab" data-bs-target="#tab-depts" type="button" role="tab">
+                            <i class="fas fa-building me-1" id="tab-depts-icon"></i> <span id="tab-depts-title">Departments</span> <span class="badge bg-secondary ms-1" id="badgeDeptsCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" id="tab-item-courses">
+                        <button class="nav-link fw-bold" id="tab-courses-btn" data-bs-toggle="tab" data-bs-target="#tab-courses" type="button" role="tab">
+                            <i class="fas fa-graduation-cap me-1" id="tab-courses-icon"></i> <span id="tab-courses-title">Courses</span> <span class="badge bg-secondary ms-1" id="badgeCoursesCount">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Alert Banner for Unfilled / Highlighted Fields -->
+                <div class="alert alert-warning border-0 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 mb-4 d-none" id="unfilledFieldsBanner" style="background-color: #fef3c7; border-left: 4px solid #f59e0b !important;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-lg me-2 text-warning"></i>
+                        <span class="small text-dark">
+                            <strong>Manual Entry Needed:</strong> Fields highlighted in yellow with <span class="badge badge-not-autofilled mx-1"><i class="fas fa-pen-nib me-1"></i>Not auto-filled</span> were not found by AI and can be filled manually.
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-1 shadow-sm" id="unfilledCountBadge">0 fields to fill manually</span>
+                        <button type="button" class="btn btn-sm btn-dark py-1 px-2 shadow-sm" id="btnJumpNextUnfilled" style="font-size: 0.78rem;">
+                            <i class="fas fa-arrow-down me-1"></i> Jump to Next Empty
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="aiReviewTabContent">
+                    <!-- ==================== TAB 1: ORGANISATION ==================== -->
+                    <div class="tab-pane fade show active" id="tab-org" role="tabpanel">
+                        <!-- Linked Org Notice -->
+                        <div id="mode2OrgNotice" class="alert alert-success border-0 shadow-sm py-2 px-3 mb-3 d-none">
+                            <i class="fas fa-check-circle me-1 text-success"></i>
+                            <span class="small">Target: <strong id="mode2OrgNameText"></strong>. Review and edit campuses, departments, and courses in Tabs 2, 3, and 4.</span>
+                        </div>
+
+                        <!-- Common Basic Fields -->
+                        <h6 class="border-bottom pb-2 mb-3 fw-bold text-secondary">
+                            <i class="fas fa-id-card me-1"></i> Core Institutional Identity
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Organisation Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" id="aiOrgName" class="form-control" placeholder="Full name of organisation" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Organisation Type <span class="text-danger">*</span></label>
+                                <select name="organisation_type_id" id="aiOrgTypeMaster" class="form-select" required>
+                                    <option value="">-- Select Master Type --</option>
+                                    @if(isset($organisationTypes))
+                                        @foreach($organisationTypes as $ot)
+                                            @if(in_array(strtolower($ot->title), ['university', 'college', 'school']))
+                                                <option value="{{ $ot->id }}">{{ $ot->title }}</option>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Central Authority</label>
+                                <input type="text" name="central_authority" id="aiOrgCentralAuth" class="form-control" placeholder="Central authority, trust or board">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Head Office Location</label>
+                                <input type="text" name="head_office_location" id="aiOrgLocation" class="form-control" placeholder="City, State">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Is Top Institution?</label>
+                                <select name="is_top" id="aiOrgIsTop" class="form-select">
+                                    <option value="0">No</option>
+                                    <option value="1">Yes (Top Institution)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Core Values (Comma separated)</label>
+                                <input type="text" name="core_values_csv" id="aiOrgCoreValues" class="form-control" placeholder="Excellence, Integrity, Innovation, Diversity">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Type-Specific Fields from edit.blade.php -->
+                        @include('admin.organisations.partials.type_specific_fields')
+                    </div>
+
+                    <!-- ==================== TAB 2: CAMPUSES ==================== -->
+                    <div class="tab-pane fade" id="tab-campuses" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark" id="headerCampusesSection">Physical Campuses & Branches</h6>
+                                <small class="text-muted" id="subHeaderCampusesSection">Manage campus locations, infrastructure, and facilities.</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mode2-only-btn" id="btnAddCampusCard">
+                                <i class="fas fa-plus me-1"></i> Add Campus
+                            </button>
+                        </div>
+                        <div id="campusesContainer"></div>
+                    </div>
+
+                    <!-- ==================== TAB 3: DEPARTMENTS ==================== -->
+                    <div class="tab-pane fade" id="tab-depts" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark" id="headerDeptsSection">Faculties & Departments</h6>
+                                <small class="text-muted" id="subHeaderDeptsSection">Manage academic departments, faculty details, and research.</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mode2-only-btn" id="btnAddDeptCard">
+                                <i class="fas fa-plus me-1"></i> Add Department
+                            </button>
+                        </div>
+                        <div id="deptsContainer"></div>
+                    </div>
+
+                    <!-- ==================== TAB 4: COURSES ==================== -->
+                    <div class="tab-pane fade" id="tab-courses" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark" id="headerCoursesSection">Degree & Diploma Programs</h6>
+                                <small class="text-muted" id="subHeaderCoursesSection">Programs are automatically matched with your Master Courses list.</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mode2-only-btn" id="btnAddCourseCard">
+                                <i class="fas fa-plus me-1"></i> Add Course
+                            </button>
+                        </div>
+                        <div id="coursesContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Footer Actions -->
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> All changes made across tabs will be saved simultaneously.</span>
+                <button type="button" class="btn btn-success px-4 btn-confirm-save-action">
+                    <i class="fas fa-save me-1"></i> Save All Records
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let currentExtractedData = null;
+    let currentExtractionMode = 'organisation';
+    let currentTargetOrgId = null;
+    let currentTargetOrgName = '';
+    let currentTargetCampusId = null;
+    let currentTargetCampusName = '';
+    let currentTargetDeptId = null;
+    let currentTargetDeptName = '';
+
+    const allOrganisations = @json($organisations ?? []);
+    let globalMasters = {
+        courses: @json($courses ?? []),
+        program_levels: @json($programLevels ?? []),
+        streams: @json($streams ?? []),
+        disciplines: @json($disciplines ?? []),
+        organisation_types: @json($organisationTypes ?? []),
+        school_types: @json($schoolTypes ?? []),
+        brand_types: @json($brandTypes ?? []),
+        facilities: @json($facilitiesMaster ?? []),
+        academic_classes: @json($academicClasses ?? [])
+    };
+
+    function getMasterClassesList() {
+        if (globalMasters && Array.isArray(globalMasters.academic_classes) && globalMasters.academic_classes.length > 0) {
+            return globalMasters.academic_classes.map(c => typeof c === 'object' ? (c.name || c.title) : c).filter(Boolean);
+        }
+        return [
+            'Playgroup', 'Nursery', 'LKG', 'UKG',
+            'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+            'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+            'Class 11', 'Class 12', 'Dropper'
+        ];
+    }
+
+    function normalizeStr(str) {
+        if (!str) return '';
+        return str.toString()
+            .toLowerCase()
+            .replace(/\b(in|of|and|&|the|for|with|a|an|program|programs|course|courses|degree|honors|hons)\b/gi, '')
+            .replace(/[^a-z0-9]/gi, '')
+            .trim();
+    }
+
+    function levenshteinDistance(s, t) {
+        if (!s.length) return t.length;
+        if (!t.length) return s.length;
+        const arr = [];
+        for (let i = 0; i <= t.length; i++) {
+            arr[i] = [i];
+            for (let j = 1; j <= s.length; j++) {
+                arr[i][j] =
+                    i === 0
+                        ? j
+                        : Math.min(
+                              arr[i - 1][j] + 1,
+                              arr[i][j - 1] + 1,
+                              arr[i - 1][j - 1] + (s[j - 1] === t[i - 1] ? 0 : 1)
+                          );
+            }
+        }
+        return arr[t.length][s.length];
+    }
+
+    function stringSimilarity(s1, s2) {
+        let longer = s1.length >= s2.length ? s1 : s2;
+        let shorter = s1.length < s2.length ? s1 : s2;
+        if (longer.length === 0) return 1.0;
+        let longerLength = longer.length;
+        let editDistance = levenshteinDistance(longer, shorter);
+        return (longerLength - editDistance) / parseFloat(longerLength);
+    }
+
+    function extractDegreePrefix(str) {
+        if (!str) return '';
+        const s = ' ' + str.toString().toLowerCase().replace(/[^a-z0-9]/g, ' ') + ' ';
+
+        if (/\b(ph\s*d|doctorate|doctor of philosophy|d\s*phil)\b/.test(s)) return 'phd';
+        if (/\b(b\s*tech|bachelor of technology|b\s*e|bachelor of engineering)\b/.test(s)) return 'btech';
+        if (/\b(m\s*tech|master of technology|m\s*e|master of engineering)\b/.test(s)) return 'mtech';
+        if (/\b(b\s*pharm|b\s*pharma|bachelor of pharmacy|b\s*pharmacy)\b/.test(s)) return 'bpharm';
+        if (/\b(m\s*pharm|m\s*pharma|master of pharmacy|m\s*pharmacy)\b/.test(s)) return 'mpharm';
+        if (/\b(d\s*pharm|d\s*pharma|diploma in pharmacy|diploma pharmacy)\b/.test(s)) return 'dpharm';
+        if (/\b(diploma|polytechnic)\b/.test(s)) return 'diploma';
+        if (/\b(bca|bachelor of computer application|bachelor of computer applications)\b/.test(s)) return 'bca';
+        if (/\b(mca|master of computer application|master of computer applications)\b/.test(s)) return 'mca';
+        if (/\b(bba|bachelor of business administration|bms|bbs)\b/.test(s)) return 'bba';
+        if (/\b(mba|master of business administration|pgdm)\b/.test(s)) return 'mba';
+        if (/\b(b\s*sc|bachelor of science|b\s*s)\b/.test(s)) return 'bsc';
+        if (/\b(m\s*sc|master of science|m\s*s)\b/.test(s) && !/\b(master of surgery)\b/.test(s)) return 'msc';
+        if (/\b(b\s*com|bachelor of commerce)\b/.test(s)) return 'bcom';
+        if (/\b(m\s*com|master of commerce)\b/.test(s)) return 'mcom';
+        if (/\b(b\s*a|bachelor of arts)\b/.test(s)) return 'ba';
+        if (/\b(m\s*a|master of arts)\b/.test(s)) return 'ma';
+        if (/\b(llb|bachelor of law|bachelor of laws)\b/.test(s)) return 'llb';
+        if (/\b(llm|master of law|master of laws)\b/.test(s)) return 'llm';
+        if (/\b(mbbs)\b/.test(s)) return 'mbbs';
+        if (/\b(bds|bachelor of dental surgery)\b/.test(s)) return 'bds';
+        if (/\b(md|doctor of medicine)\b/.test(s)) return 'md';
+        if (/\b(ms|master of surgery)\b/.test(s)) return 'ms';
+        if (/\b(b\s*arch|bachelor of architecture)\b/.test(s)) return 'barch';
+        if (/\b(m\s*arch|master of architecture)\b/.test(s)) return 'march';
+        if (/\b(b\s*des|bachelor of design)\b/.test(s)) return 'bdes';
+        if (/\b(m\s*des|master of design)\b/.test(s)) return 'mdes';
+        if (/\b(b\s*ed|bachelor of education)\b/.test(s)) return 'bed';
+        if (/\b(m\s*ed|master of education)\b/.test(s)) return 'med';
+        if (/\b(bpt|bachelor of physiotherapy|bachelors in physiotherapy)\b/.test(s)) return 'bpt';
+        if (/\b(mpt|master of physiotherapy|masters in physiotherapy)\b/.test(s)) return 'mpt';
+
+        return '';
+    }
+
+    function extractSubjectCore(str) {
+        if (!str) return '';
+        return str.toString()
+            .toLowerCase()
+            .replace(/\b(\d+\s*(years?|yrs?|semesters?|sems?))\b/gi, '')
+            .replace(/\b(b\.?tech|m\.?tech|b\.?e|m\.?e|b\.?sc|m\.?sc|bca|mca|bba|mba|b\.?com|m\.?com|b\.?a|m\.?a|b\.?pharm|m\.?pharm|d\.?pharm|b\.?des|m\.?des|b\.?arch|m\.?arch|b\.?ed|m\.?ed|ph\.?d|phd|doctorate|doctor of philosophy|diploma|bpt|mpt|bachelor of technology|master of technology|bachelor of engineering|master of engineering|bachelor of science|master of science|bachelor of commerce|master of commerce|bachelor of arts|master of arts|bachelor of pharmacy|master of pharmacy|bachelor of design|master of design|bachelor of architecture|master of architecture|bachelor of business administration|master of business administration|bachelor of computer applications|master of computer applications)\b/gi, '')
+            .replace(/\b(in|of|and|&|the|for|with|a|an|program|programs|course|courses|degree|honors|hons|engineering|technology|studies|science|sciences)\b/gi, '')
+            .replace(/[^a-z0-9]/gi, '')
+            .trim();
+    }
+
+    function findBestCourseMatch(aiName, aiShortName, aiLevel, aiStream, aiDiscipline) {
+        if (!globalMasters.courses || globalMasters.courses.length === 0 || (!aiName && !aiShortName)) return null;
+
+        const aiDegree = extractDegreePrefix(aiName) || extractDegreePrefix(aiShortName) || extractDegreePrefix(aiLevel);
+        const aiSubject = extractSubjectCore(aiName) || extractSubjectCore(aiShortName) || extractSubjectCore(aiDiscipline);
+        const normName = normalizeStr(aiName);
+        const normShort = normalizeStr(aiShortName);
+
+        // 1. Direct exact full string match
+        for (const c of globalMasters.courses) {
+            const normC = normalizeStr(c.name);
+            if (normName !== '' && normName === normC) return c;
+            if (normShort !== '' && normShort === normC) return c;
+        }
+
+        // 2. Degree Prefix + Subject Matching
+        let bestCandidate = null;
+        let bestScore = -1;
+
+        for (const c of globalMasters.courses) {
+            const cDegree = extractDegreePrefix(c.name);
+            const cSubject = extractSubjectCore(c.name);
+            const normC = normalizeStr(c.name);
+
+            // If AI extracted a degree prefix, candidate MUST match it!
+            if (aiDegree !== '') {
+                if (cDegree !== '' && cDegree !== aiDegree) {
+                    continue; // Strict degree mismatch: B.Tech must NEVER match M.Tech, Ph.D, etc.
+                }
+            }
+
+            let score = 0;
+
+            // Degree Match Bonus
+            if (aiDegree !== '' && cDegree === aiDegree) {
+                score += 10.0;
+            }
+
+            // Subject Core Comparison
+            if (aiSubject !== '' && cSubject !== '') {
+                if (aiSubject === cSubject) {
+                    score += 50.0; // Perfect subject match
+                } else if (cSubject.startsWith(aiSubject) || aiSubject.startsWith(cSubject)) {
+                    score += 25.0 + (Math.min(aiSubject.length, cSubject.length) / Math.max(aiSubject.length, cSubject.length) * 10);
+                } else if (cSubject.includes(aiSubject) || aiSubject.includes(cSubject)) {
+                    score += 15.0 + (Math.min(aiSubject.length, cSubject.length) / Math.max(aiSubject.length, cSubject.length) * 10);
+                } else {
+                    const sim = stringSimilarity(aiSubject, cSubject);
+                    if (sim >= 0.6) {
+                        score += sim * 15;
+                    }
+                }
+            } else if (aiSubject === '' && cSubject === '') {
+                score += 30.0;
+            }
+
+            // Full normalized string similarity fallback
+            const fullSim = stringSimilarity(normName, normC);
+            score += fullSim * 5.0;
+
+            if (score > bestScore && score >= 10.0) {
+                bestScore = score;
+                bestCandidate = c;
+            }
+        }
+
+        return bestCandidate;
+    }
+
+    function findBestLevelMatch(aiLevel) {
+        if (!globalMasters.program_levels || !aiLevel) return '';
+        const norm = normalizeStr(aiLevel);
+        for (const l of globalMasters.program_levels) {
+            const normL = normalizeStr(l.title);
+            if (norm === normL || normL.includes(norm) || norm.includes(normL)) return l.id;
+        }
+        if (norm.includes('undergraduate') || norm.includes('ug') || norm.includes('bachelor')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('undergraduate') || normalizeStr(l.title).includes('ug'));
+            if (m) return m.id;
+        }
+        if (norm.includes('postgraduate') || norm.includes('pg') || norm.includes('master')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('postgraduate') || normalizeStr(l.title).includes('pg'));
+            if (m) return m.id;
+        }
+        if (norm.includes('diploma') || norm.includes('polytechnic')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('diploma'));
+            if (m) return m.id;
+        }
+        if (norm.includes('phd') || norm.includes('doctor') || norm.includes('research')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('phd') || normalizeStr(l.title).includes('ph.d') || normalizeStr(l.title).includes('doctor'));
+            if (m) return m.id;
+        }
+        if (norm.includes('certif')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('certif'));
+            if (m) return m.id;
+        }
+        if (norm.includes('school') || norm.includes('k12')) {
+            const m = globalMasters.program_levels.find(l => normalizeStr(l.title).includes('school'));
+            if (m) return m.id;
+        }
+        return '';
+    }
+
+    function findBestStreamMatch(aiStream) {
+        if (!globalMasters.streams || !aiStream) return '';
+        const norm = normalizeStr(aiStream);
+        let best = '';
+        let maxScore = 0;
+        for (const s of globalMasters.streams) {
+            const normS = normalizeStr(s.title);
+            if (norm === normS) return s.id;
+            if (normS.includes(norm) || norm.includes(normS)) {
+                const score = Math.min(norm.length, normS.length) / Math.max(norm.length, normS.length);
+                if (score > maxScore) {
+                    maxScore = score;
+                    best = s.id;
+                }
+            }
+        }
+        return best;
+    }
+
+    function findBestDisciplineMatch(aiDiscipline) {
+        if (!globalMasters.disciplines || !aiDiscipline) return '';
+        const norm = normalizeStr(aiDiscipline);
+        let best = '';
+        let maxScore = 0;
+        for (const d of globalMasters.disciplines) {
+            const normD = normalizeStr(d.title);
+            if (norm === normD) return d.id;
+            if (normD.includes(norm) || norm.includes(normD)) {
+                const score = Math.min(norm.length, normD.length) / Math.max(norm.length, normD.length);
+                if (score > maxScore) {
+                    maxScore = score;
+                    best = d.id;
+                }
+            }
+        }
+        return best;
+    }
+
+    function getAvailableCampuses() {
+        const campuses = [];
+        document.querySelectorAll('.campus-item .c-name').forEach(input => {
+            const val = input.value.trim();
+            if (val && !campuses.includes(val)) campuses.push(val);
+        });
+
+        const campusSelectEl = document.getElementById('aiInputTargetCampus');
+        if (campusSelectEl) {
+            Array.from(campusSelectEl.options).forEach(opt => {
+                const val = opt.text ? opt.text.replace(/\s*\(.*?\)\s*$/, '').trim() : '';
+                if (val && !val.startsWith('--') && !campuses.includes(val)) {
+                    campuses.push(val);
+                }
+            });
+        }
+
+        if (currentTargetCampusName && !campuses.includes(currentTargetCampusName)) {
+            campuses.unshift(currentTargetCampusName);
+        }
+
+        return campuses.length ? campuses : ['Main Campus'];
+    }
+
+    function getAvailableDepts() {
+        const depts = [];
+        document.querySelectorAll('.dept-item .d-name').forEach(input => {
+            const val = input.value.trim();
+            if (val && !depts.includes(val)) depts.push(val);
+        });
+
+        const deptSelectEl = document.getElementById('aiInputTargetDept');
+        if (deptSelectEl) {
+            Array.from(deptSelectEl.options).forEach(opt => {
+                const val = opt.text ? opt.text.replace(/\s*\[.*?\]\s*$/, '').trim() : '';
+                if (val && !val.startsWith('--') && !depts.includes(val)) {
+                    depts.push(val);
+                }
+            });
+        }
+
+        if (currentTargetDeptName && !depts.includes(currentTargetDeptName)) {
+            depts.unshift(currentTargetDeptName);
+        }
+
+        return depts.length ? depts : ['General Faculty'];
+    }
+
+    function refreshCourseCampusAndDeptDropdowns() {
+        const campuses = getAvailableCampuses();
+        const depts = getAvailableDepts();
+
+        document.querySelectorAll('.course-item').forEach(card => {
+            const campusSelect = card.querySelector('.cr-campus-select');
+            if (campusSelect) {
+                const curVal = campusSelect.value || currentTargetCampusName;
+                // Destroy Select2 before changing innerHTML
+                if (window.jQuery && $.fn.select2 && $(campusSelect).data('select2')) {
+                    $(campusSelect).select2('destroy');
+                }
+                campusSelect.innerHTML = campuses.map(c => `<option value="${c}" ${c === curVal ? 'selected' : ''}>${c}</option>`).join('');
+                if (window.jQuery && $.fn.select2) {
+                    $(campusSelect).select2({ width: '100%' });
+                }
+            }
+            const deptSelect = card.querySelector('.cr-dept-select');
+            if (deptSelect) {
+                const curVal = deptSelect.value || currentTargetDeptName;
+                if (window.jQuery && $.fn.select2 && $(deptSelect).data('select2')) {
+                    $(deptSelect).select2('destroy');
+                }
+                deptSelect.innerHTML = depts.map(d => `<option value="${d}" ${d === curVal ? 'selected' : ''}>${d}</option>`).join('');
+                if (window.jQuery && $.fn.select2) {
+                    $(deptSelect).select2({ width: '100%' });
+                }
+            }
+        });
+    }
+
+    const btnRunAiExtraction = document.getElementById('btnRunAiExtraction');
+    const btnRestartExtraction = document.getElementById('btnRestartExtraction');
+    const aiStepInput = document.getElementById('aiStepInput');
+    const aiStepLoading = document.getElementById('aiStepLoading');
+    const aiStepPreview = document.getElementById('aiStepPreview');
+
+    // Toggle Type-Specific Field Containers
+    function toggleOrgTypeFields(typeId) {
+        const containers = {
+            'university-fields': [1, 2],
+            'institute-fields': [3],
+            'school-fields': [4],
+            'exam-conducting-body-fields': [5],
+            'counselling-body-fields': [6],
+            'regulatory-body-fields': [7, 8]
+        };
+
+        const parsedId = parseInt(typeId) || 1;
+        Object.keys(containers).forEach(containerId => {
+            const el = document.getElementById(containerId);
+            if (el) {
+                const isVisible = containers[containerId].includes(parsedId);
+                el.style.display = isVisible ? 'block' : 'none';
+                el.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.disabled = !isVisible;
+                });
+            }
+        });
+
+        // Ensure canonical_url is always blank and claimed_by_organization is always unchecked
+        document.querySelectorAll('input[name="canonical_url"]').forEach(input => input.value = '');
+        document.querySelectorAll('input[name="claimed_by_organization"], input[name="claimed_by_authority"]').forEach(input => input.checked = false);
+
+        if (typeof highlightUnfilledFields === 'function') {
+            highlightUnfilledFields();
+        }
+    }
+
+    // Master Type Selector Change Listener
+    const aiOrgTypeMaster = document.getElementById('aiOrgTypeMaster');
+    if (aiOrgTypeMaster) {
+        aiOrgTypeMaster.addEventListener('change', function () {
+            toggleOrgTypeFields(this.value);
+            handleEntityModeChange();
+        });
+    }
+
+    // ----------------------------------------------------
+    // Entity Mode Radio Switching & Dynamic Containers
+    // ----------------------------------------------------
+    function getSelectedEntityMode() {
+        const checked = document.querySelector('input[name="aiEntityMode"]:checked');
+        return checked ? checked.value : 'organisation';
+    }
+
+    function isCurrentEntitySchool() {
+        const mode = currentExtractionMode || getSelectedEntityMode();
+        if (mode === 'organisation') {
+            const masterType = document.getElementById('aiOrgTypeMaster')?.value;
+            const inputType = document.getElementById('aiInputOrgType')?.value;
+            const activeType = masterType || inputType || (currentExtractedData?.organisation?.organisation_type_id);
+            if (activeType == 4) return true;
+            const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(activeType));
+            if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+            return false;
+        } else {
+            const targetOrgId = currentTargetOrgId || $('#aiInputTargetOrg').val() || (currentExtractedData?.target_organisation_id) || (currentExtractedData?.organisation?.id);
+            if (targetOrgId) {
+                const org = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
+                if (org) {
+                    if (org.organisation_type_id == 4) return true;
+                    const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(org.organisation_type_id));
+                    if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+                }
+            }
+            if (currentExtractedData?.organisation?.organisation_type_id == 4) return true;
+            const inputType = document.getElementById('aiInputOrgType')?.value;
+            if (inputType == 4) return true;
+            const orgTypeObj = (globalMasters.organisation_types || []).find(t => String(t.id) === String(inputType));
+            if (orgTypeObj && /school/i.test(orgTypeObj.title)) return true;
+            if (currentExtractedData?.campuses && Array.isArray(currentExtractedData.campuses)) {
+                const hasSchoolData = currentExtractedData.campuses.some(c => 
+                    (Array.isArray(c.school_type) && c.school_type.length > 0) || 
+                    (Array.isArray(c.school_classes) && c.school_classes.length > 0) || 
+                    c.udise_code || 
+                    c.affiliation_board ||
+                    c.headmaster_principal ||
+                    c.pupil_teacher_ratio
+                );
+                if (hasSchoolData) return true;
+            }
+            return false;
+        }
+    }
+
+    function handleEntityModeChange() {
+        const mode = getSelectedEntityMode();
+        const isSchool = isCurrentEntitySchool();
+        const groupOrgType = document.getElementById('groupOrgType');
+        const groupTargetOrg = document.getElementById('groupTargetOrg');
+        const groupTargetCampus = document.getElementById('groupTargetCampus');
+        const groupTargetDept = document.getElementById('groupTargetDept');
+        const labelWebsiteUrl = document.getElementById('labelWebsiteUrl');
+        const labelTargetOrg = document.getElementById('labelTargetOrg');
+        const labelTargetCampus = document.getElementById('labelTargetCampus');
+        const labelTargetDept = document.getElementById('labelTargetDept');
+        const aiInputUrl = document.getElementById('aiInputUrl');
+        const badgePromptMode = document.getElementById('badgePromptMode');
+
+        if (labelTargetOrg) {
+            labelTargetOrg.innerHTML = isSchool ? 'Target School <span class="text-danger">*</span>' : 'Target Organisation <span class="text-danger">*</span>';
+        }
+        if (labelTargetCampus) {
+            labelTargetCampus.innerHTML = isSchool ? 'Target School Campus / Branch <span class="text-danger">*</span>' : 'Target Campus <span class="text-danger">*</span>';
+        }
+        if (labelTargetDept) {
+            labelTargetDept.innerHTML = isSchool ? 'Target Academic Wing / Dept <span class="text-danger">*</span>' : 'Target Department <span class="text-danger">*</span>';
+        }
+
+        const tabCampusesTitle = document.getElementById('tab-campuses-title');
+        const headerCampusesSection = document.getElementById('headerCampusesSection');
+        const subHeaderCampusesSection = document.getElementById('subHeaderCampusesSection');
+        if (tabCampusesTitle) tabCampusesTitle.innerText = isSchool ? 'Campuses / Branches' : 'Campuses';
+        if (headerCampusesSection) headerCampusesSection.innerText = isSchool ? 'School Campuses & Branches' : 'Physical Campuses & Branches';
+        if (subHeaderCampusesSection) subHeaderCampusesSection.innerText = isSchool ? 'Manage school campus details according to school campus master profile.' : 'Manage campus locations, infrastructure, and facilities.';
+
+        if (mode === 'organisation') {
+            if (groupOrgType) groupOrgType.classList.remove('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.add('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.add('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'School Official Website URL <span class="text-danger">*</span>' : 'Official Website URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net' : 'https://www.example.edu.in';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = isSchool ? 'School Organisation Only' : 'Organisation Only';
+                badgePromptMode.className = 'badge bg-light text-dark border ms-1 fw-normal';
+            }
+        } else if (mode === 'campus') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.add('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'School Campus / Branch Page URL <span class="text-danger">*</span>' : 'Campus Website / Page URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/branch/junior-wing' : 'https://www.example.edu.in/campuses/city-campus';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = isSchool ? 'School Campus Only' : 'Campus Only';
+                badgePromptMode.className = 'badge bg-info-subtle text-info border border-info ms-1 fw-normal';
+            }
+        } else if (mode === 'department') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
+            if (groupTargetDept) groupTargetDept.classList.add('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'School Academic Wing / Department URL <span class="text-danger">*</span>' : 'Department Website / Faculty URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/academics/senior-wing' : 'https://www.example.edu.in/department/computer-science';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = isSchool ? 'School Academic Wing Only' : 'Department Only';
+                badgePromptMode.className = 'badge bg-warning-subtle text-warning border border-warning ms-1 fw-normal';
+            }
+        } else if (mode === 'course') {
+            if (groupOrgType) groupOrgType.classList.add('d-none');
+            if (groupTargetOrg) groupTargetOrg.classList.remove('d-none');
+            if (groupTargetCampus) groupTargetCampus.classList.remove('d-none');
+            if (groupTargetDept) groupTargetDept.classList.remove('d-none');
+            if (labelWebsiteUrl) labelWebsiteUrl.innerHTML = isSchool ? 'School Class / Curriculum / Admissions URL <span class="text-danger">*</span>' : 'Course / Admissions Website URL <span class="text-danger">*</span>';
+            if (aiInputUrl) aiInputUrl.placeholder = isSchool ? 'https://www.dpsrkp.net/admissions/curriculum' : 'https://www.example.edu.in/admissions/btech-cse';
+            if (badgePromptMode) {
+                badgePromptMode.innerText = isSchool ? 'School Class / Curriculum Only' : 'Course / Program Only';
+                badgePromptMode.className = 'badge bg-success-subtle text-success border border-success ms-1 fw-normal';
+            }
+        }
+
+        // Auto-refresh rendered campus cards if type toggled
+        const campusesContainer = document.getElementById('campusesContainer');
+        if (campusesContainer) {
+            const cards = Array.from(campusesContainer.querySelectorAll('.campus-item'));
+            cards.forEach((card, i) => {
+                const isCardSchool = card.classList.contains('campus-item-school') || !!card.querySelector('.c-school-types');
+                if (isCardSchool !== isSchool) {
+                    const data = collectCampusItemData(card) || {};
+                    card.remove();
+                    appendCampusCard(data, Date.now() + i);
+                }
+            });
+        }
+
+        fetchAndRefreshPrompt(false);
+    }
+
+    document.querySelectorAll('.entity-mode-radio').forEach(radio => {
+        radio.addEventListener('change', handleEntityModeChange);
+    });
+
+    // ----------------------------------------------------
+    // Cascading Dropdowns: Org -> Campuses -> Departments
+    // ----------------------------------------------------
+    $('#aiInputTargetOrg').on('change', function () {
+        handleEntityModeChange();
+        const orgId = $(this).val();
+        const selOrg = (allOrganisations || []).find(o => String(o.id) === String(orgId));
+        const urlInput = document.getElementById('aiInputUrl');
+        if (urlInput && !urlInput.value && selOrg && selOrg.official_website) {
+            urlInput.value = selOrg.official_website;
+        }
+
+        const $campusSelect = $('#aiInputTargetCampus');
+        const $deptSelect = $('#aiInputTargetDept');
+        $campusSelect.empty().append(new Option('-- Select Campus * --', ''));
+        $deptSelect.empty().append(new Option('-- Select Department * --', ''));
+
+        if (orgId) {
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?organisation_id=${orgId}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data && data.campuses && Array.isArray(data.campuses)) {
+                        data.campuses.forEach(c => {
+                            $campusSelect.append(new Option(c.campus_name + (c.city ? ' (' + c.city + ')' : ''), c.id));
+                        });
+                        $campusSelect.trigger('change.select2');
+                    }
+                    if (data && data.departments && Array.isArray(data.departments)) {
+                        data.departments.forEach(d => {
+                            $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
+                        });
+                        $deptSelect.trigger('change.select2');
+                    }
+                })
+                .catch(err => console.error('Error fetching cascading options:', err));
+        }
+
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiInputTargetCampus').on('change', function () {
+        const orgId = $('#aiInputTargetOrg').val();
+        const campusId = $(this).val();
+        const $deptSelect = $('#aiInputTargetDept');
+        $deptSelect.empty().append(new Option('-- Select Department * --', ''));
+
+        if (orgId || campusId) {
+            const params = new URLSearchParams();
+            if (orgId) params.append('organisation_id', orgId);
+            if (campusId) params.append('campus_id', campusId);
+
+            fetch(`{{ route('admin.ai-organisations.cascading-options') }}?${params.toString()}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data && data.departments && Array.isArray(data.departments)) {
+                        data.departments.forEach(d => {
+                            $deptSelect.append(new Option(d.department_name + (d.department_code ? ' [' + d.department_code + ']' : ''), d.id));
+                        });
+                        $deptSelect.trigger('change.select2');
+                    }
+                })
+                .catch(err => console.error('Error fetching cascading departments:', err));
+        }
+
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiInputTargetDept').on('change', function () {
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiInputOrgType').on('change', function () {
+        handleEntityModeChange();
+        fetchAndRefreshPrompt(false);
+    });
+
+    $('#aiSearchGoogleCheck').on('change', function () {
+        fetchAndRefreshPrompt(false);
+    });
+
+    const aiInputUrlEl = document.getElementById('aiInputUrl');
+    if (aiInputUrlEl) {
+        aiInputUrlEl.addEventListener('blur', function () {
+            fetchAndRefreshPrompt(false);
+        });
+    }
+
+    // ----------------------------------------------------
+    // Prompt Preview & Editing Logic
+    // ----------------------------------------------------
+    let promptIsManuallyEdited = false;
+    let isPromptOpen = false;
+    let promptFetchDebounce = null;
+
+    const btnTogglePromptView = document.getElementById('btnTogglePromptView');
+    const btnResetPrompt = document.getElementById('btnResetPrompt');
+    const promptContainer = document.getElementById('promptContainer');
+    const aiCustomPrompt = document.getElementById('aiCustomPrompt');
+    const textTogglePrompt = document.getElementById('textTogglePrompt');
+    const badgePromptMode = document.getElementById('badgePromptMode');
+    const promptCharCount = document.getElementById('promptCharCount');
+    const promptLoadingSpinner = document.getElementById('promptLoadingSpinner');
+
+    function updatePromptCharCount() {
+        if (aiCustomPrompt && promptCharCount) {
+            promptCharCount.innerText = `${aiCustomPrompt.value.length} chars`;
+        }
+    }
+
+    if (aiCustomPrompt) {
+        aiCustomPrompt.addEventListener('input', function () {
+            promptIsManuallyEdited = true;
+            if (btnResetPrompt) btnResetPrompt.classList.remove('d-none');
+            updatePromptCharCount();
+        });
+    }
+
+    if (btnResetPrompt) {
+        btnResetPrompt.addEventListener('click', function () {
+            promptIsManuallyEdited = false;
+            btnResetPrompt.classList.add('d-none');
+            fetchAndRefreshPrompt(true);
+        });
+    }
+
+    if (btnTogglePromptView) {
+        btnTogglePromptView.addEventListener('click', function () {
+            isPromptOpen = !isPromptOpen;
+            if (isPromptOpen) {
+                promptContainer.classList.remove('d-none');
+                textTogglePrompt.innerText = 'Hide Prompt';
+                if (!aiCustomPrompt.value || !promptIsManuallyEdited) {
+                    fetchAndRefreshPrompt(false);
+                }
+            } else {
+                promptContainer.classList.add('d-none');
+                textTogglePrompt.innerText = 'View / Edit Prompt';
+            }
+        });
+    }
+
+    function fetchAndRefreshPrompt(force = false) {
+        const mode = getSelectedEntityMode();
+        const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
+        const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
+        const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
+        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 0;
+        const btnExtract = document.getElementById('btnRunAiExtraction');
+
+        // Update badge immediately
+        if (badgePromptMode) {
+            if (mode === 'organisation') {
+                badgePromptMode.innerText = 'Organisation Only';
+                badgePromptMode.className = 'badge bg-light text-dark border ms-1 fw-normal';
+            } else if (mode === 'campus') {
+                badgePromptMode.innerText = 'Campus Only';
+                badgePromptMode.className = 'badge bg-info-subtle text-info border border-info ms-1 fw-normal';
+            } else if (mode === 'department') {
+                badgePromptMode.innerText = 'Department Only';
+                badgePromptMode.className = 'badge bg-warning-subtle text-warning border border-warning ms-1 fw-normal';
+            } else if (mode === 'course') {
+                badgePromptMode.innerText = 'Course / Program Only';
+                badgePromptMode.className = 'badge bg-success-subtle text-success border border-success ms-1 fw-normal';
+            }
+        }
+
+        if (promptIsManuallyEdited && !force) return;
+
+        const url = document.getElementById('aiInputUrl')?.value.trim() || '';
+        const orgTypeId = document.getElementById('aiInputOrgType')?.value || '1';
+
+        const referenceUrls = [];
+        document.querySelectorAll('#referenceUrlsContainer .ref-url-input').forEach(input => {
+            const val = input.value.trim();
+            if (val && !referenceUrls.includes(val)) {
+                referenceUrls.push(val);
+            }
+        });
+
+        if (promptLoadingSpinner) promptLoadingSpinner.classList.remove('d-none');
+        if (btnExtract) {
+            btnExtract.disabled = true;
+            btnExtract.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading Prompt...';
+        }
+
+        clearTimeout(promptFetchDebounce);
+        promptFetchDebounce = setTimeout(function () {
+            fetch("{{ route('admin.ai-organisations.preview-prompt') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    mode: mode,
+                    url: url || 'https://www.example.edu',
+                    organisation_type_id: orgTypeId,
+                    target_organisation_id: targetOrgId || null,
+                    target_campus_id: targetCampusId || null,
+                    target_department_id: targetDeptId || null,
+                    reference_urls: referenceUrls,
+                    search_google: searchGoogle
+                })
+            })
+            .then(async res => {
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) return null;
+                return res.json();
+            })
+            .then(result => {
+                if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
+                if (btnExtract) {
+                    btnExtract.disabled = false;
+                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                }
+                if (result && result.success && result.prompt) {
+                    if (aiCustomPrompt) {
+                        aiCustomPrompt.value = result.prompt;
+                        updatePromptCharCount();
+                    }
+                }
+            })
+            .catch(() => {
+                if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
+                if (btnExtract) {
+                    btnExtract.disabled = false;
+                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                }
+            });
+        }, 150);
+    }
+
+    // Reference URLs Dynamic Management
+    const refContainer = document.getElementById('referenceUrlsContainer');
+    const btnAddRef = document.getElementById('btnAddReferenceUrl');
+    if (btnAddRef && refContainer) {
+        btnAddRef.addEventListener('click', function () {
+            const row = document.createElement('div');
+            row.className = 'input-group reference-url-row';
+            row.innerHTML = `
+                <span class="input-group-text bg-light text-muted"><i class="fas fa-external-link-alt"></i></span>
+                <input type="url" class="form-control ref-url-input" placeholder="e.g. Wikipedia, NIRF, NAAC, or Admission page URL">
+                <button type="button" class="btn btn-outline-danger btn-remove-ref-url" title="Clear / Remove URL">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            refContainer.appendChild(row);
+            const inputEl = row.querySelector('.ref-url-input');
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.addEventListener('blur', function () { fetchAndRefreshPrompt(false); });
+            }
+        });
+
+        refContainer.addEventListener('click', function (e) {
+            const removeBtn = e.target.closest('.btn-remove-ref-url');
+            if (removeBtn) {
+                const row = removeBtn.closest('.reference-url-row');
+                if (refContainer.querySelectorAll('.reference-url-row').length > 1) {
+                    row.remove();
+                } else {
+                    const inputEl = row.querySelector('.ref-url-input');
+                    if (inputEl) inputEl.value = '';
+                }
+                fetchAndRefreshPrompt(false);
+            }
+        });
+
+        refContainer.querySelectorAll('.ref-url-input').forEach(input => {
+            input.addEventListener('blur', function () { fetchAndRefreshPrompt(false); });
+        });
+    }
+
+    // ----------------------------------------------------
+    // Trigger AI Extraction
+    // ----------------------------------------------------
+    btnRunAiExtraction.addEventListener('click', function () {
+        const mode = getSelectedEntityMode();
+        const url = document.getElementById('aiInputUrl').value.trim();
+        const orgTypeId = document.getElementById('aiInputOrgType') ? document.getElementById('aiInputOrgType').value : '1';
+        const targetOrgId = document.getElementById('aiInputTargetOrg') ? document.getElementById('aiInputTargetOrg').value : '';
+        const targetCampusId = document.getElementById('aiInputTargetCampus') ? document.getElementById('aiInputTargetCampus').value : '';
+        const targetDeptId = document.getElementById('aiInputTargetDept') ? document.getElementById('aiInputTargetDept').value : '';
+        const searchGoogle = document.getElementById('aiSearchGoogleCheck') ? (document.getElementById('aiSearchGoogleCheck').checked ? 1 : 0) : 1;
+
+        if (!url) {
+            alert('Please enter a valid website URL.');
+            document.getElementById('aiInputUrl').focus();
+            return;
+        }
+
+        if (mode === 'organisation' && !orgTypeId) {
+            alert('Please select an Organisation Type before extracting data.');
+            document.getElementById('aiInputOrgType').focus();
+            return;
+        }
+
+        if (mode !== 'organisation' && !targetOrgId) {
+            alert('Please select a Target Organisation before proceeding.');
+            document.getElementById('aiInputTargetOrg').focus();
+            return;
+        }
+
+        const referenceUrls = [];
+        document.querySelectorAll('#referenceUrlsContainer .ref-url-input').forEach(input => {
+            const val = input.value.trim();
+            if (val && !referenceUrls.includes(val)) {
+                referenceUrls.push(val);
+            }
+        });
+
+        const customPromptVal = (promptIsManuallyEdited && aiCustomPrompt && aiCustomPrompt.value.trim()) ? aiCustomPrompt.value.trim() : null;
+
+        const loadingStatusEl = document.getElementById('aiLoadingStatusText');
+        if (loadingStatusEl) {
+            const selOrg = (allOrganisations || []).find(o => String(o.id) === String(targetOrgId));
+            const orgName = selOrg ? selOrg.name : 'the organisation';
+
+            if (mode === 'campus') {
+                loadingStatusEl.innerText = `Deep-scanning campus infrastructure and locations for '${orgName}'... Please wait.`;
+            } else if (mode === 'department') {
+                loadingStatusEl.innerText = `Deep-crawling website navigation, schools, and academic directories for '${orgName}'... Please wait.`;
+            } else if (mode === 'course') {
+                loadingStatusEl.innerText = `Deep-crawling program catalogs, fees, and matching degree masters for '${orgName}'... Please wait.`;
+            } else {
+                loadingStatusEl.innerText = 'Extracting institutional identity profile and accreditations... Please wait.';
+            }
+        }
+
+        aiStepInput.classList.add('d-none');
+        aiStepLoading.classList.remove('d-none');
+        aiStepPreview.classList.add('d-none');
+
+        fetch("{{ route('admin.ai-organisations.extract') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                mode: mode,
+                url: url,
+                organisation_type_id: orgTypeId,
+                target_organisation_id: targetOrgId || null,
+                target_campus_id: targetCampusId || null,
+                target_department_id: targetDeptId || null,
+                reference_urls: referenceUrls,
+                custom_prompt: customPromptVal,
+                search_google: searchGoogle
+            })
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                if (response.status === 504 || response.status === 502) {
+                    throw new Error('Server Gateway Timeout (' + response.status + '). The website may have taken too long to respond. Please try again or uncheck Search Grounding to speed up extraction.');
+                }
+                throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+            }
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || `Server error (${response.status})`);
+            }
+            return data;
+        })
+        .then(result => {
+            if (result.success && result.data) {
+                currentExtractedData = result.data;
+                currentExtractionMode = result.mode || mode;
+                currentTargetOrgId = result.target_organisation_id || (targetOrgId ? targetOrgId : null);
+                currentTargetOrgName = result.target_organisation_name || '';
+                currentTargetCampusId = result.target_campus_id || null;
+                currentTargetCampusName = result.target_campus_name || '';
+                currentTargetDeptId = result.target_department_id || null;
+                currentTargetDeptName = result.target_department_name || '';
+
+                if (result.masters) {
+                    globalMasters = result.masters;
+                    populateMasterSelectors(result.masters);
+                }
+                renderAllFieldsPreview(currentExtractedData, result.selected_type_id || orgTypeId);
+
+                aiStepLoading.classList.add('d-none');
+                aiStepPreview.classList.remove('d-none');
+            } else {
+                throw new Error(result.message || 'Failed to extract data.');
+            }
+        })
+        .catch(error => {
+            alert('Error during extraction: ' + error.message);
+            aiStepLoading.classList.add('d-none');
+            aiStepInput.classList.remove('d-none');
+        });
+    });
+
+    function populateMasterSelectors(masters) {
+        const orgTypeSelect = document.getElementById('aiOrgTypeMaster');
+        if (orgTypeSelect && masters.organisation_types) {
+            const currentVal = orgTypeSelect.value;
+            const allowedTypes = ['university', 'college', 'school'];
+            orgTypeSelect.innerHTML = '<option value="">-- Select Master Type --</option>' +
+                masters.organisation_types
+                    .filter(ot => allowedTypes.includes(ot.title.toLowerCase()))
+                    .map(ot => `<option value="${ot.id}">${ot.title}</option>`).join('');
+            if (currentVal) orgTypeSelect.value = currentVal;
+            // Update Select2 display after rebuilding options
+            if (window.jQuery && $.fn.select2 && $(orgTypeSelect).data('select2')) {
+                $(orgTypeSelect).trigger('change.select2');
+            }
+        }
+    }
+
+    // Restart Extraction
+    btnRestartExtraction.addEventListener('click', function () {
+        aiStepPreview.classList.add('d-none');
+        aiStepInput.classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function toCsv(val) {
+        if (!val) return '';
+        if (Array.isArray(val)) return val.join(', ');
+        return String(val);
+    }
+
+    // ----------------------------------------------------
+    // Render Review Workspace (Isolated Single-Entity Display)
+    // ----------------------------------------------------
+    function renderAllFieldsPreview(data, selectedTypeId) {
+        const org = data.organisation || {};
+        const campuses = data.campuses || [];
+        const departments = data.departments || [];
+        const courses = data.courses || [];
+
+        const activeTypeId = selectedTypeId || org.organisation_type_id || document.getElementById('aiInputOrgType')?.value || 1;
+
+        // Set Master Type and Toggle Container
+        const orgTypeMasterEl = document.getElementById('aiOrgTypeMaster');
+        if (orgTypeMasterEl) {
+            orgTypeMasterEl.value = activeTypeId;
+            if (window.jQuery && $.fn.select2 && $(orgTypeMasterEl).data('select2')) {
+                $(orgTypeMasterEl).trigger('change.select2');
+            }
+        }
+        toggleOrgTypeFields(activeTypeId);
+
+        // Common Fields
+        const orgName = org.name || '';
+        if (document.getElementById('aiOrgName')) {
+            document.getElementById('aiOrgName').value = orgName;
+        }
+
+        const headerTitleEl = document.getElementById('previewOrgHeaderTitle');
+        const headerBadgeEl = document.getElementById('previewOrgNameBadge');
+        const mode2NoticeEl = document.getElementById('mode2OrgNotice');
+        const saveButtons = document.querySelectorAll('.btn-confirm-save-action');
+
+        const tabItemOrg = document.getElementById('tab-item-org');
+        const tabItemCampuses = document.getElementById('tab-item-campuses');
+        const tabItemDepts = document.getElementById('tab-item-depts');
+        const tabItemCourses = document.getElementById('tab-item-courses');
+        const tabOrgPane = document.getElementById('tab-org');
+        const tabCampusesPane = document.getElementById('tab-campuses');
+        const tabDeptsPane = document.getElementById('tab-depts');
+        const tabCoursesPane = document.getElementById('tab-courses');
+        const unfilledBanner = document.getElementById('unfilledFieldsBanner');
+
+        const tabOrgBtn = document.getElementById('tab-org-btn');
+        const tabCampusesBtn = document.getElementById('tab-campuses-btn');
+        const tabDeptsBtn = document.getElementById('tab-depts-btn');
+        const tabCoursesBtn = document.getElementById('tab-courses-btn');
+
+        // Hide all tabs and panes first
+        [tabItemOrg, tabItemCampuses, tabItemDepts, tabItemCourses].forEach(t => t && t.classList.add('d-none'));
+        [tabOrgPane, tabCampusesPane, tabDeptsPane, tabCoursesPane].forEach(p => {
+            if (p) {
+                p.classList.add('d-none');
+                p.classList.remove('active', 'show');
+            }
+        });
+        [tabOrgBtn, tabCampusesBtn, tabDeptsBtn, tabCoursesBtn].forEach(b => b && b.classList.remove('active'));
+
+        if (mode2NoticeEl) mode2NoticeEl.classList.add('d-none');
+        if (unfilledBanner) unfilledBanner.classList.add('d-none');
+
+        const orgDisplayName = currentTargetOrgName || org.name || 'Selected Organisation';
+        const isSchool = isCurrentEntitySchool();
+
+        // Update tab titles and header icons dynamically for Schools vs Universities
+        const tabOrgTitle = document.getElementById('tab-org-title');
+        const tabOrgIcon = document.getElementById('tab-org-icon');
+        const tabCampusesTitle = document.getElementById('tab-campuses-title');
+        const tabDeptsTitle = document.getElementById('tab-depts-title');
+        const tabCoursesTitle = document.getElementById('tab-courses-title');
+
+        const headerCampusesSection = document.getElementById('headerCampusesSection');
+        const subHeaderCampusesSection = document.getElementById('subHeaderCampusesSection');
+        const headerDeptsSection = document.getElementById('headerDeptsSection');
+        const subHeaderDeptsSection = document.getElementById('subHeaderDeptsSection');
+        const headerCoursesSection = document.getElementById('headerCoursesSection');
+        const subHeaderCoursesSection = document.getElementById('subHeaderCoursesSection');
+
+        if (tabOrgTitle) tabOrgTitle.innerText = isSchool ? 'School Profile' : 'Organisation';
+        if (tabOrgIcon) tabOrgIcon.className = isSchool ? 'fas fa-school me-1' : 'fas fa-university me-1';
+        if (tabCampusesTitle) tabCampusesTitle.innerText = isSchool ? 'Campuses / Branches' : 'Campuses';
+        if (tabDeptsTitle) tabDeptsTitle.innerText = isSchool ? 'Wings / Depts' : 'Departments';
+        if (tabCoursesTitle) tabCoursesTitle.innerText = isSchool ? 'Classes & Curriculums' : 'Courses';
+
+        if (headerCampusesSection) headerCampusesSection.innerText = isSchool ? 'School Campuses & Branches' : 'Physical Campuses & Branches';
+        if (subHeaderCampusesSection) subHeaderCampusesSection.innerText = isSchool ? 'Manage school branch locations, playground, science/computer labs, and transport fleet.' : 'Manage campus locations, infrastructure, and facilities.';
+
+        if (headerDeptsSection) headerDeptsSection.innerText = isSchool ? 'School Academic Wings & Faculties' : 'Faculties & Departments';
+        if (subHeaderDeptsSection) subHeaderDeptsSection.innerText = isSchool ? 'Manage academic wings (Pre-Primary, Primary, Middle, Secondary, Senior Secondary) or subject faculties.' : 'Manage academic departments, faculty details, and research.';
+
+        if (headerCoursesSection) headerCoursesSection.innerText = isSchool ? 'School Classes & Curriculums' : 'Degree & Diploma Programs';
+        if (subHeaderCoursesSection) subHeaderCoursesSection.innerText = isSchool ? 'Manage grade classes, education board affiliations, fee structures, and academic support.' : 'Programs are automatically matched with your Master Courses list.';
+
+        // 1. ORGANISATION MODE
+        if (currentExtractionMode === 'organisation') {
+            if (headerTitleEl) headerTitleEl.innerHTML = isSchool
+                ? `<i class="fas fa-school text-primary me-2"></i>School Organisation Profile Preview`
+                : `<i class="fas fa-university text-primary me-2"></i>Organisation Profile Preview`;
+            if (headerBadgeEl) headerBadgeEl.innerText = (org.short_name || orgName || '') + (org.established_year ? ' (Est. ' + org.established_year + ')' : '');
+
+            // Show ONLY Organisation tab
+            if (tabItemOrg) tabItemOrg.classList.remove('d-none');
+            if (tabItemCampuses) tabItemCampuses.classList.add('d-none');
+            if (tabItemDepts) tabItemDepts.classList.add('d-none');
+            if (tabItemCourses) tabItemCourses.classList.add('d-none');
+
+            if (tabOrgPane) {
+                tabOrgPane.classList.remove('d-none');
+                tabOrgPane.classList.add('active', 'show');
+            }
+            if (tabOrgBtn) tabOrgBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = isSchool
+                    ? '<i class="fas fa-save me-1"></i> Save School Organisation'
+                    : '<i class="fas fa-save me-1"></i> Save Organisation';
+            });
+
+            // Populate Org Fields
+            if (document.getElementById('aiOrgCentralAuth')) {
+                document.getElementById('aiOrgCentralAuth').value = org.central_authority || org.managing_trust_or_society_name || '';
+            }
+            if (document.getElementById('aiOrgLocation')) {
+                document.getElementById('aiOrgLocation').value = org.head_office_location || org.headquarters_location || '';
+            }
+            if (document.getElementById('aiOrgIsTop')) {
+                document.getElementById('aiOrgIsTop').value = (org.is_top !== undefined && org.is_top !== null) ? org.is_top : 0;
+            }
+            if (document.getElementById('aiOrgCoreValues')) {
+                document.getElementById('aiOrgCoreValues').value = toCsv(org.core_values);
+            }
+
+            const visibleContainer = document.querySelector('#tab-org .col-12[id$="-fields"][style*="display: block"]') ||
+                                     document.querySelector('#tab-org .col-12[id$="-fields"]:not([style*="display: none"])');
+            if (visibleContainer) {
+                visibleContainer.querySelectorAll('input, select, textarea').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (!name || input.type === 'file') return;
+
+                    const baseName = name.replace(/\[\]$/, '');
+
+                    if (baseName === 'canonical_url') {
+                        input.value = '';
+                        return;
+                    }
+                    if (baseName === 'claimed_by_organization' || baseName === 'claimed_by_authority') {
+                        input.checked = false;
+                        return;
+                    }
+                    if (baseName === 'average_rating' || 
+                        baseName === 'total_reviews' || 
+                        baseName === 'public_trust_rating' || 
+                        baseName.toLowerCase().includes('rating') || 
+                        baseName.toLowerCase().includes('review')) {
+                        input.value = '';
+                        if (input.type === 'checkbox') input.checked = false;
+                        return;
+                    }
+
+                    if (org[baseName] !== undefined && org[baseName] !== null) {
+                        const val = org[baseName];
+                        if (input.type === 'checkbox') {
+                            if (name.endsWith('[]')) {
+                                const arr = Array.isArray(val) ? val.map(String) : (typeof val === 'string' ? val.split(',').map(s => s.trim()) : []);
+                                if (baseName === 'levels_offered') {
+                                    const valLower = String(input.value).toLowerCase();
+                                    input.checked = arr.some(lvl => {
+                                        const l = String(lvl).toLowerCase();
+                                        if (valLower === 'ug') return l.includes('undergrad') || l.includes('bachelor') || l === 'ug';
+                                        if (valLower === 'pg') return l.includes('postgrad') || l.includes('master') || l === 'pg';
+                                        if (valLower === 'doctoral') return l.includes('phd') || l.includes('ph.d') || l.includes('doc') || l.includes('research');
+                                        if (valLower === 'diploma') return l.includes('diploma') || l.includes('polytechnic');
+                                        return l === valLower;
+                                    });
+                                } else {
+                                    input.checked = arr.some(item => item.toLowerCase() === input.value.toLowerCase());
+                                }
+                            } else {
+                                input.checked = Boolean(val == 1 || val === true || val === '1' || val === 'true');
+                            }
+                        } else if (input.tagName === 'SELECT') {
+                            input.value = String(val);
+                            // If direct match failed, try fuzzy/case-insensitive match
+                            if (!input.value && input.options) {
+                                const valStr = String(val).toLowerCase().trim();
+                                for (let i = 0; i < input.options.length; i++) {
+                                    const optVal = input.options[i].value.toLowerCase().trim();
+                                    const optText = input.options[i].text.toLowerCase().trim();
+                                    if (optVal && (optVal === valStr || valStr.includes(optVal) || optVal.includes(valStr) || optText.includes(valStr) || valStr.includes(optText))) {
+                                        input.value = input.options[i].value;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (window.jQuery) {
+                                $(input).val(input.value).trigger('change.select2');
+                            }
+                        } else if (input.tagName === 'TEXTAREA') {
+                            input.value = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                        } else {
+                            if (name.endsWith('[]')) {
+                                input.value = toCsv(val);
+                            } else {
+                                input.value = typeof val === 'object' ? toCsv(val) : String(val);
+                            }
+                        }
+                    }
+                });
+
+                // Ensure all rating and review fields across all tabs in organisation form remain completely blank
+                document.querySelectorAll('#tab-org [name*="rating"], #tab-org [name*="review"]').forEach(el => {
+                    if (el.type === 'checkbox') {
+                        el.checked = false;
+                    } else {
+                        el.value = '';
+                    }
+                });
+
+                // Display Image Previews for Logo & Cover Image
+                const logoPreview = visibleContainer.querySelector('.file-preview[data-preview="logo_url"]');
+                if (logoPreview && org.logo_url) {
+                    logoPreview.innerHTML = `
+                        <div class="d-flex align-items-center p-2 border rounded bg-light mb-2">
+                            <img src="${org.logo_url}" class="img-thumbnail me-2" style="height: 55px; max-width: 90px; object-fit: contain;" alt="Logo" onerror="this.parentElement.remove()">
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success mb-1" style="font-size: 0.7rem;"><i class="fas fa-check-circle me-1"></i>AI Found Official Logo</span>
+                                <div class="small text-muted text-truncate" style="max-width: 250px; font-size: 0.75rem;">${org.logo_url}</div>
+                                <input type="hidden" name="ai_extracted_logo_url" value="${org.logo_url}">
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const coverPreview = visibleContainer.querySelector('.file-preview[data-preview="cover_image_url"]');
+                if (coverPreview && org.cover_image_url) {
+                    coverPreview.innerHTML = `
+                        <div class="d-flex align-items-center p-2 border rounded bg-light mb-2">
+                            <img src="${org.cover_image_url}" class="img-thumbnail me-2" style="height: 55px; max-width: 110px; object-fit: cover;" alt="Cover" onerror="this.parentElement.remove()">
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success mb-1" style="font-size: 0.7rem;"><i class="fas fa-check-circle me-1"></i>AI Found Campus Photo</span>
+                                <div class="small text-muted text-truncate" style="max-width: 250px; font-size: 0.75rem;">${org.cover_image_url}</div>
+                                <input type="hidden" name="ai_extracted_cover_image_url" value="${org.cover_image_url}">
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Clear child containers in organisation mode
+            const campusesContainer = document.getElementById('campusesContainer');
+            if (campusesContainer) campusesContainer.innerHTML = '';
+
+            const deptsContainer = document.getElementById('deptsContainer');
+            if (deptsContainer) deptsContainer.innerHTML = '';
+
+            const coursesContainer = document.getElementById('coursesContainer');
+            if (coursesContainer) coursesContainer.innerHTML = '';
+
+            highlightUnfilledFields();
+
+        // 2. CAMPUS MODE
+        } else if (currentExtractionMode === 'campus') {
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-city text-primary me-2"></i>${isSchool ? 'School Campuses & Branches' : 'Campuses'} for <strong>${orgDisplayName}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-info-subtle text-info border border-info px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}</span>`;
+
+            if (tabItemCampuses) tabItemCampuses.classList.remove('d-none');
+            if (tabCampusesPane) {
+                tabCampusesPane.classList.remove('d-none');
+                tabCampusesPane.classList.add('active', 'show');
+            }
+            if (tabCampusesBtn) tabCampusesBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = `<i class="fas fa-save me-1"></i> Save ${isSchool ? 'School Campuses' : 'Campuses'}`;
+            });
+
+            const campusesContainer = document.getElementById('campusesContainer');
+            campusesContainer.innerHTML = '';
+
+            const cList = campuses.length > 0 ? campuses : [{ campus_name: orgDisplayName + (isSchool ? ' - Main Branch' : ' - Main Campus'), campus_type: 'Main' }];
+            cList.forEach((c, idx) => {
+                appendCampusCard(c, idx);
+            });
+
+        // 3. DEPARTMENT MODE
+        } else if (currentExtractionMode === 'department') {
+            const subLabel = currentTargetCampusName ? ` (${currentTargetCampusName})` : '';
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-building text-primary me-2"></i>${isSchool ? 'Academic Wings & Faculties' : 'Departments'} for <strong>${orgDisplayName}${subLabel}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}${subLabel}</span>`;
+
+            if (tabItemDepts) tabItemDepts.classList.remove('d-none');
+            if (tabDeptsPane) {
+                tabDeptsPane.classList.remove('d-none');
+                tabDeptsPane.classList.add('active', 'show');
+            }
+            if (tabDeptsBtn) tabDeptsBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = `<i class="fas fa-save me-1"></i> Save ${isSchool ? 'Academic Wings' : 'Departments'}`;
+            });
+
+            const deptsContainer = document.getElementById('deptsContainer');
+            deptsContainer.innerHTML = '';
+
+            const dList = departments.length > 0 ? departments : [{ department_name: isSchool ? 'Senior Secondary Wing (Classes 11-12)' : 'Department of Computer Science & Engineering' }];
+            dList.forEach((d, idx) => {
+                appendDeptCard(d, idx);
+            });
+
+        // 4. COURSE MODE
+        } else if (currentExtractionMode === 'course') {
+            const subLabel = (currentTargetDeptName ? ` - ${currentTargetDeptName}` : '') + (currentTargetCampusName ? ` (${currentTargetCampusName})` : '');
+            if (headerTitleEl) headerTitleEl.innerHTML = `<i class="fas fa-graduation-cap text-success me-2"></i>${isSchool ? 'School Classes & Curriculums' : 'Courses & Programs'} for <strong>${orgDisplayName}${subLabel}</strong>`;
+            if (headerBadgeEl) headerBadgeEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>${orgDisplayName}</span>`;
+
+            if (tabItemCourses) tabItemCourses.classList.remove('d-none');
+            if (tabCoursesPane) {
+                tabCoursesPane.classList.remove('d-none');
+                tabCoursesPane.classList.add('active', 'show');
+            }
+            if (tabCoursesBtn) tabCoursesBtn.classList.add('active');
+
+            saveButtons.forEach(b => {
+                b.innerHTML = `<i class="fas fa-save me-1"></i> Save ${isSchool ? 'School Classes & Curriculums' : 'Courses'}`;
+            });
+
+            const coursesContainer = document.getElementById('coursesContainer');
+            coursesContainer.innerHTML = '';
+
+            const crList = courses.length > 0 ? courses : [isSchool ? { academic_unit_name: 'Senior Secondary (Class 11 & 12) - Science Stream', education_board: 'CBSE' } : { course_name: 'Bachelor of Technology (B.Tech)' }];
+            crList.forEach((cr, idx) => {
+                appendCourseCard(cr, idx);
+            });
+        }
+
+        updateAllBadges();
+        refreshCourseCampusAndDeptDropdowns();
+    }
+
+    // ----------------------------------------------------
+    // Unfilled / Non-Autofilled Fields Highlighting System
+    // ----------------------------------------------------
+    function findLabelForInput(el) {
+        if (!el) return null;
+        if (el.id) {
+            const lbl = document.querySelector(`label[for="${el.id}"]`);
+            if (lbl) return lbl;
+        }
+        const parent = el.closest('.col-md-6, .col-md-12, .col-md-3, .col-md-4, .col-md-5, .col-md-2, .col-md-8, .col-12, .mb-3, .mb-4');
+        if (parent) {
+            const lbl = parent.querySelector('label');
+            if (lbl) return lbl;
+        }
+        return null;
+    }
+
+    function isFieldEmpty(el) {
+        if (!el || el.disabled) return false;
+        if (el.type === 'hidden' || el.type === 'file' || el.type === 'checkbox' || el.type === 'radio') return false;
+        if (el.name === 'canonical_url') return false;
+
+        const parentSpecific = el.closest('.col-12[id$="-fields"]');
+        if (parentSpecific && (parentSpecific.style.display === 'none' || window.getComputedStyle(parentSpecific).display === 'none')) {
+            return false;
+        }
+
+        if (el.tagName === 'SELECT') {
+            return !el.value || el.value === '';
+        }
+        return el.value.trim() === '';
+    }
+
+    function updateFieldHighlight(el) {
+        if (!el) return;
+        const empty = isFieldEmpty(el);
+        const label = findLabelForInput(el);
+        const $select2Selection = window.jQuery ? $(el).next('.select2-container').find('.select2-selection') : null;
+
+        if (empty) {
+            el.classList.add('field-not-autofilled');
+            if ($select2Selection && $select2Selection.length) {
+                $select2Selection.addClass('field-not-autofilled');
+            }
+            if (label && !label.querySelector('.badge-not-autofilled')) {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-not-autofilled ms-2';
+                badge.innerHTML = '<i class="fas fa-pen-nib me-1"></i>Not auto-filled';
+                label.appendChild(badge);
+            }
+        } else {
+            el.classList.remove('field-not-autofilled');
+            if ($select2Selection && $select2Selection.length) {
+                $select2Selection.removeClass('field-not-autofilled');
+            }
+            if (label) {
+                const badge = label.querySelector('.badge-not-autofilled');
+                if (badge) badge.remove();
+            }
+        }
+    }
+
+    function highlightUnfilledFields() {
+        if (currentExtractionMode !== 'organisation') return;
+
+        const tabOrg = document.getElementById('tab-org');
+        if (!tabOrg) return;
+
+        const visibleTypeContainer = tabOrg.querySelector('.col-12[id$="-fields"][style*="display: block"]') ||
+                                     tabOrg.querySelector('.col-12[id$="-fields"]:not([style*="display: none"])');
+
+        const inputsToCheck = tabOrg.querySelectorAll(
+            'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea'
+        );
+
+        inputsToCheck.forEach(el => {
+            if (el.disabled) {
+                el.classList.remove('field-not-autofilled');
+                const lbl = findLabelForInput(el);
+                if (lbl) {
+                    const b = lbl.querySelector('.badge-not-autofilled');
+                    if (b) b.remove();
+                }
+                return;
+            }
+
+            const parentType = el.closest('.col-12[id$="-fields"]');
+            if (parentType && visibleTypeContainer && parentType !== visibleTypeContainer) {
+                el.classList.remove('field-not-autofilled');
+                const lbl = findLabelForInput(el);
+                if (lbl) {
+                    const b = lbl.querySelector('.badge-not-autofilled');
+                    if (b) b.remove();
+                }
+                return;
+            }
+
+            updateFieldHighlight(el);
+        });
+
+        updateAllUnfilledCounters();
+    }
+
+    function updateAllUnfilledCounters() {
+        if (currentExtractionMode !== 'organisation') {
+            const banner = document.getElementById('unfilledFieldsBanner');
+            const badgeOrg = document.getElementById('badgeOrgUnfilledCount');
+            if (banner) banner.classList.add('d-none');
+            if (badgeOrg) badgeOrg.classList.add('d-none');
+            return;
+        }
+
+        const tabOrg = document.getElementById('tab-org');
+        if (!tabOrg) return;
+
+        const unfilledInOrg = tabOrg.querySelectorAll('.field-not-autofilled').length;
+
+        const banner = document.getElementById('unfilledFieldsBanner');
+        const badge = document.getElementById('unfilledCountBadge');
+        if (banner && badge) {
+            if (unfilledInOrg > 0) {
+                banner.classList.remove('d-none');
+                badge.innerText = `${unfilledInOrg} field${unfilledInOrg > 1 ? 's' : ''} to fill manually`;
+            } else {
+                banner.classList.add('d-none');
+            }
+        }
+
+        const badgeOrg = document.getElementById('badgeOrgUnfilledCount');
+        if (badgeOrg) {
+            if (unfilledInOrg > 0) {
+                badgeOrg.classList.remove('d-none');
+                badgeOrg.innerText = `${unfilledInOrg} missing`;
+            } else {
+                badgeOrg.classList.add('d-none');
+            }
+        }
+
+        const subTabButtons = tabOrg.querySelectorAll('.nav-tabs button[data-bs-toggle="tab"]');
+        subTabButtons.forEach(btn => {
+            const targetSelector = btn.getAttribute('data-bs-target');
+            if (!targetSelector) return;
+            const pane = tabOrg.querySelector(targetSelector);
+            if (!pane) return;
+
+            const paneUnfilled = pane.querySelectorAll('.field-not-autofilled').length;
+            let pill = btn.querySelector('.tab-unfilled-pill');
+            if (paneUnfilled > 0) {
+                if (!pill) {
+                    pill = document.createElement('span');
+                    pill.className = 'badge rounded-pill bg-warning text-dark ms-2 tab-unfilled-pill';
+                    btn.appendChild(pill);
+                }
+                pill.innerText = paneUnfilled;
+                pill.title = `${paneUnfilled} fields need manual entry`;
+            } else if (pill) {
+                pill.remove();
+            }
+        });
+    }
+
+    // Real-time listener: remove highlight & badge as user fills the fields
+    const tabContent = document.getElementById('aiReviewTabContent');
+    if (tabContent) {
+        ['input', 'change'].forEach(evtType => {
+            tabContent.addEventListener(evtType, function (e) {
+                const el = e.target;
+                if (!el || !el.matches('input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea')) {
+                    return;
+                }
+                updateFieldHighlight(el);
+                updateAllUnfilledCounters();
+            });
+        });
+    }
+
+    if (window.jQuery) {
+        $(document).on('change select2:select select2:clear', '#tab-org select', function () {
+            updateFieldHighlight(this);
+            updateAllUnfilledCounters();
+        });
+    }
+
+    // Jump to next unfilled field button
+    const btnJump = document.getElementById('btnJumpNextUnfilled');
+    if (btnJump) {
+        btnJump.addEventListener('click', function () {
+            const nextEl = document.querySelector('#tab-org .field-not-autofilled');
+            if (nextEl) {
+                const parentPane = nextEl.closest('.tab-pane');
+                if (parentPane && !parentPane.classList.contains('active')) {
+                    const paneId = parentPane.id;
+                    const tabBtn = document.querySelector(`button[data-bs-target="#${paneId}"]`);
+                    if (tabBtn) {
+                        tabBtn.click();
+                    }
+                }
+                setTimeout(() => {
+                    nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    nextEl.focus();
+                }, 150);
+            } else {
+                alert('All organisation fields have been filled!');
+            }
+        });
+    }
+
+    // ============================================================
+    // Select2 Initialization Helpers for Dynamically Added Cards
+    // ============================================================
+    function initSelect2OnCard(container) {
+        if (!window.jQuery || !$.fn.select2) return;
+        $(container).find('select.form-select').each(function () {
+            const $sel = $(this);
+            if (!$sel.data('select2')) {
+                $sel.select2({ width: '100%' });
+            }
+        });
+    }
+
+    function reinitSelect2OnElement($el) {
+        if (!window.jQuery || !$.fn.select2) return;
+        if ($el.data('select2')) {
+            $el.select2('destroy');
+        }
+        $el.select2({ width: '100%' });
+    }
+
+    // Append Campus Card
+    function appendCampusCard(c = {}, idx = Date.now()) {
+        const isSchool = isCurrentEntitySchool();
+        const div = document.createElement('div');
+        div.className = 'card border mb-3 campus-item' + (isSchool ? ' campus-item-school' : '');
+
+        if (isSchool) {
+            // Options for School Types
+            const schoolTypes = globalMasters.school_types || [];
+            let selectedSchoolTypeIds = [];
+            if (Array.isArray(c.campus_type_new_id)) {
+                selectedSchoolTypeIds = c.campus_type_new_id.map(String);
+            } else if (c.campus_type_new_id) {
+                selectedSchoolTypeIds = [String(c.campus_type_new_id)];
+            } else if (c.school_type) {
+                let stTitles = [];
+                if (Array.isArray(c.school_type)) {
+                    stTitles = c.school_type;
+                } else if (typeof c.school_type === 'string') {
+                    stTitles = c.school_type.split(/[,;\/]+/).map(s => s.trim()).filter(Boolean);
+                    if (stTitles.length === 0) stTitles = [c.school_type];
+                }
+                schoolTypes.forEach(st => {
+                    const normMaster = normalizeStr(st.title);
+                    const matched = stTitles.some(t => {
+                        const normInput = normalizeStr(t);
+                        return normInput === normMaster || 
+                               (normInput.length >= 5 && normMaster.includes(normInput)) || 
+                               (normMaster.length >= 5 && normInput.includes(normMaster));
+                    });
+                    if (matched && !selectedSchoolTypeIds.includes(String(st.id))) {
+                        selectedSchoolTypeIds.push(String(st.id));
+                    }
+                });
+            }
+
+            const schoolTypesOptions = schoolTypes.map(st => `
+                <option value="${st.id}" ${selectedSchoolTypeIds.includes(String(st.id)) ? 'selected' : ''}>${st.title}</option>
+            `).join('');
+
+            // Options for Brand Type
+            const brandTypes = (globalMasters.brand_types && globalMasters.brand_types.length > 0)
+                ? globalMasters.brand_types
+                : ['Independent', 'Chain', 'Franchise'];
+            const brandTypesOptions = brandTypes.map(b => `
+                <option value="${b}" ${c.brand_type === b ? 'selected' : ''}>${b}</option>
+            `).join('');
+
+            // Options for Target Classes (Using Academic Classes Master)
+            const selectedClasses = Array.isArray(c.target_classes) ? c.target_classes.map(String) : [];
+            const masterClassesList = getMasterClassesList();
+            const targetClassesOptions = masterClassesList.map(cls => {
+                const clsStr = String(cls);
+                const numOnly = clsStr.replace(/^Class\s+/i, '');
+                const isSelected = selectedClasses.includes(clsStr) || 
+                                   selectedClasses.includes(numOnly) || 
+                                   selectedClasses.some(sc => sc.toLowerCase() === clsStr.toLowerCase());
+                return `<option value="${clsStr}" ${isSelected ? 'selected' : ''}>${clsStr}</option>`;
+            }).join('');
+
+            // Options for Facilities
+            const facilitiesList = globalMasters.facilities || [];
+            let selectedFacilityIds = [];
+            const rawFacilities = Array.isArray(c.facilities) ? c.facilities : (c.facilities ? [c.facilities] : []);
+
+            const facilityAliasMap = {
+                'classrooms': ['classroom', 'classrooms', 'classes', 'smart class', 'smart classroom', 'smart classrooms'],
+                'laboratories': ['lab', 'labs', 'laboratory', 'laboratories', 'science lab', 'computer lab', 'robotics', 'physics lab', 'chemistry lab', 'biology lab', 'stem lab'],
+                'library': ['library', 'reading room', 'digital library', 'book bank'],
+                'sports': ['sport', 'sports', 'playground', 'athletics', 'games', 'football', 'cricket', 'basketball', 'volleyball', 'tennis', 'badminton', 'turf', 'running track'],
+                'swimming pool': ['swimming', 'swimming pool', 'pool', 'aquatics', 'all weather pool'],
+                'cafeteria': ['cafeteria', 'canteen', 'mess', 'dining', 'food court', 'snack bar', 'tuck shop'],
+                'meals': ['meal', 'meals', 'lunch', 'breakfast', 'food facility', 'dining hall', 'mid day meal', 'mid-day meal'],
+                'auditorium': ['auditorium', 'amphitheatre', 'multipurpose hall', 'assembly hall', 'av room', 'audio visual', 'seminar hall'],
+                'wifi': ['wifi', 'wi-fi', 'internet', 'wireless', 'broadband', 'campus wifi'],
+                'i.t infrastructure': ['it', 'itinfrastructure', 'computer', 'computer center', 'technology', 'smart class', 'smart classes', 'ict lab'],
+                'medical/hospital': ['medical', 'hospital', 'infirmary', 'clinic', 'first aid', 'doctor', 'nurse', 'health center', 'medical room', 'dispensary'],
+                'gym': ['gym', 'gymnasium', 'fitness', 'workout', 'physical fitness', 'fitness center'],
+                'boys hostel': ['boys hostel', 'boy hostel', 'hostel boys', 'male hostel', 'boarding for boys'],
+                'girls hostel': ['girls hostel', 'girl hostel', 'hostel girls', 'female hostel', 'boarding for girls'],
+                'guest room/waiting room': ['guest room', 'waiting room', 'lounge', 'guest house', 'visitor room', 'reception lounge'],
+                'alumni associations': ['alumni', 'alumni association', 'alumni network', 'old students association'],
+                'transport facility': ['transport', 'transportation', 'bus', 'buses', 'school bus', 'van', 'commute', 'fleet', 'bus facility'],
+                'drinking water': ['water', 'drinking water', 'ro water', 'purified water', 'water cooler', 'mineral water'],
+                'indoor games': ['indoor', 'indoor games', 'indoor sports', 'table tennis', 'chess', 'carrom', 'board games', 'tt room'],
+                'dancing': ['dance', 'dancing', 'dance room', 'dance studio', 'performing arts'],
+                'debate': ['debate', 'debating', 'public speaking', 'elocution'],
+                'drama': ['drama', 'theatre', 'theater', 'dramatics'],
+                'common room': ['common room', 'student lounge', 'activity room', 'recreation room'],
+                'cinema hall': ['cinema', 'cinema hall', 'screening room', 'movie hall', 'projection hall']
+            };
+
+            const addFacilityByTarget = (targetKey) => {
+                const normTarget = normalizeStr(targetKey);
+                for (const f of facilitiesList) {
+                    const normF = normalizeStr(f.name);
+                    if (normF === normTarget || (normTarget.length >= 3 && normF.includes(normTarget)) || (normF.length >= 3 && normTarget.includes(normF))) {
+                        selectedFacilityIds.push(String(f.id));
+                        return;
+                    }
+                }
+                if (facilityAliasMap[targetKey]) {
+                    for (const alias of facilityAliasMap[targetKey]) {
+                        const normAlias = normalizeStr(alias);
+                        for (const f of facilitiesList) {
+                            const normF = normalizeStr(f.name);
+                            if (normF === normAlias || (normAlias.length >= 3 && normF.includes(normAlias)) || (normF.length >= 3 && normAlias.includes(normF))) {
+                                selectedFacilityIds.push(String(f.id));
+                                return;
+                            }
+                        }
+                    }
+                }
+            };
+            
+            rawFacilities.forEach(item => {
+                const itemStr = String(item).trim();
+                if (!itemStr) return;
+
+                const byId = facilitiesList.find(f => String(f.id) === itemStr);
+                if (byId) {
+                    selectedFacilityIds.push(String(byId.id));
+                    return;
+                }
+
+                const normItem = normalizeStr(itemStr);
+                let matched = false;
+                for (const f of facilitiesList) {
+                    const normF = normalizeStr(f.name);
+                    if (normF === normItem || 
+                        (normItem.length >= 3 && normF.includes(normItem)) || 
+                        (normF.length >= 3 && normItem.includes(normF))) {
+                        selectedFacilityIds.push(String(f.id));
+                        matched = true;
+                        break;
+                    }
+                }
+
+                if (!matched) {
+                    for (const [targetKey, aliases] of Object.entries(facilityAliasMap)) {
+                        for (const alias of aliases) {
+                            const normAlias = normalizeStr(alias);
+                            if (normItem === normAlias || normItem.includes(normAlias) || normAlias.includes(normItem)) {
+                                addFacilityByTarget(targetKey);
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (matched) break;
+                    }
+                }
+            });
+
+            // Auto-infer facilities from campus properties & booleans
+            if (c.classrooms_count > 0 || c.smart_classrooms || isSchool || (Array.isArray(c.target_classes) && c.target_classes.length > 0)) {
+                addFacilityByTarget('classrooms');
+            }
+            if (c.laboratories_count > 0 || c.science_labs_available || c.computer_labs_available) {
+                addFacilityByTarget('laboratories');
+            }
+            if (c.library_available || c.digital_library_access) {
+                addFacilityByTarget('library');
+            }
+            if (c.playground_available || (Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0)) {
+                addFacilityByTarget('sports');
+            }
+            if (Array.isArray(c.sports_facilities) && c.sports_facilities.length > 0) {
+                const sportsStr = c.sports_facilities.map(s => String(s).toLowerCase()).join(' ');
+                if (sportsStr.includes('swim') || sportsStr.includes('pool')) {
+                    addFacilityByTarget('swimming pool');
+                }
+                if (sportsStr.includes('chess') || sportsStr.includes('carrom') || sportsStr.includes('table tennis') || sportsStr.includes('indoor') || sportsStr.includes('badminton')) {
+                    addFacilityByTarget('indoor games');
+                }
+                if (sportsStr.includes('gym') || sportsStr.includes('fitness')) {
+                    addFacilityByTarget('gym');
+                }
+            }
+            if (c.transport_available || c.gps_enabled_buses || (c.bus_fleet_size && c.bus_fleet_size > 0) || (Array.isArray(c.bus_routes) && c.bus_routes.length > 0)) {
+                addFacilityByTarget('transport facility');
+            }
+            if (c.medical_facility_available) {
+                addFacilityByTarget('medical/hospital');
+            }
+            if (c.computer_labs_available || c.smart_classrooms || c.digital_library_access) {
+                addFacilityByTarget('i.t infrastructure');
+                addFacilityByTarget('wifi');
+            }
+            if (c.food_facility) {
+                addFacilityByTarget('cafeteria');
+                addFacilityByTarget('meals');
+            }
+            if (c.hostel_available || (c.hostel_type && c.hostel_type !== 'None')) {
+                if (c.hostel_type === 'Boys' || c.hostel_type === 'Both') {
+                    addFacilityByTarget('boys hostel');
+                }
+                if (c.hostel_type === 'Girls' || c.hostel_type === 'Both') {
+                    addFacilityByTarget('girls hostel');
+                }
+                if (c.hostel_type !== 'Boys' && c.hostel_type !== 'Girls') {
+                    addFacilityByTarget('boys hostel');
+                    addFacilityByTarget('girls hostel');
+                }
+            }
+            if (isSchool) {
+                addFacilityByTarget('drinking water');
+            }
+
+            const eventsClubsStr = (JSON.stringify(c.events_and_activities || []) + ' ' + JSON.stringify(c.clubs_and_committees || [])).toLowerCase();
+            if (eventsClubsStr.includes('dance')) addFacilityByTarget('dancing');
+            if (eventsClubsStr.includes('debate') || eventsClubsStr.includes('elocution')) addFacilityByTarget('debate');
+            if (eventsClubsStr.includes('drama') || eventsClubsStr.includes('theatre')) addFacilityByTarget('drama');
+
+            selectedFacilityIds = [...new Set(selectedFacilityIds)];
+
+            const currentOrgTypeId = parseInt(
+                $('#aiOrgTypeMaster').val() || 
+                $('#aiInputOrgType').val() || 
+                $('#targetOrganisationSelect option:selected').data('type-id') || 
+                (typeof currentExtractedData !== 'undefined' && currentExtractedData?.organisation?.organisation_type_id) || 
+                (typeof currentExtractedData !== 'undefined' && currentExtractedData?.selected_type_id) || 
+                '0'
+            );
+            const filteredFacilitiesList = facilitiesList.filter(f => {
+                if (selectedFacilityIds.includes(String(f.id))) return true;
+                if (!currentOrgTypeId) return true;
+                if (!f.organisation_types || f.organisation_types.length === 0) return true;
+                return f.organisation_types.some(t => parseInt(t.id) === currentOrgTypeId);
+            });
+
+            const facilitiesHtml = filteredFacilitiesList.length > 0 ? filteredFacilitiesList.map(f => {
+                const isChecked = selectedFacilityIds.includes(String(f.id));
+                return `
+                    <div class="col-md-3 col-sm-4 col-6">
+                        <div class="border rounded p-2 text-center h-100 facility-select-card" style="cursor: pointer; background: ${isChecked ? '#f0fdf4' : '#fff'}; border-color: ${isChecked ? '#22c55e' : '#e5e7eb'} !important;">
+                            <div class="form-check form-check-inline m-0 d-flex flex-column align-items-center">
+                                <input class="form-check-input c-facility-check mb-1" type="checkbox" value="${f.id}" ${isChecked ? 'checked' : ''}>
+                                <i class="${f.icon || 'fas fa-building'} fa-lg text-secondary my-1"></i>
+                                <span class="small fw-semibold text-truncate" style="max-width: 130px;" title="${f.name}">${f.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<div class="col-12 text-muted small">No master facilities configured.</div>';
+
+            // Bus Routes
+            const busRoutes = Array.isArray(c.bus_routes) && c.bus_routes.length > 0 ? c.bus_routes : [''];
+            const busRoutesHtml = busRoutes.map(route => `
+                <div class="input-group input-group-sm mb-2 bus-route-row">
+                    <span class="input-group-text"><i class="fas fa-route text-muted"></i></span>
+                    <input type="text" class="form-control c-bus-route-input" value="${route || ''}" placeholder="Enter bus route / stops">
+                    <button type="button" class="btn btn-outline-danger btn-remove-route" title="Remove Route">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            // Class Profile
+            const classProfiles = Array.isArray(c.class_profile) && c.class_profile.length > 0 
+                ? c.class_profile 
+                : [{ year: '', total_students: '', total_faculty: '', total_male_students: '', total_female_students: '', total_outside_state: '' }];
+            
+            const classProfileHtml = classProfiles.map(stat => `
+                <div class="c-class-profile-item border p-3 rounded position-relative bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-primary"><i class="fas fa-calendar-alt me-1"></i>Academic Year Stats</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-stat" title="Remove Year Stats">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Year</label>
+                            <input type="number" class="form-control form-control-sm cp-year" value="${stat.year || ''}" placeholder="e.g. 2024">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-students" value="${stat.total_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Faculty</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-faculty" value="${stat.total_faculty || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Male Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-male" value="${stat.total_male_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Female Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-female" value="${stat.total_female_students || ''}" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students Outside State</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-outside" value="${stat.total_outside_state || ''}" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold"><i class="fas fa-school text-primary me-2"></i>School Campus: <span class="campus-title-preview">${c.campus_name || 'Main School Campus'}</span></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-campus">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- 16 Tabs matching School Edit Campus page -->
+                    <ul class="nav nav-tabs campus-inner-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-identity" type="button" role="tab">Identity</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-location" type="button" role="tab">Location</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-infra" type="button" role="tab">Infrastructure</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-academic" type="button" role="tab">Academic Focus</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-facilities" type="button" role="tab">Facilities</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-transport" type="button" role="tab">Transport</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-safety" type="button" role="tab">Safety</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-contact" type="button" role="tab">Contact</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-class-profile" type="button" role="tab">Class Profile</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-staff-details" type="button" role="tab"><i class="fas fa-chalkboard-teacher text-info me-1"></i> Staff</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-classes" type="button" role="tab"><i class="fas fa-chalkboard text-primary me-1"></i> Classes & Fees</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-reviews" type="button" role="tab"><i class="fas fa-comments text-warning me-1"></i> Reviews</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-events-activities" type="button" role="tab"><i class="fas fa-calendar-alt text-success me-1"></i> Events</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-alumni" type="button" role="tab"><i class="fas fa-user-friends text-secondary me-1"></i> Alumni</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-clubs-committees" type="button" role="tab"><i class="fas fa-users-cog text-danger me-1"></i> Clubs</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#c-tab-${idx}-faqs" type="button" role="tab"><i class="fas fa-question-circle text-primary me-1"></i> FAQs</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 1. Identity -->
+                        <div class="tab-pane fade show active" id="c-tab-${idx}-identity" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control c-name" value="${c.campus_name || ''}" placeholder="e.g. Main School Campus" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">School Type</label>
+                                    <select class="form-select select2 c-school-types" multiple data-placeholder="Select School Type(s)">
+                                        ${schoolTypesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">UDISE Code</label>
+                                    <input type="text" class="form-control c-udise" value="${c.udise_code || ''}" placeholder="e.g. 04010100101">
+                                    <small class="text-muted" style="font-size:0.75rem;">Unified District Information System for Education code</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Affiliation Board</label>
+                                    <select class="form-select c-affiliation-board">
+                                        <option value="">Select Affiliation Board</option>
+                                        ${['CBSE', 'CISCE (ICSE / ISC)', 'State Board', 'IB (International Baccalaureate)', 'Cambridge (IGCSE)', 'NIOS', 'Other'].map(b => `<option value="${b}" ${(c.affiliation_board === b || (b === 'CBSE' && !c.affiliation_board)) ? 'selected' : ''}>${b}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">Established Year</label>
+                                    <input type="number" class="form-control c-est" value="${c.established_year || ''}" placeholder="e.g. 1995">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">Brand Type</label>
+                                    <select class="form-select c-brand-type">
+                                        <option value="">Select Brand Type</option>
+                                        ${brandTypesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input c-status" type="checkbox" id="c_status_${idx}" ${(c.status !== false && c.status !== 0 && c.status !== '0') ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="c_status_${idx}">Active Status</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Location -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-location" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold small">Pincode</label>
+                                    <input type="text" class="form-control c-pincode" value="${c.pincode || ''}" placeholder="e.g. 160022">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold small">City</label>
+                                    <input type="text" class="form-control c-city" value="${c.city || ''}" placeholder="e.g. Chandigarh">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold small">State</label>
+                                    <input type="text" class="form-control c-state" value="${c.state || ''}" placeholder="e.g. Punjab">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold small">Location Type</label>
+                                    <select class="form-select c-location-type">
+                                        <option value="">Select Location Type</option>
+                                        ${['Urban', 'Semi-Urban', 'Rural'].map(lt => `<option value="${lt}" ${c.location_type === lt ? 'selected' : ''}>${lt}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Full Address</label>
+                                    <textarea class="form-control c-address" rows="2" placeholder="Full postal address">${c.full_address || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Infrastructure -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-infra" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Area</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" class="form-control c-acres" value="${c.campus_area_acres || ''}" placeholder="e.g. 25.00">
+                                        <select class="form-select c-area-unit" style="max-width: 140px;">
+                                            <option value="Acres" ${(!c.campus_area_unit || c.campus_area_unit === 'Acres') ? 'selected' : ''}>Acres</option>
+                                            <option value="Square Yard" ${c.campus_area_unit === 'Square Yard' ? 'selected' : ''}>Sq Yard</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Classrooms Count</label>
+                                    <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}" placeholder="e.g. 50">
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input c-smart-class" type="checkbox" id="smart_class_${idx}" ${c.smart_classrooms ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="smart_class_${idx}">Smart Classrooms Available</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Academic Focus -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-academic" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Target Classes</label>
+                                    <select class="form-select select2 c-target-classes" multiple data-placeholder="Select Target Classes">
+                                        ${targetClassesOptions}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">About Campus</label>
+                                    <textarea class="form-control c-about-institute" rows="4" placeholder="Overview of the school campus, curriculum and academic focus...">${c.about_institute || c.about || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Facilities -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-facilities" role="tabpanel">
+                            <p class="text-muted small mb-3">Select the facilities available at this campus.</p>
+                            <div class="row g-2">
+                                ${facilitiesHtml}
+                            </div>
+                        </div>
+
+                        <!-- 6. Transport -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-transport" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    @php
+                                    @endphp
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input c-transport" type="checkbox" id="transport_sw_${idx}" ${(c.transport_available === true || c.transport_available === 1 || c.transport_available === '1' || c.transport_available === 'true') ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="transport_sw_${idx}">Transport Available</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 c-bus-routes-box" style="display: ${(c.transport_available === true || c.transport_available === 1 || c.transport_available === '1' || c.transport_available === 'true') ? 'block' : 'none'};">
+                                    <label class="form-label fw-bold small">Bus Routes</label>
+                                    <div class="c-bus-routes-container d-flex flex-column gap-2 mb-2">
+                                        ${busRoutesHtml}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-add-route">
+                                        <i class="fas fa-plus me-1"></i> Add Route
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Safety -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-safety" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input c-cctv" type="checkbox" id="cctv_${idx}" ${c.cctv_coverage ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold small" for="cctv_${idx}">CCTV Coverage</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Contact -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-contact" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Email</label>
+                                    <input type="email" class="form-control c-email" value="${c.campus_email || ''}" placeholder="e.g. principal@school.edu.in">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Campus Website</label>
+                                    <input type="url" class="form-control c-website" value="${c.campus_website || ''}" placeholder="https://example.com">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Contact Numbers (Comma separated)</label>
+                                    <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}" placeholder="e.g. 0172-123456, 9876543210">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <h6 class="text-primary fw-bold mb-2 border-bottom pb-2 small">
+                                        <i class="fas fa-share-alt me-1"></i> Social Media Profiles
+                                    </h6>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Facebook URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-facebook text-primary"></i></span>
+                                        <input type="url" class="form-control c-facebook" value="${c.facebook_url || ''}" placeholder="https://facebook.com/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Instagram URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-instagram text-danger"></i></span>
+                                        <input type="url" class="form-control c-instagram" value="${c.instagram_url || ''}" placeholder="https://instagram.com/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">LinkedIn URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-linkedin text-info"></i></span>
+                                        <input type="url" class="form-control c-linkedin" value="${c.linkedin_url || ''}" placeholder="https://linkedin.com/school/your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">YouTube URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-youtube text-danger"></i></span>
+                                        <input type="url" class="form-control c-youtube" value="${c.youtube_url || ''}" placeholder="https://youtube.com/@your-school">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Twitter / X URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="fab fa-x-twitter"></i></span>
+                                        <input type="url" class="form-control c-twitter" value="${c.twitter_url || ''}" placeholder="https://x.com/your-school">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9. Class Profile -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-class-profile" role="tabpanel">
+                            <div class="card border mb-3 p-3 bg-white shadow-sm">
+                                <h6 class="text-primary fw-bold mb-2 small"><i class="fas fa-chart-pie me-1"></i> Student & Teacher Statistics (School Level)</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Total Enrolled Students</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-total-students" value="${c.total_enrolled_students || ''}" placeholder="e.g. 1242">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Enrolled Boys</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-boys" value="${c.enrolled_boys || ''}" placeholder="e.g. 659">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Enrolled Girls</label>
+                                        <input type="number" min="0" class="form-control form-control-sm c-girls" value="${c.enrolled_girls || ''}" placeholder="e.g. 583">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Pupil-Teacher Ratio (PTR)</label>
+                                        <input type="text" class="form-control form-control-sm c-ptr" value="${c.pupil_teacher_ratio || ''}" placeholder="e.g. 25:1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-primary mb-0 fw-bold small"><i class="fas fa-users me-1"></i> Class Profile (Year-wise)</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-stat">
+                                    <i class="fas fa-plus me-1"></i> Add Year Stats
+                                </button>
+                            </div>
+                            <div class="c-class-profile-container d-flex flex-column gap-3">
+                                ${classProfileHtml}
+                            </div>
+                        </div>
+
+                        <!-- 10. Staff Details -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-staff-details" role="tabpanel">
+                            <div class="border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-chalkboard-teacher me-1"></i> School Teacher Details & Teaching Staff</h6>
+                                <p class="text-muted mb-0" style="font-size:0.75rem;">Leadership and verified teacher counts under official UDISE+ and RTE guidelines.</p>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Headmaster / Principal</label>
+                                    <input type="text" class="form-control c-principal" value="${c.headmaster_principal || ''}" placeholder="e.g. Mamta Mehta">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Total Appointed Teachers</label>
+                                    <input type="number" min="0" class="form-control c-total-teachers" value="${c.total_appointed_teachers || ''}" placeholder="e.g. 245">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Male Staff (Teachers)</label>
+                                    <input type="number" min="0" class="form-control c-male-staff" value="${c.male_staff || ''}" placeholder="e.g. 110">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Female Staff (Teachers)</label>
+                                    <input type="number" min="0" class="form-control c-female-staff" value="${c.female_staff || ''}" placeholder="e.g. 135">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 11. Classes & Academics -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-classes" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-graduation-cap me-1"></i> Class Offerings & Fees</h6>
+                                    <p class="text-muted mb-0" style="font-size:0.75rem;">Class-wise curriculum, fee structure, admission criteria, and exam preparation.</p>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-school-class">
+                                    <i class="fas fa-plus me-1"></i> Add Class
+                                </button>
+                            </div>
+                            <div class="c-school-classes-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.school_classes) ? c.school_classes : []).map((sc, scIdx) => `
+                                    <div class="card border p-3 bg-light position-relative school-class-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Class / Grade</label>
+                                                <select class="form-select form-select-sm sc-name">
+                                                    <option value="">-- Select Class / Grade --</option>
+                                                    ${getMasterClassesList().map(cls => `
+                                                        <option value="${cls}" ${sc.class_name === cls ? 'selected' : ''}>${cls}</option>
+                                                    `).join('')}
+                                                    ${sc.class_name && !getMasterClassesList().includes(sc.class_name) ? `<option value="${sc.class_name}" selected>${sc.class_name}</option>` : ''}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Curriculum / Board</label>
+                                                <input type="text" class="form-control form-control-sm sc-curriculum" value="${sc.curriculum || ''}" placeholder="e.g. CBSE, ICSE, Cambridge">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Fee & Other Charges</label>
+                                                <textarea class="form-control form-control-sm sc-fee editor" id="sc_fee_${idx}_${scIdx}" rows="4" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000...">${sc.fee_structure || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Admission Process</label>
+                                                <textarea class="form-control form-control-sm sc-admission" rows="2" placeholder="Age criteria, application process, interview...">${sc.admission_process || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Exam Preparation</label>
+                                                <textarea class="form-control form-control-sm sc-exam-prep" rows="2" placeholder="Olympiads, NTSE, Board Exam guidance, Foundation...">${sc.exam_preparation || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 12. Reviews -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-reviews" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-comments me-1"></i> Parent & Alumni Reviews</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-review">
+                                    <i class="fas fa-plus me-1"></i> Add Review
+                                </button>
+                            </div>
+                            <div class="c-reviews-container d-flex flex-column gap-2">
+                                <!-- Reviews not autofilled by AI, left blank -->
+                            </div>
+                        </div>
+
+                        <!-- 13. Events & Activities -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-events-activities" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-calendar-alt me-1"></i> Events & Activities</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-event">
+                                    <i class="fas fa-plus me-1"></i> Add Event
+                                </button>
+                            </div>
+                            <div class="c-events-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.events_and_activities) ? c.events_and_activities : []).map(e => `
+                                    <div class="card border p-3 bg-light position-relative event-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-bold">Event Title</label>
+                                                <input type="text" class="form-control form-control-sm e-title" value="${e.title || ''}" placeholder="Annual Sports Meet">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Category</label>
+                                                <select class="form-select form-select-sm e-category">
+                                                    ${['Sports', 'Cultural', 'Academic', 'Annual Day', 'Science Exhibition', 'Workshop', 'Competition', 'Community Outreach'].map(cat => `<option value="${cat}" ${(e.category || 'Sports') === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Date / Frequency</label>
+                                                <input type="text" class="form-control form-control-sm e-date" value="${e.date || ''}" placeholder="November 2024 / Annual">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Description</label>
+                                                <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights...">${e.description || ''}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold"><i class="fas fa-images text-primary me-1"></i>Event Images (Multiple URLs separated by commas)</label>
+                                                <input type="text" class="form-control form-control-sm e-images" value="${Array.isArray(e.images) ? e.images.join(', ') : (e.images || '')}" placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg">
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 14. Alumni -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-alumni" role="tabpanel">
+                            <div class="border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-1 small"><i class="fas fa-user-friends me-1"></i> Alumni Network</h6>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Alumni Association / Network Details</label>
+                                    <textarea class="form-control c-alumni-details" rows="3" placeholder="Describe alumni association activities, reunions, channels...">${c.alumni_details || ''}</textarea>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-award me-1"></i> Notable Alumni</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-alumni">
+                                    <i class="fas fa-plus me-1"></i> Add Notable Alumni
+                                </button>
+                            </div>
+                            <div class="c-alumni-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.notable_alumni) ? c.notable_alumni : []).map(a => `
+                                    <div class="card border p-3 bg-light position-relative alumni-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Alumni Name</label>
+                                                <input type="text" class="form-control form-control-sm a-name" value="${a.name || ''}" placeholder="Dr. Anjali Sharma">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Batch / Year</label>
+                                                <input type="text" class="form-control form-control-sm a-batch" value="${a.batch || ''}" placeholder="Batch of 2015">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-bold">Profession / Achievement</label>
+                                                <input type="text" class="form-control form-control-sm a-profession" value="${a.profession || ''}" placeholder="IAS Officer / Scientist">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Testimonial</label>
+                                                <textarea class="form-control form-control-sm a-testimonial" rows="2" placeholder="Brief words...">${a.testimonial || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 15. Clubs & Committees -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-clubs-committees" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-users-cog me-1"></i> Clubs & Committees</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-club">
+                                    <i class="fas fa-plus me-1"></i> Add Club / Committee
+                                </button>
+                            </div>
+                            <div class="c-clubs-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.clubs_and_committees) ? c.clubs_and_committees : []).map(cl => `
+                                    <div class="card border p-3 bg-light position-relative club-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Club / Committee Name</label>
+                                                <input type="text" class="form-control form-control-sm cl-name" value="${cl.name || ''}" placeholder="Eco Club">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Category</label>
+                                                <select class="form-select form-select-sm cl-type">
+                                                    ${['Student Club', 'Statutory Committee', 'Academic Society', 'Sports Committee', 'Cultural Society', 'Safety & Discipline Committee'].map(ct => `<option value="${ct}" ${(cl.type || 'Student Club') === ct ? 'selected' : ''}>${ct}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Coordinator</label>
+                                                <input type="text" class="form-control form-control-sm cl-coord" value="${cl.coordinator || ''}" placeholder="Mrs. Sunita Sharma">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Purpose & Activities</label>
+                                                <textarea class="form-control form-control-sm cl-description" rows="2" placeholder="Purpose and activities...">${cl.description || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 16. FAQs -->
+                        <div class="tab-pane fade" id="c-tab-${idx}-faqs" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <div>
+                                    <h6 class="text-primary fw-bold mb-0 small"><i class="fas fa-question-circle me-1"></i> Frequently Asked Questions (FAQ)</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-add-faq">
+                                    <i class="fas fa-plus me-1"></i> Add FAQ
+                                </button>
+                            </div>
+                            <div class="c-faqs-container d-flex flex-column gap-2">
+                                ${(Array.isArray(c.faqs) ? c.faqs : []).map(f => `
+                                    <div class="card border p-3 bg-light position-relative faq-item">
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Question</label>
+                                                <input type="text" class="form-control form-control-sm f-question" value="${f.question || ''}" placeholder="e.g. What is the school timing?">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold">Answer</label>
+                                                <textarea class="form-control form-control-sm f-answer" rows="2" placeholder="Detailed answer...">${f.answer || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Event handlers for School Campus
+            div.querySelector('.btn-add-route')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-bus-routes-container');
+                const row = document.createElement('div');
+                row.className = 'input-group input-group-sm mb-2 bus-route-row';
+                row.innerHTML = `
+                    <span class="input-group-text"><i class="fas fa-route text-muted"></i></span>
+                    <input type="text" class="form-control c-bus-route-input" placeholder="Enter bus route / stops">
+                    <button type="button" class="btn btn-outline-danger btn-remove-route" title="Remove Route">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                row.querySelector('.btn-remove-route').addEventListener('click', function () { row.remove(); });
+                container.appendChild(row);
+            });
+
+            div.querySelectorAll('.btn-remove-route').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.bus-route-row').remove();
+                });
+            });
+
+            div.querySelectorAll('.facility-select-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    if (e.target.tagName.toLowerCase() === 'input') return;
+                    const chk = this.querySelector('.c-facility-check');
+                    if (chk) {
+                        chk.checked = !chk.checked;
+                        chk.dispatchEvent(new Event('change'));
+                    }
+                });
+                const chk = card.querySelector('.c-facility-check');
+                if (chk) {
+                    chk.addEventListener('change', function () {
+                        if (this.checked) {
+                            card.style.background = '#f0fdf4';
+                            card.style.borderColor = '#22c55e';
+                        } else {
+                            card.style.background = '#fff';
+                            card.style.borderColor = '#e5e7eb';
+                        }
+                    });
+                }
+            });
+
+            div.querySelector('.btn-add-stat')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-class-profile-container');
+                const statDiv = document.createElement('div');
+                statDiv.className = 'c-class-profile-item border p-3 rounded position-relative bg-light';
+                statDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-primary"><i class="fas fa-calendar-alt me-1"></i>Academic Year Stats</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-stat" title="Remove Year Stats">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Year</label>
+                            <input type="number" class="form-control form-control-sm cp-year" placeholder="e.g. 2024">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-students" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Faculty</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-faculty" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Male Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-male" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Female Students</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-female" placeholder="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Total Students Outside State</label>
+                            <input type="number" min="0" class="form-control form-control-sm cp-total-outside" placeholder="0">
+                        </div>
+                    </div>
+                `;
+                statDiv.querySelector('.btn-remove-stat').addEventListener('click', function () { statDiv.remove(); });
+                container.appendChild(statDiv);
+            });
+
+            div.querySelectorAll('.btn-remove-stat').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.c-class-profile-item').remove();
+                });
+            });
+
+            // School Classes Repeater Handler
+            div.querySelector('.btn-add-school-class')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-school-classes-container');
+                const scDiv = document.createElement('div');
+                const newFeeId = 'sc_fee_' + idx + '_' + Date.now();
+                scDiv.className = 'card border p-3 bg-light position-relative school-class-item';
+                scDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Class / Grade</label>
+                            <select class="form-select form-select-sm sc-name">
+                                <option value="">-- Select Class / Grade --</option>
+                                ${getMasterClassesList().map(cls => `<option value="${cls}">${cls}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Curriculum / Board</label>
+                            <input type="text" class="form-control form-control-sm sc-curriculum" placeholder="e.g. CBSE, ICSE, Cambridge">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Fee & Other Charges</label>
+                            <textarea class="form-control form-control-sm sc-fee editor" id="${newFeeId}" rows="4" placeholder="e.g. Tuition: ₹45,000/yr, Admission Fee: ₹5,000..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Admission Process</label>
+                            <textarea class="form-control form-control-sm sc-admission" rows="2" placeholder="Age criteria, application process, interview..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Exam Preparation</label>
+                            <textarea class="form-control form-control-sm sc-exam-prep" rows="2" placeholder="Olympiads, NTSE, Board Exam guidance, Foundation..."></textarea>
+                        </div>
+                    </div>
+                `;
+                scDiv.querySelector('.btn-remove-item').addEventListener('click', function () {
+                    if (typeof tinymce !== 'undefined' && tinymce.get(newFeeId)) {
+                        tinymce.get(newFeeId).remove();
+                    }
+                    scDiv.remove();
+                });
+                container.appendChild(scDiv);
+                if (typeof initializeTinyMCE === 'function') {
+                    initializeTinyMCE('#' + newFeeId, 180);
+                }
+            });
+
+            // Review Repeater Handler
+            div.querySelector('.btn-add-review')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-reviews-container');
+                const revDiv = document.createElement('div');
+                revDiv.className = 'card border p-3 bg-light position-relative review-item';
+                revDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Reviewer Name</label>
+                            <input type="text" class="form-control form-control-sm r-name" placeholder="Ramesh Kumar">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Reviewer Role</label>
+                            <select class="form-select form-select-sm r-type">
+                                <option value="Parent">Parent</option>
+                                <option value="Alumni">Alumni</option>
+                                <option value="Student">Student</option>
+                                <option value="Guardian">Guardian</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Rating</label>
+                            <select class="form-select form-select-sm r-rating">
+                                <option value="">Select Rating</option>
+                                <option value="5">5 ★</option>
+                                <option value="4">4 ★</option>
+                                <option value="3">3 ★</option>
+                                <option value="2">2 ★</option>
+                                <option value="1">1 ★</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Date / Year</label>
+                            <input type="text" class="form-control form-control-sm r-date" placeholder="Oct 2024">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Review Title</label>
+                            <input type="text" class="form-control form-control-sm r-title" placeholder="Review headline...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Comment</label>
+                            <textarea class="form-control form-control-sm r-comment" rows="2" placeholder="Experience details..."></textarea>
+                        </div>
+                    </div>
+                `;
+                revDiv.querySelector('.btn-remove-item').addEventListener('click', function () { revDiv.remove(); });
+                container.appendChild(revDiv);
+            });
+
+            // Event Repeater Handler
+            div.querySelector('.btn-add-event')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-events-container');
+                const evDiv = document.createElement('div');
+                evDiv.className = 'card border p-3 bg-light position-relative event-item';
+                evDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Event Title</label>
+                            <input type="text" class="form-control form-control-sm e-title" placeholder="Annual Sports Meet">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select class="form-select form-select-sm e-category">
+                                <option value="Sports">Sports</option>
+                                <option value="Cultural">Cultural</option>
+                                <option value="Academic">Academic</option>
+                                <option value="Annual Day">Annual Day</option>
+                                <option value="Science Exhibition">Science Exhibition</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Competition">Competition</option>
+                                <option value="Community Outreach">Community Outreach</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Date / Frequency</label>
+                            <input type="text" class="form-control form-control-sm e-date" placeholder="Nov 2024 / Annual">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Description</label>
+                            <textarea class="form-control form-control-sm e-description" rows="2" placeholder="Summary and highlights..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold"><i class="fas fa-images text-primary me-1"></i>Event Images (Multiple URLs separated by commas)</label>
+                            <input type="text" class="form-control form-control-sm e-images" placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg">
+                        </div>
+                    </div>
+                `;
+                evDiv.querySelector('.btn-remove-item').addEventListener('click', function () { evDiv.remove(); });
+                container.appendChild(evDiv);
+            });
+
+            // Alumni Repeater Handler
+            div.querySelector('.btn-add-alumni')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-alumni-container');
+                const alDiv = document.createElement('div');
+                alDiv.className = 'card border p-3 bg-light position-relative alumni-item';
+                alDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Alumni Name</label>
+                            <input type="text" class="form-control form-control-sm a-name" placeholder="Dr. Anjali Sharma">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Batch / Year</label>
+                            <input type="text" class="form-control form-control-sm a-batch" placeholder="Batch of 2015">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Profession / Achievement</label>
+                            <input type="text" class="form-control form-control-sm a-profession" placeholder="IAS Officer / Scientist">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Testimonial</label>
+                            <textarea class="form-control form-control-sm a-testimonial" rows="2" placeholder="Brief words..."></textarea>
+                        </div>
+                    </div>
+                `;
+                alDiv.querySelector('.btn-remove-item').addEventListener('click', function () { alDiv.remove(); });
+                container.appendChild(alDiv);
+            });
+
+            // Club Repeater Handler
+            div.querySelector('.btn-add-club')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-clubs-container');
+                const clDiv = document.createElement('div');
+                clDiv.className = 'card border p-3 bg-light position-relative club-item';
+                clDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Club / Committee Name</label>
+                            <input type="text" class="form-control form-control-sm cl-name" placeholder="Eco Club">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select class="form-select form-select-sm cl-type">
+                                <option value="Student Club">Student Club</option>
+                                <option value="Statutory Committee">Statutory Committee</option>
+                                <option value="Academic Society">Academic Society</option>
+                                <option value="Sports Committee">Sports Committee</option>
+                                <option value="Cultural Society">Cultural Society</option>
+                                <option value="Safety & Discipline Committee">Safety & Discipline Committee</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Coordinator</label>
+                            <input type="text" class="form-control form-control-sm cl-coord" placeholder="Mrs. Sunita Sharma">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Purpose & Activities</label>
+                            <textarea class="form-control form-control-sm cl-description" rows="2" placeholder="Purpose and activities..."></textarea>
+                        </div>
+                    </div>
+                `;
+                clDiv.querySelector('.btn-remove-item').addEventListener('click', function () { clDiv.remove(); });
+                container.appendChild(clDiv);
+            });
+
+            // FAQ Repeater Handler
+            div.querySelector('.btn-add-faq')?.addEventListener('click', function () {
+                const container = div.querySelector('.c-faqs-container');
+                const fqDiv = document.createElement('div');
+                fqDiv.className = 'card border p-3 bg-light position-relative faq-item';
+                fqDiv.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 btn-remove-item"><i class="fas fa-times"></i></button>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Question</label>
+                            <input type="text" class="form-control form-control-sm f-question" placeholder="e.g. What is the school timing?">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Answer</label>
+                            <textarea class="form-control form-control-sm f-answer" rows="2" placeholder="Detailed answer..."></textarea>
+                        </div>
+                    </div>
+                `;
+                fqDiv.querySelector('.btn-remove-item').addEventListener('click', function () { fqDiv.remove(); });
+                container.appendChild(fqDiv);
+            });
+
+            // Generic remove handler for initial items
+            div.querySelectorAll('.btn-remove-item').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.card').remove();
+                });
+            });
+
+            const transportSw = div.querySelector('.c-transport');
+            const routesBox = div.querySelector('.c-bus-routes-box');
+            if (transportSw && routesBox) {
+                transportSw.addEventListener('change', function () {
+                    routesBox.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        } else {
+            // University / College Campus Layout
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold"><i class="fas fa-map-marker-alt text-primary me-2"></i>Campus: <span class="campus-title-preview">${c.campus_name || 'Campus'}</span></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-campus">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small">Campus / Branch Name</label>
+                            <input type="text" class="form-control c-name" value="${c.campus_name || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Type</label>
+                            <select class="form-select c-type">
+                                <option value="Main" ${c.campus_type === 'Main' ? 'selected' : ''}>Main Campus</option>
+                                <option value="Regional" ${c.campus_type === 'Regional' ? 'selected' : ''}>Regional / Branch</option>
+                                <option value="Satellite" ${c.campus_type === 'Satellite' ? 'selected' : ''}>Satellite Branch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Established Year</label>
+                            <input type="number" class="form-control c-est" value="${c.established_year || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Area (Acres)</label>
+                            <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">City</label>
+                            <input type="text" class="form-control c-city" value="${c.city || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">State</label>
+                            <input type="text" class="form-control c-state" value="${c.state || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Country</label>
+                            <input type="text" class="form-control c-country" value="${c.country || 'India'}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Pincode</label>
+                            <input type="text" class="form-control c-pincode" value="${c.pincode || ''}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Full Address</label>
+                            <input type="text" class="form-control c-address" value="${c.full_address || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Nearest Transport Hub</label>
+                            <input type="text" class="form-control c-hub" value="${c.nearest_transport_hub || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Google Maps URL</label>
+                            <input type="url" class="form-control c-map" value="${c.google_map_url || ''}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Classrooms Count</label>
+                            <input type="number" class="form-control c-classrooms" value="${c.classrooms_count || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Academic Blocks</label>
+                            <input type="number" class="form-control c-blocks" value="${c.academic_blocks_count || ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Labs Count</label>
+                            <input type="number" class="form-control c-labs" value="${c.laboratories_count || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Hostel Type</label>
+                            <select class="form-select c-hostel-type">
+                                <option value="">None / Not specified</option>
+                                <option value="Both" ${c.hostel_type === 'Both' ? 'selected' : ''}>Both (Boys & Girls)</option>
+                                <option value="Boys" ${c.hostel_type === 'Boys' ? 'selected' : ''}>Boys Only</option>
+                                <option value="Girls" ${c.hostel_type === 'Girls' ? 'selected' : ''}>Girls Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Hostel Capacity</label>
+                            <input type="number" class="form-control c-hostel-cap" value="${c.hostel_capacity || ''}">
+                        </div>
+
+                        <!-- Campus Amenities & Facilities Switches -->
+                        <div class="col-12 py-2 px-3 border rounded bg-light my-2">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-smart-class" type="checkbox" ${c.smart_classrooms ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Smart Classrooms</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-library" type="checkbox" ${c.library_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Library Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-digital-lib" type="checkbox" ${c.digital_library_access ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Digital Library</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-science-labs" type="checkbox" ${c.science_labs_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Science Labs</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-comp-labs" type="checkbox" ${c.computer_labs_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Computer Labs</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-playground" type="checkbox" ${c.playground_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Playground / Sports Ground</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-gps-buses" type="checkbox" ${c.gps_enabled_buses ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">GPS-Enabled Buses</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-visitor-sys" type="checkbox" ${c.visitor_management_system ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Visitor Gate System</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-hostel-avail" type="checkbox" ${c.hostel_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Hostel Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-transport" type="checkbox" ${c.transport_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Transport Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-medical" type="checkbox" ${c.medical_facility_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Medical Facility</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-cctv" type="checkbox" ${c.cctv_coverage ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">CCTV Coverage</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-fire" type="checkbox" ${c.fire_safety_certified ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Fire Safety Certified</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Bus Fleet Size</label>
+                            <input type="number" class="form-control c-bus-fleet" value="${c.bus_fleet_size || ''}" placeholder="e.g. 25">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Sports Facilities</label>
+                            <input type="text" class="form-control c-sports" value="${toCsv(c.sports_facilities)}" placeholder="Cricket, Football, Basketball...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Email</label>
+                            <input type="email" class="form-control c-email" value="${c.campus_email || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Campus Contact Numbers</label>
+                            <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        div.querySelector('.btn-remove-campus').addEventListener('click', function () {
+            div.querySelectorAll('.editor').forEach(el => {
+                if (el.id && typeof tinymce !== 'undefined' && tinymce.get(el.id)) {
+                    tinymce.get(el.id).remove();
+                }
+            });
+            div.remove();
+            updateAllBadges();
+            refreshCourseCampusAndDeptDropdowns();
+        });
+
+        div.querySelector('.c-name').addEventListener('input', function (e) {
+            div.querySelector('.campus-title-preview').innerText = e.target.value || (isSchool ? 'School Branch' : 'Campus');
+            refreshCourseCampusAndDeptDropdowns();
+        });
+
+        document.getElementById('campusesContainer').appendChild(div);
+        initSelect2OnCard(div);
+        if (isSchool && typeof initializeTinyMCE === 'function') {
+            div.querySelectorAll('.sc-fee.editor').forEach(el => {
+                if (el.id) {
+                    initializeTinyMCE('#' + el.id, 180);
+                }
+            });
+        }
+    }
+
+    // Append Department Card
+    function appendDeptCard(d = {}, idx = Date.now()) {
+        const isSchool = isCurrentEntitySchool();
+        const div = document.createElement('div');
+        div.className = 'card border mb-3 dept-item';
+        div.innerHTML = `
+            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                <span class="fw-bold"><i class="fas fa-building text-primary me-2"></i>${isSchool ? 'Academic Wing' : 'Department'}: <span class="dept-title-preview">${d.department_name || (isSchool ? 'Academic Wing' : 'Department')}</span></span>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-dept">
+                    <i class="fas fa-trash me-1"></i> Remove
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small">${isSchool ? 'Academic Wing / Department Name' : 'Department / Faculty Name'}</label>
+                        <input type="text" class="form-control d-name" value="${d.department_name || ''}" placeholder="${isSchool ? 'e.g. Senior Secondary Wing (Classes 11 & 12)' : 'e.g. Department of Computer Science'}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Code</label>
+                        <input type="text" class="form-control d-code" value="${d.department_code || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">${isSchool ? 'Wing / Department Type' : 'Department Type'}</label>
+                        <select class="form-select d-type">
+                            <option value="Academic Wing" ${d.department_type === 'Academic Wing' ? 'selected' : ''}>Academic Wing</option>
+                            <option value="Pre-Primary" ${d.department_type === 'Pre-Primary' ? 'selected' : ''}>Pre-Primary / Kindergarten</option>
+                            <option value="Primary" ${d.department_type === 'Primary' ? 'selected' : ''}>Primary Wing (Classes 1 - 5)</option>
+                            <option value="Middle" ${d.department_type === 'Middle' ? 'selected' : ''}>Middle School Wing (Classes 6 - 8)</option>
+                            <option value="Secondary" ${d.department_type === 'Secondary' ? 'selected' : ''}>Secondary Wing (Classes 9 - 10)</option>
+                            <option value="Senior Secondary" ${d.department_type === 'Senior Secondary' ? 'selected' : ''}>Senior Secondary Wing (Classes 11 - 12)</option>
+                            <option value="Academic" ${(!d.department_type || d.department_type === 'Academic') ? 'selected' : ''}>Academic Faculty / Department</option>
+                            <option value="Clinical" ${d.department_type === 'Clinical' ? 'selected' : ''}>Clinical</option>
+                            <option value="Research" ${d.department_type === 'Research' ? 'selected' : ''}>Research</option>
+                            <option value="Interdisciplinary" ${d.department_type === 'Interdisciplinary' ? 'selected' : ''}>Interdisciplinary</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Established Year</label>
+                        <input type="number" class="form-control d-est" value="${d.established_year || ''}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">${isSchool ? 'Wing Head / Coordinator / Principal' : 'HOD Name'}</label>
+                        <input type="text" class="form-control d-hod-name" value="${d.head_of_department_name || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">${isSchool ? 'Designation (e.g. Vice Principal, Headmistress)' : 'HOD Designation'}</label>
+                        <input type="text" class="form-control d-hod-desig" value="${d.head_of_department_designation || (isSchool ? 'Wing Coordinator / Headmistress' : 'Professor & Head')}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">${isSchool ? 'Coordinator / HOD Email' : 'HOD Email'}</label>
+                        <input type="email" class="form-control d-hod-email" value="${d.hod_email || ''}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">${isSchool ? 'Teacher / Faculty Count' : 'Faculty Count'}</label>
+                        <input type="number" class="form-control d-faculty-count" value="${d.faculty_count || ''}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Discipline Area</label>
+                        <input type="text" class="form-control d-discipline-area" value="${d.discipline_area || ''}">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small">Specializations Supported</label>
+                        <input type="text" class="form-control d-specs" value="${toCsv(d.specializations_supported)}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">${isSchool ? 'Classes / Grades Covered' : 'Education Levels'}</label>
+                        <input type="text" class="form-control d-levels" value="${toCsv(d.education_levels_supported)}" placeholder="${isSchool ? 'e.g. Classes 11 - 12, Nursery - UKG' : 'UG, PG, Diploma'}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Labs Count</label>
+                        <input type="number" class="form-control d-labs" value="${d.department_labs_count || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Publications Count</label>
+                        <input type="number" class="form-control d-pubs" value="${d.research_publications_count || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Funded Projects</label>
+                        <input type="number" class="form-control d-projects" value="${d.funded_projects_count || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Patents Filed</label>
+                        <input type="number" class="form-control d-patents" value="${d.patents_filed_count || ''}">
+                    </div>
+
+                    <div class="col-12 py-2 px-3 border rounded bg-light my-2">
+                        <div class="d-flex flex-wrap gap-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-phd" type="checkbox" ${d.phd_supervision_available ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">PhD Supervision Available</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-industry" type="checkbox" ${d.industry_collaboration_supported ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Industry Collaboration</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-interdisc" type="checkbox" ${d.is_interdisciplinary ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Interdisciplinary</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-spec-labs" type="checkbox" ${d.specialized_labs_available ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Specialized Labs</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small">${isSchool ? 'About Academic Wing / Department' : 'About Department'}</label>
+                        <textarea class="form-control d-about" rows="2">${d.about_department || ''}</textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        div.querySelector('.btn-remove-dept').addEventListener('click', function () {
+            div.remove();
+            updateAllBadges();
+            refreshCourseCampusAndDeptDropdowns();
+        });
+
+        div.querySelector('.d-name').addEventListener('input', function (e) {
+            div.querySelector('.dept-title-preview').innerText = e.target.value || (isSchool ? 'Academic Wing' : 'Department');
+            refreshCourseCampusAndDeptDropdowns();
+        });
+
+        document.getElementById('deptsContainer').appendChild(div);
+        initSelect2OnCard(div);
+    }
+
+    // Helper to collect Campus Card data
+    function collectCampusItemData(el) {
+        const name = el.querySelector('.c-name')?.value.trim();
+        if (!name) return null;
+
+        // Check if this is a School Campus Card
+        if (el.querySelector('.c-school-types') || el.classList.contains('campus-item-school')) {
+            const schoolTypeSelect = el.querySelector('.c-school-types');
+            let schoolTypeIds = [];
+            if (schoolTypeSelect) {
+                schoolTypeIds = Array.from(schoolTypeSelect.selectedOptions).map(o => parseInt(o.value) || o.value).filter(Boolean);
+            }
+
+            const targetClassesSelect = el.querySelector('.c-target-classes');
+            let targetClasses = [];
+            if (targetClassesSelect) {
+                targetClasses = Array.from(targetClassesSelect.selectedOptions).map(o => o.value).filter(Boolean);
+            }
+
+            const facilityChecks = el.querySelectorAll('.c-facility-check:checked');
+            const facilities = Array.from(facilityChecks).map(chk => chk.value).filter(Boolean);
+
+            const busRouteInputs = el.querySelectorAll('.c-bus-route-input');
+            const busRoutes = Array.from(busRouteInputs).map(inp => inp.value.trim()).filter(Boolean);
+
+            const phoneStr = el.querySelector('.c-phones')?.value || '';
+            const contactNumbers = phoneStr.split(',').map(s => s.trim()).filter(Boolean);
+
+            const classProfileItems = [];
+            el.querySelectorAll('.c-class-profile-item').forEach(item => {
+                const year = item.querySelector('.cp-year')?.value.trim();
+                const totalStudents = item.querySelector('.cp-total-students')?.value.trim();
+                const totalFaculty = item.querySelector('.cp-total-faculty')?.value.trim();
+                const totalMale = item.querySelector('.cp-total-male')?.value.trim();
+                const totalFemale = item.querySelector('.cp-total-female')?.value.trim();
+                const totalOutside = item.querySelector('.cp-total-outside')?.value.trim();
+
+                if (year || totalStudents || totalFaculty || totalMale || totalFemale || totalOutside) {
+                    classProfileItems.push({
+                        year: year ? parseInt(year) : null,
+                        total_students: totalStudents ? parseInt(totalStudents) : 0,
+                        total_faculty: totalFaculty ? parseInt(totalFaculty) : 0,
+                        total_male_students: totalMale ? parseInt(totalMale) : 0,
+                        total_female_students: totalFemale ? parseInt(totalFemale) : 0,
+                        total_outside_state: totalOutside ? parseInt(totalOutside) : 0
+                    });
+                }
+            });
+
+            // School Classes repeater items
+            const schoolClassesItems = [];
+            el.querySelectorAll('.school-class-item').forEach(scEl => {
+                const scName = scEl.querySelector('.sc-name')?.value.trim();
+                if (scName) {
+                    const feeEl = scEl.querySelector('.sc-fee');
+                    let feeVal = feeEl?.value.trim() || null;
+                    if (feeEl?.id && typeof tinymce !== 'undefined' && tinymce.get(feeEl.id)) {
+                        feeVal = tinymce.get(feeEl.id).getContent().trim() || null;
+                    }
+                    schoolClassesItems.push({
+                        class_name: scName,
+                        curriculum: scEl.querySelector('.sc-curriculum')?.value.trim() || null,
+                        fee_structure: feeVal,
+                        admission_process: scEl.querySelector('.sc-admission')?.value.trim() || null,
+                        exam_preparation: scEl.querySelector('.sc-exam-prep')?.value.trim() || null
+                    });
+                }
+            });
+
+            // Reviews repeater items
+            const reviewsItems = [];
+            el.querySelectorAll('.review-item').forEach(rEl => {
+                const rName = rEl.querySelector('.r-name')?.value.trim();
+                const rComment = rEl.querySelector('.r-comment')?.value.trim();
+                if (rName || rComment) {
+                    reviewsItems.push({
+                        reviewer_name: rName || null,
+                        reviewer_type: rEl.querySelector('.r-type')?.value || 'Parent',
+                        rating: parseInt(rEl.querySelector('.r-rating')?.value) || null,
+                        date: rEl.querySelector('.r-date')?.value.trim() || null,
+                        title: rEl.querySelector('.r-title')?.value.trim() || null,
+                        comment: rComment || null
+                    });
+                }
+            });
+
+            // Events repeater items
+            const eventsItems = [];
+            el.querySelectorAll('.event-item').forEach(eEl => {
+                const eTitle = eEl.querySelector('.e-title')?.value.trim();
+                if (eTitle) {
+                    const rawImages = eEl.querySelector('.e-images')?.value.trim() || '';
+                    const imagesArr = rawImages ? rawImages.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    eventsItems.push({
+                        title: eTitle,
+                        category: eEl.querySelector('.e-category')?.value || 'Sports',
+                        date: eEl.querySelector('.e-date')?.value.trim() || null,
+                        description: eEl.querySelector('.e-description')?.value.trim() || null,
+                        images: imagesArr
+                    });
+                }
+            });
+
+            // Alumni repeater items
+            const alumniItems = [];
+            el.querySelectorAll('.alumni-item').forEach(aEl => {
+                const aName = aEl.querySelector('.a-name')?.value.trim();
+                if (aName) {
+                    alumniItems.push({
+                        name: aName,
+                        batch: aEl.querySelector('.a-batch')?.value.trim() || null,
+                        profession: aEl.querySelector('.a-profession')?.value.trim() || null,
+                        testimonial: aEl.querySelector('.a-testimonial')?.value.trim() || null
+                    });
+                }
+            });
+
+            // Clubs repeater items
+            const clubsItems = [];
+            el.querySelectorAll('.club-item').forEach(clEl => {
+                const clName = clEl.querySelector('.cl-name')?.value.trim();
+                if (clName) {
+                    clubsItems.push({
+                        name: clName,
+                        type: clEl.querySelector('.cl-type')?.value || 'Student Club',
+                        coordinator: clEl.querySelector('.cl-coord')?.value.trim() || null,
+                        description: clEl.querySelector('.cl-description')?.value.trim() || null
+                    });
+                }
+            });
+
+            // FAQs repeater items
+            const faqsItems = [];
+            el.querySelectorAll('.faq-item').forEach(fEl => {
+                const fQuestion = fEl.querySelector('.f-question')?.value.trim();
+                const fAnswer = fEl.querySelector('.f-answer')?.value.trim();
+                if (fQuestion || fAnswer) {
+                    faqsItems.push({
+                        question: fQuestion || null,
+                        answer: fAnswer || null
+                    });
+                }
+            });
+
+            return {
+                campus_name: name,
+                campus_type: 'Main',
+                campus_type_new_id: schoolTypeIds,
+                udise_code: el.querySelector('.c-udise')?.value.trim() || null,
+                affiliation_board: el.querySelector('.c-affiliation-board')?.value || null,
+                location_type: el.querySelector('.c-location-type')?.value || null,
+                established_year: el.querySelector('.c-est')?.value.trim() || null,
+                brand_type: el.querySelector('.c-brand-type')?.value || null,
+                status: el.querySelector('.c-status')?.checked ? 1 : 0,
+                pincode: el.querySelector('.c-pincode')?.value.trim() || null,
+                city: el.querySelector('.c-city')?.value.trim() || null,
+                state: el.querySelector('.c-state')?.value.trim() || null,
+                full_address: el.querySelector('.c-address')?.value.trim() || null,
+                campus_area_acres: el.querySelector('.c-acres')?.value.trim() || null,
+                campus_area_unit: el.querySelector('.c-area-unit')?.value || 'Acres',
+                classrooms_count: el.querySelector('.c-classrooms')?.value.trim() || null,
+                smart_classrooms: el.querySelector('.c-smart-class')?.checked ? 1 : 0,
+                target_classes: targetClasses,
+                about_institute: el.querySelector('.c-about-institute')?.value.trim() || null,
+                facilities: facilities,
+                transport_available: el.querySelector('.c-transport')?.checked ? 1 : 0,
+                bus_routes: busRoutes,
+                cctv_coverage: el.querySelector('.c-cctv')?.checked ? 1 : 0,
+                campus_email: el.querySelector('.c-email')?.value.trim() || null,
+                campus_website: el.querySelector('.c-website')?.value.trim() || null,
+                campus_contact_numbers: contactNumbers,
+                facebook_url: el.querySelector('.c-facebook')?.value.trim() || null,
+                instagram_url: el.querySelector('.c-instagram')?.value.trim() || null,
+                linkedin_url: el.querySelector('.c-linkedin')?.value.trim() || null,
+                youtube_url: el.querySelector('.c-youtube')?.value.trim() || null,
+                twitter_url: el.querySelector('.c-twitter')?.value.trim() || null,
+                total_enrolled_students: el.querySelector('.c-total-students')?.value.trim() || null,
+                enrolled_boys: el.querySelector('.c-boys')?.value.trim() || null,
+                enrolled_girls: el.querySelector('.c-girls')?.value.trim() || null,
+                pupil_teacher_ratio: el.querySelector('.c-ptr')?.value.trim() || null,
+                headmaster_principal: el.querySelector('.c-principal')?.value.trim() || null,
+                total_appointed_teachers: el.querySelector('.c-total-teachers')?.value.trim() || null,
+                male_staff: el.querySelector('.c-male-staff')?.value.trim() || null,
+                female_staff: el.querySelector('.c-female-staff')?.value.trim() || null,
+                school_classes: schoolClassesItems,
+                class_profile: classProfileItems,
+                reviews: reviewsItems,
+                events_and_activities: eventsItems,
+                alumni_details: el.querySelector('.c-alumni-details')?.value.trim() || null,
+                notable_alumni: alumniItems,
+                clubs_and_committees: clubsItems,
+                faqs: faqsItems
+            };
+        }
+
+        // University / College Campus Card
+        return {
+            campus_name: name,
+            campus_type: el.querySelector('.c-type')?.value || 'Main',
+            established_year: el.querySelector('.c-est')?.value.trim(),
+            campus_area_acres: el.querySelector('.c-acres')?.value.trim(),
+            city: el.querySelector('.c-city')?.value.trim(),
+            state: el.querySelector('.c-state')?.value.trim(),
+            country: el.querySelector('.c-country')?.value.trim(),
+            pincode: el.querySelector('.c-pincode')?.value.trim(),
+            full_address: el.querySelector('.c-address')?.value.trim(),
+            nearest_transport_hub: el.querySelector('.c-hub')?.value.trim(),
+            google_map_url: el.querySelector('.c-map')?.value.trim(),
+            classrooms_count: el.querySelector('.c-classrooms')?.value.trim(),
+            academic_blocks_count: el.querySelector('.c-blocks')?.value.trim(),
+            laboratories_count: el.querySelector('.c-labs')?.value.trim(),
+            hostel_type: el.querySelector('.c-hostel-type')?.value,
+            hostel_capacity: el.querySelector('.c-hostel-cap')?.value.trim(),
+            smart_classrooms: el.querySelector('.c-smart-class')?.checked || false,
+            library_available: el.querySelector('.c-library')?.checked || false,
+            digital_library_access: el.querySelector('.c-digital-lib')?.checked || false,
+            hostel_available: el.querySelector('.c-hostel-avail')?.checked || false,
+            transport_available: el.querySelector('.c-transport')?.checked || false,
+            medical_facility_available: el.querySelector('.c-medical')?.checked || false,
+            cctv_coverage: el.querySelector('.c-cctv')?.checked || false,
+            fire_safety_certified: el.querySelector('.c-fire')?.checked || false,
+            science_labs_available: el.querySelector('.c-science-labs')?.checked || false,
+            computer_labs_available: el.querySelector('.c-comp-labs')?.checked || false,
+            playground_available: el.querySelector('.c-playground')?.checked || false,
+            gps_enabled_buses: el.querySelector('.c-gps-buses')?.checked || false,
+            visitor_management_system: el.querySelector('.c-visitor-sys')?.checked || false,
+            bus_fleet_size: el.querySelector('.c-bus-fleet')?.value.trim() || 0,
+            sports_facilities: el.querySelector('.c-sports')?.value.split(',').map(s => s.trim()).filter(Boolean),
+            campus_email: el.querySelector('.c-email')?.value.trim(),
+            campus_contact_numbers: el.querySelector('.c-phones')?.value.split(',').map(s => s.trim()).filter(Boolean)
+        };
+    }
+
+    // Helper to collect Department Card data
+    function collectDeptItemData(el) {
+        const name = el.querySelector('.d-name')?.value.trim();
+        if (!name) return null;
+        return {
+            department_name: name,
+            department_code: el.querySelector('.d-code')?.value.trim(),
+            department_type: el.querySelector('.d-type')?.value.trim(),
+            established_year: el.querySelector('.d-est')?.value.trim(),
+            head_of_department_name: el.querySelector('.d-hod-name')?.value.trim(),
+            head_of_department_designation: el.querySelector('.d-hod-desig')?.value.trim(),
+            hod_email: el.querySelector('.d-hod-email')?.value.trim(),
+            faculty_count: el.querySelector('.d-faculty-count')?.value.trim(),
+            discipline_area: el.querySelector('.d-discipline-area')?.value.trim(),
+            specializations_supported: el.querySelector('.d-specs')?.value.split(',').map(s => s.trim()).filter(Boolean),
+            education_levels_supported: el.querySelector('.d-levels')?.value.split(',').map(s => s.trim()).filter(Boolean),
+            department_labs_count: el.querySelector('.d-labs')?.value.trim(),
+            research_publications_count: el.querySelector('.d-pubs')?.value.trim(),
+            funded_projects_count: el.querySelector('.d-projects')?.value.trim(),
+            patents_filed_count: el.querySelector('.d-patents')?.value.trim(),
+            phd_supervision_available: el.querySelector('.d-phd')?.checked || false,
+            industry_collaboration_supported: el.querySelector('.d-industry')?.checked || false,
+            is_interdisciplinary: el.querySelector('.d-interdisc')?.checked || false,
+            specialized_labs_available: el.querySelector('.d-spec-labs')?.checked || false,
+            about_department: el.querySelector('.d-about')?.value.trim()
+        };
+    }
+
+    // Helper to collect Course Card data (Handles School Class/Curriculum & Higher Ed Course)
+    function collectCourseItemData(el) {
+        const isSchoolCard = el.classList.contains('cr-school-card') || !!el.querySelector('.cr-academic-name');
+
+        if (isSchoolCard) {
+            const academicName = el.querySelector('.cr-academic-name')?.value.trim();
+            if (!academicName) return null;
+
+            return {
+                academic_unit_name: academicName,
+                course_name: academicName,
+                school_type: el.querySelector('.cr-school-type')?.value,
+                education_board: el.querySelector('.cr-education-board')?.value,
+                board_affiliation_number: el.querySelector('.cr-affiliation-no')?.value.trim(),
+                grade_range: el.querySelector('.cr-grade-range')?.value.trim(),
+                medium_of_instruction: el.querySelector('.cr-medium')?.value.trim(),
+                streams_offered: el.querySelector('.cr-streams')?.value.split(',').map(s => s.trim()).filter(Boolean),
+                fee_payment_frequency: el.querySelector('.cr-fee-freq')?.value || 'Quarterly',
+                campus_name: el.querySelector('.cr-campus-select')?.value || '',
+                department_name: el.querySelector('.cr-dept-select')?.value || '',
+                duration: el.querySelector('.cr-duration')?.value.trim() || '1 Year',
+                mode: el.querySelector('.cr-mode')?.value.trim() || 'Regular',
+                fees: el.querySelector('.cr-fees')?.value.trim(),
+                total_fees: el.querySelector('.cr-total-fees')?.value.trim(),
+                admission_fee: el.querySelector('.cr-adm-fee')?.value.trim(),
+                annual_fee_range: el.querySelector('.cr-fee-range')?.value.trim(),
+                student_strength: el.querySelector('.cr-student-strength')?.value.trim(),
+                total_teachers: el.querySelector('.cr-total-teachers')?.value.trim(),
+                student_teacher_ratio: el.querySelector('.cr-teacher-ratio')?.value.trim(),
+                average_class_size: el.querySelector('.cr-class-size')?.value.trim(),
+                rating: el.querySelector('.cr-rating')?.value.trim() || null,
+                average_board_result_percentage: el.querySelector('.cr-board-result')?.value.trim(),
+                highest_score: el.querySelector('.cr-highest-score')?.value.trim(),
+                distinction_percentage: el.querySelector('.cr-distinction-pct')?.value.trim(),
+                remedial_classes_available: el.querySelector('.cr-remedial')?.checked || false,
+                special_educator_available: el.querySelector('.cr-special-educator')?.checked || false,
+                school_counsellor_available: el.querySelector('.cr-counsellor')?.checked || false,
+                olympiad_participation: el.querySelector('.cr-olympiad')?.checked || false,
+                competitive_exam_preparation_support: el.querySelector('.cr-exam-prep')?.checked || false,
+                parent_app_available: el.querySelector('.cr-parent-app')?.checked || false,
+                attendance_tracking_available: el.querySelector('.cr-attendance')?.checked || false,
+                arts_music_programs_available: el.querySelector('.cr-arts-music')?.checked || false,
+                transport_available: el.querySelector('.cr-transport')?.checked || false,
+                transport_fee: el.querySelector('.cr-transport')?.checked || false,
+                hostel_available: el.querySelector('.cr-hostel')?.checked || false,
+                hostel_fee: el.querySelector('.cr-hostel')?.checked || false,
+                installment_available: el.querySelector('.cr-installment')?.checked || false,
+                scholarship_available: el.querySelector('.cr-scholarship')?.checked || false,
+                refund_policy_available: el.querySelector('.cr-refund')?.checked || false,
+                provisional_admission: el.querySelector('.cr-provisional')?.checked || false,
+                eligibility: el.querySelector('.cr-eligibility')?.value.trim(),
+                admission_process: el.querySelector('.cr-adm-process')?.value.trim(),
+                overview: el.querySelector('.cr-overview')?.value.trim()
+            };
+        } else {
+            const courseId = el.querySelector('.cr-course-id')?.value;
+            const selectedMaster = (globalMasters.courses || []).find(c => String(c.id) === String(courseId));
+            const courseName = selectedMaster ? selectedMaster.name : (el.querySelector('.cr-raw-name')?.innerText || 'Degree Course');
+
+            return {
+                course_id: courseId || null,
+                course_name: courseName,
+                short_name: el.querySelector('.cr-short-name')?.value.trim(),
+                program_level_id: el.querySelector('.cr-level-id')?.value || null,
+                stream_offered_id: el.querySelector('.cr-stream-id')?.value || null,
+                discipline_id: el.querySelector('.cr-discipline-id')?.value || null,
+                specialization: el.querySelector('.cr-spec')?.value.trim(),
+                campus_name: el.querySelector('.cr-campus-select')?.value || '',
+                department_name: el.querySelector('.cr-dept-select')?.value || '',
+                duration: el.querySelector('.cr-duration')?.value.trim(),
+                mode: el.querySelector('.cr-mode')?.value.trim() || 'Regular',
+                fees: el.querySelector('.cr-fees')?.value.trim(),
+                total_fees: el.querySelector('.cr-total-fees')?.value.trim(),
+                admission_fee: el.querySelector('.cr-adm-fee')?.value.trim(),
+                annual_fee_range: el.querySelector('.cr-fee-range')?.value.trim(),
+                rating: el.querySelector('.cr-rating')?.value.trim() || null,
+                roi: el.querySelector('.cr-roi')?.value.trim(),
+                eligibility: el.querySelector('.cr-eligibility')?.value.trim(),
+                admission_process: el.querySelector('.cr-adm-process')?.value.trim(),
+                entrance_exams: el.querySelector('.cr-exams')?.value.trim(),
+                placement_details: el.querySelector('.cr-placements')?.value.trim(),
+                installment_available: el.querySelector('.cr-installment')?.checked || false,
+                scholarship_available: el.querySelector('.cr-scholarship')?.checked || false,
+                refund_policy_available: el.querySelector('.cr-refund')?.checked || false,
+                provisional_admission: el.querySelector('.cr-provisional')?.checked || false,
+                overview: el.querySelector('.cr-overview')?.value.trim()
+            };
+        }
+    }
+
+    // Append Course Card with School Detection and Master Auto-Selection
+    function appendCourseCard(cr = {}, idx = Date.now()) {
+        const isSchool = isCurrentEntitySchool() || !!cr.academic_unit_name || !!cr.grade_range || !!cr.education_board;
+        const availableCampuses = getAvailableCampuses();
+        const availableDepts = getAvailableDepts();
+        let selectedCampus = cr.campus_name || currentTargetCampusName || availableCampuses[0] || (isSchool ? 'Main Branch' : 'Main Campus');
+        let selectedDept = cr.department_name || currentTargetDeptName || availableDepts[0] || (isSchool ? 'Senior Secondary Wing' : 'General Faculty');
+
+        if (!availableCampuses.includes(selectedCampus)) {
+            const mC = availableCampuses.find(c => normalizeStr(c).includes(normalizeStr(selectedCampus)) || normalizeStr(selectedCampus).includes(normalizeStr(c)));
+            if (mC) selectedCampus = mC;
+            else availableCampuses.unshift(selectedCampus);
+        }
+
+        if (!availableDepts.includes(selectedDept)) {
+            const mD = availableDepts.find(d => normalizeStr(d).includes(normalizeStr(selectedDept)) || normalizeStr(selectedDept).includes(normalizeStr(d)));
+            if (mD) selectedDept = mD;
+            else if (currentTargetDeptName && availableDepts.includes(currentTargetDeptName)) selectedDept = currentTargetDeptName;
+            else availableDepts.unshift(selectedDept);
+        }
+
+        const div = document.createElement('div');
+        div.className = 'card border mb-3 course-item' + (isSchool ? ' cr-school-card' : '');
+
+        if (isSchool) {
+            const displayTitle = cr.academic_unit_name || cr.course_name || 'Senior Secondary (Classes 11 & 12)';
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold"><i class="fas fa-school text-primary me-2"></i>Class / Curriculum: <span class="course-title-preview">${displayTitle}</span></span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="fas fa-graduation-cap me-1"></i>School Program</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-course">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small">Academic Unit / Class Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control cr-academic-name" value="${cr.academic_unit_name || cr.course_name || ''}" placeholder="e.g. Senior Secondary (Classes 11 & 12) - Science">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">School Type</label>
+                            <select class="form-select cr-school-type">
+                                <option value="Day School" ${cr.school_type === 'Day School' || !cr.school_type ? 'selected' : ''}>Day School</option>
+                                <option value="Co-educational" ${cr.school_type === 'Co-educational' ? 'selected' : ''}>Co-educational</option>
+                                <option value="Day-cum-Boarding" ${cr.school_type === 'Day-cum-Boarding' ? 'selected' : ''}>Day-cum-Boarding</option>
+                                <option value="Boarding School" ${cr.school_type === 'Boarding School' ? 'selected' : ''}>Boarding School</option>
+                                <option value="Boys Only" ${cr.school_type === 'Boys Only' ? 'selected' : ''}>Boys Only</option>
+                                <option value="Girls Only" ${cr.school_type === 'Girls Only' ? 'selected' : ''}>Girls Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Education Board</label>
+                            <select class="form-select cr-education-board">
+                                <option value="CBSE" ${cr.education_board === 'CBSE' || !cr.education_board ? 'selected' : ''}>CBSE</option>
+                                <option value="CISCE (ICSE / ISC)" ${cr.education_board === 'CISCE (ICSE / ISC)' || cr.education_board === 'ICSE' ? 'selected' : ''}>CISCE (ICSE / ISC)</option>
+                                <option value="State Board" ${cr.education_board === 'State Board' ? 'selected' : ''}>State Board</option>
+                                <option value="IB (International Baccalaureate)" ${cr.education_board === 'IB (International Baccalaureate)' || cr.education_board === 'IB' ? 'selected' : ''}>IB (International Baccalaureate)</option>
+                                <option value="Cambridge (IGCSE)" ${cr.education_board === 'Cambridge (IGCSE)' || cr.education_board === 'IGCSE' || cr.education_board === 'Cambridge' ? 'selected' : ''}>Cambridge (IGCSE)</option>
+                                <option value="NIOS" ${cr.education_board === 'NIOS' ? 'selected' : ''}>NIOS</option>
+                                <option value="Other" ${cr.education_board === 'Other' ? 'selected' : ''}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Board Affiliation No</label>
+                            <input type="text" class="form-control cr-affiliation-no" value="${cr.board_affiliation_number || ''}" placeholder="e.g. CBSE/AFF/2130001">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Grade / Class Range</label>
+                            <input type="text" class="form-control cr-grade-range" value="${cr.grade_range || ''}" placeholder="e.g. Class 11 - 12">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Medium of Instruction</label>
+                            <input type="text" class="form-control cr-medium" value="${cr.medium_of_instruction || 'English'}" placeholder="e.g. English">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Streams Offered</label>
+                            <input type="text" class="form-control cr-streams" value="${toCsv(cr.streams_offered)}" placeholder="Science, Commerce, Humanities">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Fee Frequency</label>
+                            <select class="form-select cr-fee-freq">
+                                <option value="Quarterly" ${cr.fee_payment_frequency === 'Quarterly' || !cr.fee_payment_frequency ? 'selected' : ''}>Quarterly</option>
+                                <option value="Monthly" ${cr.fee_payment_frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
+                                <option value="Half-Yearly" ${cr.fee_payment_frequency === 'Half-Yearly' ? 'selected' : ''}>Half-Yearly</option>
+                                <option value="Annually" ${cr.fee_payment_frequency === 'Annually' ? 'selected' : ''}>Annually</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Campus / Branch</label>
+                            <select class="form-select cr-campus-select">
+                                ${availableCampuses.map(c => `<option value="${c}" ${c === selectedCampus ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Academic Wing / Dept</label>
+                            <select class="form-select cr-dept-select">
+                                ${availableDepts.map(d => `<option value="${d}" ${d === selectedDept ? 'selected' : ''}>${d}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Duration</label>
+                            <input type="text" class="form-control cr-duration" value="${cr.duration || '1 Year'}" placeholder="e.g. 1 Year">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Mode</label>
+                            <select class="form-select cr-mode">
+                                <option value="Regular" ${cr.mode === 'Regular' || !cr.mode ? 'selected' : ''}>Regular (Day)</option>
+                                <option value="Day-cum-Boarding" ${cr.mode === 'Day-cum-Boarding' ? 'selected' : ''}>Day-cum-Boarding</option>
+                                <option value="Boarding" ${cr.mode === 'Boarding' ? 'selected' : ''}>Boarding</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Tuition / Term Fee (₹)</label>
+                            <input type="text" class="form-control cr-fees" value="${cr.fees || ''}" placeholder="e.g. 35000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Total Annual Fee (₹)</label>
+                            <input type="text" class="form-control cr-total-fees" value="${cr.total_fees || ''}" placeholder="e.g. 120000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Admission Fee (One-Time ₹)</label>
+                            <input type="text" class="form-control cr-adm-fee" value="${cr.admission_fee || ''}" placeholder="e.g. 25000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Annual Fee Range</label>
+                            <input type="text" class="form-control cr-fee-range" value="${cr.annual_fee_range || ''}" placeholder="e.g. ₹1.0 - 1.3 Lakhs">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Student Strength</label>
+                            <input type="text" class="form-control cr-student-strength" value="${cr.student_strength || ''}" placeholder="e.g. 450">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Total Teachers</label>
+                            <input type="text" class="form-control cr-total-teachers" value="${cr.total_teachers || ''}" placeholder="e.g. 35">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Student-Teacher Ratio</label>
+                            <input type="text" class="form-control cr-teacher-ratio" value="${cr.student_teacher_ratio || ''}" placeholder="e.g. 15:1">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Avg Class Size</label>
+                            <input type="text" class="form-control cr-class-size" value="${cr.average_class_size || ''}" placeholder="e.g. 30">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Rating</label>
+                            <input type="text" class="form-control cr-rating" value="${cr.rating || ''}" placeholder="e.g. 4.5">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Board Result Avg (%)</label>
+                            <input type="text" class="form-control cr-board-result" value="${cr.average_board_result_percentage || ''}" placeholder="e.g. 94%">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Highest Score Achieved</label>
+                            <input type="text" class="form-control cr-highest-score" value="${cr.highest_score || ''}" placeholder="e.g. 99.4%">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Distinction Percentage</label>
+                            <input type="text" class="form-control cr-distinction-pct" value="${cr.distinction_percentage || ''}" placeholder="e.g. 82%">
+                        </div>
+
+                        <div class="col-12 py-2 px-3 border rounded bg-light my-2">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-remedial" type="checkbox" ${cr.remedial_classes_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Remedial Classes</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-special-educator" type="checkbox" ${cr.special_educator_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Special Educator</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-counsellor" type="checkbox" ${cr.school_counsellor_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">School Counsellor</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-olympiad" type="checkbox" ${cr.olympiad_participation ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Olympiad Prep</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-exam-prep" type="checkbox" ${cr.competitive_exam_preparation_support ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Competitive Exam Prep</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-parent-app" type="checkbox" ${cr.parent_app_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Parent App</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-attendance" type="checkbox" ${cr.attendance_tracking_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">RFID/Digital Attendance</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-arts-music" type="checkbox" ${cr.arts_music_programs_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Arts & Music</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-transport" type="checkbox" ${(cr.transport_fee || cr.transport_available) ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Transport Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-hostel" type="checkbox" ${(cr.hostel_fee || cr.hostel_available) ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Hostel / Boarding</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-installment" type="checkbox" ${cr.installment_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Installment Facility</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-scholarship" type="checkbox" ${cr.scholarship_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Scholarship Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-refund" type="checkbox" ${cr.refund_policy_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Refund Policy</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-provisional" type="checkbox" ${cr.provisional_admission ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Provisional Admission</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Eligibility / Age Criteria</label>
+                            <textarea class="form-control cr-eligibility" rows="2" placeholder="e.g. Minimum age 3 years for Nursery as on 31st March...">${cr.eligibility || ''}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Admission Process / Entrance / Interaction</label>
+                            <textarea class="form-control cr-adm-process" rows="2" placeholder="e.g. Online registration, parent interaction, document verification...">${cr.admission_process || ''}</textarea>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small">Curriculum Overview & Highlights</label>
+                            <textarea class="form-control cr-overview" rows="2" placeholder="e.g. CBSE accredited curriculum emphasizing holistic development, STEM laboratories, co-curricular arts, and academic excellence...">${cr.overview || ''}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            div.querySelector('.cr-academic-name').addEventListener('input', function (e) {
+                div.querySelector('.course-title-preview').innerText = e.target.value || 'School Program';
+            });
+
+            div.querySelector('.btn-remove-course').addEventListener('click', function () {
+                div.remove();
+                updateAllBadges();
+            });
+
+        } else {
+            // HIGHER ED COURSE
+            const rawAiName = cr.course_name || '';
+            const rawAiShort = cr.short_name || '';
+            const rawAiLevel = cr.program_level || '';
+            const rawAiStream = cr.stream || '';
+            const rawAiDiscipline = cr.discipline || '';
+
+            const matchedCourse = findBestCourseMatch(rawAiName, rawAiShort, rawAiLevel, rawAiStream, rawAiDiscipline);
+            const selectedCourseId = matchedCourse ? matchedCourse.id : (cr.course_id || '');
+
+            const defaultLevelId = matchedCourse && matchedCourse.program_level_id 
+                ? matchedCourse.program_level_id 
+                : findBestLevelMatch(rawAiLevel);
+
+            const defaultStreamId = matchedCourse && matchedCourse.stream_offered_id 
+                ? matchedCourse.stream_offered_id 
+                : findBestStreamMatch(rawAiStream);
+
+            const defaultDisciplineId = matchedCourse && matchedCourse.discipline_id 
+                ? matchedCourse.discipline_id 
+                : findBestDisciplineMatch(rawAiDiscipline);
+
+            const defaultDuration = (matchedCourse && matchedCourse.duration) ? matchedCourse.duration : (cr.duration || '3 Years');
+
+            div.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold"><i class="fas fa-graduation-cap text-success me-1"></i>Course: <span class="course-title-preview">${matchedCourse ? matchedCourse.name : (rawAiName || 'Course')}</span></span>
+                        <span class="match-badge-container">
+                            ${selectedCourseId 
+                                ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Master Auto-Selected</span>' 
+                                : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>Select Master Course</span>'}
+                        </span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-course">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">
+                                Master Course <span class="text-danger">*</span> (From Database Masters)
+                            </label>
+                            <select class="form-select cr-course-id">
+                                <option value="">-- Select Master Course --</option>
+                                ${(globalMasters.courses || []).map(c => `
+                                    <option value="${c.id}" ${String(c.id) === String(selectedCourseId) ? 'selected' : ''}>
+                                        ${c.name}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            <div class="mt-1 small text-muted">
+                                AI Extracted Name: <span class="fw-bold cr-raw-name">${rawAiName || 'N/A'}</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Short Name / Abbr</label>
+                            <input type="text" class="form-control cr-short-name" value="${rawAiShort}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Program Level</label>
+                            <select class="form-select cr-level-id">
+                                <option value="">-- Select Program Level --</option>
+                                ${(globalMasters.program_levels || []).map(l => `
+                                    <option value="${l.id}" ${String(l.id) === String(defaultLevelId) ? 'selected' : ''}>
+                                        ${l.title}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Stream Offered</label>
+                            <select class="form-select cr-stream-id">
+                                <option value="">-- Select Stream --</option>
+                                ${(globalMasters.streams || []).map(s => `
+                                    <option value="${s.id}" ${String(s.id) === String(defaultStreamId) ? 'selected' : ''}>
+                                        ${s.title}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Discipline</label>
+                            <select class="form-select cr-discipline-id">
+                                <option value="">-- Select Discipline --</option>
+                                ${(globalMasters.disciplines || []).map(d => `
+                                    <option value="${d.id}" ${String(d.id) === String(defaultDisciplineId) ? 'selected' : ''}>
+                                        ${d.title}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Specialization</label>
+                            <input type="text" class="form-control cr-spec" value="${cr.specialization || ''}">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Campus</label>
+                            <select class="form-select cr-campus-select">
+                                ${availableCampuses.map(c => `<option value="${c}" ${c === selectedCampus ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Department</label>
+                            <select class="form-select cr-dept-select">
+                                ${availableDepts.map(d => `<option value="${d}" ${d === selectedDept ? 'selected' : ''}>${d}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Duration</label>
+                            <input type="text" class="form-control cr-duration" value="${defaultDuration}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Mode</label>
+                            <select class="form-select cr-mode">
+                                <option value="Regular" ${cr.mode === 'Regular' || !cr.mode ? 'selected' : ''}>Regular</option>
+                                <option value="Online" ${cr.mode === 'Online' ? 'selected' : ''}>Online</option>
+                                <option value="Distance" ${cr.mode === 'Distance' ? 'selected' : ''}>Distance</option>
+                                <option value="Part-time" ${cr.mode === 'Part-time' ? 'selected' : ''}>Part-time</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Fees (Per Year ₹)</label>
+                            <input type="text" class="form-control cr-fees" value="${cr.fees || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Total Fees (₹)</label>
+                            <input type="text" class="form-control cr-total-fees" value="${cr.total_fees || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Admission Fee (₹)</label>
+                            <input type="text" class="form-control cr-adm-fee" value="${cr.admission_fee || ''}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Annual Fee Range</label>
+                            <input type="text" class="form-control cr-fee-range" value="${cr.annual_fee_range || ''}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Rating</label>
+                            <input type="text" class="form-control cr-rating" value="${cr.rating || ''}" placeholder="e.g. 4.5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">ROI / Package</label>
+                            <input type="text" class="form-control cr-roi" value="${cr.roi || ''}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Entrance Exams</label>
+                            <input type="text" class="form-control cr-exams" value="${cr.entrance_exams || ''}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Eligibility Criteria</label>
+                            <textarea class="form-control cr-eligibility" rows="2">${cr.eligibility || ''}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Admission Process</label>
+                            <textarea class="form-control cr-adm-process" rows="2">${cr.admission_process || ''}</textarea>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small">Placement Details</label>
+                            <input type="text" class="form-control cr-placements" value="${cr.placement_details || ''}">
+                        </div>
+
+                        <div class="col-12 py-2 px-3 border rounded bg-light my-2">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-installment" type="checkbox" ${cr.installment_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Installment Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-scholarship" type="checkbox" ${cr.scholarship_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Scholarship Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-refund" type="checkbox" ${cr.refund_policy_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Refund Policy Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input cr-provisional" type="checkbox" ${cr.provisional_admission ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Provisional Admission</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small">Course Overview</label>
+                            <textarea class="form-control cr-overview" rows="2">${cr.overview || ''}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const courseSelect = div.querySelector('.cr-course-id');
+            courseSelect.addEventListener('change', function () {
+                const chosenId = this.value;
+                const chosen = (globalMasters.courses || []).find(c => String(c.id) === String(chosenId));
+                const badgeContainer = div.querySelector('.match-badge-container');
+                const previewTitle = div.querySelector('.course-title-preview');
+
+                if (chosen) {
+                    previewTitle.innerText = chosen.name;
+                    badgeContainer.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Master Selected</span>';
+
+                    if (chosen.program_level_id) {
+                        const $lvl = $(div).find('.cr-level-id');
+                        $lvl.val(chosen.program_level_id).trigger('change.select2');
+                    }
+                    if (chosen.stream_offered_id) {
+                        const $str = $(div).find('.cr-stream-id');
+                        $str.val(chosen.stream_offered_id).trigger('change.select2');
+                    }
+                    if (chosen.discipline_id) {
+                        const $disc = $(div).find('.cr-discipline-id');
+                        $disc.val(chosen.discipline_id).trigger('change.select2');
+                    }
+                    if (chosen.duration) {
+                        div.querySelector('.cr-duration').value = chosen.duration;
+                    }
+                } else {
+                    previewTitle.innerText = div.querySelector('.cr-raw-name').innerText || 'Course';
+                    badgeContainer.innerHTML = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>Select Master Course</span>';
+                }
+            });
+
+            div.querySelector('.btn-remove-course').addEventListener('click', function () {
+                div.remove();
+                updateAllBadges();
+            });
+        }
+
+        document.getElementById('coursesContainer').appendChild(div);
+        initSelect2OnCard(div);
+
+        // For Higher-Ed cards: also hook into Select2's change event for cr-course-id
+        // so cascade updates (level, stream, discipline, duration) work with Select2 UI
+        if (!isSchool && window.jQuery && $.fn.select2) {
+            const $courseSelect = $(div).find('.cr-course-id');
+            $courseSelect.on('select2:select select2:clear', function () {
+                this.dispatchEvent(new Event('change'));
+            });
+        }
+    }
+
+    // Add buttons
+    document.getElementById('btnAddCampusCard').addEventListener('click', function () {
+        const isSchool = isCurrentEntitySchool();
+        appendCampusCard({
+            campus_name: isSchool ? 'New School Branch' : 'New Campus',
+            campus_type: 'Regional'
+        });
+        updateAllBadges();
+        refreshCourseCampusAndDeptDropdowns();
+    });
+
+    document.getElementById('btnAddDeptCard').addEventListener('click', function () {
+        const isSchool = isCurrentEntitySchool();
+        appendDeptCard({
+            department_name: isSchool ? 'New Academic Wing' : 'New Department',
+            department_type: isSchool ? 'Academic Wing' : 'Academic'
+        });
+        updateAllBadges();
+        refreshCourseCampusAndDeptDropdowns();
+    });
+
+    document.getElementById('btnAddCourseCard').addEventListener('click', function () {
+        const isSchool = isCurrentEntitySchool();
+        if (isSchool) {
+            appendCourseCard({
+                academic_unit_name: 'Senior Secondary (Classes 11 & 12)',
+                school_type: 'Day School',
+                education_board: 'CBSE',
+                grade_range: 'Classes 11 - 12',
+                fee_payment_frequency: 'Quarterly'
+            });
+        } else {
+            appendCourseCard({ course_name: 'New Degree Course' });
+        }
+        updateAllBadges();
+    });
+
+    function updateAllBadges() {
+        const cCount = document.querySelectorAll('.campus-item').length;
+        const dCount = document.querySelectorAll('.dept-item').length;
+        const crCount = document.querySelectorAll('.course-item').length;
+
+        const bCampuses = document.getElementById('badgeCampusesCount');
+        const bDepts = document.getElementById('badgeDeptsCount');
+        const bCourses = document.getElementById('badgeCoursesCount');
+
+        if (bCampuses) bCampuses.innerText = cCount;
+        if (bDepts) bDepts.innerText = dCount;
+        if (bCourses) bCourses.innerText = crCount;
+    }
+
+    // ----------------------------------------------------
+    // Confirm & Save Records
+    // ----------------------------------------------------
+    document.querySelectorAll('.btn-confirm-save-action').forEach(btn => {
+        btn.addEventListener('click', function () {
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+            const saveButtons = document.querySelectorAll('.btn-confirm-save-action');
+            saveButtons.forEach(b => {
+                b.disabled = true;
+                b.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+            });
+
+            const mode = currentExtractionMode || 'organisation';
+            let payload = {
+                mode: mode,
+                target_organisation_id: currentTargetOrgId || null,
+                target_campus_id: currentTargetCampusId || null,
+                target_department_id: currentTargetDeptId || null,
+                organisation: {},
+                campuses: [],
+                departments: [],
+                courses: []
+            };
+
+            // 1. ORGANISATION MODE SAVE (Saves Organisation + All Associated Campuses, Departments, Courses)
+            if (mode === 'organisation') {
+                const orgName = document.getElementById('aiOrgName') ? document.getElementById('aiOrgName').value.trim() : '';
+                if (!orgName) {
+                    alert('Please enter an Organisation Name before saving.');
+                    saveButtons.forEach(b => {
+                        b.disabled = false;
+                        b.innerHTML = '<i class="fas fa-save me-1"></i> Save Organisation';
+                    });
+                    return;
+                }
+
+                const orgTypeSelect = document.getElementById('aiOrgTypeMaster');
+                const selectedOrgTypeId = orgTypeSelect ? orgTypeSelect.value : '';
+                const selectedOrgTypeName = orgTypeSelect && orgTypeSelect.selectedIndex >= 0 
+                    ? orgTypeSelect.options[orgTypeSelect.selectedIndex].text 
+                    : 'University';
+
+                const orgPayload = {
+                    name: orgName,
+                    organisation_type_id: selectedOrgTypeId || null,
+                    organisation_type: selectedOrgTypeName,
+                    central_authority: document.getElementById('aiOrgCentralAuth') ? document.getElementById('aiOrgCentralAuth').value.trim() : '',
+                    head_office_location: document.getElementById('aiOrgLocation') ? document.getElementById('aiOrgLocation').value.trim() : '',
+                    is_top: document.getElementById('aiOrgIsTop') ? document.getElementById('aiOrgIsTop').value : 0,
+                    core_values: document.getElementById('aiOrgCoreValues') ? document.getElementById('aiOrgCoreValues').value.split(',').map(s => s.trim()).filter(Boolean) : []
+                };
+
+                const activeContainer = document.querySelector('#tab-org .col-12[id$="-fields"][style*="display: block"]') ||
+                                        document.querySelector('#tab-org .col-12[id$="-fields"]:not([style*="display: none"])');
+                if (activeContainer) {
+                    activeContainer.querySelectorAll('input, select, textarea').forEach(input => {
+                        const name = input.getAttribute('name');
+                        if (!name || input.type === 'file' || input.disabled) return;
+
+                        const isArray = name.endsWith('[]');
+                        const baseName = name.replace(/\[\]$/, '');
+
+                        if (input.type === 'checkbox') {
+                            if (isArray) {
+                                if (!orgPayload[baseName]) orgPayload[baseName] = [];
+                                if (input.checked) {
+                                    orgPayload[baseName].push(input.value);
+                                }
+                            } else {
+                                orgPayload[baseName] = input.checked;
+                            }
+                        } else if (input.type === 'radio') {
+                            if (input.checked) {
+                                orgPayload[baseName] = input.value;
+                            }
+                        } else {
+                            const val = input.value.trim();
+                            if (isArray) {
+                                orgPayload[baseName] = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
+                            } else {
+                                orgPayload[baseName] = val;
+                            }
+                        }
+                    });
+                }
+
+                const extractedLogo = document.querySelector('input[name="ai_extracted_logo_url"]')?.value || currentExtractedData?.organisation?.logo_url;
+                if (extractedLogo && !orgPayload.logo_url) {
+                    orgPayload.logo_url = extractedLogo;
+                }
+                const extractedCover = document.querySelector('input[name="ai_extracted_cover_image_url"]')?.value || currentExtractedData?.organisation?.cover_image_url;
+                if (extractedCover && !orgPayload.cover_image_url) {
+                    orgPayload.cover_image_url = extractedCover;
+                }
+
+                // Canonical URL must always be blank and Claimed by Organisation must always be unchecked
+                orgPayload.canonical_url = '';
+                orgPayload.claimed_by_organization = false;
+                if (orgPayload.claimed_by_authority !== undefined) {
+                    orgPayload.claimed_by_authority = false;
+                }
+
+                payload.organisation = orgPayload;
+                payload.campuses = [];
+                payload.departments = [];
+                payload.courses = [];
+
+            // 2. CAMPUS MODE SAVE
+            } else if (mode === 'campus') {
+                document.querySelectorAll('.campus-item').forEach(el => {
+                    const c = collectCampusItemData(el);
+                    if (c) payload.campuses.push(c);
+                });
+
+            // 3. DEPARTMENT MODE SAVE
+            } else if (mode === 'department') {
+                document.querySelectorAll('.dept-item').forEach(el => {
+                    const d = collectDeptItemData(el);
+                    if (d) payload.departments.push(d);
+                });
+
+            // 4. COURSE MODE SAVE
+            } else if (mode === 'course') {
+                document.querySelectorAll('.course-item').forEach(el => {
+                    const cr = collectCourseItemData(el);
+                    if (cr) payload.courses.push(cr);
+                });
+            }
+
+            fetch("{{ route('admin.ai-organisations.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    extracted_json: payload
+                })
+            })
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned HTTP ${response.status} (non-JSON response). Please check server logs.`);
+                }
+                const res = await response.json();
+                if (!response.ok || !res.success) {
+                    throw new Error(res.message || `Failed to save data (HTTP ${response.status})`);
+                }
+                return res;
+            })
+            .then(res => {
+                if (res.success) {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.message);
+                    }
+                    if (res.redirect_url) {
+                        window.location.href = res.redirect_url;
+                    } else {
+                        window.location.href = "{{ route('admin.organisations.index') }}";
+                    }
+                } else {
+                    throw new Error(res.message || 'Failed to save data.');
+                }
+            })
+            .catch(err => {
+                alert('Error saving data: ' + err.message);
+                saveButtons.forEach(b => {
+                    b.disabled = false;
+                    b.innerHTML = '<i class="fas fa-save me-1"></i> Save Records';
+                });
+            });
+        });
+    });
+
+    // Initial setup
+    handleEntityModeChange();
+    const initialTypeId = (aiOrgTypeMaster && aiOrgTypeMaster.value) || 1;
+    toggleOrgTypeFields(initialTypeId);
+    document.querySelectorAll('input[name="canonical_url"]').forEach(el => el.value = '');
+    document.querySelectorAll('input[name="claimed_by_organization"], input[name="claimed_by_authority"]').forEach(el => el.checked = false);
+    document.querySelectorAll('#tab-org [name*="rating"], #tab-org [name*="review"]').forEach(el => {
+        if (el.type === 'checkbox') el.checked = false;
+        else el.value = '';
+    });
+});
+</script>
+@endpush

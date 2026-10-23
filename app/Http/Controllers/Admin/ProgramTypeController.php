@@ -33,7 +33,7 @@ class ProgramTypeController extends Controller
             'sort_order' => $request->sort_order ?? 0,
         ]);
 
-        return redirect()->route('admin.program-types.index')->with('success', 'Program Type created successfully.');
+        return redirect()->route('admin.program-types.index')->with('success', 'Program Mode created successfully.');
     }
 
     public function edit(ProgramType $programType)
@@ -55,12 +55,12 @@ class ProgramTypeController extends Controller
             'sort_order' => $request->sort_order ?? 0,
         ]);
 
-        return redirect()->route('admin.program-types.index')->with('success', 'Program Type updated successfully.');
+        return redirect()->route('admin.program-types.index')->with('success', 'Program Mode updated successfully.');
     }
 
     public function destroy(ProgramType $programType)
     {
         $programType->delete();
-        return redirect()->route('admin.program-types.index')->with('success', 'Program Type deleted successfully.');
+        return redirect()->route('admin.program-types.index')->with('success', 'Program Mode deleted successfully.');
     }
 }

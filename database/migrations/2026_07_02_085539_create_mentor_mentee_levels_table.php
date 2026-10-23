@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('mentor_mentee_levels')) {
         Schema::create('mentor_mentee_levels', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->boolean('status')->default(1);
             $table->timestamps();
         });
+        }
     }
 
     /**

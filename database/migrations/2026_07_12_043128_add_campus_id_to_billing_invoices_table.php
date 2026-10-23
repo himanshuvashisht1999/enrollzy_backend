@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('billing_invoices', function (Blueprint $table) {
-            $table->string('campus_id')->nullable()->after('organisation_id');
-            $table->foreign('campus_id')->references('id')->on('campuses')->onDelete('set null');
-        });
+        Schema::table('billing_invoices', function (Blueprint $table) {});
     }
 
     /**

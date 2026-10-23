@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('billing_invoices')) {
         Schema::create('billing_invoices', function (Blueprint $table) {
             $table->id();
             $table->string('invoice_number')->unique();
@@ -30,6 +31,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+        }
     }
 
     /**

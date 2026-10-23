@@ -10,11 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            $table->json('exams_prepared_for')->nullable()->after('status');
-            $table->json('target_classes')->nullable()->after('exams_prepared_for');
-            $table->longText('about_institute')->nullable()->after('target_classes');
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('faqs')) {
         Schema::create('faqs', function (Blueprint $table) {
             $table->id();
             $table->text('question');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

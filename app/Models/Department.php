@@ -9,12 +9,13 @@ use Illuminate\Support\Str;
 
 class Department extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Models\Quality\Concerns\HasQualityRecords;
 
     protected $fillable = [
         'organisation_id',
         'campus_id',
         'department_name',
+        'sort_order',
         'department_code',
         'slug',
         'department_type',
@@ -106,6 +107,18 @@ class Department extends Model
                 $model->slug = static::generateUniqueSlug($model->department_name, $model->id);
             }
         });
+
+        static::deleting(function ($department) {
+            $department->organisationCourses()->delete();
+            if (method_exists($department, 'documents')) {
+                $department->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $department->documents()->delete();
+            }
+        });
     }
 
     /**
@@ -140,6 +153,11 @@ class Department extends Model
     }
 
 
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
+    }
+
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);
@@ -152,7 +170,12 @@ class Department extends Model
 
     public function courses()
     {
-        return $this->hasMany(OrganisationCourse::class);
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function organisationCourses()
+    {
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
     }
 
     public function collaboratingDepartments()
@@ -163,4 +186,21 @@ class Department extends Model
         // For now, we'll leave it as json cast.
         return $this->attributes['collaborating_departments'];
     }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'department_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'department_id', 'faculty_id')
+                    ->withPivot('designation_id', 'is_primary_department', 'status');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(DepartmentDocument::class)->orderBy('sort_order', 'asc');
+    }
 }
+

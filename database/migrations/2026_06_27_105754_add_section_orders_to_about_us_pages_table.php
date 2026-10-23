@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('about_us_pages', function (Blueprint $table) {
-            $defaultOrder = json_encode(['hero', 'story', 'core_values', 'offers', 'features', 'impacts', 'founders', 'teams', 'cta']);
-            $table->json('section_orders')->default($defaultOrder)->after('id');
-        });
+        Schema::table('about_us_pages', function (Blueprint $table) {});
     }
 
     /**

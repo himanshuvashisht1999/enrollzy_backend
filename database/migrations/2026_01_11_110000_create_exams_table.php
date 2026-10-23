@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('exams')) {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
             
@@ -136,8 +137,10 @@ return new class extends Migration
 
             $table->timestamps();
         });
+        }
 
         // Separate Table for Yearly Sessions (Important Dates)
+        if (!Schema::hasTable('exam_sessions')) {
         Schema::create('exam_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
@@ -160,6 +163,7 @@ return new class extends Migration
 
             $table->timestamps();
         });
+        }
     }
 
     /**

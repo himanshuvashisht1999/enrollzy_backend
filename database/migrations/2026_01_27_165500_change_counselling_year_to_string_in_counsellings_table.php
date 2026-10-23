@@ -10,10 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('counsellings', function (Blueprint $table) {
-            // Change the column type from YEAR (4 digits) to STRING to support ranges like "2024-2025"
-            $table->string('counselling_year')->nullable()->change();
-        });
+        Schema::table('counsellings', function (Blueprint $table) {});
     }
 
     /**

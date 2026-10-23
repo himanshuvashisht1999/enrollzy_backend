@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('seo_organization_settings')) {
         Schema::create('seo_organization_settings', function (Blueprint $table) {
             $table->id();
             
@@ -112,6 +113,7 @@ return new class extends Migration
             
             $table->timestamps();
         });
+        }
     }
 
     /**

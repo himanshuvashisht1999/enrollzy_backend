@@ -8,17 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('mentor_degrees', function (Blueprint $table) {
-            $table->decimal('commission_percentage', 5, 2)->nullable();
-        });
-        Schema::table('mentor_industries', function (Blueprint $table) {
-            $table->decimal('commission_percentage', 5, 2)->nullable();
-        });
-        Schema::table('mentor_mentee_levels', function (Blueprint $table) {
-            $table->decimal('commission_percentage', 5, 2)->nullable();
-        });
+        Schema::table('mentor_degrees', function (Blueprint $table) {});
+        Schema::table('mentor_industries', function (Blueprint $table) {});
+        Schema::table('mentor_mentee_levels', function (Blueprint $table) {});
         Schema::table('mentor_commissions', function (Blueprint $table) {
-            $table->json('priority_order')->nullable();
+            if (!Schema::hasColumn('mentor_commissions', 'priority_order')) {
+                if (!Schema::hasColumn('mentor_commissions', 'priority_order')) $table->json('priority_order')->nullable();
+            }
         });
     }
 

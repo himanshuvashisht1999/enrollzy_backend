@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Scholarships Table
+        if (!Schema::hasTable('scholarships')) {
         Schema::create('scholarships', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -46,8 +47,10 @@ return new class extends Migration
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
+        }
 
         // 2. Scholarship Eligibilities Table
+        if (!Schema::hasTable('scholarship_eligibilities')) {
         Schema::create('scholarship_eligibilities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -72,8 +75,10 @@ return new class extends Migration
             $table->text('other_conditions')->nullable();
             $table->timestamps();
         });
+        }
 
         // 3. Scholarship Benefits Table
+        if (!Schema::hasTable('scholarship_benefits')) {
         Schema::create('scholarship_benefits', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -83,24 +88,30 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
 
         // 4. Scholarship Courses (Pivot Table)
+        if (!Schema::hasTable('scholarship_courses')) {
         Schema::create('scholarship_courses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->timestamps();
         });
+        }
 
         // 5. Scholarship Universities (Pivot Table)
+        if (!Schema::hasTable('scholarship_universities')) {
         Schema::create('scholarship_universities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
             $table->foreignId('organisation_id')->constrained('organisations')->onDelete('cascade');
             $table->timestamps();
         });
+        }
 
         // 6. Scholarship Documents Table
+        if (!Schema::hasTable('scholarship_documents')) {
         Schema::create('scholarship_documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -108,8 +119,10 @@ return new class extends Migration
             $table->tinyInteger('is_mandatory')->default(1);
             $table->timestamps();
         });
+        }
 
         // 7. Scholarship Dates Table
+        if (!Schema::hasTable('scholarship_dates')) {
         Schema::create('scholarship_dates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -121,8 +134,10 @@ return new class extends Migration
             $table->date('admission_date')->nullable();
             $table->timestamps();
         });
+        }
 
         // 8. Scholarship FAQs Table
+        if (!Schema::hasTable('scholarship_faqs')) {
         Schema::create('scholarship_faqs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -131,8 +146,10 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
 
         // 9. Scholarship Gallery Table
+        if (!Schema::hasTable('scholarship_gallery')) {
         Schema::create('scholarship_gallery', function (Blueprint $table) {
             $table->id();
             $table->foreignId('scholarship_id')->constrained('scholarships')->onDelete('cascade');
@@ -142,6 +159,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     /**

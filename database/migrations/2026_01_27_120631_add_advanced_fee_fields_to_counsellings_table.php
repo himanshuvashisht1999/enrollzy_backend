@@ -10,38 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('counsellings', function (Blueprint $table) {
-            // Drop old simple fee columns
-            $table->dropColumn([
-                'counselling_fee_amount',
-                'fee_currency',
-                'fee_refundable',
-                'refund_conditions',
-                'payment_modes'
-            ]);
-
-            // Add new advanced fee columns
-            $table->boolean('registration_fee_required')->default(false);
-            $table->json('registration_fee_structure')->nullable();
-
-            $table->boolean('late_registration_allowed')->default(false);
-            $table->json('late_fee_rules')->nullable();
-
-            $table->boolean('security_deposit_required')->default(false);
-            $table->json('security_deposit_structure')->nullable();
-
-            $table->json('round_specific_fee_rules')->nullable();
-
-            $table->text('refund_policy_summary')->nullable();
-            $table->string('refund_timeline')->nullable();
-            $table->string('refund_mode')->nullable(); // Original Method, Bank Transfer
-            $table->json('forfeiture_scenarios')->nullable();
-
-            $table->json('payment_modes_allowed')->nullable();
-            $table->boolean('transaction_charges_applicable')->default(false);
-            $table->string('transaction_charge_borne_by')->nullable(); // Candidate, Authority
-            $table->string('payment_gateway_name')->nullable();
-        });
+        Schema::table('counsellings', function (Blueprint $table) {});
     }
 
     /**
@@ -70,11 +39,11 @@ return new class extends Migration {
             ]);
 
             // Re-add old simple fee columns
-            $table->decimal('counselling_fee_amount', 10, 2)->nullable();
-            $table->string('fee_currency')->nullable();
-            $table->boolean('fee_refundable')->default(false);
-            $table->text('refund_conditions')->nullable();
-            $table->json('payment_modes')->nullable();
+            if (!Schema::hasColumn('counsellings', 'counselling_fee_amount')) $table->decimal('counselling_fee_amount', 10, 2)->nullable();
+            if (!Schema::hasColumn('counsellings', 'fee_currency')) $table->string('fee_currency')->nullable();
+            if (!Schema::hasColumn('counsellings', 'fee_refundable')) $table->boolean('fee_refundable')->default(false);
+            if (!Schema::hasColumn('counsellings', 'refund_conditions')) $table->text('refund_conditions')->nullable();
+            if (!Schema::hasColumn('counsellings', 'payment_modes')) $table->json('payment_modes')->nullable();
         });
     }
 };

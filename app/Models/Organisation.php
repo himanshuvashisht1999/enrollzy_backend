@@ -6,9 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Organisation extends Model
 {
+    use \App\Models\Quality\Concerns\HasQualityRecords;
+
+    /** organisation_types ids used in code. */
+    public const TYPE_EXAM_CONDUCTING_BODY = 5;
+    public const TYPE_COUNSELLING_BODY = 6;
+
+    /** "University Type" choices (organisation forms, filtered pages). */
+    public const UNIVERSITY_TYPES = ['Central', 'State', 'Deemed', 'Private', 'International', 'Institution of National Importance (Autonomous)'];
+
     protected $fillable = [
         'name',
+        'sort_order',
         'organisation_type_id',
+        'campus_type_new_id',
         'organisation_id_number',
         'brand_type',
         'franchise_partner_name',
@@ -339,16 +350,97 @@ class Organisation extends Model
                 $organisation->counselling_body_id = (string) \Illuminate\Support\Str::uuid();
             }
         });
+
+        static::deleting(function ($organisation) {
+            // 1. Delete all campuses (withTrashed so soft-deleted ones are fully purged, which also cascades to their departments & courses)
+            $organisation->campuses()->withTrashed()->get()->each(function ($campus) {
+                $campus->forceDelete();
+            });
+
+            // 2. Delete any departments directly under this organisation that didn't have a campus or were missed
+            $organisation->departments()->withTrashed()->get()->each(function ($department) {
+                $department->forceDelete();
+            });
+
+            // 3. Delete any remaining organisation courses directly under this organisation
+            $organisation->organisationCourses()->delete();
+
+            // 4. Delete any organisation school courses
+            if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
+                \Illuminate\Support\Facades\DB::table('organisation_school_courses')
+                    ->where('organisation_id', $organisation->id)
+                    ->delete();
+            }
+
+            // 5. Clean up auxiliary tables
+            if (method_exists($organisation, 'awards')) {
+                $organisation->awards()->delete();
+            }
+            if (method_exists($organisation, 'sports')) {
+                $organisation->sports()->delete();
+            }
+            if (method_exists($organisation, 'academicResults')) {
+                $organisation->academicResults()->delete();
+            }
+            if (method_exists($organisation, 'feeStructures')) {
+                $organisation->feeStructures()->delete();
+            }
+            if (method_exists($organisation, 'admissionRoutes')) {
+                $organisation->admissionRoutes()->delete();
+            }
+            if (method_exists($organisation, 'accreditations')) {
+                $organisation->accreditations()->detach();
+            }
+            // E-Learning Clean up
+            if (method_exists($organisation, 'elearning') && $organisation->elearning) {
+                $organisation->elearning()->delete();
+            }
+            if (method_exists($organisation, 'partners')) {
+                $organisation->partners()->delete();
+            }
+            if (method_exists($organisation, 'instructors')) {
+                $organisation->instructors()->delete();
+            }
+            if (method_exists($organisation, 'leaders')) {
+                $organisation->leaders()->delete();
+            }
+            if (method_exists($organisation, 'elearningDomains')) {
+                $organisation->elearningDomains()->delete();
+            }
+            if (method_exists($organisation, 'documents')) {
+                $organisation->documents->each(function ($doc) {
+                    if ($doc->file_path && file_exists(public_path($doc->file_path))) {
+                        @unlink(public_path($doc->file_path));
+                    }
+                });
+                $organisation->documents()->delete();
+            }
+        });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(OrganisationDocument::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
     }
 
     public function departments()
     {
-        return $this->hasMany(Department::class);
+        return $this->hasMany(Department::class)->orderBy('sort_order', 'asc')->orderBy('department_name', 'asc');
     }
 
     public function courses()
     {
-        return $this->hasMany(OrganisationCourse::class);
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function organisationCourses()
+    {
+        return $this->hasMany(OrganisationCourse::class)->orderBy('sort_order', 'asc');
     }
 
     public function organisationType()
@@ -398,8 +490,43 @@ class Organisation extends Model
 
     public function campuses()
     {
-        return $this->hasMany(Campus::class);
+        return $this->hasMany(Campus::class)->orderBy('sort_order', 'asc')->orderBy('campus_name', 'asc');
     }
 
+    public function elearning()
+    {
+        return $this->hasOne(OrganisationElearning::class);
+    }
 
+    public function partners()
+    {
+        return $this->hasMany(OrganisationPartner::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function instructors()
+    {
+        return $this->hasMany(OrganisationInstructor::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function leaders()
+    {
+        return $this->hasMany(OrganisationLeader::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function elearningDomains()
+    {
+        return $this->hasMany(OrganisationDomain::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function facultyMappings()
+    {
+        return $this->hasMany(FacultyDepartmentMapping::class, 'organisation_id');
+    }
+
+    public function faculties()
+    {
+        return $this->belongsToMany(FacultyProfile::class, 'faculty_department_mapping', 'organisation_id', 'faculty_id')
+                    ->withPivot('campus_id', 'department_id', 'designation_id', 'is_primary_department', 'status');
+    }
 }
+

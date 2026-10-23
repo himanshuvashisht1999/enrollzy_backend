@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('faq_categories')) {
         Schema::create('faq_categories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('parent_id')->nullable()->constrained('faq_categories')->onDelete('cascade');
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

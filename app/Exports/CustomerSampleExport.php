@@ -10,18 +10,23 @@ class CustomerSampleExport implements FromArray, WithHeadings
     public function array(): array
     {
         return [
-            ['John Doe', '9876543210', 'john@example.com', '1'],
-            ['Jane Smith', '1234567890', 'jane@example.com', '2'],
+            ['1', 'JYOTI', '8869935841', '1', '', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '2026', 'Regular'],
+            ['2', 'KAJAL', '7705070011', '2', 'kajal@example.com', 'BA', 'ABDUL SATTAR KHAN MAHAVIDHYALAYA, KHERON, RAEBARELI', '2026', 'Regular'],
         ];
     }
 
     public function headings(): array
     {
         return [
-            'name',
-            'phone',
-            'email',
-            'category_id',
+            'S.No',
+            'NAME',
+            'Phone Number',
+            'Category ID',
+            'Student Email',
+            'Current Course',
+            'Current University',
+            'Passing Year',
+            'Current Program Mode',
         ];
     }
 }

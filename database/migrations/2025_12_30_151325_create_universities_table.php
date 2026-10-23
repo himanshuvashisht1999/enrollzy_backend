@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('universities')) {
         Schema::create('universities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->decimal('rating', 3, 1); // 4.5, 4.6, etc.
             $table->timestamps();
         });
+        }
     }
 
     /**

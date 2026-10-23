@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('departments')) {
         Schema::create('departments', function (Blueprint $table) {
             // 1. Core Identity
             $table->uuid('id')->primary();
@@ -81,6 +82,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+        }
     }
 
     /**

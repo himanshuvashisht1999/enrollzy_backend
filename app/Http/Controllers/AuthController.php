@@ -14,6 +14,10 @@ class AuthController extends Controller
      */
     public function showAdminLoginForm()
     {
+        if (Auth::guard('admin')->check() || (Auth::guard('web')->check() && Auth::guard('web')->user()?->is_admin)) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return view('auth.admin-login');
     }
 

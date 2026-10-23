@@ -61,12 +61,30 @@
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <label class="form-label fw-semibold">Reports To (Manager)</label>
+                        <select name="manager_id" class="form-select rounded-3">
+                            <option value="">No Manager (Top Level)</option>
+                            @foreach ($managers as $mgr)
+                                <option value="{{ $mgr->id }}">{{ $mgr->name }} ({{ $mgr->role ?? 'Staff' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold">Employment Type <span class="text-danger">*</span></label>
                         <select name="employment_type" class="form-select rounded-3" required>
                             <option value="full_time">Full Time</option>
                             <option value="part_time">Part Time</option>
                             <option value="contract">Contract</option>
                             <option value="internship">Internship</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Staff Type</label>
+                        <select name="staff_type_id" class="form-select rounded-3">
+                            <option value="">Select Staff Type</option>
+                            @foreach ($staffTypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -84,8 +102,8 @@
                         <input type="date" class="form-control rounded-3" name="probation_end_date" id="probation_end_date" value="{{ old('probation_end_date') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-semibold">Salary / Pay Rate</label>
-                        <input type="number" class="form-control rounded-3" name="salary" value="{{ old('salary') }}" placeholder="e.g. 50000">
+                        <label class="form-label fw-semibold">Salary / Pay Rate <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control rounded-3" name="salary" value="{{ old('salary') }}" placeholder="e.g. 50000" required>
                     </div>
 
                     {{-- Work Schedule --}}

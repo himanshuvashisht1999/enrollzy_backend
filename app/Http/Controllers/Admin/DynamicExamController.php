@@ -15,7 +15,7 @@ class DynamicExamController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DynamicExam::latest();
+        $query = DynamicExam::orderBy('sort_order', 'asc')->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -32,13 +32,15 @@ class DynamicExamController extends Controller
 
     public function create()
     {
-        return view('admin.dynamic-exams.create');
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
+        return view('admin.dynamic-exams.create', compact('examCategories'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer',
             'logo' => 'nullable|image|max:2048',
             'cover_image' => 'nullable|image|max:2048',
         ]);
@@ -69,6 +71,7 @@ class DynamicExamController extends Controller
 
         $exam = DynamicExam::create([
             'name' => $validated['name'],
+            'sort_order' => $request->filled('sort_order') ? (int) $request->sort_order : 1,
             'slug' => $slug,
             'status' => $request->status ?? 'Active',
             'visibility' => $request->visibility ?? 'Public',
@@ -82,6 +85,8 @@ class DynamicExamController extends Controller
             'conducting_body_type' => $request->conducting_body_type,
             'exam_frequency' => $request->exam_frequency,
             'conducting_authority_name' => $request->conducting_authority_name,
+            'result_status' => $request->result_status,
+            'registration_status' => $request->registration_status,
             'logo' => $logoPath,
             'cover_image' => $coverImagePath,
             'exam_source_type' => $request->exam_source_type ?? 'External',
@@ -97,20 +102,23 @@ class DynamicExamController extends Controller
         $dynamicExam->load('sections');
         $organisations = Organisation::where('status', true)->select('id', 'name')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
 
-        return view('admin.dynamic-exams.edit', compact('dynamicExam', 'organisations', 'allStages'));
+        return view('admin.dynamic-exams.edit', compact('dynamicExam', 'organisations', 'allStages', 'examCategories'));
     }
 
     public function update(Request $request, DynamicExam $dynamicExam)
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer',
             'logo' => 'nullable|image|max:2048',
             'cover_image' => 'nullable|image|max:2048',
         ]);
 
         $data = $request->only([
             'name',
+            'sort_order',
             'status',
             'visibility',
             'official_website',
@@ -120,10 +128,16 @@ class DynamicExamController extends Controller
             'conducting_body_type',
             'exam_frequency',
             'conducting_authority_name',
+            'result_status',
+            'registration_status',
             'exam_source_type',
             'owning_organisation_id',
             'about_exam'
         ]);
+
+        if ($request->filled('sort_order')) {
+            $data['sort_order'] = (int) $request->sort_order;
+        }
 
         if ($request->has('featured_exam'))
             $data['featured_exam'] = 1;
@@ -220,12 +234,15 @@ class DynamicExamController extends Controller
             // Only update allowed fields
             $dynamicExam->update(array_intersect_key($data, array_flip([
                 'name',
+                'sort_order',
                 'short_name',
                 'exam_type',
                 'exam_category',
                 'conducting_body_type',
                 'exam_frequency',
                 'conducting_authority_name',
+                'result_status',
+                'registration_status',
                 'logo',
                 'cover_image',
                 'exam_source_type',
@@ -282,8 +299,9 @@ class DynamicExamController extends Controller
         $organisations = Organisation::where('status', true)->select('id', 'name', 'organisation_type_id')->get();
         $allStages = ExamStage::where('status', true)->orderBy('sort_order')->get();
         $casteCategories = CasteCategory::where('status', true)->orderBy('name')->get();
+        $examCategories = \App\Models\ExamCategory::where('status', 1)->orderBy('title')->get();
 
-        return view('admin.dynamic-exams.data', compact('dynamicExam', 'organisations', 'allStages', 'casteCategories'));
+        return view('admin.dynamic-exams.data', compact('dynamicExam', 'organisations', 'allStages', 'casteCategories', 'examCategories'));
     }
 
     public function saveData(Request $request, DynamicExam $dynamicExam)
@@ -328,6 +346,24 @@ class DynamicExamController extends Controller
         }
 
         return redirect()->back()->with('success', 'Exam data saved successfully!');
+    }
+
+    public function updateSortOrder(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer|exists:dynamic_exams,id',
+            'sort_order' => 'required|integer',
+        ]);
+
+        $sortOrder = (int) $request->sort_order;
+        $id = (int) $request->id;
+
+        DynamicExam::where('id', $id)->update(['sort_order' => $sortOrder]);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Sort order updated successfully.'
+        ]);
     }
 
     public function destroy(DynamicExam $dynamicExam)

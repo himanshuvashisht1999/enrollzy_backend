@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('header_menus')) {
         Schema::create('header_menus', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -22,6 +23,7 @@ return new class extends Migration
 
             $table->foreign('parent_id')->references('id')->on('header_menus')->onDelete('cascade');
         });
+        }
     }
 
     /**

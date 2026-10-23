@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultants', function (Blueprint $table) {
-            $table->text('status_reason')->nullable()->after('status');
-        });
+        Schema::table('consultants', function (Blueprint $table) {});
     }
 
     /**

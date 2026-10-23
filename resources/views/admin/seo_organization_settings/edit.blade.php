@@ -6,8 +6,8 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Global SEO Organization Settings</h2>
+        <span class="badge bg-primary fs-6"><i class="fas fa-sitemap me-1"></i> Schema.org Compatible</span>
     </div>
-
 
     <form action="{{ route('admin.seo_organization.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -16,25 +16,30 @@
             <div class="card-header bg-white pb-0">
                 <ul class="nav nav-tabs card-header-tabs" id="seoTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="general-tab" data-bs-toggle="tab" href="#general" role="tab">General Info</a>
+                        <a class="nav-link active" id="general-tab" data-bs-toggle="tab" href="#general" role="tab"><i class="fas fa-building me-1"></i> General Info</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="contact-tab" data-bs-toggle="tab" href="#contact" role="tab">Contact & Address</a>
+                        <a class="nav-link" id="founders-tab" data-bs-toggle="tab" href="#founders-pane" role="tab">
+                            <i class="fas fa-users me-1"></i> Founders (<span id="founders-badge-count">{{ $founders->count() }}</span>)
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="social-tab" data-bs-toggle="tab" href="#social" role="tab">Social Links</a>
+                        <a class="nav-link" id="contact-tab" data-bs-toggle="tab" href="#contact" role="tab"><i class="fas fa-map-marker-alt me-1"></i> Contact & Address</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="images-tab" data-bs-toggle="tab" href="#images" role="tab">Logos & Images</a>
+                        <a class="nav-link" id="social-tab" data-bs-toggle="tab" href="#social" role="tab"><i class="fas fa-share-alt me-1"></i> Social Links</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="seo-tab" data-bs-toggle="tab" href="#seo" role="tab">SEO Defaults & Robots</a>
+                        <a class="nav-link" id="images-tab" data-bs-toggle="tab" href="#images" role="tab"><i class="fas fa-images me-1"></i> Logos & Images</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="analytics-tab" data-bs-toggle="tab" href="#analytics" role="tab">Analytics & Verification</a>
+                        <a class="nav-link" id="seo-tab" data-bs-toggle="tab" href="#seo" role="tab"><i class="fas fa-robot me-1"></i> SEO Defaults & Robots</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="schema-tab" data-bs-toggle="tab" href="#schema" role="tab">Schema Toggles</a>
+                        <a class="nav-link" id="analytics-tab" data-bs-toggle="tab" href="#analytics" role="tab"><i class="fas fa-chart-line me-1"></i> Analytics & Verification</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="schema-tab" data-bs-toggle="tab" href="#schema" role="tab"><i class="fas fa-code me-1"></i> Schema & JSON-LD Preview</a>
                     </li>
                 </ul>
             </div>
@@ -63,11 +68,18 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Founding Date</label>
-                                <input type="date" name="founding_date" class="form-control" value="{{ old('founding_date', $setting->founding_date ? $setting->founding_date->format('Y-m-d') : '') }}">
+                                <input type="date" name="founding_date" class="form-control" value="{{ old('founding_date', $setting->founding_date ? (is_string($setting->founding_date) ? $setting->founding_date : $setting->founding_date->format('Y-m-d')) : '') }}">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Founder Name</label>
-                                <input type="text" name="founder_name" class="form-control" value="{{ old('founder_name', $setting->founder_name) }}">
+                                <label class="form-label d-flex justify-content-between align-items-center">
+                                    <span>Founders</span>
+                                    <a href="#founders-pane" class="text-primary small text-decoration-none" onclick="document.getElementById('founders-tab').click();">+ Manage ({{ $founders->count() }})</a>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light" readonly value="{{ $founders->pluck('name')->join(', ') ?: ($setting->founder_name ?: 'No founders added yet') }}">
+                                    <button class="btn btn-outline-primary" type="button" onclick="document.getElementById('founders-tab').click();"><i class="fas fa-users me-1"></i> Edit Founders</button>
+                                </div>
+                                <small class="text-muted">Repeatable founders configured in the Founders tab for Schema.org.</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Organization Type</label>
@@ -104,7 +116,140 @@
                         </div>
                     </div>
 
-                    <!-- 2. Contact & Address -->
+                    <!-- 2. Founders (Repeatable) -->
+                    <div class="tab-pane fade" id="founders-pane" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1 text-primary"><i class="fas fa-users me-2"></i> Organization Founders</h5>
+                                <p class="text-muted small mb-0">Add each founder as an individual record. Schema.org will automatically output each founder as a distinct <code>Person</code> structured data entity with their role, profile link, image, and social references.</p>
+                            </div>
+                            <button type="button" class="btn btn-success btn-sm" id="btn-add-founder">
+                                <i class="fas fa-plus me-1"></i> Add Founder
+                            </button>
+                        </div>
+
+                        <div id="founders-container">
+                            @forelse($founders as $index => $founder)
+                            <div class="card border mb-3 founder-card" data-index="{{ $index }}">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-grip-vertical text-muted cursor-grab"></i>
+                                        <strong class="text-dark founder-title-label">Founder #{{ $index + 1 }}: {{ $founder->name }}</strong>
+                                        <span class="badge bg-secondary ms-2 founder-role-badge">{{ $founder->job_title ?: 'Founder' }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" name="founders[{{ $index }}][is_active]" value="1" {{ $founder->is_active ? 'checked' : '' }} id="founder_active_{{ $index }}">
+                                            <label class="form-check-label small" for="founder_active_{{ $index }}">Active</label>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-founder-btn" title="Remove Founder">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <input type="hidden" name="founders[{{ $index }}][id]" value="{{ $founder->id }}">
+                                    <input type="hidden" name="founders[{{ $index }}][sort_order]" value="{{ $founder->sort_order }}" class="founder-sort-order">
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Full Name *</label>
+                                            <input type="text" name="founders[{{ $index }}][name]" class="form-control founder-name-input" value="{{ old('founders.'.$index.'.name', $founder->name) }}" placeholder="e.g. Amit Sharma" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Job Title / Role</label>
+                                            <input type="text" name="founders[{{ $index }}][job_title]" class="form-control" value="{{ old('founders.'.$index.'.job_title', $founder->job_title) }}" placeholder="e.g. Co-Founder & CEO">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Profile URL (Website / Bio page)</label>
+                                            <input type="url" name="founders[{{ $index }}][profile_url]" class="form-control" value="{{ old('founders.'.$index.'.profile_url', $founder->profile_url) }}" placeholder="https://enrollzy.com/team/amit">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">LinkedIn Profile URL</label>
+                                            <input type="url" name="founders[{{ $index }}][linkedin_url]" class="form-control" value="{{ old('founders.'.$index.'.linkedin_url', $founder->linkedin_url) }}" placeholder="https://www.linkedin.com/in/amit-founder">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Profile Photo / Image</label>
+                                            <div class="d-flex align-items-center gap-3">
+                                                @if($founder->image)
+                                                <img src="{{ asset($founder->image) }}" alt="{{ $founder->name }}" class="rounded-circle border" style="width: 50px; height: 50px; object-fit: cover;">
+                                                @endif
+                                                <input type="file" name="founders[{{ $index }}][image_file]" class="form-control" accept="image/*">
+                                            </div>
+                                            <input type="hidden" name="founders[{{ $index }}][image_url]" value="{{ $founder->image }}">
+                                            <small class="text-muted">Upload an image file or leave blank to keep current.</small>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Additional Profile URLs (SameAs)</label>
+                                            <textarea name="founders[{{ $index }}][same_as]" class="form-control" rows="2" placeholder="https://twitter.com/amit, https://wikipedia.org/wiki/Amit">{{ is_array($founder->same_as) ? implode(', ', $founder->same_as) : $founder->same_as }}</textarea>
+                                            <small class="text-muted">Separate multiple URLs with commas or new lines.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @empty
+                            <div class="card border mb-3 founder-card" data-index="0">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-grip-vertical text-muted cursor-grab"></i>
+                                        <strong class="text-dark founder-title-label">Founder #1</strong>
+                                        <span class="badge bg-secondary ms-2 founder-role-badge">Founder</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" name="founders[0][is_active]" value="1" checked id="founder_active_0">
+                                            <label class="form-check-label small" for="founder_active_0">Active</label>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-founder-btn" title="Remove Founder">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <input type="hidden" name="founders[0][sort_order]" value="0" class="founder-sort-order">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Full Name *</label>
+                                            <input type="text" name="founders[0][name]" class="form-control founder-name-input" value="{{ old('founder_name', $setting->founder_name) }}" placeholder="e.g. Amit Sharma" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Job Title / Role</label>
+                                            <input type="text" name="founders[0][job_title]" class="form-control" placeholder="e.g. Co-Founder & CEO">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Profile URL (Website / Bio page)</label>
+                                            <input type="url" name="founders[0][profile_url]" class="form-control" placeholder="https://enrollzy.com/team/amit">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">LinkedIn Profile URL</label>
+                                            <input type="url" name="founders[0][linkedin_url]" class="form-control" placeholder="https://www.linkedin.com/in/amit-founder">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Profile Photo / Image</label>
+                                            <input type="file" name="founders[0][image_file]" class="form-control" accept="image/*">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-semibold">Additional Profile URLs (SameAs)</label>
+                                            <textarea name="founders[0][same_as]" class="form-control" rows="2" placeholder="https://twitter.com/amit, https://wikipedia.org/wiki/Amit"></textarea>
+                                            <small class="text-muted">Separate multiple URLs with commas or new lines.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforelse
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="btn-add-founder-bottom">
+                                <i class="fas fa-plus me-1"></i> Add Another Founder
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Contact & Address -->
                     <div class="tab-pane fade" id="contact" role="tabpanel">
                         <div class="row">
                             <h5 class="mb-3 text-primary">Contact Info</h5>
@@ -178,13 +323,13 @@
                                 <small class="text-muted">E.g., Mo-Fr 09:00-17:00</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Google Map Embed (Iframe)</label>
+                                <label class="form-label">Google Map Embed Code</label>
                                 <textarea name="google_map_embed" class="form-control" rows="3">{{ old('google_map_embed', $setting->google_map_embed) }}</textarea>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. Social Links -->
+                    <!-- 4. Social Links -->
                     <div class="tab-pane fade" id="social" role="tabpanel">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -200,7 +345,7 @@
                                 <input type="url" name="linkedin_url" class="form-control" value="{{ old('linkedin_url', $setting->linkedin_url) }}">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Twitter URL</label>
+                                <label class="form-label">Twitter / X URL</label>
                                 <input type="url" name="twitter_url" class="form-control" value="{{ old('twitter_url', $setting->twitter_url) }}">
                             </div>
                             <div class="col-md-6 mb-3">
@@ -209,14 +354,14 @@
                             </div>
                             
                             <hr class="my-4">
-                            <h5 class="mb-3 text-primary">Other Knowledge Graph Links (same_as)</h5>
-                            <div class="col-12" id="same_as_container">
-                                @if($setting->same_as && is_array($setting->same_as) && count($setting->same_as) > 0)
-                                    @foreach($setting->same_as as $link)
-                                    <div class="input-group mb-2 same-as-row">
-                                        <input type="url" name="same_as[]" class="form-control" value="{{ $link }}" placeholder="https://example.com">
-                                        <button type="button" class="btn btn-outline-danger remove-same-as"><i class="fas fa-trash"></i></button>
-                                    </div>
+                            <h5 class="mb-3 text-primary">SameAs Profile URLs</h5>
+                            <div id="same_as_container">
+                                @if(!empty($setting->same_as) && is_array($setting->same_as))
+                                    @foreach($setting->same_as as $index => $url)
+                                        <div class="input-group mb-2 same-as-row">
+                                            <input type="url" name="same_as[]" class="form-control" value="{{ $url }}" placeholder="https://example.com">
+                                            <button type="button" class="btn btn-outline-danger remove-same-as"><i class="fas fa-trash"></i></button>
+                                        </div>
                                     @endforeach
                                 @else
                                     <div class="input-group mb-2 same-as-row">
@@ -225,75 +370,86 @@
                                     </div>
                                 @endif
                             </div>
-                            <div class="col-12 mt-2">
-                                <button type="button" class="btn btn-sm btn-secondary" id="add-same-as"><i class="fas fa-plus"></i> Add Link</button>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="add-same-as"><i class="fas fa-plus"></i> Add Profile URL</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 4. Logos & Images -->
+                    <!-- 5. Logos & Images -->
                     <div class="tab-pane fade" id="images" role="tabpanel">
                         <div class="row">
-                            @php
-                                $imageFields = [
-                                    'logo' => 'Logo',
-                                    'white_logo' => 'White Logo',
-                                    'dark_logo' => 'Dark Logo',
-                                    'favicon' => 'Favicon',
-                                    'apple_touch_icon' => 'Apple Touch Icon',
-                                    'og_image' => 'General OG Image',
-                                    'default_og_image' => 'Default OG Sharing Image',
-                                    'default_twitter_image' => 'Default Twitter Sharing Image',
-                                ];
-                            @endphp
-
-                            @foreach($imageFields as $field => $label)
                             <div class="col-md-6 mb-4">
-                                <div class="card bg-light h-100">
-                                    <div class="card-body">
-                                        <label class="form-label fw-bold">{{ $label }}</label>
-                                        <input type="file" name="{{ $field }}" class="form-control mb-2" accept="image/*">
-                                        @if($setting->$field)
-                                            <div class="mt-2 text-center bg-white p-2 border rounded">
-                                                <img src="{{ asset($setting->$field) }}" alt="{{ $label }}" style="max-height: 100px; max-width: 100%; object-fit: contain;">
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
+                                <label class="form-label">Default Logo</label>
+                                <input type="file" name="logo" class="form-control mb-2">
+                                @if($setting->logo)
+                                    <img src="{{ asset($setting->logo) }}" alt="Logo" class="img-thumbnail" style="max-height: 80px;">
+                                @endif
                             </div>
-                            @endforeach
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">White Logo (For Dark Backgrounds)</label>
+                                <input type="file" name="white_logo" class="form-control mb-2">
+                                @if($setting->white_logo)
+                                    <img src="{{ asset($setting->white_logo) }}" alt="White Logo" class="img-thumbnail bg-dark" style="max-height: 80px;">
+                                @endif
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">Dark Logo (For Light Backgrounds)</label>
+                                <input type="file" name="dark_logo" class="form-control mb-2">
+                                @if($setting->dark_logo)
+                                    <img src="{{ asset($setting->dark_logo) }}" alt="Dark Logo" class="img-thumbnail" style="max-height: 80px;">
+                                @endif
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">Favicon</label>
+                                <input type="file" name="favicon" class="form-control mb-2">
+                                @if($setting->favicon)
+                                    <img src="{{ asset($setting->favicon) }}" alt="Favicon" class="img-thumbnail" style="max-height: 32px;">
+                                @endif
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">Apple Touch Icon</label>
+                                <input type="file" name="apple_touch_icon" class="form-control mb-2">
+                                @if($setting->apple_touch_icon)
+                                    <img src="{{ asset($setting->apple_touch_icon) }}" alt="Apple Touch Icon" class="img-thumbnail" style="max-height: 60px;">
+                                @endif
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">Open Graph (OG) Image</label>
+                                <input type="file" name="og_image" class="form-control mb-2">
+                                @if($setting->og_image)
+                                    <img src="{{ asset($setting->og_image) }}" alt="OG Image" class="img-thumbnail" style="max-height: 100px;">
+                                @endif
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 5. SEO Defaults & Robots -->
+                    <!-- 6. SEO Defaults & Robots -->
                     <div class="tab-pane fade" id="seo" role="tabpanel">
                         <div class="row">
-                            <h5 class="mb-3 text-primary">Search Action Settings</h5>
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label">Search URL Template</label>
-                                <input type="text" name="search_url" class="form-control" value="{{ old('search_url', $setting->search_url) }}" placeholder="https://yoursite.com/search?q={search_term_string}">
-                            </div>
-
-                            <hr class="my-4">
-                            <h5 class="mb-3 text-primary">Open Graph (Facebook/LinkedIn) Defaults</h5>
-                            <div class="col-md-12 mb-3">
+                            <h5 class="mb-3 text-primary">Default Social Share Tags</h5>
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Default OG Title</label>
                                 <input type="text" name="default_og_title" class="form-control" value="{{ old('default_og_title', $setting->default_og_title) }}">
                             </div>
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label">Default OG Description</label>
-                                <textarea name="default_og_description" class="form-control" rows="3">{{ old('default_og_description', $setting->default_og_description) }}</textarea>
-                            </div>
-
-                            <hr class="my-4">
-                            <h5 class="mb-3 text-primary">Twitter Card Defaults</h5>
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Default Twitter Title</label>
                                 <input type="text" name="default_twitter_title" class="form-control" value="{{ old('default_twitter_title', $setting->default_twitter_title) }}">
                             </div>
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Default OG Description</label>
+                                <textarea name="default_og_description" class="form-control" rows="3">{{ old('default_og_description', $setting->default_og_description) }}</textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Default Twitter Description</label>
                                 <textarea name="default_twitter_description" class="form-control" rows="3">{{ old('default_twitter_description', $setting->default_twitter_description) }}</textarea>
+                            </div>
+                            
+                            <hr class="my-4">
+                            <h5 class="mb-3 text-primary">Search Action URL</h5>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Target Search URL (For Google Sitelinks Searchbox)</label>
+                                <input type="text" name="search_url" class="form-control" value="{{ old('search_url', $setting->search_url) }}" placeholder="https://example.com/search?q={search_term_string}">
                             </div>
 
                             <hr class="my-4">
@@ -313,7 +469,7 @@
                         </div>
                     </div>
 
-                    <!-- 6. Analytics & Verification -->
+                    <!-- 7. Analytics & Verification -->
                     <div class="tab-pane fade" id="analytics" role="tabpanel">
                         <div class="row">
                             <h5 class="mb-3 text-primary">Analytics Trackers</h5>
@@ -363,7 +519,7 @@
                         </div>
                     </div>
 
-                    <!-- 7. Schema Toggles -->
+                    <!-- 8. Schema Toggles & Live Preview -->
                     <div class="tab-pane fade" id="schema" role="tabpanel">
                         <div class="row">
                             <div class="col-md-12 mb-4">
@@ -378,7 +534,7 @@
 
                             @php
                                 $schemaToggles = [
-                                    'organization_schema' => 'Organization Schema',
+                                    'organization_schema' => 'Organization Schema (with Repeatable Founders)',
                                     'search_action_schema' => 'Search Action Schema',
                                     'website_schema' => 'Website Schema',
                                     'breadcrumb_schema' => 'Breadcrumb Schema',
@@ -395,6 +551,27 @@
                                 </div>
                             </div>
                             @endforeach
+
+                            <hr class="my-4">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-2"><i class="fas fa-eye me-1"></i> Live Organization Schema.org Preview (JSON-LD)</h5>
+                                <p class="text-muted small">This is the live JSON-LD Structured Data that will be generated for search engines based on your settings and founders above:</p>
+                                @php
+                                    $schemaPreview = $setting->generateOrganizationSchema() ?? [
+                                        '@context' => 'https://schema.org',
+                                        '@type' => $setting->organization_type ?: 'Organization',
+                                        'name' => $setting->organization_name ?: 'Enrollzy',
+                                        'founder' => $founders->map(fn($f) => [
+                                            '@type' => 'Person',
+                                            'name' => $f->name,
+                                            'jobTitle' => $f->job_title,
+                                            'url' => $f->profile_url,
+                                            'sameAs' => $f->linkedin_url,
+                                        ])->values()
+                                    ];
+                                @endphp
+                                <pre class="bg-dark text-light p-3 rounded" style="max-height: 380px; overflow-y: auto; font-size: 13px;"><code>{{ json_encode($schemaPreview, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code></pre>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -406,47 +583,174 @@
         </div>
     </form>
 </div>
+
+<!-- Template for adding new founder dynamically -->
+<template id="founder-template">
+    <div class="card border mb-3 founder-card" data-index="__INDEX__">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-grip-vertical text-muted cursor-grab"></i>
+                <strong class="text-dark founder-title-label">Founder #__NUM__</strong>
+                <span class="badge bg-secondary ms-2 founder-role-badge">Founder</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="founders[__INDEX__][is_active]" value="1" checked id="founder_active___INDEX__">
+                    <label class="form-check-label small" for="founder_active___INDEX__">Active</label>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-founder-btn" title="Remove Founder">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <input type="hidden" name="founders[__INDEX__][sort_order]" value="__INDEX__" class="founder-sort-order">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Full Name *</label>
+                    <input type="text" name="founders[__INDEX__][name]" class="form-control founder-name-input" placeholder="e.g. Rahul Sharma" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Job Title / Role</label>
+                    <input type="text" name="founders[__INDEX__][job_title]" class="form-control" placeholder="e.g. Co-Founder & CTO">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Profile URL (Website / Bio page)</label>
+                    <input type="url" name="founders[__INDEX__][profile_url]" class="form-control" placeholder="https://enrollzy.com/team/rahul">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">LinkedIn Profile URL</label>
+                    <input type="url" name="founders[__INDEX__][linkedin_url]" class="form-control" placeholder="https://www.linkedin.com/in/rahul-founder">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Profile Photo / Image</label>
+                    <input type="file" name="founders[__INDEX__][image_file]" class="form-control" accept="image/*">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Additional Profile URLs (SameAs)</label>
+                    <textarea name="founders[__INDEX__][same_as]" class="form-control" rows="2" placeholder="https://twitter.com/rahul, https://crunchbase.com/person/rahul"></textarea>
+                    <small class="text-muted">Separate multiple URLs with commas or new lines.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
 @endsection
 
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('same_as_container');
-        const addButton = document.getElementById('add-same-as');
+        // SameAs Container Logic
+        const sameAsContainer = document.getElementById('same_as_container');
+        const addSameAsButton = document.getElementById('add-same-as');
 
-        addButton.addEventListener('click', function() {
-            const newRow = document.createElement('div');
-            newRow.className = 'input-group mb-2 same-as-row';
-            newRow.innerHTML = `
-                <input type="url" name="same_as[]" class="form-control" placeholder="https://example.com">
-                <button type="button" class="btn btn-outline-danger remove-same-as"><i class="fas fa-trash"></i></button>
-            `;
-            container.appendChild(newRow);
-        });
+        if (addSameAsButton && sameAsContainer) {
+            addSameAsButton.addEventListener('click', function() {
+                const newRow = document.createElement('div');
+                newRow.className = 'input-group mb-2 same-as-row';
+                newRow.innerHTML = `
+                    <input type="url" name="same_as[]" class="form-control" placeholder="https://example.com">
+                    <button type="button" class="btn btn-outline-danger remove-same-as"><i class="fas fa-trash"></i></button>
+                `;
+                sameAsContainer.appendChild(newRow);
+            });
 
-        container.addEventListener('click', function(e) {
-            if (e.target.closest('.remove-same-as')) {
-                const row = e.target.closest('.same-as-row');
-                // Don't remove if it's the only one
-                if (container.querySelectorAll('.same-as-row').length > 1) {
-                    row.remove();
-                } else {
-                    row.querySelector('input').value = '';
+            sameAsContainer.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-same-as')) {
+                    const row = e.target.closest('.same-as-row');
+                    if (sameAsContainer.querySelectorAll('.same-as-row').length > 1) {
+                        row.remove();
+                    } else {
+                        row.querySelector('input').value = '';
+                    }
                 }
+            });
+        }
+
+        // Founders Repeater Logic
+        const foundersContainer = document.getElementById('founders-container');
+        const founderTemplate = document.getElementById('founder-template');
+        const btnAddFounder = document.getElementById('btn-add-founder');
+        const btnAddFounderBottom = document.getElementById('btn-add-founder-bottom');
+        const badgeCount = document.getElementById('founders-badge-count');
+
+        function updateFounderIndices() {
+            const cards = foundersContainer.querySelectorAll('.founder-card');
+            cards.forEach((card, index) => {
+                const num = index + 1;
+                const nameInput = card.querySelector('.founder-name-input');
+                const nameVal = nameInput ? nameInput.value.trim() : '';
+                const label = card.querySelector('.founder-title-label');
+                if (label) {
+                    label.textContent = `Founder #${num}` + (nameVal ? `: ${nameVal}` : '');
+                }
+                const sortInput = card.querySelector('.founder-sort-order');
+                if (sortInput) {
+                    sortInput.value = index;
+                }
+            });
+            if (badgeCount) {
+                badgeCount.textContent = cards.length;
             }
-        });
+        }
+
+        function addFounderCard() {
+            const currentCount = foundersContainer.querySelectorAll('.founder-card').length;
+            let html = founderTemplate.innerHTML
+                .replaceAll('__INDEX__', currentCount)
+                .replaceAll('__NUM__', currentCount + 1);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html.trim();
+            const newCard = tempDiv.firstElementChild;
+            foundersContainer.appendChild(newCard);
+            updateFounderIndices();
+
+            // Focus on new name input
+            const newNameInput = newCard.querySelector('.founder-name-input');
+            if (newNameInput) newNameInput.focus();
+        }
+
+        if (btnAddFounder) btnAddFounder.addEventListener('click', addFounderCard);
+        if (btnAddFounderBottom) btnAddFounderBottom.addEventListener('click', addFounderCard);
+
+        if (foundersContainer) {
+            foundersContainer.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-founder-btn')) {
+                    const card = e.target.closest('.founder-card');
+                    if (foundersContainer.querySelectorAll('.founder-card').length > 1) {
+                        card.remove();
+                        updateFounderIndices();
+                    } else {
+                        // Clear inputs instead of deleting only card
+                        card.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]), textarea').forEach(inp => inp.value = '');
+                        updateFounderIndices();
+                    }
+                }
+            });
+
+            foundersContainer.addEventListener('input', function(e) {
+                if (e.target.classList.contains('founder-name-input')) {
+                    const card = e.target.closest('.founder-card');
+                    const index = Array.from(foundersContainer.children).indexOf(card) + 1;
+                    const val = e.target.value.trim();
+                    const label = card.querySelector('.founder-title-label');
+                    if (label) {
+                        label.textContent = `Founder #${index}` + (val ? `: ${val}` : '');
+                    }
+                }
+            });
+        }
 
         // Schema Toggles Logic
         const globalSchemaToggle = document.getElementById('schema_enabled');
         const individualSchemaToggles = document.querySelectorAll('#schema input[type="checkbox"]:not(#schema_enabled)');
 
         if (globalSchemaToggle) {
-            // Set initial state
             individualSchemaToggles.forEach(toggle => {
                 toggle.disabled = !globalSchemaToggle.checked;
             });
 
-            // Handle change event
             globalSchemaToggle.addEventListener('change', function() {
                 const isEnabled = this.checked;
                 individualSchemaToggles.forEach(toggle => {

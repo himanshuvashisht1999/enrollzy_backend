@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('consultants', function (Blueprint $table) {
-            $table->string('msme_upload')->nullable()->after('visiting_card_upload');
-            $table->string('mou_upload')->nullable()->after('msme_upload');
-        });
+        Schema::table('consultants', function (Blueprint $table) {});
     }
 
     /**

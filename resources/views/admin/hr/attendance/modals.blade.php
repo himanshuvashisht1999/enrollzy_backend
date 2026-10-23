@@ -52,7 +52,7 @@
                         <div class="mb-3">
                             <label for="workingFrom" class="form-label fw-bold small uppercase">Break for <span class="text-danger">*</span></label>
                             <select class="form-control form-select border-0 bg-light rounded-3" id="break_for" name="break_for">
-                                <option value="lunch">Lunch Break</option>
+                                {{-- <option value="lunch">Lunch Break</option> --}}
                                 <option value="personal">Personal work</option>
                             </select>
                         </div>

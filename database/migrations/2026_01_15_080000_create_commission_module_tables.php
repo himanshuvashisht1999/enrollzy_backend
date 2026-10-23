@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Commission Policies (Global & Category)
+        if (!Schema::hasTable('commission_policies')) {
         Schema::create('commission_policies', function (Blueprint $table) {
             $table->id();
             $table->string('policy_type')->default('global'); // global, category
@@ -23,8 +24,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+        }
 
         // 2. Expert Specific Commissions
+        if (!Schema::hasTable('expert_commissions')) {
         Schema::create('expert_commissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('expert_id')->constrained('experts')->onDelete('cascade');
@@ -34,8 +37,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+        }
 
         // 3. Commission Logs (Audit Trail)
+        if (!Schema::hasTable('commission_logs')) {
         Schema::create('commission_logs', function (Blueprint $table) {
             $table->id();
             $table->string('entity_type'); // Policy, ExpertCommission, Booking
@@ -46,22 +51,10 @@ return new class extends Migration
             $table->string('reason')->nullable();
             $table->timestamps();
         });
+        }
 
         // 4. Update Bookings Table (Snapshotting)
-        Schema::table('bookings', function (Blueprint $table) {
-            // Manual Override Fields (For Admin to intervene)
-            $table->string('commission_override_type')->nullable(); // percentage, flat_fee
-            $table->decimal('commission_override_value', 10, 2)->nullable();
-            $table->text('override_reason')->nullable();
-            $table->unsignedBigInteger('override_by')->nullable();
-
-            // Applied Commission Snapshot (The "Source of Truth" for this booking)
-            $table->string('applied_commission_type')->nullable(); // global, category, expert, override
-            $table->decimal('applied_commission_rate', 10, 2)->nullable(); // The value used (e.g., 20.00)
-            $table->decimal('applied_gst_rate', 5, 2)->default(18.00);
-            $table->decimal('applied_tds_rate', 5, 2)->default(10.00);
-            $table->json('commission_breakdown')->nullable(); // Stores full calculation logic in JSON
-        });
+        Schema::table('bookings', function (Blueprint $table) {});
     }
 
     /**

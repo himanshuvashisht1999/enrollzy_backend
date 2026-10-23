@@ -10,20 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('organisation_courses', function (Blueprint $table) {
-            // Remove redundant fields
-            $table->dropColumn([
-                'established_year',
-                'about_academic_unit',
-                'exams_prepared_for',
-                'courses_offered',
-                'target_classes'
-            ]);
-
-            // Add new fields
-            $table->json('course_languages')->nullable()->after('language_id');
-            $table->decimal('total_fees', 10, 2)->nullable()->after('course_languages');
-        });
+        Schema::table('organisation_courses', function (Blueprint $table) {});
     }
 
     public function down(): void
@@ -31,11 +18,11 @@ return new class extends Migration {
         Schema::table('organisation_courses', function (Blueprint $table) {
             $table->dropColumn(['course_languages', 'total_fees']);
 
-            $table->string('established_year')->nullable();
-            $table->text('about_academic_unit')->nullable();
-            $table->json('exams_prepared_for')->nullable();
-            $table->json('courses_offered')->nullable();
-            $table->json('target_classes')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'established_year')) $table->string('established_year')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'about_academic_unit')) $table->text('about_academic_unit')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'exams_prepared_for')) $table->json('exams_prepared_for')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'courses_offered')) $table->json('courses_offered')->nullable();
+            if (!Schema::hasColumn('organisation_courses', 'target_classes')) $table->json('target_classes')->nullable();
         });
     }
 };

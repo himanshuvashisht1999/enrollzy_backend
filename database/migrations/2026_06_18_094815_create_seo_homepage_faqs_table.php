@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('seo_homepage_faqs')) {
         Schema::create('seo_homepage_faqs', function (Blueprint $table) {
             $table->id();
             $table->string('question');
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

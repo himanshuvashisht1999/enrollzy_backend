@@ -11,22 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('campuses', function (Blueprint $table) {
-            // Location
-            $table->string('nearest_landmark')->nullable();
-            
-            // Physical Infrastructure (Schools)
-            $table->boolean('science_labs_available')->default(false);
-            $table->boolean('computer_labs_available')->default(false);
-            $table->boolean('playground_available')->default(false);
-            
-            // Transport
-            $table->integer('bus_fleet_size')->nullable();
-            $table->boolean('gps_enabled_buses')->default(false);
-            
-            // Safety
-            $table->boolean('visitor_management_system')->default(false);
-        });
+        Schema::table('campuses', function (Blueprint $table) {});
     }
 
     /**

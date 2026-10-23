@@ -11,26 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('university_courses', function (Blueprint $table) {
-            $table->text('admission_process')->nullable();
-            $table->boolean('provisional_admission')->default(false);
-            $table->text('eligibility')->nullable();
-            $table->text('fees_structure')->nullable(); // Explicit fees structure explanation
-            $table->enum('roi', ['Low', 'Medium', 'High'])->nullable();
-            $table->text('curriculum')->nullable();
-            $table->text('career_prospects')->nullable(); // Fixed typo 'Carrier' to 'Career'
-            $table->text('placement_details')->nullable();
-            
-            // Foreign Keys for Master Tables
-            $table->foreignId('program_level_id')->nullable()->constrained('program_levels')->nullOnDelete();
-            $table->foreignId('stream_offered_id')->nullable()->constrained('stream_offereds')->nullOnDelete();
-            $table->foreignId('discipline_id')->nullable()->constrained('disciplines')->nullOnDelete();
-            $table->foreignId('specialization_id')->nullable()->constrained('specializations')->nullOnDelete();
-
-            $table->decimal('rating', 3, 1)->nullable(); // e.g. 4.5
-            $table->text('industrial_collaboration')->nullable();
-            $table->text('internship_ranking')->nullable();
-        });
+        Schema::table('university_courses', function (Blueprint $table) {});
     }
 
     /**

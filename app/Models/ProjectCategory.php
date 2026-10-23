@@ -15,4 +15,9 @@ class ProjectCategory extends Model
     public $timestamps = true;
     protected $guarded = ['id'];
     protected $dates = ['deleted_at'];
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'category_id');
+    }
 }

@@ -5,9 +5,20 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">All Organisations</h4>
-                        <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h4 class="card-title mb-0">All Organisations <span class="badge bg-secondary ms-2 fs-6">{{ $organisations->total() }}</span></h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('admin.ai-organisations.update') }}" class="btn btn-outline-primary shadow-sm">
+                                <i class="fas fa-robot me-1"></i> Update via Bot
+                            </a>
+                            <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
+                                <i class="fas fa-magic me-1"></i> Auto-Create via AI
+                            </a>
+                            <a href="{{ route('admin.ai-organisations.targeted-add') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); border: none;" title="Targeted incremental addition of Campuses, Departments, or Courses">
+                                <i class="fas fa-layer-group me-1"></i> Add via AI
+                            </a>
+                            <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <form action="" method="GET" class="mb-3">
@@ -49,7 +60,9 @@
                                     <th>Organisation Name</th>
                                     <th>Type</th>
                                     <th>Brand Type</th>
-                                    <th>Central Authority</th>
+                                    <th class="text-center">Campuses</th>
+                                    <th class="text-center">Departments</th>
+                                    <th class="text-center">Courses</th>
                                     <th>Head Office</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
@@ -72,7 +85,35 @@
                                                 -
                                             @endif
                                         </td>
-                                        <td>{{ $uni->central_authority ?? '-' }}</td>
+                                        <td class="text-center">
+                                            @php
+                                                $isELearningOrg = ($uni->organisation_type_id == 9) || (isset($uni->organisationType) && (str_contains(strtolower($uni->organisationType->title), 'e-learning') || str_contains(strtolower($uni->organisationType->title), 'elearning')));
+                                            @endphp
+                                            @if($isELearningOrg)
+                                                <span class="text-muted">-</span>
+                                            @else
+                                                <a href="{{ route('admin.organisations.campuses.index', $uni->id) }}"
+                                                    class="badge bg-warning text-dark text-decoration-none px-2 py-1" title="View Campuses">
+                                                    <i class="fas fa-city me-1"></i>{{ $uni->campuses_count }}
+                                                </a>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($isELearningOrg)
+                                                <span class="text-muted">-</span>
+                                            @else
+                                                <a href="{{ route('admin.departments.index', ['organisation_id' => $uni->id]) }}"
+                                                    class="badge bg-primary text-white text-decoration-none px-2 py-1" title="View Departments">
+                                                    <i class="fas fa-building me-1"></i>{{ $uni->departments_count }}
+                                                </a>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{{ route('admin.organisation-courses.index', ['organisation_id' => $uni->id]) }}"
+                                                class="badge bg-success text-white text-decoration-none px-2 py-1" title="View Courses">
+                                                <i class="fas fa-graduation-cap me-1"></i>{{ $uni->courses_count }}
+                                            </a>
+                                        </td>
                                         <td>{{ $uni->head_office_location ?? '-' }}</td>
                                         <td class="text-end text-nowrap">
                                             <form action="{{ route('admin.organisations.toggle-status', $uni->id) }}" method="POST" class="d-inline" title="{{ $uni->status ? 'Unpublish' : 'Publish' }}">
@@ -82,16 +123,16 @@
                                                     <i class="fas {{ $uni->status ? 'fa-eye' : 'fa-eye-slash' }}"></i>
                                                 </button>
                                             </form>
-                                            <a href="{{ route('admin.organisations.campuses.index', $uni->id) }}"
-                                                class="btn btn-sm btn-warning text-dark me-2" title="Campuses">
-                                                <i class="fas fa-city"></i>
+                                            <a href="{{ route('admin.ai-organisations.update', ['org_id' => $uni->id]) }}"
+                                                class="btn btn-sm btn-primary text-white me-2" title="Update via Bot">
+                                                <i class="fas fa-robot"></i>
                                             </a>
                                             <a href="{{ route('admin.organisations.edit', $uni->id) }}"
                                                 class="btn btn-sm btn-info text-white me-2" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <form action="{{ route('admin.organisations.destroy', $uni->id) }}" method="POST"
-                                                class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                                class="d-inline" onsubmit="return confirm('Are you sure you want to delete this organisation? All its campuses, departments, and courses will also be deleted.');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -102,7 +143,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-4">No organisations found.</td>
+                                        <td colspan="9" class="text-center py-4">No organisations found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('company_marquees', function (Blueprint $table) {
-            $table->id();
-            $table->string('logo')->nullable();
-            $table->string('name')->nullable();
-            $table->string('heading')->nullable();
-            $table->string('subheading')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->boolean('status')->default(1);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('company_marquees')) {
+            Schema::create('company_marquees', function (Blueprint $table) {
+                $table->id();
+                $table->string('logo')->nullable();
+                $table->string('name')->nullable();
+                $table->string('heading')->nullable();
+                $table->string('subheading')->nullable();
+                $table->integer('sort_order')->default(0);
+                $table->boolean('status')->default(1);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

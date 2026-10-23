@@ -166,7 +166,7 @@
                                                 {{ $inv->invoice_number }}
                                             </a>
                                         </td>
-                                        <td>{{ $inv->organisation->name ?? 'N/A' }}</td>
+                                        <td>{{ $inv->recipient_name }}</td>
                                         <td>{{ $inv->issue_date ? $inv->issue_date->format('d M, Y') : 'N/A' }}</td>
                                         <td>
                                             <span
@@ -225,7 +225,7 @@
                                                 {{ $payment->invoice->invoice_number }}
                                             </a>
                                         </td>
-                                        <td>{{ $payment->invoice->organisation->name ?? 'N/A' }}</td>
+                                        <td>{{ $payment->invoice->recipient_name ?? 'N/A' }}</td>
                                         <td>{{ $payment->payment_date->format('d M, Y') }}</td>
                                         <td>
                                             <span

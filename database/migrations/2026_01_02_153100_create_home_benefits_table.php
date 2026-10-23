@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('home_benefits')) {
         Schema::create('home_benefits', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

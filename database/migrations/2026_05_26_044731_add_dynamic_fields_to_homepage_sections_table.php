@@ -11,12 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('homepage_sections', function (Blueprint $table) {
-            $table->string('title')->nullable()->after('name');
-            $table->text('subtitle')->nullable()->after('title');
-            $table->string('cta_title')->nullable()->after('subtitle');
-            $table->string('cta_url')->nullable()->after('cta_title');
-        });
+        Schema::table('homepage_sections', function (Blueprint $table) {});
     }
 
     /**

@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('dynamic_exam_sections', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('dynamic_exam_id')->constrained()->onDelete('cascade');
-            $table->string('heading');
-            $table->json('content')->nullable();
-            $table->integer('order')->default(0);
-            $table->boolean('status')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('dynamic_exam_sections')) {
+            Schema::create('dynamic_exam_sections', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('dynamic_exam_id')->constrained()->onDelete('cascade');
+                $table->string('heading');
+                $table->json('content')->nullable();
+                $table->integer('order')->default(0);
+                $table->boolean('status')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

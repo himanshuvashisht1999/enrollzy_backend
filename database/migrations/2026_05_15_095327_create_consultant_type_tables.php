@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('consultant_types')) {
         Schema::create('consultant_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -18,7 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->timestamps();
         });
+        }
 
+        if (!Schema::hasTable('consultant_statuses')) {
         Schema::create('consultant_statuses', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -26,14 +29,18 @@ return new class extends Migration
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->timestamps();
         });
+        }
 
+        if (!Schema::hasTable('consultant_access_levels')) {
         Schema::create('consultant_access_levels', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->timestamps();
         });
+        }
 
+        if (!Schema::hasTable('consultant_lead_visibilities')) {
         Schema::create('consultant_lead_visibilities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -41,6 +48,7 @@ return new class extends Migration
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -37,7 +37,7 @@
                                     $remaining = $inv->total_amount - $paid;
                                 @endphp
                                 <option value="{{ $inv->id }}" {{ old('billing_invoice_id', $selectedInvoiceId) == $inv->id ? 'selected' : '' }}>
-                                    {{ $inv->invoice_number }} - {{ $inv->organisation->name ?? 'N/A' }} 
+                                    {{ $inv->invoice_number }} - {{ $inv->recipient_name }} 
                                     (Total: ₹{{ number_format($inv->total_amount, 2) }}, Due: ₹{{ number_format($remaining, 2) }})
                                 </option>
                             @endforeach

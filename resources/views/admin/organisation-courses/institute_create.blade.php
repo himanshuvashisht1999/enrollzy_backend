@@ -97,14 +97,24 @@
             </div>
 
             <div class="col-md-12">
-                <label>Target Classes</label><br>
-                @foreach(['9','10','11','12','Dropper'] as $class)
-                    <label class="me-3">
-                        <input type="checkbox" name="target_classes[]" value="{{ $class }}"
-                               {{ in_array($class,$targets)?'checked':'' }}>
-                        {{ $class }}
-                    </label>
-                @endforeach
+                <label class="form-label fw-bold">Target Classes</label><br>
+                @php
+                    $classesList = isset($academicClasses) && $academicClasses->isNotEmpty()
+                        ? $academicClasses->pluck('name')->toArray()
+                        : \App\Models\AcademicClass::where('status', 1)->orderBy('sort_order')->orderBy('id')->pluck('name')->toArray();
+                    if (empty($classesList)) {
+                        $classesList = ['Playgroup', 'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'];
+                    }
+                @endphp
+                <div class="d-flex flex-wrap gap-2 mt-1">
+                    @foreach($classesList as $class)
+                        <label class="form-check-label d-inline-flex align-items-center me-3 mb-2">
+                            <input class="form-check-input me-1" type="checkbox" name="target_classes[]" value="{{ $class }}"
+                                   {{ in_array($class, $targets) ? 'checked' : '' }}>
+                            <span>{{ $class }}</span>
+                        </label>
+                    @endforeach
+                </div>
             </div>
 
             <div class="col-md-6">
