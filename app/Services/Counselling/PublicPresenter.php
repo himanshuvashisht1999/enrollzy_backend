@@ -77,6 +77,9 @@ class PublicPresenter
             'now' => $this->now($cycle, $bar),
             'quotas' => $cycle ? $this->cycleQuotas($cycle) : [],
             'colleges_count' => $cycle ? $this->collegeCount($cycle) : 0,
+            'seats' => $cycle ? $this->seatTotal($cycle) : null,
+            'rounds' => $cycle ? $this->roundSpans($cycle) : [],
+            'course_categories' => $this->names('exam_categories', $c->course_categories),
             'url' => $this->frontend('counselling/' . $c->slug),
             'api_url' => route('api.v1.counselling.show', $c->slug),
         ];
@@ -242,6 +245,49 @@ class PublicPresenter
     private function collegeCount(CounsellingCycle $cycle): int
     {
         return $this->memo['colleges'][$cycle->id] ??= (int) Participant::where('cycle_id', $cycle->id)->distinct()->count('organisation_id');
+    }
+
+    /** Seats in the latest round that has a live seat matrix (null when no seat matrix is published). */
+    private function seatTotal(CounsellingCycle $cycle): ?int
+    {
+        return $this->memo['seats'][$cycle->id] ??= (function () use ($cycle) {
+            $live = SeatMatrixVersion::whereIn('round_id', $cycle->rounds()->pluck('id'))->where('is_live', true)
+                ->join('cns_rounds', 'cns_rounds.id', '=', 'cns_seat_matrix_versions.round_id')->orderByDesc('cns_rounds.sort_order')
+                ->first(['cns_seat_matrix_versions.id']);
+            return $live ? (int) SeatMatrixRow::where('version_id', $live->id)->sum('seats') : null;
+        })();
+    }
+
+    /**
+     * Each round with the span of its dates (first start to last end of its events) and where it stands today:
+     * done | live | upcoming | tba. For lists ("Round 2 · ends in 4 days") and the rounds strip on the page.
+     */
+    public function roundSpans(CounsellingCycle $cycle): array
+    {
+        return $this->memo['spans'][$cycle->id] ??= (function () use ($cycle) {
+            $rounds = $cycle->rounds()->get(['id', 'name', 'sort_order', 'round_status']);
+            $span = DB::table('exm_cycle_events')->whereIn('round_id', $rounds->pluck('id'))->whereNotNull('start_at')->where('date_precision', '!=', 'tba')
+                ->groupBy('round_id')->selectRaw('round_id, min(start_at) as s, max(coalesce(extended_end_at, end_at, start_at)) as e')->get()->keyBy('round_id');
+            $now = now();
+            return $rounds->map(function ($r) use ($span, $now) {
+                $s = isset($span[$r->id]) ? \Carbon\Carbon::parse($span[$r->id]->s) : null;
+                $e = isset($span[$r->id]) ? \Carbon\Carbon::parse($span[$r->id]->e)->endOfDay() : null;
+                $state = !$s ? 'tba' : ($now->lt($s) ? 'upcoming' : ($now->gt($e) ? 'done' : 'live'));
+                return ['id' => $r->id, 'name' => $r->name, 'order' => $r->sort_order, 'start' => $s?->toDateString(), 'end' => $e?->toDateString(), 'state' => $state];
+            })->values()->all();
+        })();
+    }
+
+    /** Light links to the public counsellings that use an exam (exam lists, chips). */
+    public function examCounsellingLinks(int $examId): array
+    {
+        return $this->memo['links'][$examId] ??= (function () use ($examId) {
+            $ids = \App\Models\Counselling\CounsellingExam::where('exam_id', $examId)->orderBy('sort_order')->pluck('counselling_id');
+            return $this->visible()->whereIn('id', $ids)->get(['id', 'name', 'short_name', 'slug', 'level', 'states'])
+                ->sortBy(fn ($c) => ($c->level === 'state' ? 1 : 0) . $c->name)
+                ->map(fn ($c) => ['name' => $c->name, 'short_name' => $c->short_name, 'slug' => $c->slug, 'level' => $c->level, 'states' => $c->states ?? [],
+                    'url' => $this->frontend('counselling/' . $c->slug)])->values()->all();
+        })();
     }
 
     private function round(Counselling $c, CounsellingCycle $cycle, Round $r): array
@@ -583,7 +629,8 @@ class PublicPresenter
                     'changed' => isset($changedKeys[$key]),
                 ];
             })->all(),
-            'categories' => $categories->map(fn ($cat) => ['id' => $cat->id, 'name' => $cat->name, 'short_name' => $cat->short_name ?: $cat->name])->all(),
+            'categories' => $categories->map(fn ($cat) => ['id' => $cat->id, 'name' => $cat->name, 'short_name' => $cat->short_name ?: $cat->name,
+                'seats' => (int) DB::table('cns_seat_matrix_rows')->where('version_id', $live->id)->where('category_id', $cat->id)->sum('seats')])->all(),
             'meta' => $this->meta($page) + [
                 'round' => ['id' => $round->id, 'name' => $round->name],
                 'version' => ['version_no' => $live->version_no, 'label' => $live->label, 'published_on' => $live->published_on?->toDateString(),
@@ -670,7 +717,7 @@ class PublicPresenter
             ->join('cns_rounds', 'cns_rounds.id', '=', 'cns_cutoffs.round_id')
             ->leftJoin('cns_participants', fn ($j) => $j->on('cns_participants.organisation_id', '=', 'cns_cutoffs.organisation_id')
                 ->on('cns_participants.course_id', '=', 'cns_cutoffs.course_id')->on('cns_participants.quota_id', '=', 'cns_cutoffs.quota_id')->where('cns_participants.cycle_id', $cycle->id))
-            ->select('cns_cutoffs.*', 'organisations.name as org_name', 'organisations.slug as org_slug', 'courses.name as course_name', 'courses.slug as course_slug',
+            ->select('cns_cutoffs.*', 'cns_rounds.sort_order as round_sort', 'organisations.name as org_name', 'organisations.slug as org_slug', 'courses.name as course_name', 'courses.slug as course_slug',
                 'cns_quotas.name as quota_name', 'cns_categories.name as category_name', 'exm_exams.name as exam_name', 'cns_rounds.name as round_name', 'cns_participants.institute_type',
                 'cns_participants.annual_tuition_fee');
 
@@ -704,20 +751,22 @@ class PublicPresenter
         };
         $page = $q->orderBy('cns_cutoffs.id')->paginate($perPage)->withQueryString();
         $campus = $this->campusMap($page->getCollection()->pluck('organisation_id')->all());
+        $previous = !empty($f['compare']) ? $this->previousClosing($c, $cycle, $page->getCollection()) : [];
 
         $ranks = DB::table('cns_cutoffs')->whereIn('round_id', $roundIds);
         return [
             'data' => $page->getCollection()->map(fn ($r) => [
                 'college' => ['id' => $r->organisation_id, 'name' => $r->org_name, 'slug' => $r->org_slug, 'city' => $campus[$r->organisation_id]['city'] ?? null, 'state' => $campus[$r->organisation_id]['state'] ?? null],
                 'course' => ['id' => $r->course_id, 'name' => $r->course_name, 'slug' => $r->course_slug],
-                'round' => ['id' => $r->round_id, 'name' => $r->round_name], 'exam' => $r->exam_name, 'quota' => $r->quota_name, 'category' => $r->category_name,
+                'round' => ['id' => $r->round_id, 'name' => $r->round_name], 'exam' => $r->exam_name, 'quota' => $r->quota_name, 'quota_id' => $r->quota_id, 'category' => $r->category_name, 'category_id' => $r->category_id,
                 'gender' => $r->gender ?: 'neutral', 'pwd' => (bool) $r->pwd, 'institute_type' => CnsBlocks::INSTITUTE_TYPES[$r->institute_type] ?? null,
                 'rank_type' => $r->rank_type, 'rank_type_label' => Cutoff::RANK_TYPES[$r->rank_type] ?? $r->rank_type,
                 'higher_is_worse' => in_array($r->rank_type, Cutoff::HIGHER_IS_WORSE, true),
                 'opening_value' => $r->opening_value !== null ? (float) $r->opening_value : null, 'closing_value' => $r->closing_value !== null ? (float) $r->closing_value : null,
                 'annual_tuition_fee' => $r->annual_tuition_fee !== null ? (float) $r->annual_tuition_fee : null,
-            ])->all(),
-            'meta' => $this->meta($page) + ['cycle' => ['year' => $cycle->year, 'session_label' => $cycle->session_label]],
+            ] + (!empty($f['compare']) ? ['previous_closing' => $previous[$this->cutoffKey($r, $r->round_sort)] ?? null] : []))->all(),
+            'meta' => $this->meta($page) + ['cycle' => ['year' => $cycle->year, 'session_label' => $cycle->session_label]]
+                + (!empty($f['compare']) ? ['previous_year' => $this->previousCycle($c, $cycle)?->year] : []),
             'filters' => [
                 'rounds' => $cycle->rounds()->get(['id', 'name'])->map(fn ($r) => ['id' => $r->id, 'name' => $r->name,
                     'cutoffs' => (int) DB::table('cns_cutoffs')->where('round_id', $r->id)->count()])->all(),
@@ -728,6 +777,63 @@ class PublicPresenter
                 'rank_types' => collect(Cutoff::RANK_TYPES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values()->all(),
                 'institute_types' => collect(CnsBlocks::INSTITUTE_TYPES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values()->all(),
             ],
+        ];
+    }
+
+    /** The public cycle of the year before (for "compared with last year"). */
+    public function previousCycle(Counselling $c, CounsellingCycle $cycle): ?CounsellingCycle
+    {
+        return $this->memo['prev'][$cycle->id] ??= CounsellingCycle::where('counselling_id', $c->id)->where('is_public', true)->where('year', '<', $cycle->year)
+            ->orderByDesc('year')->orderByDesc('id')->first();
+    }
+
+    /** Same seat (college, course, quota, category, gender, PwD, rank type) and same round position. */
+    private function cutoffKey($r, $roundOrder): string
+    {
+        return implode('|', [$r->organisation_id, $r->course_id, $r->quota_id, $r->category_id, $r->gender ?: '-', (int) $r->pwd, $r->rank_type, $roundOrder]);
+    }
+
+    /** Last year's closing value for each of these cutoff rows, matched by seat and by the round's position. */
+    private function previousClosing(Counselling $c, CounsellingCycle $cycle, Collection $rows): array
+    {
+        $prev = $this->previousCycle($c, $cycle);
+        if (!$prev || $rows->isEmpty()) return [];
+        $rounds = $prev->rounds()->get(['id', 'sort_order'])->pluck('sort_order', 'id');
+        $out = [];
+        DB::table('cns_cutoffs')->whereIn('round_id', $rounds->keys())->whereIn('organisation_id', $rows->pluck('organisation_id')->unique())
+            ->whereIn('course_id', $rows->pluck('course_id')->unique())->get()
+            ->each(function ($p) use (&$out, $rounds) { $out[$this->cutoffKey($p, $rounds[$p->round_id] ?? null)] = $p->closing_value !== null ? (float) $p->closing_value : null; });
+        return $out;
+    }
+
+    /**
+     * One seat's cutoffs over time (GET /counselling/{slug}/cutoff-trend): the closing value in every round of this year
+     * and of the year before (for the chosen category), and in every category for the chosen round. The seat is
+     * organisation + course (+ quota, gender, PwD, rank type).
+     */
+    public function cutoffTrend(Counselling $c, CounsellingCycle $cycle, array $f): array
+    {
+        $seat = fn ($q) => $q->where('cns_cutoffs.organisation_id', (int) ($f['organisation'] ?? 0))->where('cns_cutoffs.course_id', (int) ($f['course'] ?? 0))
+            ->when(!empty($f['quota']), fn ($q) => $q->where('cns_cutoffs.quota_id', (int) $f['quota']))
+            ->when(!empty($f['rank_type']), fn ($q) => $q->where('cns_cutoffs.rank_type', $f['rank_type']))
+            ->when(($f['gender'] ?? 'neutral') === 'neutral', fn ($q) => $q->whereNull('cns_cutoffs.gender'), fn ($q) => $q->where('cns_cutoffs.gender', $f['gender']))
+            ->where('cns_cutoffs.pwd', !empty($f['pwd']) && $f['pwd'] !== '0' ? 1 : 0);
+        $line = function (CounsellingCycle $cy) use ($seat, $f) {
+            $rounds = $cy->rounds()->get(['id', 'name', 'sort_order']);
+            $vals = $seat(DB::table('cns_cutoffs')->whereIn('cns_cutoffs.round_id', $rounds->pluck('id')))
+                ->when(!empty($f['category']), fn ($q) => $q->where('cns_cutoffs.category_id', (int) $f['category']))->get()->groupBy('round_id');
+            return $rounds->map(fn ($r) => ['name' => $r->name, 'order' => $r->sort_order,
+                'closing' => ($v = $vals->get($r->id)?->first()) && $v->closing_value !== null ? (float) $v->closing_value : null])->values()->all();
+        };
+        $prev = $this->previousCycle($c, $cycle);
+        $roundId = (int) ($f['round'] ?? 0) ?: $this->latestCutoffRound($cycle)?->id;
+        $byCat = $roundId ? $seat(DB::table('cns_cutoffs')->where('cns_cutoffs.round_id', $roundId))->join('cns_categories', 'cns_categories.id', '=', 'cns_cutoffs.category_id')
+            ->orderBy('cns_categories.sort_order')->get(['cns_categories.id', 'cns_categories.name', 'cns_cutoffs.closing_value'])
+            ->unique('id')->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'closing' => $r->closing_value !== null ? (float) $r->closing_value : null])->values()->all() : [];
+        return [
+            'year' => $cycle->year, 'rounds' => $line($cycle),
+            'previous_year' => $prev?->year, 'previous_rounds' => $prev ? $line($prev) : [],
+            'round' => $roundId, 'categories' => $byCat,
         ];
     }
 

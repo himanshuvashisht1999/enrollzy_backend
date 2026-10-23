@@ -146,12 +146,31 @@ class PublicExamPresenter
             'logo_url' => $this->cns->file($exam->logo), 'is_featured' => (bool) $exam->featured,
             'cycle' => $cycle ? ['year' => $cycle->year, 'session_label' => $cycle->session_label, 'status' => $cycle->cycle_status] : null,
             'status' => $status,
+            'key_dates' => $cycle ? $this->keyDates($cycle) : [],
+            'counsellings' => $this->cns->examCounsellingLinks($exam->id),
             'sections' => [
                 'dates' => $cycle ? $cycle->events()->exists() : false, 'eligibility' => $has('exm_eligibilities'), 'pattern' => $has('exm_patterns'),
                 'syllabus' => $has('exm_syllabus'), 'faqs' => $has('exm_faqs'),
                 'counselling' => DB::table('cns_counselling_exams')->where('exam_id', $exam->id)->exists(),
             ],
         ];
+    }
+
+    /**
+     * Registration window, exam date and result date of a cycle as plain dates, for list columns and countdowns.
+     * Picks the same event as the status line: the open one, else the next upcoming one, else the latest.
+     */
+    private function keyDates(Cycle $cycle): array
+    {
+        $events = $cycle->events()->with('type')->get();
+        $out = [];
+        foreach (['registration' => 'registration', 'exam' => 'exam-date', 'result' => 'result'] as $k => $slug) {
+            $list = $events->filter(fn ($e) => $e->type?->slug === $slug && $e->start_at && $e->date_precision !== 'tba');
+            $e = $list->first(fn ($e) => $e->status === 'open') ?? $list->filter(fn ($e) => $e->status === 'upcoming')->sortBy('start_at')->first() ?? $list->sortByDesc('start_at')->first();
+            $out[$k] = $e ? ['start' => $e->start_at->toDateString(), 'end' => ($e->extended_end_at ?? $e->end_at)?->toDateString(),
+                'precision' => $e->date_precision, 'link_url' => $this->cns->safeUrl($e->link_url)] : null;
+        }
+        return $out;
     }
 
     /**
@@ -200,7 +219,7 @@ class PublicExamPresenter
             ],
             'available_years' => Cycle::where('exam_id', $exam->id)->where('is_public', true)->orderByDesc('year')->pluck('year')->unique()->values()->all(),
             'cycle' => null, 'status_card' => [], 'dates' => [], 'stages' => [],
-            'eligibility' => [], 'pattern' => [], 'syllabus' => [], 'fees' => [], 'documents' => [], 'faqs' => [], 'papers' => [],
+            'eligibility' => [], 'pattern' => [], 'syllabus' => [], 'fees' => [], 'documents' => [], 'faqs' => [], 'papers' => [], 'centres' => [], 'extra' => [],
             'counsellings' => $this->cns->examCounsellings($exam->id),
             'last_verified_at' => null,
         ];
@@ -251,6 +270,18 @@ class PublicExamPresenter
             $payload['documents'] = $rows('exm_documents')->map(fn ($r) => ['stage' => $stage($r), 'name' => $r->name, 'is_mandatory' => (bool) $r->is_mandatory, 'notes' => $r->notes])->all();
             $payload['faqs'] = DB::table('exm_faqs')->where('cycle_id', $cycle->id)->orderBy('sort_order')->orderBy('id')->get()
                 ->map(fn ($r) => ['question' => $r->question, 'answer' => $r->answer])->all();
+            // exam cities, by state (abroad listed by country)
+            $payload['centres'] = DB::table('exm_centres')->where('exm_centres.cycle_id', $cycle->id)->leftJoin('exm_cities', 'exm_cities.id', '=', 'exm_centres.city_id')
+                ->get(['exm_cities.name', 'exm_cities.state', 'exm_centres.country'])
+                ->groupBy(fn ($r) => $r->country && strcasecmp($r->country, 'India') !== 0 ? 'Outside India' : ($r->state ?: 'Other'))
+                ->map(fn ($g, $state) => ['state' => $state, 'cities' => $g->pluck('name')->filter()->unique()->values()->all()])
+                ->sortByDesc(fn ($s) => count($s['cities']))->values()->all();
+            // the exam's own extra fields (admit card, exam day rules, helpline...), only the filled ones
+            $payload['extra'] = DB::table('exm_custom_fields')->where('exm_custom_fields.exam_id', $exam->id)->whereNull('exm_custom_fields.deleted_at')
+                ->join('exm_custom_values', fn ($j) => $j->on('exm_custom_values.field_id', '=', 'exm_custom_fields.id')->where('exm_custom_values.cycle_id', $cycle->id))
+                ->orderBy('exm_custom_fields.sort_order')->get(['exm_custom_fields.key', 'exm_custom_fields.label', 'exm_custom_fields.type', 'exm_custom_values.value'])
+                ->filter(fn ($r) => trim(strip_tags((string) $r->value)) !== '')
+                ->map(fn ($r) => ['key' => $r->key, 'label' => $r->label, 'type' => $r->type, 'value' => $r->value])->values()->all();
             $payload['papers'] = DB::table('exm_papers')->where('cycle_id', $cycle->id)->orderByDesc('year')->orderBy('id')->get()
                 ->map(fn ($r) => ['title' => $r->title, 'year' => $r->year, 'shift' => $r->shift, 'url' => $this->cns->file($r->file)])->all();
         }

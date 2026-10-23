@@ -20,6 +20,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('counselling/{slug}', [CounsellingApiController::class, 'show'])->name('counselling.show');
         Route::get('counselling/{slug}/institutes', [CounsellingApiController::class, 'institutes'])->name('counselling.institutes');
         Route::get('counselling/{slug}/cutoffs', [CounsellingApiController::class, 'cutoffs'])->name('counselling.cutoffs');
+        Route::get('counselling/{slug}/cutoff-trend', [CounsellingApiController::class, 'cutoffTrend'])->name('counselling.cutoff-trend');
         Route::get('counselling/{slug}/seat-matrix', [CounsellingApiController::class, 'seatMatrix'])->name('counselling.seat-matrix');
         Route::get('exams', [ExamApiController::class, 'index'])->name('exams.index');
         Route::get('exam-lookup', [ExamApiController::class, 'lookup'])->name('exams.lookup');

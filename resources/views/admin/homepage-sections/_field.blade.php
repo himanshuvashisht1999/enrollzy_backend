@@ -38,10 +38,21 @@
         </div>
         @break
 
+    @case('select')
+        <div class="{{ $depth ? 'mb-2' : 'mb-3' }}">
+            <label class="form-label {{ $depth ? 'small fw-bold mb-1' : 'fw-bold' }}" for="{{ $id }}">{{ $f['label'] }}</label>
+            <select class="form-select {{ $depth ? 'form-select-sm' : '' }}" id="{{ $id }}" name="{{ $name }}">
+                @foreach($f['options'] as $k => $label)<option value="{{ $k }}" @selected((string) $value === (string) $k)>{{ $label }}</option>@endforeach
+            </select>
+            @if(!empty($f['help']))<div class="form-text">{{ $f['help'] }}</div>@endif
+        </div>
+        @break
+
     @case('repeater')
         @php($rows = array_values(is_array($value) ? $value : []))
         <div class="mb-4 hs-repeater" data-depth="{{ $depth }}">
             <label class="form-label fw-bold d-block">{{ $f['label'] }}</label>
+            @if(!empty($f['help']))<div class="form-text mt-0 mb-2">{{ $f['help'] }}</div>@endif
             <div class="hs-rows">
                 @foreach($rows as $i => $row)
                     @include('admin.homepage-sections._row', ['fields' => $f['fields'], 'prefix' => $name . '[' . $i . ']', 'row' => is_array($row) ? $row : [], 'depth' => $depth])

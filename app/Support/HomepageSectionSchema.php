@@ -49,7 +49,17 @@ class HomepageSectionSchema
                         'label' => ['type' => 'text', 'label' => 'Text'], 'url' => ['type' => 'text', 'label' => 'Link', 'placeholder' => '/search?q=MBA or #online']]],
                     'popular_live_exam' => ['type' => 'toggle', 'default' => true, 'label' => 'Also show the first exam from "Happening now" as a chip'],
                     'assurances' => ['type' => 'list', 'label' => 'Ticks under the search box', 'help' => 'One per line.'],
-                    'show_live' => ['type' => 'toggle', 'default' => true, 'label' => 'Show the "open right now" cards (exams and counselling that are open)'],
+                    'show_live' => ['type' => 'toggle', 'default' => true, 'label' => 'Show the "open right now" cards on the right'],
+                    'live_cards' => ['type' => 'repeater', 'label' => '"Open right now" cards (up to 3)', 'add' => 'Add a card',
+                        'help' => 'Leave empty for the usual three: an exam, a counselling round and a scholarship deadline, each picked automatically. An automatic card shows what is open now (else the next one opening); when its kind has nothing, it shows your own text below if filled, else the next open item of any kind.',
+                        'fields' => [
+                            'source' => ['type' => 'select', 'label' => 'What the card shows', 'options' => [
+                                'exams' => 'Automatic: an exam (registration, exam date, result)', 'coun' => 'Automatic: a counselling round',
+                                'sch' => 'Automatic: a scholarship deadline', 'any' => 'Automatic: whatever is open', 'custom' => 'My own card (fill in below)']],
+                            'pill' => ['type' => 'text', 'label' => 'Own card: green label', 'placeholder' => 'Applications open'],
+                            'title' => ['type' => 'text', 'label' => 'Own card: title', 'placeholder' => 'Central Sector Scholarship'],
+                            'text' => ['type' => 'text', 'label' => 'Own card: small text', 'placeholder' => 'Apply by 31 Oct'],
+                            'url' => ['type' => 'text', 'label' => 'Own card: link', 'placeholder' => '/scholarships-and-benefits']]],
                 ],
                 'data' => [['Exams and counselling dates', 'admin/exam-module/exams']],
             ],
@@ -176,6 +186,7 @@ class HomepageSectionSchema
             $out[$name] = match ($f['type']) {
                 'toggle' => !empty($v) && $v !== '0',
                 'number' => $v === null || $v === '' ? null : max($f['min'] ?? 0, min($f['max'] ?? 1000, (int) $v)),
+                'select' => array_key_exists((string) $v, $f['options']) ? (string) $v : null,
                 'list' => array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string) $v)), 'strlen')),
                 'repeater' => array_values(array_filter(array_map(fn ($row) => is_array($row) ? self::clean($f['fields'], $row) : null, is_array($v) ? $v : []),
                     fn ($row) => $row && collect($row)->contains(fn ($x) => $x !== null && $x !== '' && $x !== [] && $x !== false))),

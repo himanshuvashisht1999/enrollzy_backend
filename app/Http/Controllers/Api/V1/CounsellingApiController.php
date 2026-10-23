@@ -73,6 +73,13 @@ class CounsellingApiController extends Controller
         return $this->cached($request, fn () => $this->presenter->cutoffs($c, $cycle, $request->query()));
     }
 
+    /** GET /api/v1/counselling/{slug}/cutoff-trend : one seat's closing values by round (this year and last) and by category. */
+    public function cutoffTrend(Request $request, string $slug): JsonResponse
+    {
+        [$c, $cycle] = $this->resolve($request, $slug);
+        return $this->cached($request, fn () => $this->presenter->cutoffTrend($c, $cycle, $request->query()));
+    }
+
     /** GET /api/v1/masters : the lists behind a student's "Your details" (categories and states). */
     public function masters(Request $request): JsonResponse
     {
