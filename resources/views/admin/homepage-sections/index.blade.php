@@ -8,7 +8,7 @@
         <div class="card shadow-sm border-0 rounded-4">
             <div class="card-header bg-white py-3">
                 <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-layer-group me-2"></i> Homepage Sections</h5>
-                <small class="text-muted">Drag and drop to reorder sections. Toggle visibility to show/hide.</small>
+                <small class="text-muted">Drag and drop to reorder sections, then Save Order. Toggle visibility to show/hide. Edit a section to change its text, lists and buttons; the homepage updates as soon as you save.</small>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -26,7 +26,14 @@
                             @foreach($sections as $section)
                                 <tr data-id="{{ $section->id }}" class="sortable-item" style="cursor: move;">
                                     <td class="text-center text-muted"><i class="fas fa-grip-lines"></i></td>
-                                    <td class="fw-bold">{{ $section->name }}</td>
+                                    <td>
+                                        <span class="fw-bold">{{ $section->name }}</span>
+                                        @if(\App\Support\HomepageSectionSchema::isUsed((string) $section->section_key))
+                                            <div class="small text-muted">{{ \Illuminate\Support\Str::limit(\App\Support\HomepageSectionSchema::for($section->section_key)['about'], 110) }}</div>
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-1" title="This section belongs to the previous homepage design">Not on the current homepage</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         <form action="{{ route('homepage-sections.update', $section->id) }}" method="POST" class="d-inline">
                                             @csrf

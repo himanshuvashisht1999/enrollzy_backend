@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\HomepageSection;
+use App\Support\HomepageSectionSchema;
 
 class HomepageSectionController extends Controller
 {
@@ -31,7 +32,8 @@ class HomepageSectionController extends Controller
         if (!($homepageSection instanceof HomepageSection)) {
             $homepageSection = HomepageSection::findOrFail($homepageSection);
         }
-        return view('admin.homepage-sections.edit', compact('homepageSection'));
+        $schema = HomepageSectionSchema::for((string) $homepageSection->section_key);
+        return view('admin.homepage-sections.edit', compact('homepageSection', 'schema'));
     }
 
     public function updateDetails(Request $request, $homepageSection)
@@ -48,12 +50,22 @@ class HomepageSectionController extends Controller
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,avif,bmp|max:20480',
         ]);
 
-        $settings = is_array($homepageSection->settings) ? $homepageSection->settings : json_decode($homepageSection->settings ?? '[]', true);
+        $settings = (is_array($homepageSection->settings) ? $homepageSection->settings : json_decode($homepageSection->settings ?? '[]', true)) ?: [];
         if ($request->has('items_visibility')) {
             $settings['items_visibility'] = $request->items_visibility;
         }
         if ($request->has('badge_text')) {
             $settings['badge_text'] = $request->badge_text;
+        }
+        // the section's own values (rotating words, stages, steps...), see HomepageSectionSchema
+        $schema = HomepageSectionSchema::for($homepageSection->section_key);
+        if ($schema && !empty($schema['fields'])) {
+            foreach (HomepageSectionSchema::clean($schema['fields'], (array) $request->input('settings', [])) as $name => $value) {
+                // a value never saved before and left empty keeps the website's own default text
+                $empty = $value === null || $value === [];
+                if ($empty && !array_key_exists($name, $settings)) continue;
+                $settings[$name] = $value;
+            }
         }
 
         $data = [
