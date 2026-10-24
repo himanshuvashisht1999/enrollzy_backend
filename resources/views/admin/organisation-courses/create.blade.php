@@ -80,34 +80,37 @@
                                     </div>
                                 </div>
 
-                                @if(isset($campusId) && isset($departmentId))
-                                    {{-- Show context when campus and department are pre-selected --}}
+                                @if(isset($departmentId))
+                                    {{-- Show context when the department is pre-selected (its campus comes from the department; online departments have none) --}}
+                                    @php
+                                        $selectedDepartment = $departments->firstWhere('id', $departmentId);
+                                        $contextCampusId = $campusId ?? optional($selectedDepartment)->campus_id;
+                                        $selectedCampus = $contextCampusId ? $campuses->firstWhere('id', $contextCampusId) : null;
+                                    @endphp
                                     <div class="col-12">
                                         <div class="alert alert-soft-primary border-primary d-flex align-items-center" role="alert">
                                             <i class="fas fa-graduation-cap me-2 fs-4"></i>
                                             <div>
-                                                Adding Course to: 
+                                                Adding Course to:
                                                 <strong>{{ $organisation->name }}</strong>
-                                                @php 
-                                                    $selectedCampus = $campuses->firstWhere('id', $campusId);
-                                                    $selectedDepartment = $departments->firstWhere('id', $departmentId);
-                                                @endphp
                                                 @if($selectedCampus)
                                                     - <strong>{{ $selectedCampus->campus_name }}</strong>
+                                                @elseif($selectedDepartment)
+                                                    - <span class="text-muted">University level (no campus)</span>
                                                 @endif
                                                 @if($selectedDepartment)
                                                     - <strong>{{ $selectedDepartment->department_name }}</strong>
                                                 @endif
                                             </div>
                                         </div>
-                                        <input type="hidden" name="campus_id" value="{{ $campusId }}">
+                                        <input type="hidden" name="campus_id" value="{{ $contextCampusId }}">
                                         <input type="hidden" name="department_id" value="{{ $departmentId }}">
                                     </div>
                                 @else
                                     {{-- Show dropdowns when not pre-selected --}}
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold">Select Campus <span class="text-danger">*</span></label>
-                                        <select name="campus_id" id="campus_id_select" class="form-select select2" required>
+                                        <label class="form-label fw-bold">Select Campus</label>
+                                        <select name="campus_id" id="campus_id_select" class="form-select select2">
                                             <option value="">-- Select Campus --</option>
                                             @foreach($campuses as $campus)
                                                 <option value="{{ $campus->id }}" {{ old('campus_id', $campusId ?? '') == $campus->id ? 'selected' : '' }}>
@@ -116,7 +119,7 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <div class="form-text text-danger">Course will be linked to this specific campus.</div>
+                                        <div class="form-text text-danger">Course will be linked to this specific campus. Leave empty for online / university-level departments that are not under any campus.</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Select Department</label>
@@ -783,25 +786,26 @@
 
                 deptSelect.empty().append('<option value="">-- Select Department --</option>');
 
-                if (campusId) {
-                    const filtered = departments.filter(d => d.campus_id == campusId);
-                    filtered.forEach(d => {
-                        const isSelected = d.id == selectedDept ? 'selected' : '';
-                        deptSelect.append(`<option value="${d.id}" ${isSelected}>${d.department_name}</option>`);
-                    });
-                }
+                // With a campus: that campus's departments. Without one: departments not under any campus (e.g. online).
+                const filtered = campusId
+                    ? departments.filter(d => d.campus_id == campusId)
+                    : departments.filter(d => !d.campus_id);
+                filtered.forEach(d => {
+                    const isSelected = d.id == selectedDept ? 'selected' : '';
+                    deptSelect.append(`<option value="${d.id}" ${isSelected}>${d.department_name}</option>`);
+                });
                 deptSelect.trigger('change');
             }
 
             $('select[name="campus_id"]').on('change', function() {
                 filterDepartments(this);
             });
-            
-            // Trigger on load if campus is selected
-            if ($('select[name="campus_id"]').val()) {
+
+            // Populate departments on load (campus-less ones when no campus is selected)
+            if (!$('select[name="department_id"]').attr('data-selected')) {
                 $('select[name="department_id"]').attr('data-selected', "{{ old('department_id') }}");
-                filterDepartments($('select[name="campus_id"]'));
             }
+            filterDepartments($('select[name="campus_id"]'));
 
             // Function to update card
             function updateCourseCard(select) {

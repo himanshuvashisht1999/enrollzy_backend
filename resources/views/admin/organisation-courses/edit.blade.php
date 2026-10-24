@@ -766,24 +766,23 @@
 
                 deptSelect.empty().append('<option value="">-- Select Department --</option>');
 
-                if (campusId) {
-                    const filtered = departments.filter(d => d.campus_id == campusId);
-                    filtered.forEach(d => {
-                        const isSelected = d.id == selectedDept ? 'selected' : '';
-                        deptSelect.append(`<option value="${d.id}" ${isSelected}>${d.department_name}</option>`);
-                    });
-                }
+                // With a campus: that campus's departments. Without one: departments not under any campus (e.g. online).
+                const filtered = campusId
+                    ? departments.filter(d => d.campus_id == campusId)
+                    : departments.filter(d => !d.campus_id);
+                filtered.forEach(d => {
+                    const isSelected = d.id == selectedDept ? 'selected' : '';
+                    deptSelect.append(`<option value="${d.id}" ${isSelected}>${d.department_name}</option>`);
+                });
                 deptSelect.trigger('change');
             }
 
             $('select[name="campus_id"]').on('change', function() {
                 filterDepartments(this);
             });
-            
-            // Trigger on load if campus is selected
-            if ($('select[name="campus_id"]').val()) {
-                filterDepartments($('select[name="campus_id"]'));
-            }
+
+            // Populate departments on load (campus-less ones when no campus is selected)
+            filterDepartments($('select[name="campus_id"]'));
 
             // Function to update card
             function updateCourseCard(select) {

@@ -56,7 +56,7 @@ class OrganisationCourseController extends Controller
 
         $organisation = Organisation::findOrFail($organisationId);
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+        $masterCourses = $this->masterCourseOptions();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();
@@ -202,7 +202,7 @@ class OrganisationCourseController extends Controller
         $organisation = $organisationCourse->organisation;
         $organisationCourse->load('documents');
 
-        $masterCourses = Course::with(['programLevel', 'streamOffered', 'discipline'])->where('status', 1)->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
+        $masterCourses = $this->masterCourseOptions();
         $specializations = \App\Models\Specialization::where('status', true)->get();
         $languages = \App\Models\Language::where('status', true)->orderBy('sort_order')->get();
         $campuses = $organisation->campuses()->where('status', true)->get();
@@ -420,6 +420,20 @@ class OrganisationCourseController extends Controller
             'campus_id' => $originalCourse->campus_id,
             'department_id' => $originalCourse->department_id
         ])->with('success', 'Course duplicated successfully.');
+    }
+
+    /**
+     * Master courses for the create/edit forms: only what the course dropdown and the "Course Details" card use.
+     * The whole list is embedded in the page as JSON, so loading every column made the page about 58 MB.
+     */
+    protected function masterCourseOptions()
+    {
+        return Course::select('id', 'name', 'duration', 'program_level_id', 'stream_offered_id', 'discipline_id')
+            ->with(['programLevel:id,title', 'streamOffered:id,title', 'discipline:id,title'])
+            ->where('status', 1)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get();
     }
 
     protected function syncDocuments(Request $request, OrganisationCourse $organisationCourse): void
