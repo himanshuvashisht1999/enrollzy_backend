@@ -61,14 +61,11 @@
                         @if($invoice->client->contact_person)
                             <strong>Attn:</strong> {{ $invoice->client->contact_person }}<br>
                         @endif
-                        @if($invoice->client->address)
-                            {{ $invoice->client->address }}<br>
-                        @endif
                         @php
-                            $loc = array_filter([$invoice->client->city, $invoice->client->state, $invoice->client->pincode]);
+                            $addr = implode(', ', array_filter(array_map('trim', [(string) $invoice->client->address, (string) $invoice->client->city, (string) $invoice->client->state, (string) $invoice->client->pincode])));
                         @endphp
-                        @if(!empty($loc))
-                            {{ implode(', ', $loc) }}<br>
+                        @if($addr !== '')
+                            {{ $addr }}<br>
                         @endif
                         @if($invoice->client->email)
                             <strong>Email:</strong> {{ $invoice->client->email }}<br>
@@ -89,35 +86,36 @@
                             <strong>CIN:</strong> <span class="font-monospace text-dark">{{ $invoice->client->cin_number }}</span>
                         @endif
                     </div>
-                @elseif($invoice->campus)
-                    <!-- Organisation Campus Recipient -->
-                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? '' }} - {{ $invoice->campus->campus_name }}</h6>
-                    <div class="text-muted lh-sm">
-                        @if($invoice->campus->full_address)
-                            {!! nl2br(e($invoice->campus->full_address)) !!}<br>
-                        @endif
-
-                        @if($invoice->organisation && $invoice->organisation->email)
-                            <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
-                        @endif
-                        @if($invoice->organisation && $invoice->organisation->phone)
-                            <strong>Phone:</strong> {{ $invoice->organisation->phone }}
-                        @endif
-                    </div>
                 @else
-                    <!-- Fallback Organisation Recipient -->
-                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $invoice->organisation->name ?? 'N/A' }}</h6>
+                    <!-- Organisation / Campus Recipient: its billing details (Billing → Organisation Billing) -->
+                    @php $bt = \App\Models\BillingProfile::billedTo($invoice->organisation, $invoice->campus); @endphp
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">{{ $bt['title'] }}</h6>
                     <div class="text-muted lh-sm">
-                        @if($invoice->organisation && $invoice->organisation->address)
-                            {!! nl2br(e($invoice->organisation->address)) !!}<br>
+                        @if($bt['legal_name'])
+                            <span class="text-dark">{{ $bt['legal_name'] }}</span><br>
                         @endif
-                        @if($invoice->organisation && $invoice->organisation->email)
-                            <strong>Email:</strong> {{ $invoice->organisation->email }}<br>
+                        @if($bt['attn'])
+                            <strong>Attn:</strong> {{ $bt['attn'] }}<br>
                         @endif
-                        @if($invoice->organisation && $invoice->organisation->phone)
-                            <strong>Phone:</strong> {{ $invoice->organisation->phone }}
+                        @if($bt['address_line'])
+                            {{ $bt['address_line'] }}<br>
                         @endif
+                        @if($bt['email'])
+                            <strong>Email:</strong> {{ $bt['email'] }}<br>
+                        @endif
+                        @if($bt['phone'])
+                            <strong>Phone:</strong> {{ $bt['phone'] }}<br>
+                        @endif
+                        @foreach(['gstin' => 'GSTIN', 'tan' => 'TAN', 'pan' => 'PAN', 'cin' => 'CIN'] as $k => $label)
+                            @if($bt[$k])
+                                <strong>{{ $label }}:</strong> <span class="font-monospace text-dark">{{ $bt[$k] }}</span><br>
+                            @endif
+                        @endforeach
                     </div>
+                    @if($bt['source'] === 'none' && $invoice->organisation)
+                        <a href="{{ route('admin.billing.organisations.edit', array_filter([$invoice->organisation->id, 'campus' => $invoice->campus->id ?? null])) }}" class="small d-print-none">
+                            <i class="fas fa-plus-circle me-1"></i>Add billing details (GSTIN, address)</a>
+                    @endif
                 @endif
             </div>
 
@@ -148,16 +146,19 @@
                 <thead style="background-color: #0056b3; color: white;">
                     <tr>
                         <th class="text-uppercase py-1" style="font-size: 10px;">Item / Service</th>
+                        <th class="text-center text-uppercase py-1" width="11%" style="font-size: 10px;">HSN/SAC</th>
                         <th class="text-uppercase py-1" style="font-size: 10px;">Description</th>
-                        <th class="text-center text-uppercase py-1" width="10%" style="font-size: 10px;">Qty</th>
-                        <th class="text-end text-uppercase py-1" width="15%" style="font-size: 10px;">Price</th>
-                        <th class="text-end text-uppercase py-1" width="20%" style="font-size: 10px;">Total</th>
+                        <th class="text-center text-uppercase py-1" width="8%" style="font-size: 10px;">Qty</th>
+                        <th class="text-end text-uppercase py-1" width="14%" style="font-size: 10px;">Price</th>
+                        <th class="text-end text-uppercase py-1" width="17%" style="font-size: 10px;">Total</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
                     @forelse($invoice->items as $item)
                     <tr>
                         <td class="fw-bold text-dark py-1">{{ $item->service->name ?? 'Custom Service' }}</td>
+                        {{-- the service's code (Billing → Services) --}}
+                        <td class="text-center font-monospace py-1">{{ $item->service->hsn_sac_code ?? '' ?: '—' }}</td>
                         <td class="text-muted py-1">{{ $item->description }}</td>
                         <td class="text-center py-1">{{ $item->quantity }}</td>
                         <td class="text-end py-1">₹{{ number_format($item->unit_price, 2) }}</td>
@@ -165,7 +166,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-2">No items found for this invoice.</td>
+                        <td colspan="6" class="text-center text-muted py-2">No items found for this invoice.</td>
                     </tr>
                     @endforelse
                 </tbody>

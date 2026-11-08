@@ -9,11 +9,37 @@ class GeminiOrganisationScraperService
 {
     protected ?string $apiKey;
     protected string $model;
+    /** which AI runs the master commands: 'gemini' (Create by Bot) or 'claude' (Create by Claude) */
+    protected string $engine = 'gemini';
 
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
         $this->model = config('services.gemini.model', 'gemini-3.6-flash');
+    }
+
+    /** Run the same master commands on Claude instead of Gemini ('claude'), or back on Gemini ('gemini'). */
+    public function useEngine(?string $engine): static
+    {
+        $this->engine = $engine === 'claude' ? 'claude' : 'gemini';
+        return $this;
+    }
+
+    public function engine(): string
+    {
+        return $this->engine;
+    }
+
+    /** The chosen engine's API key is set (Gemini's, or Claude's). */
+    protected function assertConfigured(): void
+    {
+        if ($this->engine === 'claude') {
+            if (!app(ClaudeExtractionService::class)->isConfigured()) {
+                throw new \Exception('Claude API key is not configured. Please set ANTHROPIC_API_KEY in your .env file.');
+            }
+        } elseif (empty($this->apiKey)) {
+            throw new \Exception('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
+        }
     }
 
     /**
@@ -33,9 +59,7 @@ class GeminiOrganisationScraperService
         array $targetNames = []
     ): array
     {
-        if (empty($this->apiKey)) {
-            throw new \Exception('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
-        }
+        $this->assertConfigured();
 
         if (!empty($customPrompt)) {
             $prompt = $this->sanitizeUtf8($customPrompt);
@@ -68,7 +92,24 @@ class GeminiOrganisationScraperService
 
         $searchGoogleForApi = $searchGoogle;
 
-        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi);
+        // the AI may open pages of the official website (and the admin's reference sites) to read what the pre-read content
+        // misses: department pages, HOD message, faculty lists, the "data file" addresses of JavaScript sites. No other website.
+        $domains = self::officialFetchDomains(array_merge([$url], $referenceUrls));
+
+        return $this->executePrompt($this->sanitizeUtf8($prompt), $modelsToTry, $searchGoogleForApi, $domains);
+    }
+
+    /** The domains the AI may open pages on for these addresses: each host and its registered domain (departments.nitj.ac.in, nitj.ac.in). */
+    public static function officialFetchDomains(array $urls): array
+    {
+        $out = [];
+        foreach ($urls as $u) {
+            $h = preg_replace('/^www\./', '', strtolower((string) parse_url((string) $u, PHP_URL_HOST)));
+            if ($h === '' || !str_contains($h, '.')) continue;
+            $out[$h] = true;
+            $out[self::rootDomain($h)] = true;
+        }
+        return array_keys($out);
     }
 
     /**
@@ -112,9 +153,7 @@ class GeminiOrganisationScraperService
         array $allowedFields,
         array $currentData
     ): array {
-        if (empty($this->apiKey)) {
-            throw new \Exception('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
-        }
+        $this->assertConfigured();
 
         $websiteContent = $this->fetchUrlContent($url);
         $prompt = $this->buildScopedUpdatePrompt($url, $websiteContent, $orgTypeTitle, $allowedFields, $currentData);
@@ -132,10 +171,26 @@ class GeminiOrganisationScraperService
     /**
      * Execute a prompt against Gemini models with fallback
      */
-    protected function executePrompt(string $prompt, array $modelsToTry, bool $searchGoogle = true): array
+    protected function executePrompt(string $prompt, array $modelsToTry, bool $searchGoogle = true, array $fetchDomains = []): array
     {
         $lastError = null;
         $prompt = $this->sanitizeUtf8($prompt);
+        if ($fetchDomains) {
+            $prompt .= "\n\nOFFICIAL WEBSITE ACCESS: you may open pages of the official website (" . implode(', ', $fetchDomains) . ") to read what the"
+                . " content above does not give: department / course pages, the Message of HOD, Faculty, Labs and Programmes pages, and the"
+                . " \"data file\" addresses listed above. Open no other website. \"No Google search\" means no search engine; reading these"
+                . " official pages is allowed. Still reply with the JSON only.";
+        }
+
+        // Create by Claude: the same command, run on Claude (with web search when search grounding is on; official pages always)
+        if ($this->engine === 'claude') {
+            $text = $this->sanitizeUtf8(app(ClaudeExtractionService::class)->run($prompt, $searchGoogle, null, $fetchDomains ?: null));
+            $data = $this->decodeExtractionJson($text);
+            if ($data === null) {
+                throw new \Exception('Claude replied, but not with the expected JSON. Please try again (or shorten the command).');
+            }
+            return $this->normalizeExtractedPayload($data);
+        }
 
         foreach ($modelsToTry as $modelName) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}";
@@ -158,19 +213,25 @@ class GeminiOrganisationScraperService
                 ]
             ];
 
-            if ($searchGoogle) {
-                $payload['tools'] = [
-                    ['google_search' => (object)[]]
-                ];
+            // Google Search only when search is on; URL context opens the official pages named in the command
+            $tools = array_values(array_filter([
+                $searchGoogle ? ['google_search' => (object)[]] : null,
+                $fetchDomains ? ['url_context' => (object)[]] : null,
+            ]));
+            if ($tools) {
+                $payload['tools'] = $tools;
             }
 
             try {
                 $response = Http::withoutVerifying()->timeout(120)->post($endpoint, $payload);
 
-                if ($searchGoogle && !$response->successful()) {
+                if (!empty($payload['tools']) && !$response->successful()) {
                     // Fallback tool naming if needed
                     if ($response->status() === 400 && str_contains($response->body(), 'tools')) {
-                        $payload['tools'] = [['googleSearch' => (object)[]]];
+                        $payload['tools'] = array_values(array_filter([
+                            $searchGoogle ? ['googleSearch' => (object)[]] : null,
+                            $fetchDomains ? ['urlContext' => (object)[]] : null,
+                        ]));
                         $response = Http::withoutVerifying()->timeout(120)->post($endpoint, $payload);
                     }
 
@@ -235,6 +296,78 @@ class GeminiOrganisationScraperService
         throw new \Exception('Gemini API extraction failed: ' . ($lastError ?? 'Could not parse response from available AI models.'));
     }
 
+    /** The website's readable text (with the JavaScript-site reader), for commands built outside this service. */
+    public function readWebsite(string $url, string $mode = 'organisation'): string
+    {
+        return $this->fetchUrlContent($url, $mode, true);
+    }
+
+    /**
+     * Runs any command whose answer is a JSON object holding at least one of $keys (e.g. Quality records by AI), on the chosen
+     * engine: Claude (web search when $searchGoogle) or Gemini with its fallback models (Google Search grounding).
+     */
+    public function runJsonCommand(string $prompt, array $keys, bool $searchGoogle = true, ?int $maxSearches = null, ?array $fetchDomains = null): array
+    {
+        $this->assertConfigured();
+        $prompt = $this->sanitizeUtf8($prompt);
+
+        if ($this->engine === 'claude') {
+            $data = $this->decodeExtractionJson($this->sanitizeUtf8(app(ClaudeExtractionService::class)->run($prompt, $searchGoogle, $maxSearches, $fetchDomains)), $keys);
+            if ($data === null) throw new \Exception('Claude replied, but not with the expected JSON. Please try again.');
+            return $data;
+        }
+
+        $lastError = null;
+        $models = array_values(array_filter(array_unique([$this->model, 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'])));
+        foreach ($models as $modelName) {
+            $payload = [
+                'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.1, 'maxOutputTokens' => 32768, 'thinkingConfig' => ['thinkingBudget' => 0]],
+            ];
+            // Google Search only when search is on; URL context opens the official pages named in the command (no searching)
+            $payload['tools'] = array_values(array_filter([
+                $searchGoogle ? ['google_search' => (object) []] : null,
+                $fetchDomains ? ['url_context' => (object) []] : null,
+            ]));
+            if (!$payload['tools']) unset($payload['tools']);
+            try {
+                $response = Http::withoutVerifying()->timeout(120)->post("https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}", $payload);
+                if (!$response->successful()) {
+                    $lastError = $response->json('error.message', $response->body());
+                    Log::warning("Gemini model {$modelName} failed: {$lastError}, trying next fallback model...");
+                    continue;
+                }
+                $text = implode("\n", array_map(fn ($p) => $p['text'] ?? '', $response->json('candidates.0.content.parts', [])));
+                $data = $this->decodeExtractionJson($this->sanitizeUtf8($text), $keys);
+                if ($data !== null) return $data;
+                $lastError = 'The reply was not the expected JSON.';
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+        throw new \Exception('Gemini API failed: ' . ($lastError ?? 'no usable reply.'));
+    }
+
+    /**
+     * The JSON object in an AI reply (fenced or not, or between its first { and last }), when it has organisation /
+     * campuses / courses / departments (or one of $keys when given); null otherwise.
+     */
+    protected function decodeExtractionJson(string $text, ?array $keys = null): ?array
+    {
+        $keys ??= ['organisation', 'campuses', 'courses', 'departments'];
+        $ok = fn ($d) => is_array($d) && (bool) array_intersect($keys, array_keys($d));
+        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', trim($text));
+        $decoded = json_decode($clean, true);
+        if ($ok($decoded)) return $decoded;
+        $first = mb_strpos($text, '{', 0, 'UTF-8');
+        $last = mb_strrpos($text, '}', 0, 'UTF-8');
+        if ($first !== false && $last !== false && $last > $first) {
+            $decoded = json_decode(mb_substr($text, $first, $last - $first + 1, 'UTF-8'), true);
+            if ($ok($decoded)) return $decoded;
+        }
+        return null;
+    }
+
     /**
      * Sanitize string to guarantee valid UTF-8 encoding without malformed byte sequences
      */
@@ -285,6 +418,38 @@ class GeminiOrganisationScraperService
     /**
      * Normalize and sanitize extracted payload keys
      */
+    /**
+     * Cleans the AI's year-wise NIRF list ({year, category, rank, band}) and fills the two single-number NIRF fields from it
+     * when the AI left them empty or wrote text such as "101-150" (those columns hold whole numbers only).
+     */
+    /** Old organisation columns replaced by the Rankings & Accreditation records: never asked for or saved any more. */
+    public const RETIRED_QUALITY_COLUMNS = ['ugc_recognized', 'ugc_approval_number', 'aicte_approved', 'naac_accredited', 'naac_grade',
+        'nirf_rank_overall', 'nirf_rank_category', 'international_accreditations', 'statutory_approvals'];
+
+    protected function normalizeNirfRankings(array &$org): void
+    {
+        $rows = [];
+        foreach ((array) ($org['nirf_rankings'] ?? []) as $r) {
+            if (!is_array($r)) continue;
+            $year = (int) preg_replace('/\D/', '', substr((string) ($r['year'] ?? ''), 0, 4));
+            $category = trim((string) ($r['category'] ?? ''));
+            if ($year < 2016 || $year > (int) date('Y') + 1 || $category === '') continue;   // NIRF started in 2016
+            $rank = is_numeric($r['rank'] ?? null) && (int) $r['rank'] > 0 ? (int) $r['rank'] : null;
+            $band = null;
+            if (preg_match('/(\d+)\s*[-–]\s*(\d+)/', (string) ($r['band'] ?? ($rank ? '' : ($r['rank'] ?? ''))), $m) && (int) $m[2] >= (int) $m[1]) {
+                $band = $m[1] . '-' . $m[2];
+            }
+            if (!$rank && !$band) continue;
+            $rows[$year . '|' . strtolower($category)] = ['year' => $year, 'category' => $category, 'rank' => $rank, 'band' => $rank ? null : $band];
+        }
+        $rows = array_values($rows);
+        usort($rows, fn ($a, $b) => [$b['year'], $a['category'] === 'Overall' ? 0 : 1, $a['category']] <=> [$a['year'], $b['category'] === 'Overall' ? 0 : 1, $b['category']]);
+        $org['nirf_rankings'] = $rows;
+
+        // the old single-value columns are no longer filled: rankings, NAAC and approvals live in the Rankings & Accreditation records
+        foreach (self::RETIRED_QUALITY_COLUMNS as $old) unset($org[$old]);
+    }
+
     protected function normalizeExtractedPayload(array $data): array
     {
         $data = $this->sanitizeUtf8Recursive($data);
@@ -322,6 +487,13 @@ class GeminiOrganisationScraperService
                 $org['university_type'] = 'Private';
             }
 
+            // "Is Top Institution" is set by the team, never by the AI
+            if (array_key_exists('is_top', $org)) {
+                $org['is_top'] = false;
+            }
+
+            $this->normalizeNirfRankings($org);
+
             // Normalize ownership_type
             $rawOwnership = strtolower((string)($org['ownership_type'] ?? ''));
             if (str_contains($rawOwnership, 'gov') || str_contains($rawOwnership, 'public') || str_contains($rawOwnership, 'state')) {
@@ -343,7 +515,7 @@ class GeminiOrganisationScraperService
             } elseif (str_contains($rawCat, 'teach')) {
                 $org['university_category'] = 'Teaching';
             } else {
-                if (!empty($org['naac_accredited']) || !empty($org['nirf_rank_overall'])) {
+                if (!empty($org['nirf_rankings'])) {
                     $org['university_category'] = 'Teaching + Research';
                 }
             }
@@ -400,6 +572,8 @@ class GeminiOrganisationScraperService
             $c['rating'] = null;
             $c['average_rating'] = null;
             $c['total_reviews'] = null;
+            // Practically every campus today has CCTV: always on (the admin can still untick it before saving)
+            $c['cctv_coverage'] = true;
             if (empty($c['campus_name']) && !empty($c['name'])) {
                 $c['campus_name'] = $c['name'];
             }
@@ -487,6 +661,12 @@ class GeminiOrganisationScraperService
                         (array)($existing['education_levels_supported'] ?? []),
                         (array)$d['education_levels_supported']
                     )));
+                }
+                // any other field (HOD, emails, labs, research counts...) the first copy left empty
+                foreach ($d as $k => $v) {
+                    if (($existing[$k] ?? null) === null || ($existing[$k] ?? null) === '' || ($existing[$k] ?? null) === []) {
+                        if ($v !== null && $v !== '' && $v !== []) $existing[$k] = $v;
+                    }
                 }
                 unset($existing);
             }
@@ -692,6 +872,278 @@ PROMPT;
     /**
      * Fetch and clean text, meta images, structured academic navigation, and deep-crawl relevant linked sub-pages without restrictive limits
      */
+    /**
+     * Many new college websites are built with JavaScript: the server sends an almost empty page and the browser then loads the
+     * real text from the site's own data addresses (e.g. nitj.ac.in loads /api/administration/get/all). A plain download sees
+     * none of it. When the page has almost no readable text, this reads the site's scripts, finds the data addresses they
+     * call, reads those (same site only) and returns their text, plus a note telling the AI the site is JavaScript-built.
+     */
+    /** Script files already downloaded during this request (a department site's 2 MB script is read once, not per department). */
+    protected static array $siteScriptCache = [];
+
+    /** Department / school / centre links found in a JavaScript site's menu data or script: [name => url]. Filled by readJavaScriptSiteData. */
+    public array $jsAcademicLinks = [];
+
+    /**
+     * $compact: only this page's own unit's key data files (HOD, faculty with count, description, programmes, labs), short;
+     * used to read every department of a JavaScript department site in one go.
+     */
+    public function readJavaScriptSiteData(string $html, string $pageUrl, bool $compact = false): string
+    {
+        try {
+            $visible = trim(preg_replace('/\s+/', ' ', strip_tags(preg_replace(['/<script\b[^>]*>.*?<\/script>/is', '/<style\b[^>]*>.*?<\/style>/is', '/<noscript\b[^>]*>.*?<\/noscript>/is'], ' ', $html))));
+            if (mb_strlen($visible) > 1500 || stripos($html, '<script') === false) return '';
+
+            $p = parse_url($pageUrl);
+            if (empty($p['host'])) return '';
+            $origin = ($p['scheme'] ?? 'https') . '://' . $p['host'];
+            $site = preg_replace('/^www\./i', '', strtolower($p['host']));
+            $abs = function (string $u) use ($origin, $pageUrl): ?string {
+                $u = trim(html_entity_decode($u));
+                if ($u === '' || str_starts_with($u, 'data:') || str_starts_with($u, 'javascript:')) return null;
+                if (str_starts_with($u, '//')) return 'https:' . $u;
+                if (preg_match('#^https?://#i', $u)) return $u;
+                if (str_starts_with($u, '/')) return $origin . $u;
+                $dir = preg_replace('#/[^/]*$#', '/', parse_url($pageUrl, PHP_URL_PATH) ?: '/');
+                return $origin . $dir . preg_replace('#^\./#', '', $u);
+            };
+            // the same institution: its own host, or any address under the same registered domain (departments.nitj.ac.in
+            // keeps its data on nitj.ac.in and v1.nitj.ac.in)
+            $root = self::rootDomain($site);
+            $sameSite = function (string $u) use ($site, $root): bool {
+                $h = preg_replace('/^www\./', '', strtolower((string) parse_url($u, PHP_URL_HOST)));
+                return $h === $site || str_ends_with($h, '.' . $site) || $h === $root || str_ends_with($h, '.' . $root);
+            };
+
+            // 1. the site's own scripts: inline ones and same-site script files
+            preg_match_all('/<script\b[^>]*>(.*?)<\/script>/is', $html, $inline);
+            $code = implode("\n", $inline[1] ?? []);
+            preg_match_all('/<script\b[^>]*\bsrc\s*=\s*["\']([^"\']+)["\']/i', $html, $src);
+            $files = [];
+            foreach ($src[1] ?? [] as $s) {
+                $u = $abs($s);
+                if ($u && $sameSite($u) && !preg_match('/(jquery|bootstrap|popper|analytics|gtag|recaptcha|\.min\.js)/i', $u)) $files[$u] = true;
+            }
+            $files = array_slice(array_keys($files), 0, 8);
+            $missing = array_values(array_filter($files, fn ($f) => !array_key_exists($f, self::$siteScriptCache)));
+            if ($missing) {
+                $headers = $this->getBrowserHeaders();
+                $res = Http::pool(fn ($pool) => array_map(fn ($f) => $pool->as($f)->withoutVerifying()->timeout(15)->withHeaders($headers)->get($f), $missing));
+                foreach ($missing as $f) {
+                    $r = $res[$f] ?? null;
+                    self::$siteScriptCache[$f] = $r instanceof \Illuminate\Http\Client\Response && $r->successful() ? substr($r->body(), 0, 3000000) : '';
+                }
+            }
+            foreach ($files as $f) $code .= "\n" . (self::$siteScriptCache[$f] ?? '');
+
+            // the site's own list of departments / schools / centres written in its script, e.g. departments:{it:"Information
+            // Technology",cse:"Computer Science and Engineering",...}; on a /dept/bt/... page each one's page is /dept/{code}/Home
+            $segments0 = array_values(array_filter(explode('/', (string) parse_url($pageUrl, PHP_URL_PATH)), 'strlen'));
+            if (preg_match('/\b(departments|depts|schools|centres|centers|faculties)\s*:\s*\{((?:\s*["\']?[\w-]{1,12}["\']?\s*:\s*"[^"]{3,90}"\s*,?){4,80})\}/i', $code, $dm)
+                && count($segments0) >= 2) {
+                preg_match_all('/["\']?([\w-]{1,12})["\']?\s*:\s*"([^"]{3,90})"/', $dm[2], $pairs, PREG_SET_ORDER);
+                foreach ($pairs as [, $codeName, $label]) {
+                    $this->jsAcademicLinks[$label] = $origin . '/' . $segments0[0] . '/' . $codeName . '/Home';
+                }
+            }
+
+            // 2. the data addresses those scripts call: fetch('/api/news'), fetch(`${baseURL}/club/get/all`), axios.get(...), $.getJSON(...)
+            preg_match_all('/\b(?:base_?url|api_?url|api_?base|base_?api|server_?url)\s*[:=]\s*["\'`]([^"\'`\s]+)["\'`]/i', $code, $bm);
+            $bases = array_values(array_unique($bm[1] ?? []));
+            preg_match_all('/(?:\bfetch|\baxios(?:\.get)?|\$\.(?:get|getJSON|ajax))\(\s*["\'`]([^"\'`]+)["\'`]/i', $code, $em);
+            $endpoints = [];
+            foreach ($em[1] ?? [] as $e) {
+                if (preg_match('/^\$\{[^}]+\}/', $e)) {
+                    if (!$bases) continue;
+                    $e = preg_replace('/^\$\{[^}]+\}/', rtrim($bases[0], '/'), $e);
+                }
+                if (str_contains($e, '${') || preg_match('/\.(png|jpe?g|gif|svg|webp|css|pdf|mp4|woff2?)(\?|$)/i', $e)) continue;
+                $u = $abs($e);
+                if ($u && $sameSite($u)) $endpoints[$u] = true;
+            }
+            // 2b. React / Vue builds call their own helper with a path built from the page address, e.g.
+            //     u("/dept/".concat(code, "/messageofHOD")) with SERVER_URL "https://nitj.ac.in/api" on /dept/bt/... pages.
+            //     The part after "dept" in the page address ("bt") fills the gap; the path goes after the data base address.
+            $segments = array_values(array_filter(explode('/', (string) parse_url($pageUrl, PHP_URL_PATH)), 'strlen'));
+            $paths = [];
+            $ownUnits = [];
+            preg_match_all('/\b[\w$]{1,40}\(\s*(["\'])(\/[\w\-\/]*)\1\.concat\(\s*[\w$.]+\s*,\s*(["\'])([\w\-\/]*)\3\s*\)/', $code, $tm, PREG_SET_ORDER);
+            foreach ($tm as $t) {
+                $before = array_values(array_filter(explode('/', $t[2]), 'strlen'));
+                $i = $before ? array_search(end($before), $segments, true) : false;
+                if ($i === false || !isset($segments[$i + 1])) continue;
+                $unit = rtrim($t[2], '/') . '/' . $segments[$i + 1];
+                $ownUnits[$unit] = true;
+                $paths[$unit . $t[4]] = 0;          // the page's own unit first
+            }
+            preg_match_all('/\b[\w$]{1,40}\(\s*(["\'])(\/[\w\-]+\/[\w\-\/]+)\1\s*\)/', $code, $lm);
+            foreach ($lm[2] ?? [] as $p) $paths[$p] ??= 1;
+            $httpBases = array_values(array_filter($bases, fn ($b) => preg_match('#^https?://#i', $b) && $sameSite($b)));
+            asort($paths);
+            foreach (array_keys($paths) as $p) {
+                if (preg_match('/(login|logout|forgot|password|signup|register|admin|upload|delete|update)/i', $p)) continue;
+                foreach ($httpBases ?: [$origin] as $b) $endpoints[rtrim($b, '/') . $p] = true;
+            }
+            // most useful first: who runs it, facts and figures, campus; news, events and galleries last
+            $endpoints = array_keys($endpoints);
+            $ownUnits = array_keys($ownUnits ?? []);
+            $isOwn = fn ($u) => (bool) array_filter($ownUnits, fn ($o) => stripos($u, $o . '/') !== false);
+            $score = fn ($u) => ($isOwn($u) && !preg_match('/(news|event|gallery|image|photo|activity)/i', $u) ? -1 : 0)
+                + (preg_match('/(navbar|menu|admin|director|about|infra|facilit|placement|stat|depart|program|course|hostel|campus|ranking|accredit|contact|fee|hod|head|faculty|description|lab|research|consultanc|programme)/i', $u) ? 0
+                : (preg_match('/(news|event|testimonial|gallery|photo|image|tender|notice|blog|video|banner|slider|footer)/i', $u) ? 2 : 1));
+            usort($endpoints, fn ($a, $b) => $score($a) <=> $score($b));
+            $endpoints = array_slice($endpoints, 0, 16);
+            if ($compact) {
+                // one department of many: only its own key files (who heads it, its faculty, what it is, its programmes and labs)
+                $endpoints = array_slice(array_values(array_filter($endpoints, fn ($u) => $isOwn($u)
+                    && preg_match('/(hod|head|faculty|description|about|programme|program|lab|infra|contact)/i', $u))), 0, 6);
+                if (!$endpoints) return '';
+            }
+
+            $note = "\n\n=== NOTE: THIS OFFICIAL WEBSITE IS BUILT WITH JAVASCRIPT ===\n"
+                . "A plain download of {$pageUrl} contains almost no text (the browser loads it afterwards). "
+                . ($endpoints ? "The blocks below were read from the website's OWN data files, so treat them as official content. " : "")
+                . "For anything not found here, use web search: include searches limited to this site (e.g. \"site:{$site} infrastructure\"), "
+                . "its other pages and PDFs, NIRF / NAAC / AISHE data, and reputable education portals.";
+            if (!$endpoints) return $note;
+
+            // 3. read them and turn the JSON into plain text
+            $headers = ['Accept' => 'application/json, text/plain, */*'] + $this->getBrowserHeaders();
+            $res = Http::pool(fn ($pool) => array_map(fn ($e) => $pool->as($e)->withoutVerifying()->timeout(12)->withHeaders($headers)->get($e), $endpoints));
+            $out = '';
+            $seen = [];
+            $more = [];
+            foreach ($endpoints as $e) {
+                $r = $res[$e] ?? null;
+                if (!($r instanceof \Illuminate\Http\Client\Response) || !$r->successful()) continue;
+                $body = substr($r->body(), 0, 2000000);
+                $json = json_decode($body, true);
+                if (!is_array($json) || isset($seen[md5($body)])) continue;     // same file under two spellings (messageofHOD / messageOfHOD)
+                $seen[md5($body)] = true;
+                // menu data listing the departments / schools / centres with their pages
+                if (!$compact) $this->collectAcademicLinks($json);
+                if (mb_strlen($out) > ($compact ? 2200 : 14000)) { $more[] = $e; continue; }
+                // how many entries the file lists (e.g. the faculty members of a department)
+                $list = array_is_list($json) ? $json : (count($json) === 1 && is_array(reset($json)) && array_is_list(reset($json)) ? reset($json) : null);
+                $count = $list !== null && count($list) > 1 ? ' (' . count($list) . ' entries)' : '';
+                $lines = [];
+                $this->flattenSiteJson($json, $lines);
+                $isFaculty = (bool) preg_match('/faculty/i', $e);
+                $text = mb_substr(implode("\n", array_unique($lines)), 0, $compact ? ($isFaculty ? 250 : 900) : ($isOwn($e) ? 3500 : 1800), 'UTF-8');
+                if (mb_strlen($text) < 20) continue;
+                $out .= "\n--- data file {$e}{$count} ---\n" . $text;
+            }
+            if ($compact) return $this->sanitizeUtf8($out);
+            if ($more) $out .= "\n--- more data files on this website (open them if a field is still missing) ---\n" . implode("\n", array_slice($more, 0, 10));
+            return $note . ($out !== '' ? "\n" . $this->sanitizeUtf8($out) : '');
+        } catch (\Throwable $e) {
+            Log::info('JavaScript site reader skipped for ' . $pageUrl . ': ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * Each department's key official data, read from its own page when that page is JavaScript-built (HOD, faculty with count,
+     * description, programmes). $names limits it to the departments the admin picked. Empty when the pages are ordinary HTML
+     * (those are read by the normal sub-page crawl).
+     */
+    protected function readDepartmentPagesData(array $departments, array $names = []): string
+    {
+        try {
+            $pick = array_filter(array_map(fn ($n) => strtolower(preg_replace('/\b(department|dept|of|and|&|the)\b|[^a-z0-9 ]/i', ' ', $n)), $names), fn ($n) => trim($n) !== '');
+            $want = [];
+            foreach ($departments as $name => $url) {
+                if (!is_string($url) || !preg_match('#^https?://#i', $url)) continue;
+                if ($pick) {
+                    $n = strtolower($name);
+                    $hit = false;
+                    foreach ($pick as $p) {
+                        $words = array_filter(preg_split('/\s+/', trim($p)), fn ($w) => strlen($w) > 2);
+                        if ($words && !array_diff($words, preg_split('/[^a-z0-9]+/', $n))) { $hit = true; break; }
+                        if (str_contains(str_replace(' ', '', $n), str_replace(' ', '', trim($p)))) { $hit = true; break; }
+                    }
+                    if (!$hit) continue;
+                }
+                $want[$name] = $url;
+                if (count($want) >= 40) break;
+            }
+            if (!$want) return '';
+            $headers = $this->getBrowserHeaders();
+            $out = '';
+            foreach (array_chunk($want, 10, true) as $chunk) {
+                $res = Http::pool(fn ($pool) => array_map(fn ($u) => $pool->as($u)->withoutVerifying()->timeout(12)->withHeaders($headers)->get($u), array_values($chunk)));
+                foreach ($chunk as $name => $url) {
+                    $r = $res[$url] ?? null;
+                    if (!($r instanceof \Illuminate\Http\Client\Response) || !$r->successful()) continue;
+                    $data = $this->readJavaScriptSiteData($r->body(), $url, true);
+                    if (trim($data) !== '') $out .= "\n--- {$name} ({$url}) ---" . $data . "\n";
+                }
+                if (mb_strlen($out) > 60000) break;
+            }
+            return $out !== '' ? "\n=== OFFICIAL DATA OF EACH DEPARTMENT (read from its own pages; use it for that department's fields) ===\n" . $out : '';
+        } catch (\Throwable $e) {
+            Log::info('Department pages not read: ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * Departments, schools and centres in a site's menu data: groups such as ["Departments", false, {name, link}, ...] or
+     * {"title": "Departments", "children": [...]}, and any {name|title, link|url} whose address is a department / school /
+     * centre page. Adds them to $this->jsAcademicLinks as [name => absolute url].
+     */
+    protected function collectAcademicLinks($node, bool $inGroup = false, int $depth = 0): void
+    {
+        if (!is_array($node) || $depth > 8 || count($this->jsAcademicLinks) > 150) return;
+        $groupWord = '/^\s*(academic\s+)?(departments?|schools?|faculties|centres?|centers?|institutes?|academic units)\s*$/i';
+        // a group headed by its title: ["Departments", false, {...}, {...}] or {title: "Departments", items|children|links: [...]}
+        $isGroup = $inGroup;
+        if (array_is_list($node) && isset($node[0]) && is_string($node[0]) && preg_match($groupWord, $node[0])) $isGroup = true;
+        foreach (['title', 'name', 'heading', 'label'] as $k) {
+            if (isset($node[$k]) && is_string($node[$k]) && preg_match($groupWord, $node[$k])) $isGroup = true;
+        }
+        $name = null;
+        foreach (['name', 'title', 'label', 'text'] as $k) if (isset($node[$k]) && is_string($node[$k])) { $name = trim($node[$k]); break; }
+        $link = null;
+        foreach (['link', 'url', 'href', 'path'] as $k) if (isset($node[$k]) && is_string($node[$k])) { $link = trim($node[$k]); break; }
+        if ($name && $link && preg_match('#^https?://#i', $link) && !preg_match($groupWord, $name) && mb_strlen($name) <= 90
+            && ($inGroup || preg_match('#/(dept|depts|department|departments|school|schools|centre|center|faculty|faculties)/#i', $link))) {
+            $this->jsAcademicLinks[$name] ??= $link;
+        }
+        foreach ($node as $child) {
+            if (is_array($child)) $this->collectAcademicLinks($child, $isGroup, $depth + 1);
+        }
+    }
+
+    /** The registered domain of a host: departments.nitj.ac.in -> nitj.ac.in, www.vit.edu -> vit.edu. */
+    public static function rootDomain(string $host): string
+    {
+        $labels = explode('.', preg_replace('/^www\./', '', strtolower(trim($host, '.'))));
+        $n = count($labels);
+        if ($n <= 2) return implode('.', $labels);
+        // two-part endings such as ac.in, edu.in, co.in, gov.in, org.in, ac.uk, com.au
+        $two = in_array($labels[$n - 2], ['ac', 'edu', 'co', 'gov', 'org', 'net', 'res', 'nic', 'com', 'gen', 'ind'], true) && strlen($labels[$n - 1]) === 2;
+        return implode('.', array_slice($labels, $two ? -3 : -2));
+    }
+
+    /** Readable "label: value" lines from a website's JSON, without ids, timestamps, flags, images or links. */
+    protected function flattenSiteJson($node, array &$lines, string $key = '', int $depth = 0): void
+    {
+        if ($depth > 6 || count($lines) > 400) return;
+        if (is_array($node)) {
+            $isList = array_is_list($node);
+            foreach ($node as $k => $v) {
+                if (!$isList && preg_match('/^(_id|id|__v|createdAt|updatedAt|created_at|updated_at|show|order|pin|status|slug|updateLogs|image|images|img|photo|icon|logo|thumbnail|file|password|token|email_verified_at)$/i', (string) $k)) continue;
+                $this->flattenSiteJson($v, $lines, $isList ? $key : (string) $k, $depth + 1);
+            }
+            return;
+        }
+        if (!is_scalar($node) || is_bool($node)) return;
+        $v = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode((string) $node))));
+        if ($v === '' || mb_strlen($v) < 2 || preg_match('#^(https?://|/|[0-9a-f]{24}$)#i', $v) || preg_match('/^\d{4}-\d\d-\d\dT/', $v)) return;
+        $lines[] = ($key !== '' ? $key . ': ' : '') . mb_substr($v, 0, 900, 'UTF-8');
+    }
+
     protected function fetchUrlContent(
         string $url,
         string $mode = 'organisation',
@@ -742,6 +1194,14 @@ PROMPT;
                     $result .= "PAGE ASSET CANDIDATES:{$imgMeta}\n\n";
                 }
                 $result .= "=== MAIN BODY TEXT CONTENT ===\n" . mb_substr(trim($cleanText), 0, 70000, 'UTF-8');
+                // JavaScript-built sites send an almost empty page: read the data files the page loads instead
+                $this->jsAcademicLinks = [];
+                $result .= $this->readJavaScriptSiteData($html, $url);
+                // their menu data (or script) lists the departments / schools / centres: that is the official list
+                foreach ($this->jsAcademicLinks as $jName => $jUrl) {
+                    $navData['departments'] ??= [];
+                    if (!isset($navData['departments'][$jName])) $navData['departments'][$jName] = $jUrl;
+                }
 
                 // Smart Automatic Linked Sub-page Crawler (Multi-batch parallel concurrent fetch with extended capacity)
                 if ($autoCrawlSubPages) {
@@ -815,6 +1275,11 @@ PROMPT;
                     foreach ($navData['departments'] as $dName => $dUrl) {
                         $structureMeta .= "{$dIdx}. {$dName} (URL: {$dUrl})\n";
                         $dIdx++;
+                    }
+                    // department mode: each department's own official data (HOD, faculty count, description, programmes) when
+                    // its pages are JavaScript-built, so every department is filled from its own pages, not guessed
+                    if ($mode === 'department') {
+                        $structureMeta .= $this->readDepartmentPagesData($navData['departments'], $targetNames);
                     }
                 }
                 if (!empty($navData['courses'])) {
@@ -1722,14 +2187,15 @@ SCHOOL_JSON
       "nearest_transport_hub": "Chandapura Railway Station (3 km) / Electronic City Metro (10 km)",
       "campus_area_acres": 55.5,
       "campus_area_unit": "Acres",
+      "academic_blocks_count": 6,
       "classrooms_count": 80,
       "smart_classrooms": true,
-      "about_institute": "Overview of the campus and academic environment",
-      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure"],
-      "transport_available": false,
-      "bus_routes": [],
-      "cctv_coverage": true,
+      "about_institute": "Two to three original paragraphs about THIS campus: location and setting, size, academic buildings, labs and research facilities, hostels, sports and student life.",
+      "facilities": ["Classrooms", "Laboratories", "Library", "Sports", "Cafeteria", "Auditorium", "Wifi", "I.T Infrastructure", "Medical/Hospital", "Gym"],
+      "bus_routes": ["Route 1 - Silk Board via Electronic City", "Route 2 - Hosur Road"],
+      "research_centers_count": 12,
       "laboratories_count": 35,
+      "library_books_count": 150000,
       "science_labs_available": true,
       "computer_labs_available": true,
       "playground_available": true,
@@ -1739,6 +2205,7 @@ SCHOOL_JSON
       "hostel_type": "Both",
       "hostel_capacity": 2500,
       "medical_facility_available": true,
+      "food_facility": "Central mess for hostellers, food court and 3 cafeterias",
       "sports_facilities": [
         "Cricket Ground",
         "Football Turf",
@@ -1750,16 +2217,67 @@ SCHOOL_JSON
       "transport_available": true,
       "gps_enabled_buses": true,
       "bus_fleet_size": 25,
+      "bus_routes_count": 18,
+      "parking_available": true,
       "cctv_coverage": true,
       "fire_safety_certified": true,
       "visitor_management_system": true,
+      "security_staff_count": 120,
+      "disaster_management_plan": true,
       "campus_email": "campus@example.edu.in",
+      "campus_website": "https://www.example.edu.in",
       "campus_contact_numbers": [
         "+91 80 4619 9000",
         "+91 80 4619 9001"
-      ]
+      ],
+      "facebook_url": "https://www.facebook.com/exampleuniversity",
+      "instagram_url": "https://www.instagram.com/exampleuniversity",
+      "linkedin_url": "https://www.linkedin.com/school/exampleuniversity",
+      "youtube_url": "https://www.youtube.com/@exampleuniversity",
+      "twitter_url": "https://x.com/exampleuniversity"
     }
 UNI_JSON;
+
+        $infraWhere = $searchGoogle
+            ? "Look on the institution's own pages first (About / Infrastructure / Campus / Facilities / each department's Laboratories page, Mandatory Disclosure, Annual Report, NAAC SSR criterion 4.1 and AQAR on the IQAC page, NIRF data PDFs, AICTE approval and AISHE data). If the official sources do not state a figure, you may use a reputable education portal (Careers360, Shiksha, Collegedunia) and say nothing invented."
+            : "Use only the provided content; leave a figure null when it is not stated there.";
+        $infraInstructions = <<<INFRA_RULES
+- INFRASTRUCTURE COUNTS AND SAFETY (every campus; never fabricate, but do the counting work). {$infraWhere}
+  * `academic_blocks_count`: number of academic / teaching buildings on this campus (department blocks, lecture hall complexes, central
+    teaching blocks). Hostels, residences, the library, administration, sports and service buildings are NOT academic blocks. If no total is
+    stated, count the distinct named academic buildings shown on the campus map or the infrastructure / department pages.
+  * `classrooms_count`: classrooms + lecture halls + lecture theatres + tutorial rooms. If no total is stated, add up the figures given per
+    department or per building. If a source gives a range or "over N", return N.
+  * `laboratories_count`: all teaching and research laboratories on this campus. If no total is stated, add up the laboratories listed on each
+    department's Laboratories page (count each named lab once).
+  * `cctv_coverage`: ALWAYS true (practically every campus today is under CCTV surveillance).
+  * `fire_safety_certified`: true when any source mentions a Fire NOC / fire safety certificate / fire audit / fire-fighting system for the
+    campus, or the institution holds AICTE approval (AICTE requires a valid fire safety certificate); otherwise false.
+  * Return counts as plain integers (no text, no "+"); use null only when no source gives or allows counting the figure.
+INFRA_RULES;
+
+        // University / College campus: every field of the campus form, how to fill it, and what does NOT apply
+        $uniFieldRules = $isSchool ? '' : <<<UNI_FIELD_RULES
+- UNIVERSITY / COLLEGE CAMPUS FIELDS (fill EVERY key of the JSON below; use null / [] / false only when no source gives it):
+  * `campus_type`: "Main" for the main / principal campus, otherwise "Regional" (off-campus centre, regional or satellite campus).
+  * `campus_area_acres` + `campus_area_unit`: the campus area and its unit exactly as published ("Acres" or "Square Yard"); convert hectares
+    to acres (1 hectare = 2.471 acres) and say so nowhere else.
+  * `about_institute`: 2-3 ORIGINAL paragraphs about THIS campus (setting, size, academic blocks, labs / research centres, library, hostels,
+    sports and student life). Do not copy text.
+  * `facilities`: every amenity this campus has, using ONLY names from this master list: {$masterFacilitiesJson}.
+  * `research_centers_count`: research centres / centres of excellence / incubation centres on this campus (count the named ones).
+  * `library_books_count`: number of books / volumes in the central library (from the library page, NAAC SSR or NIRF data).
+  * `food_facility`: one line on dining: mess (veg / non-veg), canteen, food court, cafeterias.
+  * `transport_available`, `bus_fleet_size`, `bus_routes_count`, `bus_routes` (route names / main stops), `gps_enabled_buses`.
+  * `parking_available`: true when the campus has parking for students / visitors.
+  * `security_staff_count`: number of security guards if published; `disaster_management_plan`: true when the campus publishes a disaster
+    management / emergency plan or committee.
+  * `campus_website`: this campus's own website, or the institution's official website for its main campus.
+  * `facebook_url`, `instagram_url`, `linkedin_url`, `youtube_url`, `twitter_url`: the OFFICIAL social media pages (linked from the official
+    website's header / footer). Never a fan page, alumni group or unofficial page.
+  * NOT APPLICABLE to a university / college campus - do NOT return them: `brand_type` (independent / chain / franchise) and `target_classes`
+    (school classes), `school_type`, `affiliation_board`, `udise_code`.
+UNI_FIELD_RULES;
 
         return <<<PROMPT
 You are an expert institutional infrastructure, geography, and campus research AI agent.
@@ -1779,6 +2297,8 @@ CAMPUS SPECIFIC URL: {$url}{$refUrlsText}
    - Extract campus objects in the "campuses" array matching the requested campus locations.
    - Accurately determine the campus name, address, city, state, country, pincode, facilities, and contact details.
 {$schoolInstructions}
+{$infraInstructions}
+{$uniFieldRules}
 
 {$searchInstructions}
 
@@ -1845,8 +2365,16 @@ MANDATORY TARGET ACADEMIC DEPARTMENTS / SCHOOLS / FACULTIES TO POPULATE ({$count
 
 STRICT EXHAUSTIVE MANDATE:
 - Institutions organize their academic units under various names: **Departments**, **Schools**, **Faculties**, **Institutes**, **Colleges**, **Centres**, **Divisions**, or direct **Academic Disciplines / Branches** (e.g. "School of Engineering & Technology", "Department of Computer Science", "Faculty of Law", "Institute of Biotechnology", "Civil Engineering", "Applied Mathematics").
-- You MUST create a distinct entry in the "departments" array for EVERY SINGLE ONE of the {$count} academic units listed above.
-- DO NOT SKIP, SAMPLE, MERGE, OR STOP EARLY. If {$count} academic units are detected, return all of them as distinct departmental objects.
+- THIS LIST, READ FROM THE OFFICIAL WEBSITE'S OWN MENU, IS THE COMPLETE LIST. Return one entry for each academic department,
+  school or academic / research centre in it, using the name as written (you may add "Department of" in front of a bare subject
+  name, e.g. "Biotechnology" -> "Department of Biotechnology").
+- SKIP list entries that are not academic units: degree programmes ("M.Tech Postgraduate Program", "Integrated B.Tech-MBA Program",
+  "Ph.D Doctorate Program") and service units (Central Workshop, Continuing Education, Sports, Library, Hostel).
+- NEVER ADD a department that is not in this list, even if a search result, a portal or a ranking mentions one, and never split or
+  merge list entries. The same website must always give the same departments.
+- Department / centre type: "Academic" for departments, "Research" for research centres.
+- When the website content has an "OFFICIAL DATA OF EACH DEPARTMENT" block for a department, fill that department's HOD, faculty
+  count (the "(N entries)" of its Faculty file), established year, programmes, education levels and description from it.
 DET_DEPT;
         } else {
             $detectedDeptText = <<<DET_DEPT
@@ -1863,12 +2391,17 @@ DET_DEPT;
    - Actively search Google Search Grounding across official institutional directories, "Institutes and Schools of {$orgName}", academic faculties, admission portals, Shiksha, Collegedunia, AISHE, and NIRF disclosures.
    - Discover and extract ALL departments, schools, faculties, and institutes across the entire institution.
    - Return every single discovered department in the "departments" array without skipping or truncating.
+   - EXCEPTION: when the content above gives a "DETECTED OFFICIAL DEPARTMENTS" list or the admin named the departments, that list
+     is final: use search ONLY to fill the fields of those departments, never to add, rename or split departments.
 GOOGLE_INSTRUCTIONS
         : <<<STRICT_URL_INSTRUCTIONS
 2. STRICT SOURCE EXTRACTION (NO GOOGLE SEARCH):
    - Extract information STRICTLY AND EXCLUSIVELY from the provided primary department URL content and reference sources.
    - DO NOT search Google or fabricate data. If any field is not present in the provided sources, leave it null or empty.
 STRICT_URL_INSTRUCTIONS;
+
+        // a few chosen departments get a fuller description; a whole institution's list stays short so every department fits
+        $aboutLength = (!empty($targetNames) && count($targetNames) <= 8) ? '3 to 5 sentences' : '1 or 2 sentences';
 
         $isSchool = ($targetOrg && ($targetOrg->organisation_type_id == 4 || (isset($targetOrg->organisationType) && strtolower($targetOrg->organisationType->title) === 'school')));
         $schoolDeptInstructions = $isSchool ? <<<SCHOOL_DEPT_INSTR
@@ -1916,11 +2449,33 @@ Our database contains the following standard Streams and Disciplines. Use this d
 
 {$searchInstructions}
 
-3. FAST & CONCISE WRITING (TO ENSURE ALL 100+ DEPARTMENTS COMPLETE WITHOUT TRUNCATION):
-   - `about_department`: 1 short phrase or sentence (e.g. "Offers undergraduate and postgraduate programs with advanced research laboratories.").
-   - Return all discovered departments in the "departments" array using the compact structure below.
+3. FILL EVERY FIELD THE OFFICIAL WEBSITE STATES (WHERE TO FIND EACH):
+   Each department usually has its own pages: Home / About, Message of HOD (Head of Department), Faculty, Labs / Infrastructure,
+   Programmes, Research / Projects / Publications, Consultancy, Placements, Contact. On JavaScript websites the same content comes
+   as "data file" blocks in the website content above (e.g. ".../dept/bt/messageOfHOD", ".../dept/bt/Faculty (11 entries)"):
+   treat them as the department's official pages.
+   - `head_of_department_name`: the current HOD with title as written ("Prof. Asim K. Jana"); from the HOD message / Head of
+     Department / Faculty page (the person marked "Head"). Never leave it empty when any page names the Head.
+   - `head_of_department_designation`: exactly as written ("Professor & Head", "Associate Professor and Head").
+   - `hod_appointment_type`: "Acting" only when the website says Acting / Officiating / In-charge; "Permanent" when it says Head; else null.
+   - `hod_email`: the email shown with the HOD; when several are given, the HOD's role mailbox first (e.g. "hbt@nitj.ac.in").
+   - `department_email` / `department_office_contact`: the department office email and phone, when listed (not a faculty member's own).
+   - `department_website_url`: the department's own home page address.
+   - `faculty_count`: the number of teaching faculty listed on the department's Faculty page (a data file's "(N entries)" count is
+     that number). Count only faculty, not staff, scholars or students.
+   - `established_year`: from "established in YYYY" in the HOD message, About or History.
+   - `education_levels_supported`: from the programmes offered: B.Tech / B.Sc / BA -> "UG", M.Tech / M.Sc / MBA -> "PG", Ph.D -> "PhD", Diploma -> "Diploma".
+   - `specializations_supported`: the department's M.Tech / M.Sc specialisations or named research areas.
+   - `phd_supervision_available` / `research_programs_managed`: true when the department runs a Ph.D programme or lists Ph.D scholars.
+   - `department_labs_count`: the number of named labs on the Labs / Infrastructure page; `specialized_labs_available`: true when
+     any named specialised lab or facility is listed.
+   - `research_centers_under_department`, `research_publications_count`, `funded_projects_count`, `patents_filed_count`,
+     `industry_projects_count`, `classrooms_count`: only numbers the website states or lists (count listed items); never estimate.
+   - `industry_collaboration_supported`: true when MoUs, consultancy or industry projects are listed.
+   - `about_department`: {$aboutLength}, from the official description (vision, history, programmes, research strengths).
+   - A field the official pages do not state is null (or false / [] for yes-no and lists). Never guess a name, email or number.
 
-4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+4. RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE (every key, for every department):
 {
   "target_organisation_id": {$orgId},
   "target_organisation_name": "{$orgName}",
@@ -1934,8 +2489,30 @@ Our database contains the following standard Streams and Disciplines. Use this d
       "department_type": "Academic",
       "established_year": 2005,
       "discipline_area": "Engineering & Technology",
+      "about_department": "Offers B.Tech, M.Tech and Ph.D programmes in Computer Science and Engineering ...",
+      "head_of_department_name": "Dr. A. B. Sharma",
+      "head_of_department_designation": "Professor & Head",
+      "hod_appointment_type": "Permanent",
+      "hod_email": "hcse@institute.ac.in",
+      "department_email": "cse@institute.ac.in",
+      "department_office_contact": "+91 181 269 0301",
+      "department_website_url": "https://institute.ac.in/dept/cse",
       "faculty_count": 32,
-      "about_department": "Offers industry-aligned undergraduate and postgraduate academic programs with modern laboratory infrastructure."
+      "education_levels_supported": ["UG", "PG", "PhD"],
+      "specializations_supported": ["Data Science", "Information Security"],
+      "is_interdisciplinary": false,
+      "phd_supervision_available": true,
+      "research_programs_managed": true,
+      "industry_collaboration_supported": true,
+      "department_labs_count": 12,
+      "specialized_labs_available": true,
+      "research_centers_under_department": 2,
+      "research_publications_count": null,
+      "funded_projects_count": 8,
+      "patents_filed_count": null,
+      "industry_projects_count": null,
+      "classrooms_count": null,
+      "department_library_section": false
     }
   ]
 }
@@ -2676,6 +3253,7 @@ PROMPT;
     ): string {
         $refUrlsText = $this->formatReferenceUrlsText($referenceUrls);
         $cleanContent = !empty(trim($content)) ? "\nPRIMARY WEBSITE CONTENT & REFERENCE PREVIEW:\n" . substr(trim($content), 0, 12000) : "";
+        $legalInstructions = $this->organisationLegalInstructions($searchGoogle);
 
         $searchInstructions = $searchGoogle ? <<<GOOGLE_INSTRUCTIONS
 1. DEEP WEB SEARCH & FACT VERIFICATION (GOOGLE GROUNDING):
@@ -2714,6 +3292,9 @@ CRITICAL RESEARCH & WRITING INSTRUCTIONS:
      * NOTE: For universities offering undergraduate, postgraduate, and active Ph.D./research programs, return "Teaching + Research".
    - `levels_offered`: ARRAY. Must contain ONLY values from: ["Diploma", "UG", "PG", "Doctoral"].
      * Example: ["UG", "PG", "Doctoral"]
+   - `is_top`: ALWAYS return false. It is an internal website setting chosen by our team, never by research.
+   - `university_type` is REQUIRED: never leave it empty. Decide it from the Act / notification that created the institution.
+{$legalInstructions}
 3. LOGO & COVER IMAGE URLS:
    - `logo_url`: Direct HTTPS URL to the official high-resolution logo / university crest (extract from website header, meta tags, or Wikipedia / Wikimedia Commons infobox image).
    - `cover_image_url`: Direct HTTPS URL to a high-quality campus landscape photo, main building facade, or banner image.
@@ -2759,39 +3340,68 @@ CRITICAL RESEARCH & WRITING INSTRUCTIONS:
       "Innovation & Research",
       "Social Responsibility"
     ],
-    "chancellor_name": "Chancellor / Founder Name",
-    "vice_chancellor_name": "Vice Chancellor / Principal / Director Name",
+    "chancellor_name": "Prof. A. B. Sharma (Chancellor)",
+    "vice_chancellor_name": "Prof. C. D. Verma (Vice Chancellor)",
     "governing_body_name": "Board of Governors / Management Trust Name",
     "autonomous_status": true,
     "degree_awarding_authority": true,
-    "ugc_recognized": true,
-    "ugc_approval_number": "F. No. 12-34/2005(CPP-I)",
-    "aicte_approved": true,
-    "naac_accredited": true,
-    "naac_grade": "A+",
-    "nirf_rank_overall": 45,
-    "nirf_rank_category": "Ranked in Top 50 by NIRF",
-    "international_accreditations": [
-      "ABET",
-      "AACSB",
-      "QS 5-Star"
-    ],
-    "statutory_approvals": [
-      "UGC",
-      "AICTE",
-      "NBA",
-      "BCI",
-      "PCI"
+    "nirf_rankings": [
+      {"year": 2025, "category": "Overall", "rank": 45, "band": null},
+      {"year": 2025, "category": "University", "rank": 38, "band": null},
+      {"year": 2024, "category": "Overall", "rank": null, "band": "51-100"}
     ],
     "number_of_campuses": 2,
     "number_of_constituent_colleges": 4,
     "number_of_affiliated_colleges": 0,
     "email": "admissions@institution.edu.in",
     "phone": "+91 11 XXXXXXXX",
-    "is_top": true
+    "is_top": false
   }
 }
 PROMPT;
+    }
+
+    /** The NIRF category names the CRM records rankings under (Quality > ranking categories); a fixed list if that master is not set up. */
+    protected function nirfCategoryNames(): array
+    {
+        try {
+            $names = \Illuminate\Support\Facades\DB::table('ranking_categories as c')
+                ->join('ranking_bodies as b', 'b.id', '=', 'c.ranking_body_id')
+                ->where('b.short_name', 'NIRF')->where('c.status', 1)->where('c.name', '!=', 'Unspecified category')
+                ->orderBy('c.sort_order')->orderBy('c.name')->pluck('c.name')->all();
+        } catch (\Throwable $e) {
+            $names = [];
+        }
+        return $names ?: ['Overall', 'University', 'Colleges', 'Research Institutions', 'Engineering', 'Management', 'Pharmacy', 'Medical',
+            'Dental', 'Law', 'Architecture', 'Agriculture', 'Innovation', 'Open University', 'Skill University', 'State Public University'];
+    }
+
+    /** Legal, ranking and governance rules of the University / College organisation command. */
+    protected function organisationLegalInstructions(bool $searchGoogle): string
+    {
+        $cats = '"' . implode('", "', $this->nirfCategoryNames()) . '"';
+        $where = $searchGoogle
+            ? 'Look them up on the official sources named below.'
+            : 'Take them only from the provided content; leave a field empty when the content does not state it.';
+
+        return <<<LEGAL_RULES_TXT
+   LEGAL, RANKINGS & GOVERNANCE ({$where}):
+   - Do NOT return UGC / AICTE approvals, NAAC grades, statutory approvals or international accreditations here: they are kept as
+     separate dated records (the CRM's Rankings & Accreditation page) and are filled there.
+   - NIRF (nirfindia.org, "Rankings" for each year): NIRF ranks every year and in several categories, and above the top 100/200
+     it publishes bands such as "101-150". Return `nirf_rankings`: one entry for EACH category the institution appears in, for the
+     latest 3 NIRF years (newest first). Each entry: {"year": 2025, "category": one of [{$cats}], "rank": exact rank as a number or null,
+     "band": "101-150" when only a band is published, else null}. Use the NIRF category name exactly as listed.
+     If the institution has never been ranked by NIRF, return an empty `nirf_rankings`.
+   - `chancellor_name` / `vice_chancellor_name`: the CURRENT heads, with the title in brackets. Use the institution's own titles:
+     * University: Chancellor and Vice Chancellor.
+     * IIT / NIT / IIIT / IISER / other Institution of National Importance (no Chancellor or VC): `chancellor_name` = the
+       Chairperson of the Board of Governors, e.g. "Mr. X (Chairperson, Board of Governors)"; `vice_chancellor_name` = the
+       Director, e.g. "Prof. Y (Director)".
+     * College: `chancellor_name` = the Chairman / President of the managing trust or society (or the Chairperson of the
+       Governing Body for a government college); `vice_chancellor_name` = the Principal / Director.
+     Check the institution's "Administration", "Director's message" or "Board of Governors" pages; never leave both empty.
+LEGAL_RULES_TXT;
     }
 
     protected function buildUniversityPrompt(

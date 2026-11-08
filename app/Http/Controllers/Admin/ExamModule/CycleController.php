@@ -29,7 +29,7 @@ class CycleController extends Controller
     /** Cycle workspace: details, stages and the events table. */
     public function show(Cycle $cycle)
     {
-        $cycle->load(['exam', 'stages', 'events' => fn ($q) => $q->with(['type', 'stage'])->orderBy('start_at')]);
+        $cycle->load(['exam', 'stages', 'events' => fn ($q) => $q->with(['type', 'stage'])->orderBy('sort_order')->orderBy('id')]);
         $eventTypes = EventType::where('status', true)->whereIn('applies_to', ['exam', 'both'])->orderBy('sort_order')->get();
         return view('admin.exam-module.cycles.show', compact('cycle', 'eventTypes'));
     }

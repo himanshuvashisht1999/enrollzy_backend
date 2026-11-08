@@ -27,6 +27,7 @@
                             <th>Comment Required</th>
                             <th>More Details?</th>
                             <th>Current Academic Details?</th>
+                            <th>Connected?</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -91,6 +92,14 @@
                             <option value="yes">Yes</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Person reached (connected)? <span class="text-danger">*</span></label>
+                        <select name="is_connected" id="is_connected" class="form-select rounded-3" required>
+                            <option value="0">No: not answered, busy, switched off, wrong number…</option>
+                            <option value="1">Yes: we spoke to the student or parent</option>
+                        </select>
+                        <div class="form-text">Counts toward the connect rate on the dashboards and Live Monitor.</div>
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
@@ -119,6 +128,7 @@
                 { data: 'comment_require', name: 'comment_require' },
                 { data: 'is_more_details', name: 'is_more_details' },
                 { data: 'current_academic_details', name: 'current_academic_details' },
+                { data: 'is_connected', name: 'is_connected' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]
         });
@@ -160,6 +170,7 @@
                     $('#is_more_details').val(imd).trigger('change');
                     let cad = res.data.current_academic_details ? res.data.current_academic_details.toString().toLowerCase().trim() : 'no';
                     $('#current_academic_details').val(cad).trigger('change');
+                    $('#is_connected').val(res.data.is_connected ? '1' : '0').trigger('change');
                     $('#modalTitle').text('Edit Calling Status');
                     $('#createModal').modal('show');
                 }
@@ -174,6 +185,7 @@
             $('#comment_require').val('no').trigger('change');
             $('#is_more_details').val('no').trigger('change');
             $('#current_academic_details').val('no').trigger('change');
+            $('#is_connected').val('0').trigger('change');
             $('#modalTitle').text('New Calling Status');
         });
     });

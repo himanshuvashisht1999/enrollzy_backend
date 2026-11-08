@@ -40,4 +40,12 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
     ],
 
+    // "Create by Claude" (App\Services\ClaudeExtractionService): the same master commands as Create by Bot, run on Claude
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('CLAUDE_BOT_MODEL', 'claude-opus-5-5'),
+        'effort' => env('CLAUDE_BOT_EFFORT', 'medium'),
+        'web_searches' => env('CLAUDE_BOT_WEB_SEARCHES', 5),
+    ],
+
 ];

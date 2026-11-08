@@ -2,6 +2,7 @@
 
 @section('content')
     <div class="container-fluid">
+        @if(!empty($organisation))@include('admin.partials.org_breadcrumb', ['bcOrg' => $organisation, 'bcCampus' => $campus ?? null, 'bcHere' => 'departments'])@endif
         <div class="row">
             <div class="col-12">
                 <div class="card">

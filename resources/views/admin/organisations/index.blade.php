@@ -9,13 +9,13 @@
                         <h4 class="card-title mb-0">All Organisations <span class="badge bg-secondary ms-2 fs-6">{{ $organisations->total() }}</span></h4>
                         <div class="d-flex gap-2">
                             <a href="{{ route('admin.ai-organisations.update') }}" class="btn btn-outline-primary shadow-sm">
-                                <i class="fas fa-robot me-1"></i> Update via Bot
+                                <i class="fas fa-robot me-1"></i> Update (Gemini / Claude)
                             </a>
                             <a href="{{ route('admin.ai-organisations.create') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
-                                <i class="fas fa-magic me-1"></i> Auto-Create via AI
+                                <i class="fas fa-magic me-1"></i> Create (Gemini / Claude)
                             </a>
-                            <a href="{{ route('admin.ai-organisations.targeted-add') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); border: none;" title="Targeted incremental addition of Campuses, Departments, or Courses">
-                                <i class="fas fa-layer-group me-1"></i> Add via AI
+                            <a href="{{ route('admin.ai-organisations.targeted-add') }}" class="btn btn-dark shadow-sm" style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); border: none;" title="Add the missing Campuses, Departments or Courses of an institute already in the CRM">
+                                <i class="fas fa-layer-group me-1"></i> Missing Info (Gemini / Claude)
                             </a>
                             <a href="{{ route('admin.organisations.create') }}" class="btn btn-primary">Add Organisation</a>
                         </div>
@@ -77,7 +77,11 @@
                                                 <span class="badge bg-warning text-dark ms-1"><i class="fas fa-star text-dark me-1"></i>Top</span>
                                             @endif
                                         </td>
-                                        <td>{{ $uni->organisationType->title ?? '-' }}</td>
+                                        <td>{{ $uni->organisationType->title ?? '-' }}
+                                            @if($uni->organisation_type_id == 2)
+                                                <div class="small {{ $uni->affiliatingOrganisation ? 'text-muted' : 'text-danger' }}">{{ $uni->affiliatingOrganisation ? 'Affiliated to ' . $uni->affiliatingOrganisation->name : 'University not set' }}</div>
+                                            @endif
+                                        </td>
                                         <td>
                                             @if($uni->brand_type)
                                                 <span class="badge bg-info text-dark">{{ $uni->brand_type }}</span>
@@ -102,10 +106,15 @@
                                             @if($isELearningOrg)
                                                 <span class="text-muted">-</span>
                                             @else
+                                                @if($uni->organisation_type_id == 2 && !$uni->departments_count)
+                                                    {{-- most colleges have no departments: courses are added straight to the campus --}}
+                                                    <a href="{{ route('admin.departments.index', ['organisation_id' => $uni->id]) }}" class="badge bg-light text-muted border text-decoration-none px-2 py-1" title="Departments are optional for colleges">Optional</a>
+                                                @else
                                                 <a href="{{ route('admin.departments.index', ['organisation_id' => $uni->id]) }}"
                                                     class="badge bg-primary text-white text-decoration-none px-2 py-1" title="View Departments">
                                                     <i class="fas fa-building me-1"></i>{{ $uni->departments_count }}
                                                 </a>
+                                                @endif
                                             @endif
                                         </td>
                                         <td class="text-center">
@@ -124,7 +133,7 @@
                                                 </button>
                                             </form>
                                             <a href="{{ route('admin.ai-organisations.update', ['org_id' => $uni->id]) }}"
-                                                class="btn btn-sm btn-primary text-white me-2" title="Update via Bot">
+                                                class="btn btn-sm btn-primary text-white me-2" title="Update via Gemini / Claude">
                                                 <i class="fas fa-robot"></i>
                                             </a>
                                             <a href="{{ route('admin.organisations.edit', $uni->id) }}"

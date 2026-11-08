@@ -63,7 +63,14 @@ class ContentController extends Controller
         $rules = ContentBlocks::rules($def, (bool) $existing)
             + ['stage_id' => ['nullable', Rule::exists('exm_stages', 'id')->where('cycle_id', $cycle->id)]];
 
-        $validator = Validator::make($request->all(), $rules);
+        // An emptied editor still posts "<p>&nbsp;</p>": treat it as empty, so "required" works.
+        foreach ($def['fields'] as $f) {
+            if ($f['type'] === 'richtext' && trim(str_replace("\u{A0}", ' ', html_entity_decode(strip_tags((string) $request->input($f['name']))))) === '') {
+                $request->merge([$f['name'] => null]);
+            }
+        }
+
+        $validator = Validator::make($request->all(), $rules, ['distinct' => 'The same :attribute is entered twice.'], ContentBlocks::attributeNames($def));
         $validator->after(function ($v) use ($def, $request, $existing) {
             if ($oneOf = $def['require_one_of'] ?? null) {
                 $has = collect($oneOf)->contains(fn ($f) => $request->hasFile($f) || filled($request->input($f)) || ($existing && filled($existing->$f)));
@@ -89,14 +96,23 @@ class ContentController extends Controller
                 case 'rows':
                     $data[$name] = $this->rows($value, $f['sub']);
                     break;
+                case 'multiselect':
+                    // Id-keyed options (categories) are stored as numbers.
+                    $data[$name] = array_values(array_map(fn ($v) => ctype_digit((string) $v) ? (int) $v : $v, (array) $value)) ?: null;
+                    break;
                 case 'file':
                     if ($request->hasFile($name)) {
                         $data[$name] = $request->file($name)->store('exm/content/' . $def['table'], 'public');
                     }
                     break;
                 default:
-                    $data[$name] = ($value === '' || $value === null) ? null : $value;
+                    // A cleared box falls back to the field's default (FAQ order is NOT NULL), else empty.
+                    $data[$name] = ($value === '' || $value === null) ? ($f['default'] ?? null) : $value;
             }
+        }
+        // Fees: category_id mirrors the first chosen category, for older readers and the "category in use" check.
+        if ($def['table'] === 'exm_fees') {
+            $data['category_id'] = $data['category_ids'][0] ?? null;
         }
         return $data;
     }

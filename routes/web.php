@@ -55,6 +55,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Uploaded files (public disk) without the public/storage link: website folders for everyone, the rest for CRM admins
+Route::get('/storage/{path}', \App\Http\Controllers\StorageFileController::class)->where('path', '.*')->name('storage.file');
+
 // ✅ Public Digital Card Routes
 Route::get('/card/{slug}.vcf', [\App\Http\Controllers\PublicDigitalCardController::class, 'vcard'])->name('digital-cards.vcf');
 Route::get('/card/{slug}/vcard', [\App\Http\Controllers\PublicDigitalCardController::class, 'vcard'])->name('digital-cards.vcard');
@@ -69,6 +72,32 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ✅ Admin Routes
 Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    // Calling command center: Live Monitor and Team Performance (admin, team lead), the monitor's rules (admin),
+    // and the Notice Board (everyone in the calling team; admins and team leads post)
+    Route::prefix('admin/calling')->name('admin.calling.')->group(function () {
+        $cc = \App\Http\Controllers\Admin\Calling\CommandCenterController::class;
+        $nb = \App\Http\Controllers\Admin\Calling\NoticeController::class;
+        Route::get('monitor', [$cc, 'monitor'])->name('monitor');
+        Route::get('performance', [$cc, 'performance'])->name('performance');
+        Route::post('rules', [$cc, 'saveRules'])->name('rules');
+        Route::get('notices', [$nb, 'index'])->name('notices.index');
+        Route::post('notices', [$nb, 'store'])->name('notices.store')->middleware('throttle:20,1');
+        Route::post('notices/{notice}/ack', [$nb, 'ack'])->name('notices.ack')->whereNumber('notice');
+        Route::get('notices/{notice}/receipts', [$nb, 'receipts'])->name('notices.receipts')->whereNumber('notice');
+        Route::delete('notices/{notice}', [$nb, 'destroy'])->name('notices.destroy')->whereNumber('notice');
+        $lf = \App\Http\Controllers\Admin\Calling\LeadFlagController::class;
+        Route::get('lead-flags/{customer}', [$lf, 'show'])->name('lead-flags')->whereNumber('customer');
+        Route::post('escalations/{escalation}/resolve', [$lf, 'resolve'])->name('escalations.resolve')->whereNumber('escalation');
+    });
+
+    // Graduate survey responses (website /survey/graduates): list, filters, CSV, one response with follow-up status
+    Route::prefix('admin/graduate-surveys')->name('admin.graduate-surveys.')->middleware('can:customer-browse')
+        ->controller(\App\Http\Controllers\Admin\GraduateSurveyController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{survey}', 'show')->name('show')->whereNumber('survey');
+            Route::post('/{survey}', 'update')->name('update')->whereNumber('survey');
+        });
 
     // Digital Business Cards Module
     Route::post('/admin/digital-cards/{id}/toggle-status', [\App\Http\Controllers\Admin\DigitalCardController::class, 'toggleStatus'])->name('admin.digital-cards.toggle-status');
@@ -85,6 +114,11 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     // Career Roadmap
     Route::resource('/admin/career-roadmap-categories', \App\Http\Controllers\Admin\CareerRoadmapCategoryController::class)->names('admin.career-roadmap-categories')->middleware('can:department-browse');
     Route::resource('/admin/career-roadmap-stages', \App\Http\Controllers\Admin\CareerRoadmapStageController::class)->names('admin.career-roadmap-stages')->middleware('can:department-browse');
+    Route::post('/admin/career-roadmap-sub-modules/reorder', [\App\Http\Controllers\Admin\CareerRoadmapSubModuleController::class, 'reorder'])->name('admin.career-roadmap-sub-modules.reorder')->middleware('can:department-browse');
+    Route::resource('/admin/career-categories', \App\Http\Controllers\Admin\CareerCategoryController::class)->only(['index', 'store', 'update', 'destroy'])->names('admin.career-categories')->middleware('can:department-browse');
+    Route::resource('/admin/careers', \App\Http\Controllers\Admin\CareerController::class)->except('show')->names('admin.careers')->middleware('can:department-browse');
+    Route::get('/admin/career-roadmap-page', [\App\Http\Controllers\Admin\CareerPageController::class, 'edit'])->name('admin.career-roadmap-page.edit')->middleware('can:department-browse');
+    Route::put('/admin/career-roadmap-page', [\App\Http\Controllers\Admin\CareerPageController::class, 'update'])->name('admin.career-roadmap-page.update')->middleware('can:department-browse');
     Route::resource('/admin/career-roadmap-sub-modules', \App\Http\Controllers\Admin\CareerRoadmapSubModuleController::class)->names('admin.career-roadmap-sub-modules')->middleware('can:department-browse');
 
     // FAQs
@@ -104,11 +138,44 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         'destroy' => 'experts.destroy',
     ]);
     Route::post('/admin/experts/{expert}/commission', [ExpertController::class, 'updateCommission'])->name('experts.commission.update');
+    // Becoming an expert: applications from the website, documents, the expertise list
+    Route::middleware('can:experts-browse')->group(function () {
+        Route::get('/admin/expert-applications', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'index'])->name('expert-applications.index');
+        Route::post('/admin/expert-applications/settings', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'settings'])->name('expert-applications.settings');
+        Route::get('/admin/expert-applications/{application}', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'show'])->name('expert-applications.show')->whereNumber('application');
+        Route::post('/admin/expert-applications/{application}/status', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'status'])->name('expert-applications.status')->whereNumber('application');
+        Route::post('/admin/expert-applications/{application}/note', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'note'])->name('expert-applications.note')->whereNumber('application');
+        Route::post('/admin/expert-applications/{application}/approve', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'approve'])->name('expert-applications.approve')->whereNumber('application');
+        Route::post('/admin/expert-applications/{application}/allow-reapply', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'allowReapply'])->name('expert-applications.allow-reapply')->whereNumber('application');
+        Route::get('/admin/expert-applications/{application}/photo', [\App\Http\Controllers\Admin\ExpertApplicationController::class, 'photo'])->name('expert-applications.photo')->whereNumber('application');
+        Route::get('/admin/experts/{expert}/documents', [\App\Http\Controllers\Admin\ExpertDocumentController::class, 'index'])->name('experts.documents');
+        Route::post('/admin/experts/{expert}/documents', [\App\Http\Controllers\Admin\ExpertDocumentController::class, 'store'])->name('experts.documents.store');
+        Route::post('/admin/expert-documents/{document}/review', [\App\Http\Controllers\Admin\ExpertDocumentController::class, 'review'])->name('expert-documents.review')->whereNumber('document');
+        Route::delete('/admin/expert-documents/{document}', [\App\Http\Controllers\Admin\ExpertDocumentController::class, 'destroy'])->name('expert-documents.destroy')->whereNumber('document');
+        Route::get('/admin/expert-documents/{document}/file', [\App\Http\Controllers\Admin\ExpertDocumentController::class, 'file'])->name('expert-documents.file')->whereNumber('document');
+        Route::get('/admin/expert-profile-changes', [\App\Http\Controllers\Admin\ExpertProfileChangeController::class, 'index'])->name('expert-profile-changes.index');
+        Route::get('/admin/expert-profile-changes/{change}', [\App\Http\Controllers\Admin\ExpertProfileChangeController::class, 'show'])->name('expert-profile-changes.show')->whereNumber('change');
+        Route::post('/admin/expert-profile-changes/{change}/approve', [\App\Http\Controllers\Admin\ExpertProfileChangeController::class, 'approve'])->name('expert-profile-changes.approve')->whereNumber('change');
+        Route::post('/admin/expert-profile-changes/{change}/reject', [\App\Http\Controllers\Admin\ExpertProfileChangeController::class, 'reject'])->name('expert-profile-changes.reject')->whereNumber('change');
+        Route::get('/admin/expert-profile-changes/{change}/photo', [\App\Http\Controllers\Admin\ExpertProfileChangeController::class, 'photo'])->name('expert-profile-changes.photo')->whereNumber('change');
+        Route::resource('/admin/expertise-areas', \App\Http\Controllers\Admin\ExpertiseAreaController::class)->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['expertise-areas' => 'area'])->names('expertise-areas');
+    });
     Route::resource('/admin/expert-categories', \App\Http\Controllers\Admin\ExpertCategoryController::class)->names('expert-categories')->middleware('can:department-browse');
 
+    // OTP security: the website's sign-in OTP requests, spam patterns, IPs restricted for good (admins only)
+    Route::get('/admin/otp-security', [\App\Http\Controllers\Admin\OtpSecurityController::class, 'index'])->name('admin.otp-security.index')->middleware('can:otp-security-browse');
+    Route::post('/admin/otp-security/block', [\App\Http\Controllers\Admin\OtpSecurityController::class, 'block'])->name('admin.otp-security.block')->middleware('can:otp-security-browse');
+    Route::delete('/admin/otp-security/{id}', [\App\Http\Controllers\Admin\OtpSecurityController::class, 'unblock'])->name('admin.otp-security.unblock')->whereNumber('id')->middleware('can:otp-security-browse');
+
     // Expert Bookings & Slots
-    Route::get('/admin/expert-bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('admin.bookings.index');
-    Route::put('/admin/expert-bookings/{id}', [\App\Http\Controllers\Admin\BookingController::class, 'update'])->name('admin.bookings.update');
+    Route::get('/admin/expert-bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('admin.bookings.index')->middleware('can:experts-browse');
+    Route::put('/admin/expert-bookings/{id}', [\App\Http\Controllers\Admin\BookingController::class, 'update'])->name('admin.bookings.update')->middleware('can:experts-browse');
+    // Expert payouts: earned / paid out / due per expert, and the payouts themselves
+    Route::get('/admin/expert-payouts', [\App\Http\Controllers\Admin\ExpertPayoutController::class, 'index'])->name('admin.expert-payouts.index')->middleware('can:experts-browse');
+    Route::post('/admin/expert-payouts', [\App\Http\Controllers\Admin\ExpertPayoutController::class, 'store'])->name('admin.expert-payouts.store')->middleware('can:experts-browse');
+    Route::put('/admin/expert-payouts/{payout}', [\App\Http\Controllers\Admin\ExpertPayoutController::class, 'update'])->name('admin.expert-payouts.update')->middleware('can:experts-browse');
+    Route::delete('/admin/expert-payouts/{payout}', [\App\Http\Controllers\Admin\ExpertPayoutController::class, 'destroy'])->name('admin.expert-payouts.destroy')->middleware('can:experts-browse');
     Route::get('/admin/slots', [\App\Http\Controllers\Admin\SlotController::class, 'index'])->name('admin.slots.index');
     Route::post('/admin/slots', [\App\Http\Controllers\Admin\SlotController::class, 'store'])->name('admin.slots.store');
     Route::put('/admin/slots/{id}', [\App\Http\Controllers\Admin\SlotController::class, 'update'])->name('admin.slots.update');
@@ -308,6 +375,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::delete('stages/{stage}', [$ns . 'CycleController', 'destroyStage'])->name('stages.destroy');
 
             Route::post('cycles/{cycle}/events', [$ns . 'EventController', 'store'])->name('events.store');
+            Route::post('cycles/{cycle}/events/order', [$ns . 'EventController', 'reorder'])->name('events.order');
             Route::put('events/{event}', [$ns . 'EventController', 'update'])->name('events.update');
             Route::delete('events/{event}', [$ns . 'EventController', 'destroy'])->name('events.destroy');
         });
@@ -401,6 +469,13 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('rounds/{round}/events', [$ns . 'EventController', 'storeForRound'])->name('events.store-round');
             Route::put('events/{event}', [$ns . 'EventController', 'update'])->name('events.update');
             Route::delete('events/{event}', [$ns . 'EventController', 'destroy'])->name('events.destroy');
+
+            // Schema Builder: extra tabs unique to one counselling, and their values per cycle
+            Route::get('counsellings/{counselling}/fields', [$ns . 'CustomFieldController', 'index'])->name('fields.index');
+            Route::post('counsellings/{counselling}/fields', [$ns . 'CustomFieldController', 'store'])->name('fields.store');
+            Route::put('fields/{field}', [$ns . 'CustomFieldController', 'update'])->name('fields.update');
+            Route::delete('fields/{field}', [$ns . 'CustomFieldController', 'destroy'])->name('fields.destroy');
+            Route::post('cycles/{cycle}/custom-values', [$ns . 'CustomFieldController', 'saveValues'])->name('custom-values.save');
         });
         Route::middleware('can:cns-counsellings-browse')->group(function () use ($ns) {
             Route::get('cycles/{cycle}', [$ns . 'CycleController', 'show'])->name('cycles.show');
@@ -409,6 +484,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         // Phase B: participants, seat matrix, results, cutoffs
         Route::middleware('can:cns-counsellings-browse')->group(function () use ($ns) {
             Route::get('cycles/{cycle}/participants', [$ns . 'ParticipantController', 'index'])->name('participants.index');
+            Route::get('cycles/{cycle}/participants/institutes/{organisation}/courses', [$ns . 'ParticipantController', 'courses'])->whereNumber('organisation')->name('participants.courses');
             Route::get('rounds/{round}/seats', [$ns . 'SeatMatrixController', 'index'])->name('seats.index');
             Route::get('seat-versions/{version}', [$ns . 'SeatMatrixController', 'show'])->name('seats.show');
             Route::get('seat-versions/{version}/diff', [$ns . 'SeatMatrixController', 'diff'])->name('seats.diff');
@@ -417,6 +493,12 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         });
         Route::middleware('can:cns-counsellings-edit')->group(function () use ($ns) {
             Route::post('cycles/{cycle}/participants', [$ns . 'ParticipantController', 'store'])->name('participants.store');
+            // "Search & add": find a college, tick its courses and quotas, add them all at once
+            Route::get('cycles/{cycle}/participants/colleges', [$ns . 'ParticipantController', 'colleges'])->name('participants.colleges');
+            Route::get('cycles/{cycle}/participants/colleges/{organisation}/courses', [$ns . 'ParticipantController', 'collegeCourses'])->whereNumber('organisation')->name('participants.college-courses');
+            Route::post('cycles/{cycle}/participants/bulk', [$ns . 'ParticipantController', 'bulkStore'])->name('participants.bulk');
+            // the add address opened directly (a reload, or a return after login): back to the list, not a "method not allowed" page
+            Route::get('cycles/{cycle}/participants/bulk', [$ns . 'ParticipantController', 'bulkReopened'])->name('participants.bulk-reopened');
             Route::put('participants/{participant}', [$ns . 'ParticipantController', 'update'])->name('participants.update');
             Route::delete('participants/{participant}', [$ns . 'ParticipantController', 'destroy'])->name('participants.destroy');
             Route::patch('seat-versions/{version}/live', [$ns . 'SeatMatrixController', 'makeLive'])->name('seats.live');
@@ -474,6 +556,13 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         });
         Route::middleware('can:quality-edit')->group(function () use ($ns) {
             Route::post('entity/{type}/{id}/rankings', [$ns . 'RecordController', 'storeRanking'])->name('rankings.store');
+            // Create / Missing Info / Update by Bot or Claude (rankings, accreditations, approvals)
+            Route::post('entity/{type}/{id}/ai/command', [$ns . 'QualityAiController', 'command'])->name('ai.command');
+            Route::post('entity/{type}/{id}/ai/run', [$ns . 'QualityAiController', 'run'])->name('ai.run');
+            Route::post('entity/{type}/{id}/ai/save', [$ns . 'QualityAiController', 'save'])->name('ai.save');
+            // what each AI run found, kept on the page for reference (CRM only)
+            Route::post('entity/{type}/{id}/ai/logs', [$ns . 'QualityAiController', 'storeLog'])->name('ai.logs.store');
+            Route::post('entity/{type}/{id}/ai/logs/{log}/delete', [$ns . 'QualityAiController', 'destroyLog'])->whereNumber('log')->name('ai.logs.destroy');
             Route::put('rankings/{ranking}', [$ns . 'RecordController', 'updateRanking'])->name('rankings.update');
             Route::post('entity/{type}/{id}/accreditations', [$ns . 'RecordController', 'storeAccreditation'])->name('accreditations.store');
             Route::post('entity/{type}/{id}/approvals', [$ns . 'RecordController', 'storeApproval'])->name('approvals.store');
@@ -620,10 +709,15 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
     Route::get('/admin/contact-us', [ContactUsDetailController::class, 'edit'])->name('admin.contact-us.edit')->middleware('can:contact-us-browse');
     Route::put('/admin/contact-us', [ContactUsDetailController::class, 'update'])->name('admin.contact-us.update');
 
-    // Commission Settings
+    // Commission Rules (Expert Management): global default, category rates, expert rates
     Route::get('/admin/commission', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('admin.commission.index')->middleware('can:commission-browse');
-    Route::post('/admin/commission/global', [\App\Http\Controllers\Admin\CommissionController::class, 'updateGlobal'])->name('admin.commission.global.update');
-    Route::post('/admin/commission/category', [\App\Http\Controllers\Admin\CommissionController::class, 'updateCategory'])->name('admin.commission.category.update');
+    Route::middleware('can:commission-edit')->group(function () {
+        Route::post('/admin/commission/global', [\App\Http\Controllers\Admin\CommissionController::class, 'updateGlobal'])->name('admin.commission.global.update');
+        Route::post('/admin/commission/category', [\App\Http\Controllers\Admin\CommissionController::class, 'updateCategory'])->name('admin.commission.category.update');
+        Route::delete('/admin/commission/category/{category}', [\App\Http\Controllers\Admin\CommissionController::class, 'destroyCategory'])->name('admin.commission.category.destroy')->whereNumber('category');
+        Route::post('/admin/commission/expert', [\App\Http\Controllers\Admin\CommissionController::class, 'storeExpert'])->name('admin.commission.expert.store');
+        Route::delete('/admin/commission/expert/{expert}', [\App\Http\Controllers\Admin\CommissionController::class, 'destroyExpert'])->name('admin.commission.expert.destroy')->whereNumber('expert');
+    });
 
     // Hero Sliders
     Route::resource('/admin/hero-sliders', HeroSliderController::class)->names('admin.hero-sliders')->middleware('can:department-browse');
@@ -785,6 +879,8 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         Route::resource('campus_type_new', \App\Http\Controllers\Admin\CampusTypeNewController::class)->middleware('can:campus-types-browse');
         Route::resource('academic-classes', \App\Http\Controllers\Admin\AcademicClassController::class);
         Route::resource('coaching-categories', \App\Http\Controllers\Admin\CoachingCategoryController::class)->middleware('can:coaching-categories-browse');
+        // the "Ownership Type" choices on the Institute form (one page: list, add, edit, delete)
+        Route::resource('ownership-types', \App\Http\Controllers\Admin\OwnershipTypeController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('can:organisations-edit');
         Route::resource('course-types', \App\Http\Controllers\Admin\CourseTypeController::class)->middleware('can:course-types-browse');
         Route::resource('exam-categories', \App\Http\Controllers\Admin\ExamCategoryController::class)->middleware('can:exam-categories-browse');
         Route::resource('sports', \App\Http\Controllers\Admin\SportController::class); // Master sport route
@@ -975,6 +1071,7 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
             Route::post('calling-dashboard/unlock-number', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'unlockNumber'])->name('calling-dashboard.unlock');
             Route::post('calling-dashboard/reassign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'reassign'])->name('calling-dashboard.reassign');
             Route::post('calling-dashboard/bulk-assign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'bulkAssign'])->name('calling-dashboard.bulk-assign');
+            Route::post('calling-dashboard/bulk-reassign', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'bulkReassign'])->name('calling-dashboard.bulk-reassign')->middleware('throttle:30,1');
             Route::get('calling-dashboard/customer-history/{id}', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'customerHistory'])->name('calling-dashboard.customer-history');
             Route::get('calling-dashboard/get-locations', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'getLocations'])->name('calling-dashboard.get-locations');
             Route::get('calling-dashboard', [\App\Http\Controllers\Admin\Hr\CallingController::class, 'dashboard'])->name('calling-dashboard.index')->middleware('can:calling-dashboard-browse');
@@ -1040,6 +1137,13 @@ Route::middleware(['auth:admin,web', 'admin'])->group(function () {
         // Billing Module
         Route::prefix('billing')->name('billing.')->group(function () {
             Route::resource('clients', \App\Http\Controllers\Admin\Billing\BillingClientController::class);
+            // billing details of organisations and their campuses (printed on invoices; not on the website)
+            Route::middleware('can:billing-invoices-browse')->controller(\App\Http\Controllers\Admin\Billing\BillingOrganisationController::class)->group(function () {
+                Route::get('organisations', 'index')->name('organisations.index');
+                Route::get('organisations/{organisation}/edit', 'edit')->name('organisations.edit')->whereNumber('organisation');
+                Route::put('organisations/{organisation}', 'update')->name('organisations.update')->whereNumber('organisation');
+                Route::get('organisations/{organisation}/billed-to', 'billedTo')->name('organisations.billed-to')->whereNumber('organisation');
+            });
             Route::resource('services', \App\Http\Controllers\Admin\Billing\BillingServiceController::class)->middleware('can:home-services-browse');
             Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\BillingInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
             Route::resource('invoices', \App\Http\Controllers\Admin\Billing\BillingInvoiceController::class)->middleware('can:billing-invoices-browse');
@@ -1112,29 +1216,17 @@ Route::get('/fix-negative-durations', function() {
 });
 
 // ==========================================
-// ✅ EXPERT PORTAL ROUTES
+// EXPERT PORTAL: moved to the website (one OTP login for students and experts; enrollzy_frontend ExpertPanelController).
+// The old addresses (and route names, used by the admin layout) send experts to the website's pages.
 // ==========================================
 Route::group(['prefix' => 'expert', 'as' => 'expert.'], function () {
-    Route::get('/login', [\App\Http\Controllers\Expert\AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [\App\Http\Controllers\Expert\AuthController::class, 'login'])->name('login.submit');
-    Route::post('/logout', [\App\Http\Controllers\Expert\AuthController::class, 'logout'])->name('logout');
-
-    Route::middleware(['auth:expert'])->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Expert\DashboardController::class, 'index'])->name('dashboard');
-
-        // Slot Management
-        Route::get('/slots', [\App\Http\Controllers\Expert\SlotController::class, 'index'])->name('slots.index');
-        Route::post('/slots', [\App\Http\Controllers\Expert\SlotController::class, 'store'])->name('slots.store');
-        Route::put('/slots/{id}', [\App\Http\Controllers\Expert\SlotController::class, 'update'])->name('slots.update');
-        Route::delete('/slots/{id}', [\App\Http\Controllers\Expert\SlotController::class, 'destroy'])->name('slots.destroy');
-
-        // Booking & Session Approvals
-        Route::get('/bookings', [\App\Http\Controllers\Expert\BookingController::class, 'index'])->name('bookings.index');
-        Route::post('/bookings/{id}/approve', [\App\Http\Controllers\Expert\BookingController::class, 'approve'])->name('bookings.approve');
-        Route::post('/bookings/{id}/reject', [\App\Http\Controllers\Expert\BookingController::class, 'reject'])->name('bookings.reject');
-        Route::post('/bookings/{id}/complete', [\App\Http\Controllers\Expert\BookingController::class, 'complete'])->name('bookings.complete');
-        Route::post('/bookings/{id}/update-link', [\App\Http\Controllers\Expert\BookingController::class, 'updateMeetingLink'])->name('bookings.update-link');
-    });
+    $site = rtrim((string) config('cns.frontend_url'), '/');
+    Route::redirect('/login', $site . '/login-otp')->name('login');
+    Route::redirect('/logout', $site . '/')->name('logout');
+    Route::redirect('/dashboard', $site . '/expert/dashboard')->name('dashboard');
+    Route::redirect('/slots', $site . '/expert/slots')->name('slots.index');
+    Route::redirect('/bookings', $site . '/expert/bookings')->name('bookings.index');
+    Route::redirect('/payouts', $site . '/expert/payouts')->name('payouts.index');
 });
 
 Route::get('/admin/fix-attendance-time', function (\Illuminate\Http\Request $request) {

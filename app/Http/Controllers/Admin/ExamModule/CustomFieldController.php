@@ -7,19 +7,22 @@ use App\Models\ExamModule\Cycle;
 use App\Models\ExamModule\CustomField;
 use App\Models\ExamModule\CustomValue;
 use App\Models\ExamModule\Exam;
+use App\Support\CustomFields\FieldValues;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /** Schema Builder: define extra fields for one exam, and save their values per cycle. */
 class CustomFieldController extends Controller
 {
-    public function index(Exam $exam)
+    use FieldValues;
+
+    public function index(Request $request, Exam $exam)
     {
         $fields = $exam->customFields()->withCount('values')->get();
-        return view('admin.exam-module.fields.index', compact('exam', 'fields'));
+        // Opened from a cycle page: Back returns to that cycle and its tabs.
+        $cycle = $request->filled('cycle') ? Cycle::where('exam_id', $exam->id)->find($request->query('cycle')) : null;
+        return view('admin.exam-module.fields.index', compact('exam', 'fields', 'cycle'));
     }
 
     public function store(Request $request, Exam $exam)
@@ -81,20 +84,25 @@ class CustomFieldController extends Controller
         return back()->with('success', 'Field deleted. Its saved values are kept.');
     }
 
-    /** Save every custom field value for a cycle (exam-scope values are shared by all cycles). */
+    /**
+     * Save custom field values for a cycle (exam-scope values are shared by all cycles).
+     * Each tab posts fields[] with its own field, so saving one tab never clears the others.
+     */
     public function saveValues(Request $request, Cycle $cycle)
     {
-        $fields = CustomField::where('exam_id', $cycle->exam_id)->get();
+        $fields = CustomField::where('exam_id', $cycle->exam_id)
+            ->when($request->filled('fields'), fn ($q) => $q->whereIn('id', (array) $request->input('fields')))
+            ->get();
         $rules = [];
         foreach ($fields as $f) {
             $rules += $this->valueRules($f);
         }
-        $request->validate($rules);
+        $request->validate($rules, [], $this->valueNames($fields));
 
         foreach ($fields as $f) {
             $cycleId = $f->scope === 'cycle' ? $cycle->id : null;
             $existing = CustomValue::where('field_id', $f->id)->where('cycle_id', $cycleId)->first();
-            $value = $this->value($request, $f, $existing?->value);
+            $value = $this->value($request, $f, $existing?->value, 'exm/custom');
 
             if ($value === null || $value === [] || $value === '') {
                 $existing?->delete();
@@ -102,70 +110,7 @@ class CustomFieldController extends Controller
             }
             $existing ? $existing->update(['value' => $value]) : CustomValue::create(['field_id' => $f->id, 'cycle_id' => $cycleId, 'value' => $value]);
         }
-        return back()->with('success', 'Extra details saved.')->with('content_tab', 'custom');
-    }
-
-    private function valueRules(CustomField $f): array
-    {
-        $k = "cf.{$f->id}";
-        return match ($f->type) {
-            'text' => [$k => 'nullable|string|max:500'],
-            'rich_text' => [$k => 'nullable|string|max:20000'],
-            'number' => [$k => 'nullable|numeric'],
-            'date' => [$k => 'nullable|date'],
-            'url' => [$k => 'nullable|url|max:500'],
-            'dropdown' => [$k => ['nullable', Rule::in($f->options ?? [])]],
-            'multi_select' => [$k => 'nullable|array', "$k.*" => [Rule::in($f->options ?? [])]],
-            'file' => [$k => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240'],
-            'group' => [$k => 'nullable|array|max:50', "$k.*.*" => 'nullable|string|max:500'],
-            default => [],
-        };
-    }
-
-    private function value(Request $request, CustomField $f, $current)
-    {
-        $k = "cf.{$f->id}";
-        switch ($f->type) {
-            case 'file':
-                if ($request->hasFile($k)) {
-                    $path = $request->file($k)->store('exm/custom', 'public');
-                    if (is_string($current)) Storage::disk('public')->delete($current);
-                    return $path;
-                }
-                return $current;
-            case 'number':
-                $v = $request->input($k);
-                return ($v === null || $v === '') ? null : $v + 0;
-            case 'multi_select':
-                return array_values($request->input($k, []));
-            case 'group':
-                $rows = [];
-                foreach ($request->input($k, []) as $row) {
-                    $clean = [];
-                    foreach (self::groupKeys($f) as $key) {
-                        $clean[$key] = filled($row[$key] ?? null) ? $row[$key] : null;
-                    }
-                    if (array_filter($clean)) $rows[] = $clean;
-                }
-                return $rows;
-            default:
-                $v = $request->input($k);
-                return ($v === null || $v === '') ? null : $v;
-        }
-    }
-
-    /** Group sub-field keys, derived from the option labels. */
-    public static function groupKeys(CustomField $f): array
-    {
-        return array_map(fn ($l) => Str::snake(Str::ascii($l)), $f->options ?? []);
-    }
-
-    private function options(string $type, ?string $text): ?array
-    {
-        if (!in_array($type, ['dropdown', 'multi_select', 'group'])) {
-            return null;
-        }
-        $items = array_values(array_unique(array_filter(array_map('trim', preg_split('/\R/', (string) $text)))));
-        return $items ?: null;
+        $tab = $fields->count() === 1 ? 'cf-' . $fields->first()->id : 'eligibility';
+        return back()->with('success', ($fields->count() === 1 ? $fields->first()->label : 'Extra details') . ' saved.')->with('content_tab', $tab);
     }
 }

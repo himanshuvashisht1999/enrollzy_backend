@@ -122,18 +122,8 @@
                 </div>
             </div>
 
-            <!-- Campus Details Preview -->
-            <div class="row mb-4 d-none" id="campusDetailsPreview">
-                <div class="col-12">
-                    <div class="p-3 bg-light border rounded">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-primary">Campus Info</span>
-                            <h6 class="mb-0 text-primary fw-bold" id="previewCampusName"></h6>
-                        </div>
-                        <div class="text-muted small" id="previewCampusAddress"></div>
-                    </div>
-                </div>
-            </div>
+            <!-- Organisation / Campus billing details preview -->
+            @include('admin.billing.invoices._billed_to_preview')
 
             <!-- Client Details Preview -->
             <div class="row mb-4 d-none" id="clientDetailsPreview">

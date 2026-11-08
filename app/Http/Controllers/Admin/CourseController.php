@@ -13,7 +13,7 @@ class CourseController extends Controller
 {
     public function index(\Illuminate\Http\Request $request)
     {
-        $query = $this->filtered($request)->with(['discipline', 'programLevel', 'streamOffered', 'courseType']);
+        $query = $this->filtered($request)->with(['discipline', 'programLevel', 'streamOffered', 'courseType', 'programTypes:id,title']);
 
         // ---- order ----
         match ($request->sort) {

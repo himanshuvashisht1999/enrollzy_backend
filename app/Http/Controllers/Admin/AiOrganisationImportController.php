@@ -252,6 +252,7 @@ class AiOrganisationImportController extends Controller
             'reference_urls.*' => 'nullable|string',
             'custom_prompt' => 'nullable|string',
             'search_google' => 'nullable',
+            'engine' => 'nullable|in:gemini,claude',
         ];
 
         if ($mode === 'organisation') {
@@ -268,6 +269,9 @@ class AiOrganisationImportController extends Controller
         }
 
         $request->validate($rules);
+        // Create by Gemini or Create by Claude: the same master command either way
+        $this->scraper->useEngine($request->input('engine'));
+        if ($this->scraper->engine() === 'claude') { @set_time_limit(600); @ini_set('max_execution_time', '600'); }
 
         try {
             $orgType = $request->filled('organisation_type_id') ? \App\Models\OrganisationType::find($request->input('organisation_type_id')) : null;
@@ -439,6 +443,8 @@ class AiOrganisationImportController extends Controller
                 'target_department_id' => $targetDepartment ? $targetDepartment->id : null,
                 'target_department_name' => $targetDepartment ? $targetDepartment->department_name : null,
                 'masters' => $masters,
+                'engine' => $this->scraper->engine(),
+                'usage' => $this->scraper->engine() === 'claude' ? \App\Services\ClaudeExtractionService::$lastUsage : null,
                 'message' => 'Data extracted and verified successfully.'
             ]);
         } catch (\Exception $e) {
@@ -501,6 +507,9 @@ class AiOrganisationImportController extends Controller
                 }
             }
             $organisation = $this->importer->saveImportedData($data);
+            if ($mode === 'organisation') {
+                $this->saveNirfRankings($organisation, $data['organisation'] ?? []);
+            }
 
             if ($mode === 'campus') {
                 $message = "Campuses for '{$organisation->name}' created successfully!";
@@ -530,6 +539,48 @@ class AiOrganisationImportController extends Controller
                 'success' => false,
                 'message' => 'Failed to save data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Year-wise NIRF from the create form ("nirf_rankings_json": [{year, category, rank, band}]) becomes unverified ranking
+     * records (Quality records), one per year and category. Rows already recorded for that year and category are left alone.
+     * A problem here never stops the organisation from being saved: it is logged instead.
+     */
+    private function saveNirfRankings(\App\Models\Organisation $organisation, array $orgInput): void
+    {
+        try {
+            $rows = $orgInput['nirf_rankings_json'] ?? ($orgInput['nirf_rankings'] ?? []);
+            $rows = is_string($rows) ? json_decode($rows, true) : $rows;
+            if (!is_array($rows) || !$rows || !\Illuminate\Support\Facades\Schema::hasTable('entity_rankings')) return;
+
+            $body = \App\Models\Quality\RankingBody::where('short_name', 'NIRF')->first();
+            if (!$body) return;
+            $cats = \App\Models\Quality\RankingCategory::where('ranking_body_id', $body->id)->get()->keyBy(fn ($c) => strtolower($c->name));
+
+            foreach (array_slice($rows, 0, 60) as $r) {
+                $year = (int) ($r['year'] ?? 0);
+                $cat = $cats[strtolower(trim((string) ($r['category'] ?? '')))] ?? null;
+                if ($year < 2016 || $year > now()->year + 1 || !$cat || !$cat->allowsLevel('organisation')) continue;
+                $rank = is_numeric($r['rank'] ?? null) && (int) $r['rank'] > 0 ? (int) $r['rank'] : null;
+                $band = !$rank && preg_match('/(\d+)\s*[-–]\s*(\d+)/', (string) ($r['band'] ?? ''), $m) && (int) $m[2] >= (int) $m[1] ? [(int) $m[1], (int) $m[2]] : null;
+                if (!$rank && !$band) continue;
+
+                $exists = \App\Models\Quality\EntityRanking::where(['entity_type' => 'organisation', 'entity_id' => (string) $organisation->id,
+                    'ranking_body_id' => $body->id, 'ranking_category_id' => $cat->id, 'ranking_year' => $year])->exists();
+                if ($exists) continue;
+
+                \App\Models\Quality\EntityRanking::create([
+                    'entity_type' => 'organisation', 'entity_id' => (string) $organisation->id,
+                    'ranking_body_id' => $body->id, 'ranking_category_id' => $cat->id, 'ranking_year' => $year,
+                    'rank_exact' => $rank, 'rank_band_from' => $band[0] ?? null, 'rank_band_to' => $band[1] ?? null,
+                    'source_url' => 'https://www.nirfindia.org/',
+                    'notes' => 'Added by AI (Create by Gemini / Claude) when the organisation was created. Please check it on nirfindia.org and verify.',
+                    'created_by' => auth('admin')->id(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('AI create: NIRF rankings not saved for organisation ' . $organisation->id . ': ' . $e->getMessage());
         }
     }
 }

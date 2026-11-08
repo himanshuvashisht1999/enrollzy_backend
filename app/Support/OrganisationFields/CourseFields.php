@@ -15,11 +15,14 @@ class CourseFields
     public const TYPES = [1, 2, 3, 4, 9];
     private const HIGHER = [1, 2, 3, 9];
     private const COACHING = [3, 9];
+    /** a coaching institute's programme has one mode (Delivery Mode) and its fee range as two numbers (fee_min, fee_max) */
+    private const NOT_COACHING_INSTITUTE = [1, 2, 9];
+    private const INSTITUTE = [3];
 
     /** field => types it applies to. A field that is not listed applies to every programme type. */
     private const ONLY = [
         'course_id' => self::HIGHER, 'program_level_id' => self::HIGHER, 'stream_offered_id' => self::HIGHER, 'discipline_id' => self::HIGHER,
-        'duration' => self::HIGHER, 'delivery_mode' => self::HIGHER, 'mode' => self::HIGHER, 'average_course_fee_range' => self::HIGHER,
+        'duration' => self::HIGHER, 'delivery_mode' => self::HIGHER, 'mode' => self::NOT_COACHING_INSTITUTE, 'average_course_fee_range' => self::NOT_COACHING_INSTITUTE,
         'career_prospects' => self::HIGHER, 'provisional_admission' => [1, 2], 'placement_details' => [1, 2, 9], 'rating' => [1, 2, 9], 'roi' => [1, 2, 9],
         'industrial_collaboration' => [1, 2], 'internship_ranking' => [1, 2],
         'transport_fee' => [4], 'hostel_fee' => [4],
@@ -31,18 +34,25 @@ class CourseFields
         'extra_classes_for_weak_students' => self::COACHING, 'parent_counselling_available' => self::COACHING, 'study_material_type' => self::COACHING,
         'dpp_provided' => self::COACHING, 'test_series_available' => self::COACHING, 'tests_per_month' => self::COACHING, 'online_test_platform_available' => self::COACHING,
         'total_selections_all_time' => self::COACHING, 'selections_last_year' => self::COACHING, 'highest_rank_achieved' => self::COACHING, 'average_selection_rate' => self::COACHING,
+        // coaching institute programmes only (App\Support\Institutes\ProgramFields; drawn by the institute_program_extras partial)
+        'product_type' => self::INSTITUTE, 'target_classes' => self::INSTITUTE, 'access_validity_months' => self::INSTITUTE, 'demo_class_available' => self::INSTITUTE,
+        'demo_video_url' => self::INSTITUTE, 'total_tests' => self::INSTITUTE, 'full_syllabus_tests_count' => self::INSTITUTE, 'sectional_tests_count' => self::INSTITUTE,
+        'all_india_rank_available' => self::INSTITUTE, 'performance_analysis_available' => self::INSTITUTE, 'early_bird_discount_percent' => self::INSTITUTE,
+        'scholarship_discount_max_percent' => self::INSTITUTE, 'emi_amount' => self::INSTITUTE, 'emi_tenure_months' => self::INSTITUTE, 'gst_included' => self::INSTITUTE,
+        'fee_includes' => self::INSTITUTE, 'fee_min' => self::INSTITUTE, 'fee_max' => self::INSTITUTE,
     ];
 
     /** Fields the hand-written block of each type already contains (the extra-fields partial must not draw them twice). */
     private const HAND_CODED = [
-        1 => ['course_id', 'mode', 'total_fees', 'fees_structure', 'eligibility', 'admission_process', 'provisional_admission', 'curriculum', 'career_prospects', 'placement_details', 'rating', 'roi', 'industrial_collaboration', 'internship_ranking', 'course_languages'],
-        2 => ['course_id', 'mode', 'total_fees', 'fees_structure', 'eligibility', 'admission_process', 'provisional_admission', 'curriculum', 'career_prospects', 'placement_details', 'rating', 'roi', 'industrial_collaboration', 'internship_ranking', 'course_languages'],
-        3 => ['academic_unit_name', 'course_id', 'delivery_mode', 'total_fees', 'course_languages', 'total_selections_all_time', 'highest_rank_achieved', 'average_course_fee_range'],
+        1 => ['course_id', 'mode', 'fees', 'total_fees', 'student_strength', 'fees_structure', 'eligibility', 'admission_process', 'provisional_admission', 'curriculum', 'career_prospects', 'placement_details', 'rating', 'roi', 'industrial_collaboration', 'internship_ranking', 'course_languages'],
+        2 => ['course_id', 'mode', 'fees', 'total_fees', 'student_strength', 'fees_structure', 'eligibility', 'admission_process', 'provisional_admission', 'curriculum', 'career_prospects', 'placement_details', 'rating', 'roi', 'industrial_collaboration', 'internship_ranking', 'course_languages'],
+        3 => ['academic_unit_name', 'course_id', 'delivery_mode', 'total_fees', 'course_languages', 'total_selections_all_time', 'selections_last_year', 'highest_rank_achieved', 'average_selection_rate',
+            'test_series_available', 'tests_per_month', 'installment_available', 'scholarship_available', 'refund_policy_available'],
         4 => ['academic_unit_name', 'school_type', 'course_languages', 'total_fees', 'education_board', 'grade_range', 'medium_of_instruction', 'student_strength', 'total_teachers', 'average_class_size', 'transport_fee', 'hostel_fee'],
         9 => ['course_id', 'mode', 'duration', 'total_fees', 'course_languages', 'rating', 'roi', 'eligibility', 'curriculum', 'career_prospects', 'fees_structure'],
     ];
 
-    /** How each extra input is drawn. kind: text | number | select | switch | textarea | master. */
+    /** How each extra input is drawn. kind: text | number | select | multiselect | switch | textarea | master. */
     public const DEFS = [
         'academic_unit_name' => ['text', 'col' => 6, 'hint' => 'Shown instead of the master course name when filled'],
         'program_level_id' => ['master', 'model' => \App\Models\ProgramLevel::class, 'col' => 4],
@@ -55,7 +65,7 @@ class CourseFields
         'fees' => ['text', 'ph' => 'e.g. 1,50,000 per year'],
         'annual_fee_range' => ['text', 'ph' => 'e.g. ₹1.5L - ₹2.5L'],
         'admission_fee' => ['text'],
-        'fee_payment_frequency' => ['select', 'options' => ['Annual', 'Semester', 'Quarterly', 'Monthly', 'One-time']],
+        'fee_payment_frequency' => ['multiselect', 'options' => ['Annual', 'Semester', 'Half-Yearly', 'Quarterly', 'Monthly', 'One-time']],
         'average_course_fee_range' => ['text'],
         'installment_available' => ['switch'], 'scholarship_available' => ['switch'], 'refund_policy_available' => ['switch'],
         'eligibility' => ['textarea'], 'admission_process' => ['textarea'], 'curriculum' => ['textarea'], 'fees_structure' => ['textarea'], 'career_prospects' => ['textarea'],
@@ -66,16 +76,44 @@ class CourseFields
         'personal_mentorship_available' => ['switch'], 'extra_classes_for_weak_students' => ['switch'], 'parent_counselling_available' => ['switch'],
         'study_material_type' => ['text', 'col' => 8, 'ph' => 'e.g. Printed modules + online'],
         'dpp_provided' => ['switch'], 'test_series_available' => ['switch'], 'tests_per_month' => ['number'], 'online_test_platform_available' => ['switch'],
-        'selections_last_year' => ['text'], 'average_selection_rate' => ['text', 'ph' => 'e.g. 62%'],
-        'student_strength' => ['text'], 'total_teachers' => ['text'], 'average_class_size' => ['text'], 'highest_rank_achieved' => ['text'], 'total_selections_all_time' => ['text'],
+        'selections_last_year' => ['number'], 'average_selection_rate' => ['number', 'step' => '0.01', 'max' => 100, 'ph' => 'e.g. 62.5 (per cent)'],
+        'student_strength' => ['text'], 'total_teachers' => ['text'], 'average_class_size' => ['text'], 'highest_rank_achieved' => ['number', 'ph' => 'e.g. 15 for AIR 15'], 'total_selections_all_time' => ['number'],
         'verified_reviews_only' => ['switch'],
         'meta_title' => ['text', 'col' => 12], 'meta_description' => ['textarea'],
     ];
 
+    /** Several choices kept in one text column as "Annual, Semester" (a single older value reads the same). */
+    public const LIST_COLUMNS = ['fee_payment_frequency'];
+
+    /** "Annual, Semester" (or a list from the form) -> ['Annual', 'Semester']. */
+    public static function listValues($v): array
+    {
+        $items = is_array($v) ? $v : explode(',', (string) $v);
+        return array_values(array_unique(array_filter(array_map(fn ($x) => trim((string) $x), $items), fn ($x) => $x !== '')));
+    }
+
     /** Plain integer columns (nullable): a blank box must be saved as NULL. */
-    public const INT_COLUMNS = ['total_batches', 'average_batch_size', 'total_faculty_count', 'senior_faculty_count', 'average_faculty_experience_years', 'tests_per_month'];
+    public const INT_COLUMNS = ['total_batches', 'average_batch_size', 'total_faculty_count', 'senior_faculty_count', 'average_faculty_experience_years', 'tests_per_month',
+        'total_selections_all_time', 'selections_last_year', 'highest_rank_achieved', 'access_validity_months', 'total_tests', 'full_syllabus_tests_count', 'sectional_tests_count',
+        'emi_amount', 'emi_tenure_months', 'fee_min', 'fee_max'];
     /** Columns whose blank value is saved as NULL (ids and the like). */
-    public const NULLABLE_BLANK = ['program_level_id', 'stream_offered_id', 'discipline_id'];
+    public const NULLABLE_BLANK = ['program_level_id', 'stream_offered_id', 'discipline_id', 'average_selection_rate', 'early_bird_discount_percent', 'scholarship_discount_max_percent', 'product_type', 'demo_video_url'];
+    /** Percent columns (DECIMAL 5,2). */
+    public const PERCENT_COLUMNS = ['average_selection_rate', 'early_bird_discount_percent', 'scholarship_discount_max_percent'];
+
+    /**
+     * A value for a number column from free text (the AI updater): "1,200+" -> 1200, "AIR 15" -> 15, "62.5%" -> 62.5; no number, or out of range, -> null.
+     * Other fields are returned unchanged.
+     */
+    public static function toColumnValue(string $field, $value)
+    {
+        $int = in_array($field, self::INT_COLUMNS, true);
+        $pct = in_array($field, self::PERCENT_COLUMNS, true);
+        if ((!$int && !$pct) || is_array($value) || $value === null || is_bool($value)) return $value;
+        if (!preg_match($int ? '/\d+/' : '/\d+(\.\d+)?/', str_replace(',', '', (string) $value), $m)) return null;
+        $n = $int ? (int) $m[0] : round((float) $m[0], 2);
+        return ($int && $n > 4294967295) || ($pct && $n > 100) ? null : $n;
+    }
 
     public static function appliesTo(string $field, int $typeId): bool
     {
@@ -89,12 +127,18 @@ class CourseFields
         return array_values(array_filter($names, fn ($n) => self::appliesTo($n, $typeId)));
     }
 
+    /** A university's or college's course is a master course: its name, level, stream, discipline and duration come from it. */
+    private const FROM_MASTER = ['academic_unit_name', 'program_level_id', 'stream_offered_id', 'discipline_id', 'duration'];
+    /** Not asked for a university's or college's course: SEO, and the delivery mode (the Mode dropdown covers it). */
+    private const NOT_FOR_UNI = ['meta_title', 'meta_description', 'delivery_mode'];
+
     /** Relevant fields the type's own block does not draw: these are drawn by the extra-fields partial. In catalogue order (order of DEFS). */
     public static function extra(int $typeId): array
     {
         $hand = array_flip(self::HAND_CODED[$typeId] ?? []);
         $out = [];
         foreach (array_keys(self::DEFS) as $f) {
+            if (in_array($typeId, [1, 2], true) && (in_array($f, self::FROM_MASTER, true) || in_array($f, self::NOT_FOR_UNI, true))) continue;
             if (self::appliesTo($f, $typeId) && !isset($hand[$f])) $out[] = $f;
         }
         return $out;

@@ -204,9 +204,9 @@
                                                         <label class="form-label fw-semibold">Status</label>
                                                         <select name="status" class="form-select" required>
                                                             <option value="available" {{ $slot->status === 'available' ? 'selected' : '' }}>Available</option>
-                                                            <option value="booked" {{ $slot->status === 'booked' ? 'selected' : '' }}>Booked</option>
                                                             <option value="blocked" {{ $slot->status === 'blocked' ? 'selected' : '' }}>Blocked</option>
                                                         </select>
+                                                        <div class="form-text">A slot becomes Booked when a student books it; a booked slot is changed through its booking.</div>
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-semibold">Fee / Price (₹)</label>

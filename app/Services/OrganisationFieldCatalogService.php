@@ -53,14 +53,6 @@ class OrganisationFieldCatalogService
                 'fields' => [
                     ['name' => 'degree_awarding_authority', 'label' => 'Degree Awarding Authority'],
                     ['name' => 'ugc_act_section', 'label' => 'UGC Act Section (2f/12B)'],
-                    ['name' => 'naac_grade', 'label' => 'NAAC Grade'],
-                    ['name' => 'naac_cgpa', 'label' => 'NAAC CGPA Score'],
-                    ['name' => 'naac_validity_date', 'label' => 'NAAC Validity Date'],
-                    ['name' => 'nirf_rank_overall', 'label' => 'NIRF Rank (Overall)'],
-                    ['name' => 'nirf_rank_category', 'label' => 'NIRF Rank (Category)'],
-                    ['name' => 'nba_accredited', 'label' => 'NBA Accredited Status'],
-                    ['name' => 'international_accreditations', 'label' => 'International Accreditations (QS/THE/AACSB)'],
-                    ['name' => 'statutory_approvals', 'label' => 'Statutory Approvals (AICTE, BCI, PCI, NMC)'],
                 ]
             ];
             $tabs[] = [
@@ -101,17 +93,6 @@ class OrganisationFieldCatalogService
                     ['name' => 'official_website', 'label' => 'Official Website URL'],
                     ['name' => 'logo_url', 'label' => 'Logo Image'],
                     ['name' => 'cover_image_url', 'label' => 'Cover Image'],
-                ]
-            ];
-            $tabs[] = [
-                'id' => 'org-inst-legal',
-                'title' => 'Legal & Regulatory',
-                'icon' => 'fas fa-balance-scale',
-                'fields' => [
-                    ['name' => 'aicte_approved', 'label' => 'AICTE Approved Flag'],
-                    ['name' => 'naac_grade', 'label' => 'NAAC Grade'],
-                    ['name' => 'nirf_rank_overall', 'label' => 'NIRF Rank Overall'],
-                    ['name' => 'nba_accredited', 'label' => 'NBA Accredited Status'],
                 ]
             ];
         } elseif ($typeId === 4) { // School
@@ -600,6 +581,25 @@ class OrganisationFieldCatalogService
                     ['name' => 'selections_last_year', 'label' => 'Total Selections in Previous Year'],
                     ['name' => 'highest_rank_achieved', 'label' => 'Highest All India Rank (AIR) Achieved'],
                     ['name' => 'average_selection_rate', 'label' => 'Average Selection Success Rate (%)'],
+                    // coaching institute programmes (App\Support\Institutes\ProgramFields)
+                    ['name' => 'product_type', 'label' => 'Product Type (Classroom / Online live / Recorded / Test series ...)'],
+                    ['name' => 'target_classes', 'label' => 'Target Students (Class 11 / 12 / 12th Pass / Dropper ...)'],
+                    ['name' => 'access_validity_months', 'label' => 'Access Validity (months)'],
+                    ['name' => 'demo_class_available', 'label' => 'Free Demo Class Available'],
+                    ['name' => 'demo_video_url', 'label' => 'Demo Video Link'],
+                    ['name' => 'total_tests', 'label' => 'Test Series: Total Tests'],
+                    ['name' => 'full_syllabus_tests_count', 'label' => 'Test Series: Full-length Tests'],
+                    ['name' => 'sectional_tests_count', 'label' => 'Test Series: Sectional Tests'],
+                    ['name' => 'all_india_rank_available', 'label' => 'Test Series: All-India Rank'],
+                    ['name' => 'performance_analysis_available', 'label' => 'Test Series: Performance Analysis'],
+                    ['name' => 'fee_min', 'label' => 'Fee Range From (₹)'],
+                    ['name' => 'fee_max', 'label' => 'Fee Range To (₹)'],
+                    ['name' => 'early_bird_discount_percent', 'label' => 'Early-bird Discount (%)'],
+                    ['name' => 'scholarship_discount_max_percent', 'label' => 'Scholarship Discount up to (%)'],
+                    ['name' => 'emi_amount', 'label' => 'EMI Amount per Month (₹)'],
+                    ['name' => 'emi_tenure_months', 'label' => 'EMI Tenure (months)'],
+                    ['name' => 'gst_included', 'label' => 'Fee Includes GST'],
+                    ['name' => 'fee_includes', 'label' => 'What the Fee Covers'],
                     ['name' => 'verified_reviews_only', 'label' => 'Verified Student Reviews Only Flag'],
                     ['name' => 'meta_title', 'label' => 'Course SEO Meta Title'],
                     ['name' => 'meta_description', 'label' => 'Course SEO Meta Description'],

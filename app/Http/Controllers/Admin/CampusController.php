@@ -62,6 +62,7 @@ class CampusController extends Controller
      */
     public function store(Request $request, Organisation $organisation)
     {
+        $isInstitute = $organisation->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE;
         $request->validate([
             'campus_name' => 'required|string|max:255',
             'campus_type' => 'nullable|in:Main,Regional,Satellite',
@@ -83,10 +84,10 @@ class CampusController extends Controller
             'documents.*.id' => 'nullable|integer',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
-        ], [
+        ] + \App\Support\Institutes\InstituteFields::locationRules() + ($isInstitute ? \App\Support\Institutes\InstituteFields::branchRules() : []), [
             'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
             'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
-        ]);
+        ] + \App\Support\Institutes\InstituteFields::branchMessages());
 
         $input = $request->except(['documents', 'has_documents_form']);
         foreach ($input as $k => $v) {
@@ -94,6 +95,8 @@ class CampusController extends Controller
                 $input[$k] = null;
             }
         }
+        $input = \App\Support\Institutes\InstituteFields::prepareBranch($request, $input); // gallery and marker inputs are not columns
+        if (array_key_exists('slug', $input) && empty($input['slug'])) unset($input['slug']);
         $input = $this->normaliseFacilityFields($input, $request);
 
         if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {
@@ -109,6 +112,7 @@ class CampusController extends Controller
         $campus->save();
 
         $this->syncDocuments($request, $campus);
+        if ($isInstitute) \App\Support\Institutes\InstituteFields::syncMedia($request, $organisation, (string) $campus->id);
 
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
             ->with('success', 'Campus created successfully');
@@ -155,6 +159,7 @@ class CampusController extends Controller
      */
     public function update(Request $request, Organisation $organisation, Campus $campus)
     {
+        $isInstitute = $organisation->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE;
         $request->validate([
             'facilities' => 'nullable|array',
             'facilities.*' => 'string',
@@ -184,10 +189,10 @@ class CampusController extends Controller
             'documents.*.id' => 'nullable|integer',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
-        ], [
+        ] + \App\Support\Institutes\InstituteFields::locationRules() + ($isInstitute ? \App\Support\Institutes\InstituteFields::branchRules((string) $campus->id) : []), [
             'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
             'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
-        ]);
+        ] + \App\Support\Institutes\InstituteFields::branchMessages());
 
         $input = $request->except(['documents', 'has_documents_form']);
         foreach ($input as $k => $v) {
@@ -195,13 +200,19 @@ class CampusController extends Controller
                 $input[$k] = null;
             }
         }
+        $input = \App\Support\Institutes\InstituteFields::prepareBranch($request, $input); // gallery and marker inputs are not columns
+        // an institute's coaching categories: a multi-select sends nothing when all are removed, so clear them then
+        if ($organisation->organisation_type_id == 3) {
+            $input['coaching_category_ids'] = array_values(array_filter((array) $request->input('coaching_category_ids', [])));
+        }
 
         $booleans = [
             'smart_classrooms', 'library_available', 'digital_library_access', 'hostel_available',
             'medical_facility_available', 'transport_available', 'parking_available', 'cctv_coverage',
             'fire_safety_certified', 'disaster_management_plan', 'verification_status', 'status',
             'brand_compliance_verified', 'science_labs_available', 'computer_labs_available',
-            'playground_available', 'gps_enabled_buses', 'visitor_management_system'
+            'playground_available', 'gps_enabled_buses', 'visitor_management_system',
+            'reading_room_available', 'test_centre_available'
         ];
 
         // Only the switches this form showed (each sends a hidden 0 when unticked): verification_status, brand_compliance_verified and others
@@ -227,6 +238,7 @@ class CampusController extends Controller
 
         $campus->update($input);
         $this->syncDocuments($request, $campus);
+        if ($isInstitute) \App\Support\Institutes\InstituteFields::syncMedia($request, $organisation, (string) $campus->id);
 
         return redirect()->route('admin.organisations.campuses.index', $organisation->id)
             ->with('success', 'Campus updated successfully');
@@ -313,7 +325,8 @@ class CampusController extends Controller
             'medical_facility_available', 'transport_available', 'parking_available', 'cctv_coverage',
             'fire_safety_certified', 'disaster_management_plan', 'verification_status', 'status',
             'brand_compliance_verified', 'science_labs_available', 'computer_labs_available',
-            'playground_available', 'gps_enabled_buses', 'visitor_management_system'
+            'playground_available', 'gps_enabled_buses', 'visitor_management_system',
+            'reading_room_available', 'test_centre_available'
         ];
 
         $updateData = [];
@@ -328,6 +341,7 @@ class CampusController extends Controller
         }
         
         $updateData = $this->normaliseFacilityFields($updateData, $request, true);
+        $updateData = \App\Support\Institutes\InstituteFields::autosaveBranch($updateData, $campus);
 
         $processedEvents = null;
         if ($request->has('events_and_activities') || $request->hasFile('events_and_activities')) {

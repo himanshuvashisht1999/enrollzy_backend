@@ -15,6 +15,8 @@ class CareerRoadmapStage extends Model
         'slug',
         'image',
         'description',
+        'key_points',
+        'sort_order',
         'status'
     ];
 

@@ -13,7 +13,7 @@ class CareerRoadmapStageController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CareerRoadmapStage::with('category')->latest();
+        $query = CareerRoadmapStage::with('category')->orderBy('sort_order')->orderBy('id');
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('title', 'like', "%{$search}%")
@@ -38,6 +38,8 @@ class CareerRoadmapStageController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'description' => 'nullable|string',
+            'key_points' => 'nullable|string|max:2000',
+            'sort_order' => 'nullable|integer',
             'status' => 'nullable|boolean'
         ]);
 
@@ -45,6 +47,8 @@ class CareerRoadmapStageController extends Controller
             'category_id' => $request->category_id,
             'title' => $request->title,
             'description' => $request->description,
+            'key_points' => $request->key_points,
+            'sort_order' => (int) $request->input('sort_order', 0),
             'status' => $request->has('status') ? 1 : 0,
         ];
 
@@ -72,6 +76,8 @@ class CareerRoadmapStageController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'description' => 'nullable|string',
+            'key_points' => 'nullable|string|max:2000',
+            'sort_order' => 'nullable|integer',
             'status' => 'nullable|boolean'
         ]);
 
@@ -79,6 +85,8 @@ class CareerRoadmapStageController extends Controller
             'category_id' => $request->category_id,
             'title' => $request->title,
             'description' => $request->description,
+            'key_points' => $request->key_points,
+            'sort_order' => (int) $request->input('sort_order', 0),
             'status' => $request->has('status') ? 1 : 0,
         ];
 

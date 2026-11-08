@@ -104,7 +104,11 @@ class AiOrganisationUpdateController extends Controller
         $request->validate([
             'organisation_id' => 'required|exists:organisations,id',
             'url' => 'required|url',
+            'engine' => 'nullable|in:gemini,claude',
         ]);
+        // Update by Bot (Gemini) or by Claude: the same command either way
+        $this->scraper->useEngine($request->input('engine'));
+        if ($this->scraper->engine() === 'claude') { @set_time_limit(600); @ini_set('max_execution_time', '600'); }
 
         try {
             $org = Organisation::with([
@@ -153,6 +157,8 @@ class AiOrganisationUpdateController extends Controller
                 'organisation_id' => $org->id,
                 'diff' => $diff,
                 'raw_extracted' => $extracted,
+                'engine' => $this->scraper->engine(),
+                'usage' => $this->scraper->engine() === 'claude' ? \App\Services\ClaudeExtractionService::$lastUsage : null,
                 'message' => 'Fetched data successfully. Please review the changes below.'
             ]);
 
@@ -463,6 +469,8 @@ class AiOrganisationUpdateController extends Controller
 
                     if ($oc) {
                         foreach ($fields as $k => $v) {
+                            // number columns (selections, rank, fees, test counts): the number in the text ("AIR 15" -> 15)
+                            $v = \App\Support\OrganisationFields\CourseFields::toColumnValue((string) $k, $v);
                             $oc->{$k} = $this->castAware($oc, $k, $v);
                             $appliedCount++;
                         }

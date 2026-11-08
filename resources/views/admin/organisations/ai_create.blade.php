@@ -263,15 +263,20 @@
                         </div>
                     </div>
                     <div class="form-text small mt-1 text-muted d-flex justify-content-between">
-                        <span><i class="fas fa-info-circle me-1"></i> You can edit this prompt or add custom rules before clicking Extract Data.</span>
+                        <span><i class="fas fa-info-circle me-1"></i> You can edit this prompt or add custom rules before clicking Create by Gemini or Create by Claude.</span>
                         <span id="promptCharCount" class="text-secondary">0 chars</span>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-3 text-end">
-                <button type="button" id="btnRunAiExtraction" class="btn btn-primary px-4 fw-bold shadow-sm">
-                    <i class="fas fa-bolt me-1"></i> Extract Data
+            {{-- Create by Gemini or Create by Claude: the same master command above runs on the chosen AI --}}
+            <div class="mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                <span class="small text-muted me-1">Run this command with:</span>
+                <button type="button" id="btnRunAiExtraction" class="btn btn-primary px-4 fw-bold shadow-sm" title="Create by Gemini">
+                    <i class="fas fa-robot me-1"></i> Create by Gemini
+                </button>
+                <button type="button" id="btnRunClaudeExtraction" class="btn px-4 fw-bold shadow-sm text-white" style="background:#c96442;border-color:#c96442" title="Create by Claude (uses your Claude API credit)">
+                    <i class="fas fa-asterisk me-1"></i> Create by Claude
                 </button>
             </div>
         </div>
@@ -298,6 +303,7 @@
                 <div>
                     <h5 class="card-title mb-0" id="previewOrgHeaderTitle">Institutional Details Preview</h5>
                     <small class="text-muted" id="previewOrgNameBadge"></small>
+                    <div class="small mt-1" id="aiEngineUsage"></div>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="button" id="btnRestartExtraction" class="btn btn-outline-secondary btn-sm">
@@ -1195,6 +1201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (btnExtract) {
             btnExtract.disabled = true;
             btnExtract.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading Prompt...';
+            if (document.getElementById('btnRunClaudeExtraction')) document.getElementById('btnRunClaudeExtraction').disabled = true;
         }
 
         clearTimeout(promptFetchDebounce);
@@ -1226,7 +1233,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
                 if (btnExtract) {
                     btnExtract.disabled = false;
-                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                    btnExtract.innerHTML = '<i class="fas fa-robot me-1"></i> Create by Gemini';
+                    if (document.getElementById('btnRunClaudeExtraction')) document.getElementById('btnRunClaudeExtraction').disabled = false;
                 }
                 if (result && result.success && result.prompt) {
                     if (aiCustomPrompt) {
@@ -1239,7 +1247,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (promptLoadingSpinner) promptLoadingSpinner.classList.add('d-none');
                 if (btnExtract) {
                     btnExtract.disabled = false;
-                    btnExtract.innerHTML = '<i class="fas fa-bolt me-1"></i> Extract Data';
+                    btnExtract.innerHTML = '<i class="fas fa-robot me-1"></i> Create by Gemini';
+                    if (document.getElementById('btnRunClaudeExtraction')) document.getElementById('btnRunClaudeExtraction').disabled = false;
                 }
             });
         }, 150);
@@ -1289,6 +1298,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // ----------------------------------------------------
     // Trigger AI Extraction
     // ----------------------------------------------------
+    // Create by Claude: the same extraction, with the engine set to Claude for this one click
+    window.aiEngine = 'gemini';
+    document.getElementById('btnRunClaudeExtraction')?.addEventListener('click', function () {
+        window.aiEngine = 'claude';
+        try { btnRunAiExtraction.click(); } finally { window.aiEngine = 'gemini'; }
+        const el = document.getElementById('aiLoadingStatusText');
+        if (el && !document.getElementById('aiStepLoading').classList.contains('d-none')) el.innerText = 'Claude is researching (this can take 1 to 3 minutes). ' + el.innerText;
+    });
+    // after a Claude extraction: what it used (tokens, web searches), to keep an eye on cost
+    window.showAiEngineUsage = function (result) {
+        const box = document.getElementById('aiEngineUsage');
+        if (!box) return;
+        const u = result && result.usage;
+        box.innerHTML = (result && result.engine === 'claude' && u) ? '<span class="badge text-white" style="background:#c96442">Claude</span> <span class="text-muted">' + (u.model || '') + ' · ' + Number(u.input_tokens || 0).toLocaleString('en-IN') + ' tokens in, ' + Number(u.output_tokens || 0).toLocaleString('en-IN') + ' out' + (u.web_searches ? ' · ' + u.web_searches + ' web searches' : '') + '</span>' : (result && result.engine === 'gemini' ? '<span class="badge bg-primary">Gemini</span>' : '');
+    };
+
     btnRunAiExtraction.addEventListener('click', function () {
         const mode = getSelectedEntityMode();
         const url = document.getElementById('aiInputUrl').value.trim();
@@ -1362,7 +1387,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 target_department_id: targetDeptId || null,
                 reference_urls: referenceUrls,
                 custom_prompt: customPromptVal,
-                search_google: searchGoogle
+                search_google: searchGoogle,
+                engine: window.aiEngine || 'gemini'
             })
         })
         .then(async response => {
@@ -1382,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(result => {
             if (result.success && result.data) {
+                if (window.showAiEngineUsage) window.showAiEngineUsage(result);
                 currentExtractedData = result.data;
                 currentExtractionMode = result.mode || mode;
                 currentTargetOrgId = result.target_organisation_id || (targetOrgId ? targetOrgId : null);
@@ -1565,7 +1592,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('aiOrgLocation').value = org.head_office_location || org.headquarters_location || '';
             }
             if (document.getElementById('aiOrgIsTop')) {
-                document.getElementById('aiOrgIsTop').value = (org.is_top !== undefined && org.is_top !== null) ? org.is_top : 0;
+                // "Is Top Institution" is the team's choice for the website: the AI always leaves it at No
+                document.getElementById('aiOrgIsTop').value = '0';
+            }
+            if (window.aiNirfRender) {
+                window.aiNirfRender(Array.isArray(org.nirf_rankings) ? org.nirf_rankings : []);
             }
             if (document.getElementById('aiOrgCoreValues')) {
                 document.getElementById('aiOrgCoreValues').value = toCsv(org.core_values);
@@ -1795,10 +1826,55 @@ document.addEventListener('DOMContentLoaded', function () {
         return null;
     }
 
+    // Year-wise NIRF table (Legal & Regulatory): rows of {year, category, rank, band}, kept in the hidden nirf_rankings_json field
+    (function () {
+        const box = document.getElementById('aiNirfBox');
+        if (!box) return;
+        const rowsEl = document.getElementById('aiNirfRows');
+        const jsonEl = document.getElementById('aiNirfJson');
+        const cats = JSON.parse(box.dataset.categories || '[]');
+        const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+        function sync() {
+            const out = [];
+            rowsEl.querySelectorAll('tr').forEach(tr => {
+                const year = parseInt(tr.querySelector('.nirf-year').value, 10);
+                const category = tr.querySelector('.nirf-cat').value;
+                const rank = parseInt(tr.querySelector('.nirf-rank').value, 10);
+                const band = tr.querySelector('.nirf-band').value.trim();
+                if (year && category && (rank > 0 || band)) out.push({year, category, rank: rank > 0 ? rank : null, band: rank > 0 ? null : band});
+            });
+            jsonEl.value = JSON.stringify(out);
+            if (typeof highlightUnfilledFields === 'function' && typeof currentExtractionMode !== 'undefined') highlightUnfilledFields();
+        }
+
+        function addRow(r = {}) {
+            const list = cats.includes(r.category) || !r.category ? cats : [r.category].concat(cats);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><input type="number" class="form-control form-control-sm nirf-year" min="2016" max="2100" value="${esc(r.year)}"></td>
+                <td><select class="form-select form-select-sm nirf-cat">${list.map(c => `<option value="${esc(c)}" ${c === r.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></td>
+                <td><input type="number" class="form-control form-control-sm nirf-rank" min="1" value="${esc(r.rank)}"></td>
+                <td><input type="text" class="form-control form-control-sm nirf-band" placeholder="101-150" value="${esc(r.band)}"></td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger nirf-del" title="Remove">&times;</button></td>`;
+            rowsEl.appendChild(tr);
+        }
+
+        window.aiNirfRender = function (list) {
+            rowsEl.innerHTML = '';
+            (list || []).forEach(addRow);
+            sync();
+        };
+        document.getElementById('aiNirfAdd').addEventListener('click', () => { addRow({year: new Date().getFullYear(), category: 'Overall'}); sync(); });
+        rowsEl.addEventListener('click', e => { if (e.target.closest('.nirf-del')) { e.target.closest('tr').remove(); sync(); } });
+        rowsEl.addEventListener('input', sync);
+        rowsEl.addEventListener('change', sync);
+    })();
+
     function isFieldEmpty(el) {
         if (!el || el.disabled) return false;
         if (el.type === 'hidden' || el.type === 'file' || el.type === 'checkbox' || el.type === 'radio') return false;
         if (el.name === 'canonical_url') return false;
+        if (el.closest('[data-no-highlight]')) return false;
 
         const parentSpecific = el.closest('.col-12[id$="-fields"]');
         if (parentSpecific && (parentSpecific.style.display === 'none' || window.getComputedStyle(parentSpecific).display === 'none')) {
@@ -2007,6 +2083,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Append Campus Card
+    // University / College campus: the fields the master command asks for beyond the basic card (about, facilities, routes,
+    // counts, food, website and social pages). Same shape as on the Missing Info page.
+    function campusExtraFieldsHtml(c) {
+        const e = v => String(v ?? '').replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
+        const list = v => Array.isArray(v) ? v.join(', ') : (v || '');
+        const num = v => (v === null || v === undefined || v === 0 || v === '0') ? '' : e(v);
+        const url = (cls, label, key, ph) => `<div class="col-md-4"><label class="form-label fw-bold small">${label}</label><input type="url" class="form-control ${cls}" value="${e(c[key])}" placeholder="${ph}"></div>`;
+        return `
+            <div class="col-12"><label class="form-label fw-bold small">About Campus</label><textarea class="form-control c-about" rows="4">${e(c.about_institute)}</textarea></div>
+            <div class="col-md-6"><label class="form-label fw-bold small">Facilities (comma separated)</label><input type="text" class="form-control c-facilities" value="${e(list(c.facilities))}" placeholder="Library, Wifi, Cafeteria, Auditorium..."></div>
+            <div class="col-md-6"><label class="form-label fw-bold small">Bus Routes (comma separated)</label><input type="text" class="form-control c-bus-routes" value="${e(list(c.bus_routes))}" placeholder="Route 1 - City Centre, Route 2 - ..."></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Research Centres</label><input type="number" class="form-control c-research" value="${num(c.research_centers_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Library Books</label><input type="number" class="form-control c-lib-books" value="${num(c.library_books_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Bus Routes Count</label><input type="number" class="form-control c-bus-routes-count" value="${num(c.bus_routes_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Security Staff</label><input type="number" class="form-control c-security" value="${num(c.security_staff_count)}"></div>
+            <div class="col-12"><label class="form-label fw-bold small">Food Facility</label><input type="text" class="form-control c-food" value="${e(c.food_facility)}" placeholder="Mess, canteen, food court..."></div>
+            ${url('c-website', 'Campus Website', 'campus_website', 'https://...')}
+            ${url('c-facebook', 'Facebook', 'facebook_url', 'https://facebook.com/...')}
+            ${url('c-instagram', 'Instagram', 'instagram_url', 'https://instagram.com/...')}
+            ${url('c-linkedin', 'LinkedIn', 'linkedin_url', 'https://linkedin.com/...')}
+            ${url('c-youtube', 'YouTube', 'youtube_url', 'https://youtube.com/@...')}
+            ${url('c-twitter', 'X / Twitter', 'twitter_url', 'https://x.com/...')}`;
+    }
+
+    function campusExtraFieldsData(el) {
+        const v = cls => el.querySelector(cls)?.value.trim() || null;
+        const list = cls => (el.querySelector(cls)?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+        const on = cls => el.querySelector(cls)?.checked || false;
+        return {
+            about_institute: v('.c-about'), facilities: list('.c-facilities'), bus_routes: list('.c-bus-routes'),
+            campus_area_unit: v('.c-area-unit') || 'Acres',
+            research_centers_count: v('.c-research'), library_books_count: v('.c-lib-books'),
+            bus_routes_count: v('.c-bus-routes-count'), security_staff_count: v('.c-security'),
+            food_facility: v('.c-food'), parking_available: on('.c-parking'), disaster_management_plan: on('.c-disaster'),
+            campus_website: v('.c-website'), facebook_url: v('.c-facebook'), instagram_url: v('.c-instagram'),
+            linkedin_url: v('.c-linkedin'), youtube_url: v('.c-youtube'), twitter_url: v('.c-twitter'),
+        };
+    }
+
     function appendCampusCard(c = {}, idx = Date.now()) {
         const isSchool = isCurrentEntitySchool();
         const div = document.createElement('div');
@@ -3229,8 +3344,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             <input type="number" class="form-control c-est" value="${c.established_year || ''}">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label fw-bold small">Area (Acres)</label>
-                            <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                            <label class="form-label fw-bold small">Campus Area</label>
+                            <div class="input-group">
+                                <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                                <select class="form-select c-area-unit" style="max-width: 110px">
+                                    <option value="Acres" ${(c.campus_area_unit || 'Acres') === 'Acres' ? 'selected' : ''}>Acres</option>
+                                    <option value="Square Yard" ${c.campus_area_unit === 'Square Yard' ? 'selected' : ''}>Sq Yard</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="col-md-3">
@@ -3344,6 +3465,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <input class="form-check-input c-fire" type="checkbox" ${c.fire_safety_certified ? 'checked' : ''}>
                                     <label class="form-check-label small fw-bold">Fire Safety Certified</label>
                                 </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-parking" type="checkbox" ${c.parking_available ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Parking Available</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input c-disaster" type="checkbox" ${c.disaster_management_plan ? 'checked' : ''}>
+                                    <label class="form-check-label small fw-bold">Disaster Management Plan</label>
+                                </div>
                             </div>
                         </div>
 
@@ -3363,6 +3492,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <label class="form-label fw-bold small">Campus Contact Numbers</label>
                             <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}">
                         </div>
+                        ${campusExtraFieldsHtml(c)}
                     </div>
                 </div>
             `;
@@ -3484,6 +3614,39 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="number" class="form-control d-patents" value="${d.patents_filed_count || ''}">
                     </div>
 
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">HOD Appointment</label>
+                        <select class="form-select d-hod-appt">
+                            <option value="">Not stated</option>
+                            <option value="Permanent" ${d.hod_appointment_type === 'Permanent' ? 'selected' : ''}>Permanent</option>
+                            <option value="Acting" ${d.hod_appointment_type === 'Acting' ? 'selected' : ''}>Acting / In-charge</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Department Email</label>
+                        <input type="email" class="form-control d-email" value="${d.department_email || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Office Phone</label>
+                        <input type="text" class="form-control d-office" value="${d.department_office_contact || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Department Website</label>
+                        <input type="url" class="form-control d-website" value="${d.department_website_url || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Research Centres</label>
+                        <input type="number" class="form-control d-centres" value="${d.research_centers_under_department || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Industry Projects</label>
+                        <input type="number" class="form-control d-ind-projects" value="${d.industry_projects_count || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Classrooms</label>
+                        <input type="number" class="form-control d-classrooms" value="${d.classrooms_count || ''}">
+                    </div>
+
                     <div class="col-12 py-2 px-3 border rounded bg-light my-2">
                         <div class="d-flex flex-wrap gap-4">
                             <div class="form-check form-switch">
@@ -3501,6 +3664,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div class="form-check form-switch">
                                 <input class="form-check-input d-spec-labs" type="checkbox" ${d.specialized_labs_available ? 'checked' : ''}>
                                 <label class="form-check-label small fw-bold">Specialized Labs</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-research-prog" type="checkbox" ${d.research_programs_managed ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Research Programmes</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input d-library" type="checkbox" ${d.department_library_section ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Department Library</label>
                             </div>
                         </div>
                     </div>
@@ -3757,7 +3928,9 @@ document.addEventListener('DOMContentLoaded', function () {
             bus_fleet_size: el.querySelector('.c-bus-fleet')?.value.trim() || 0,
             sports_facilities: el.querySelector('.c-sports')?.value.split(',').map(s => s.trim()).filter(Boolean),
             campus_email: el.querySelector('.c-email')?.value.trim(),
-            campus_contact_numbers: el.querySelector('.c-phones')?.value.split(',').map(s => s.trim()).filter(Boolean)
+            campus_contact_numbers: el.querySelector('.c-phones')?.value.split(',').map(s => s.trim()).filter(Boolean),
+            // about, facilities, routes, counts, food, area unit, parking, disaster plan, website and social pages
+            ...campusExtraFieldsData(el)
         };
     }
 
@@ -3785,6 +3958,15 @@ document.addEventListener('DOMContentLoaded', function () {
             industry_collaboration_supported: el.querySelector('.d-industry')?.checked || false,
             is_interdisciplinary: el.querySelector('.d-interdisc')?.checked || false,
             specialized_labs_available: el.querySelector('.d-spec-labs')?.checked || false,
+            research_programs_managed: el.querySelector('.d-research-prog')?.checked || false,
+            department_library_section: el.querySelector('.d-library')?.checked || false,
+            hod_appointment_type: el.querySelector('.d-hod-appt')?.value || null,
+            department_email: el.querySelector('.d-email')?.value.trim(),
+            department_office_contact: el.querySelector('.d-office')?.value.trim(),
+            department_website_url: el.querySelector('.d-website')?.value.trim(),
+            research_centers_under_department: el.querySelector('.d-centres')?.value.trim(),
+            industry_projects_count: el.querySelector('.d-ind-projects')?.value.trim(),
+            classrooms_count: el.querySelector('.d-classrooms')?.value.trim(),
             about_department: el.querySelector('.d-about')?.value.trim()
         };
     }

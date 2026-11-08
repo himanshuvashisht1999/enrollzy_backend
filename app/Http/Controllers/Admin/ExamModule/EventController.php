@@ -15,8 +15,36 @@ class EventController extends Controller
     public function store(Request $request, Cycle $cycle)
     {
         $data = $this->validated($request, $cycle);
-        $cycle->events()->create($data);
-        return back()->with('success', 'Event added.');
+        // a new event goes to the end of the list; drag it to its place
+        $cycle->events()->create($data + ['sort_order' => (int) $cycle->events()->max('sort_order') + 1]);
+        return back()->with('success', 'Event added at the end of the list. Drag it to its place if needed.');
+    }
+
+    /**
+     * The order of a cycle's events, as shown on the cycle page and the website: the ids in order (dragged), or
+     * by=date to sort them by date (undated events last, in event type order).
+     */
+    public function reorder(Request $request, Cycle $cycle)
+    {
+        if ($request->input('by') === 'date') {
+            $ids = $cycle->events()->leftJoin('exm_event_types as t', 't.id', '=', 'exm_cycle_events.event_type_id')
+                ->orderByRaw('exm_cycle_events.start_at is null')->orderBy('exm_cycle_events.start_at')->orderBy('t.sort_order')->orderBy('exm_cycle_events.id')
+                ->pluck('exm_cycle_events.id')->all();
+        } else {
+            $ids = array_map('intval', (array) $request->validate(['ids' => 'required|array', 'ids.*' => 'integer'])['ids']);
+            $own = $cycle->events()->pluck('id')->all();
+            // every event of this cycle exactly once (a stale page would otherwise drop or misplace events)
+            if (count($ids) !== count($own) || array_diff($own, $ids) || array_diff($ids, $own)) {
+                return $request->expectsJson()
+                    ? response()->json(['message' => 'The list changed in the meantime. Reload the page and try again.'], 422)
+                    : back()->with('error', 'The list changed in the meantime. Reload the page and try again.');
+            }
+        }
+        foreach (array_values($ids) as $i => $id) {
+            // query builder: re-numbering is not an edit of the event, so no audit entry or lost verification
+            \Illuminate\Support\Facades\DB::table('exm_cycle_events')->where('id', $id)->where('cycle_id', $cycle->id)->update(['sort_order' => $i + 1]);
+        }
+        return $request->expectsJson() ? response()->json(['ok' => true]) : back()->with('success', 'Events sorted by date.');
     }
 
     public function update(Request $request, CycleEvent $event)
@@ -76,8 +104,28 @@ class EventController extends Controller
         ]);
 
         // Section 8 validations.
-        $validator->after(function ($v) use ($request, $cycle) {
+        $validator->after(function ($v) use ($request, $cycle, $event, $usesStages, $allStages) {
             $type = EventType::find($request->event_type_id);
+
+            // The same event type can repeat in a cycle only as a separate, labelled window (e.g. "Phase 2").
+            if ($type) {
+                $siblings = $cycle->events()->where('event_type_id', $type->id)
+                    ->when($event, fn ($q) => $q->where('id', '!=', $event->id))
+                    ->when($usesStages && $allStages, fn ($q) => $q->where('applies_to_all_stages', true))
+                    ->when($usesStages && !$allStages, fn ($q) => $q->where('stage_id', $request->stage_id)->where('applies_to_all_stages', false))
+                    ->pluck('label');
+                $norm = fn ($l) => mb_strtolower(trim((string) $l));
+                $label = $norm($request->label);
+
+                $hint = "Add a label (e.g. 'Phase 2') or use Extended end to extend the existing window.";
+                if ($siblings->isNotEmpty() && $label === '' && !$event) {
+                    $v->errors()->add('label', "{$type->name} is already added to this cycle. {$hint}");
+                } elseif ($siblings->contains(fn ($l) => $norm($l) === $label)) {
+                    $v->errors()->add('label', $label === ''
+                        ? "{$type->name} without a label is already added to this cycle. {$hint}"
+                        : "{$type->name} '" . trim($request->label) . "' is already added to this cycle. Use a different label.");
+                }
+            }
             $tz = $cycle->timezone ?: 'Asia/Kolkata';
             $parse = fn ($k) => $request->filled($k) ? \Carbon\Carbon::parse($request->$k, $tz) : null;
             [$start, $end, $ext] = [$parse('start_at'), $parse('end_at'), $parse('extended_end_at')];

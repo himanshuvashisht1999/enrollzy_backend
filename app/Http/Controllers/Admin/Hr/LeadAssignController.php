@@ -41,7 +41,8 @@ class LeadAssignController extends Controller
                 $staffQuery->whereIn('role', $allowedRoleNames);
             }
 
-            return $staffQuery->get();
+            // never an admin: admins only monitor calling and have no calling queue
+            return $staffQuery->get()->reject(fn ($s) => $s->isAdminRole())->values();
         } else {
             // Manager: only subordinates reporting to this manager matching allowed roles
             if (empty($allowedRoleNames)) {
@@ -51,7 +52,7 @@ class LeadAssignController extends Controller
             return Admin::where('status', 1)
                 ->whereIn('role', $allowedRoleNames)
                 ->where('manager_id', $user->id)
-                ->get();
+                ->get()->reject(fn ($s) => $s->isAdminRole())->values();
         }
     }
 
@@ -133,6 +134,10 @@ class LeadAssignController extends Controller
         $user = auth()->user();
         $isTopLevel = $this->isTopLevelUser($user);
 
+        if (Admin::find($request->staff_id)?->isAdminRole()) {
+            return redirect()->back()->with('error', 'Leads cannot be assigned to an admin. Choose a team lead or telecaller.');
+        }
+
         // Verify target staff is allowed for this user based on role assign rules
         $allowedStaffs = $this->getAssignableStaffs($user);
         if (!$allowedStaffs->contains('id', $request->staff_id)) {
@@ -193,7 +198,8 @@ class LeadAssignController extends Controller
             $now = now();
 
             foreach ($customers as $customerId) {
-                $existingAssignment = LeadAssignment::where('customer_id', $customerId)->first();
+                // the lead's current (newest) assignment: one per lead (unique customer_id)
+                $existingAssignment = LeadAssignment::where('customer_id', $customerId)->orderBy('id', 'desc')->first();
                 $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $customerId)->exists();
 
                 if ($existingAssignment) {

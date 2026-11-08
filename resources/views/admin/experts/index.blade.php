@@ -107,6 +107,7 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                     <li><a class="dropdown-item" href="{{ route('experts.edit', $expert->id) }}"><i class="fas fa-edit me-2 text-info"></i> Edit</a></li>
                                     <li><a class="dropdown-item" href="{{ route('admin.slots.index', ['expert_id' => $expert->id]) }}"><i class="fas fa-calendar-alt me-2 text-primary"></i> Manage Slots</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('experts.documents', $expert->id) }}"><i class="fas fa-file-alt me-2 text-success"></i> Documents</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form action="{{ route('experts.destroy', $expert->id) }}" method="POST" class="d-inline">

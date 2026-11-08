@@ -96,6 +96,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('admin.counselling.participants.index', $cycle) }}" class="btn btn-sm btn-light border">View / edit</a>
+        @can('cns-counsellings-edit')<a href="{{ route('admin.counselling.participants.index', ['cycle' => $cycle, 'add' => 1]) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-search-plus me-1"></i>Search &amp; add</a>@endcan
         @can('cns-import-manage')<a href="{{ route('admin.counselling.imports.create', ['type' => 'participants', 'cycle' => $cycle->id]) }}" class="btn btn-sm btn-outline-primary">Import CSV</a>@endcan
     </div>
 </div></div>

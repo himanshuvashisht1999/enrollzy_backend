@@ -106,12 +106,13 @@ class Cycle extends Model
             foreach ($this->stages as $stage) {
                 $map[$stage->id] = $new->stages()->create($stage->only(['name', 'sort_order', 'is_qualifying']))->id;
             }
-            foreach ($this->events()->with('type')->get() as $event) {
+            foreach ($this->events()->with('type')->orderBy('sort_order')->orderBy('id')->get() as $event) {
                 $new->events()->create([
                     'stage_id' => $event->stage_id ? ($map[$event->stage_id] ?? null) : null,
                     'applies_to_all_stages' => $event->applies_to_all_stages,
                     'event_type_id' => $event->event_type_id,
                     'label' => $event->label,
+                    'sort_order' => $event->sort_order,
                     'date_precision' => 'tba',
                     'manual_status' => $event->type?->isManual() ? 'not_announced' : null,
                 ]);

@@ -10,7 +10,7 @@ class IdentityFields
 {
     public const LEGAL_TYPES = [
         'central' => 'Central university', 'state_public' => 'State public university', 'state_private' => 'State private university', 'deemed' => 'Deemed university',
-        'institution_of_national_importance' => 'Institution of national importance', 'autonomous_college' => 'Autonomous college', 'affiliated_college' => 'Affiliated college',
+        'institution_of_national_importance' => 'Institution of national importance', 'autonomous_college' => 'Autonomous college', 'affiliated_college' => 'Affiliated college', 'constituent_college' => 'Constituent college',
     ];
     public const CAMPUS_ROLES = ['main' => 'Main campus', 'off_campus' => 'Off campus', 'constituent_college' => 'Constituent college', 'study_centre' => 'Study centre'];
     public const UNIT_TYPES = ['department' => 'Department', 'school' => 'School', 'faculty' => 'Faculty', 'centre' => 'Centre'];

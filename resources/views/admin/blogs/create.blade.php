@@ -105,8 +105,11 @@
                         </div>
                         <div class="card-body p-4">
                             <div class="mb-0">
-                                <input type="file" class="form-control @error('image') is-invalid @enderror" name="image" id="imageInput">
-                                <div class="form-text text-muted">Image size should not exceed 2MB.</div>
+                                <input type="file" class="form-control @error('image') is-invalid @enderror" name="image" id="imageInput" accept=".jpg,.jpeg,.png,.webp,.gif">
+                                <div class="form-text text-muted">
+                                    <b>Upload a horizontal image: 1200 × 675 px (16:9) recommended</b>, at least 800 px wide. JPG or WebP, ideally under 300 KB (max 2 MB).
+                                    Square or portrait images are not accepted. The same image is used on the homepage, the blog list and the blog page.
+                                </div>
                                 <div id="imagePreview" class="mt-3 text-center d-none">
                                     <img src="" class="img-fluid rounded border p-1" style="max-height: 200px;">
                                 </div>

@@ -19,6 +19,7 @@
             <button class="btn {{ $counselling->visibility === 'public' ? 'btn-outline-secondary' : 'btn-success' }}">{{ $counselling->visibility === 'public' ? 'Move to Draft' : 'Publish' }}</button>
         </form>
         @endcan
+        @can('cns-counsellings-edit')<a href="{{ route('admin.counselling.fields.index', $counselling) }}" class="btn btn-light border"><i class="fas fa-sliders-h me-1"></i> Schema Builder</a>@endcan
         @can('cns-counsellings-edit')<a href="{{ route('admin.counselling.counsellings.edit', $counselling) }}" class="btn btn-primary"><i class="fas fa-edit me-1"></i> Edit</a>@endcan
     </div>
 </div>
@@ -69,10 +70,11 @@
                 <p class="text-muted small">No exam mapped yet. A counselling needs at least one to be published.</p>
             @endforelse
             @can('cns-counsellings-edit')
-            @if($mappable->count())
+            @if($mappable->count() > count($mappedIds))
             <form action="{{ route('admin.counselling.mappings.store', $counselling) }}" method="POST" class="row g-2 border-top pt-3 mt-1">
                 @csrf
-                <div class="col-md-5"><label class="form-label small fw-bold mb-1">Exam</label><select name="exam_id" class="form-select @error('exam_id') is-invalid @enderror" required><option value="">Map an exam...</option>@foreach($mappable as $e)<option value="{{ $e->id }}" @selected(old('exam_id') == $e->id)>{{ $e->name }}</option>@endforeach</select>
+                <div class="col-md-5"><label class="form-label small fw-bold mb-1">Exam</label><select name="exam_id" class="form-select @error('exam_id') is-invalid @enderror" required><option value="">Map an exam...</option>@foreach($mappable as $e)@if(in_array($e->id, $mappedIds, true))<option value="{{ $e->id }}" disabled>{{ $e->name }} (already mapped)</option>@else<option value="{{ $e->id }}" @selected(old('exam_id') == $e->id)>{{ $e->name }}</option>@endif @endforeach</select>
+                    <div class="form-text">Exam not in the list? Add it in Exam Module first.</div>
                     @error('exam_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-md-3"><label class="form-label small fw-bold mb-1">Role</label><select name="role" class="form-select"><option value="primary" @selected(old('role') !== 'additional')>Primary</option><option value="additional" @selected(old('role') === 'additional')>Additional</option></select></div>
                 <div class="col-md-2"><label class="form-label small fw-bold mb-1">Valid from</label><input type="number" name="valid_from_year" value="{{ old('valid_from_year') }}" class="form-control @error('valid_from_year') is-invalid @enderror" placeholder="Year" min="1990" max="2100">

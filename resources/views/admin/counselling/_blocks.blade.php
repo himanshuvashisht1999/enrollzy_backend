@@ -10,7 +10,14 @@
     $allBlocks = collect(CnsBlocks::all())->filter(fn ($d) => in_array($scope, $d['scopes']));
     // The tab of a dialog that failed validation stays open; otherwise the last tab used.
     $failedBlock = str_starts_with((string) old('_dialog'), 'cns:') ? substr(old('_dialog'), 4) : null;
-    $activeBlock = ($failedBlock && $allBlocks->has($failedBlock)) ? $failedBlock : session('block_tab', $allBlocks->keys()->first());
+    $failedCustom = str_starts_with((string) old('_dialog'), 'cf-') ? old('_dialog') : null;
+    $activeBlock = ($failedBlock && $allBlocks->has($failedBlock)) ? $failedBlock : ($failedCustom ?: session('block_tab') ?: $allBlocks->keys()->first());
+    // Schema Builder tabs (cycle page only): one per extra field of this counselling, each saved on its own
+    $customFields = $isRound ? collect() : $cycle->counselling->customFields()->get();
+    $customValues = \App\Models\Counselling\CustomValue::whereIn('field_id', $customFields->pluck('id'))
+        ->where(fn ($q) => $q->whereNull('cycle_id')->orWhere('cycle_id', $cycle->id))->get()
+        ->mapWithKeys(fn ($v) => [$v->field_id . ':' . ($v->cycle_id ? 'c' : 'e') => $v->value]);
+    $builderUrl = route('admin.counselling.fields.index', [$cycle->counselling_id, 'cycle' => $cycle->id]);
     $defs = [];
     $lists = [];
     foreach ($allBlocks as $key => $d) {
@@ -28,13 +35,21 @@
 @endphp
 
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
-    <h6 class="fw-bold mb-3">{{ $isRound ? 'Rules, fees & documents for this round' : 'Eligibility, process, fees, documents & rules' }}
-        <span class="text-muted fw-normal small">{{ $isRound ? '(a round stores only what differs from the cycle)' : '(copied forward with Copy Cycle)' }}</span></h6>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h6 class="fw-bold mb-0">{{ $isRound ? 'Rules, fees & documents for this round' : 'Eligibility, process, fees, documents & rules' }}
+            <span class="text-muted fw-normal small">{{ $isRound ? '(a round stores only what differs from the cycle)' : '(copied forward with Copy Cycle)' }}</span></h6>
+        @if(!$isRound)@can('cns-counsellings-edit')<a href="{{ $builderUrl }}" class="btn btn-sm btn-light border"><i class="fas fa-sliders-h me-1"></i> Schema Builder</a>@endcan @endif
+    </div>
 
     <ul class="nav nav-tabs mb-3 flex-wrap">
         @foreach($allBlocks as $key => $d)
             <li class="nav-item"><button class="nav-link {{ $activeBlock === $key ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#cns-{{ $key }}" type="button">
                 {{ $d['title'] }} <span class="badge bg-light text-dark border">{{ $lists[$key]->count() }}</span></button></li>
+        @endforeach
+        @foreach($customFields as $cf)
+            @php $filled = filled(is_string($v = $customValues[$cf->id . ':' . ($cf->scope === 'cycle' ? 'c' : 'e')] ?? null) ? trim(strip_tags($v)) : $v); @endphp
+            <li class="nav-item"><button class="nav-link {{ $activeBlock === 'cf-' . $cf->id ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#cns-cf-{{ $cf->id }}" type="button">
+                {{ $cf->label }} @if($filled)<i class="fas fa-check-circle text-success small" title="Filled"></i>@endif</button></li>
         @endforeach
     </ul>
 
@@ -106,7 +121,58 @@
             @endforelse
         </div>
     @endforeach
+
+    {{-- Schema Builder tabs: each field is its own tab, saved on its own --}}
+    @foreach($customFields as $cf)
+        <div class="tab-pane fade {{ $activeBlock === 'cf-' . $cf->id ? 'show active' : '' }}" id="cns-cf-{{ $cf->id }}">
+            <form action="{{ route('admin.counselling.custom-values.save', $cycle) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="fields[]" value="{{ $cf->id }}"><input type="hidden" name="_dialog" value="cf-{{ $cf->id }}">
+                @if($errors->any() && $failedCustom === 'cf-' . $cf->id)
+                    <div class="alert alert-danger small">{!! implode('<br>', array_map('e', $errors->all())) !!}</div>
+                @endif
+                @php
+                    $val = $customValues[$cf->id . ':' . ($cf->scope === 'cycle' ? 'c' : 'e')] ?? null;
+                    if ($failedCustom === 'cf-' . $cf->id && !in_array($cf->type, ['file', 'group', 'multi_select'])) $val = old("cf.{$cf->id}", $val);
+                    $name = "cf[{$cf->id}]";
+                @endphp
+                <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+                    <span class="badge bg-light text-dark border fw-normal">{{ $cf->scope === 'cycle' ? 'This cycle only (copied to the next cycle)' : 'Whole counselling (shared by every cycle)' }}</span>
+                    @can('cns-counsellings-edit')<a href="{{ $builderUrl }}" class="small">Rename or delete this tab</a>@endcan
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-{{ in_array($cf->type, ['rich_text', 'group']) ? 12 : 6 }}">
+                        @switch($cf->type)
+                            @case('rich_text')<textarea name="{{ $name }}" rows="10" class="form-control cf-editor">{{ $val }}</textarea>@break
+                            @case('number')<input type="number" step="any" name="{{ $name }}" class="form-control" value="{{ $val }}">@break
+                            @case('date')<input type="date" name="{{ $name }}" class="form-control" value="{{ $val }}">@break
+                            @case('url')<input type="url" name="{{ $name }}" class="form-control" value="{{ $val }}" placeholder="https://">@break
+                            @case('dropdown')
+                                <select name="{{ $name }}" class="form-select"><option value="">-</option>
+                                @foreach($cf->options ?? [] as $o)<option value="{{ $o }}" @selected($val === $o)>{{ $o }}</option>@endforeach</select>@break
+                            @case('multi_select')
+                                <select name="{{ $name }}[]" class="form-select" multiple>
+                                @foreach($cf->options ?? [] as $o)<option value="{{ $o }}" @selected(in_array($o, (array) $val))>{{ $o }}</option>@endforeach</select>@break
+                            @case('file')
+                                <input type="file" name="{{ $name }}" class="form-control">
+                                @if($val)<a class="small" href="{{ asset('storage/' . $val) }}" target="_blank" rel="noopener">Current: {{ basename($val) }}</a>@endif @break
+                            @case('group')
+                                <div class="cf-group-rows" data-name="{{ $name }}" data-keys="{{ json_encode(\App\Http\Controllers\Admin\Counselling\CustomFieldController::groupKeys($cf)) }}" data-labels="{{ json_encode($cf->options) }}" data-rows="{{ json_encode($val ?? []) }}"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addCfGroupRow(this.previousElementSibling)">Add row</button>@break
+                            @default<input type="text" name="{{ $name }}" class="form-control" value="{{ $val }}">
+                        @endswitch
+                    </div>
+                </div>
+                @can('cns-counsellings-edit')<button class="btn btn-primary mt-3">Save {{ $cf->label }}</button>@endcan
+            </form>
+        </div>
+    @endforeach
     </div>
+    @if(!$isRound && $customFields->isEmpty())
+        <p class="text-muted small mb-0 mt-3">Need a tab unique to this counselling (e.g. Bond and service rules, Stray vacancy round)?
+            @can('cns-counsellings-edit')<a href="{{ $builderUrl }}">Add it in the Schema Builder</a>.@endcan
+            Never use it for eligibility, fees, documents, process, rules or dates.</p>
+    @endif
 </div></div>
 
 {{-- One modal per block --}}
@@ -208,6 +274,19 @@
         form.querySelectorAll('.cns-rows').forEach(b => { if (!b.children.length) addCnsRow(b); });
         new bootstrap.Modal(modalEl).show();
     }
+    // ---- Schema Builder group rows ----
+    function addCfGroupRow(box, data) {
+        const keys = JSON.parse(box.dataset.keys), labels = JSON.parse(box.dataset.labels), i = box.children.length;
+        const row = document.createElement('div');
+        row.className = 'd-flex gap-2 mb-1';
+        row.innerHTML = keys.map((k, n) => `<input class="form-control form-control-sm" placeholder="${labels[n]}" name="${box.dataset.name}[${i}][${k}]" value="${(data && data[k]) ? String(data[k]).replace(/"/g, '&quot;') : ''}">`).join('')
+            + '<button type="button" class="btn btn-sm btn-light border text-danger" onclick="this.parentElement.remove()">&times;</button>';
+        box.appendChild(row);
+    }
+    document.querySelectorAll('.cf-group-rows').forEach(b => { const rows = JSON.parse(b.dataset.rows || '[]'); (rows.length ? rows : [null]).forEach(r => addCfGroupRow(b, r)); });
+    // ---- Schema Builder rich-text tabs use the CRM's standard editor ----
+    if (document.querySelector('.cf-editor') && typeof initializeTinyMCE === 'function') initializeTinyMCE('.cf-editor', 400);
+
     // A validation error reopens the dialog that was submitted (e.g. the fee or rule), not another one, with what was typed.
     @if($errors->any() && $failedBlock && $allBlocks->has($failedBlock))
     $(function () {

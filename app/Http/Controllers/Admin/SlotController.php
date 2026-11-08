@@ -43,7 +43,7 @@ class SlotController extends Controller
                 'end_date'   => ['required', 'date', 'after_or_equal:start_date'],
                 'days'       => ['required', 'array', 'min:1'],
                 'start_time' => ['required'],
-                'end_time'   => ['required'],
+                'end_time'   => ['required', 'after:start_time'],
                 'mode'       => ['required', 'in:video,audio,chat'],
                 'cost'       => ['nullable', 'numeric', 'min:0'],
             ]);
@@ -64,10 +64,7 @@ class SlotController extends Controller
 
             for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
                 if (in_array($date->format('D'), $request->days)) {
-                    $exists = ExpertSlot::where('expert_id', $expert->id)
-                        ->where('date', $date->format('Y-m-d'))
-                        ->where('start_time', $request->start_time)
-                        ->exists();
+                    $exists = (bool) ExpertSlot::overlapping($expert->id, $date->format('Y-m-d'), $request->start_time, $request->end_time);
 
                     if (!$exists) {
                         ExpertSlot::create([
@@ -93,11 +90,15 @@ class SlotController extends Controller
                 'expert_id'  => ['required', 'exists:experts,id'],
                 'date'       => ['required', 'date'],
                 'start_time' => ['required'],
-                'end_time'   => ['required'],
+                'end_time'   => ['required', 'after:start_time'],
                 'mode'       => ['required', 'in:video,audio,chat'],
                 'cost'       => ['nullable', 'numeric', 'min:0'],
-                'status'     => ['nullable', 'in:available,booked,blocked'],
+                'status'     => ['nullable', 'in:available,blocked'],
             ]);
+
+            if ($clash = ExpertSlot::overlapping((int) $request->expert_id, $request->date, $request->start_time, $request->end_time)) {
+                return back()->withInput()->with('error', 'This overlaps another slot of this expert, ' . substr($clash->start_time, 0, 5) . '-' . substr($clash->end_time, 0, 5) . ' on that day.');
+            }
 
             $cost = $request->cost;
             if ($cost === null || $cost === '' || $cost == 0) {
@@ -130,15 +131,23 @@ class SlotController extends Controller
     {
         $slot = ExpertSlot::findOrFail($id);
 
+        if ($booking = $slot->activeBooking()) {
+            return back()->with('error', "This slot has booking {$booking->booking_id} ({$booking->status}). Cancel or complete that booking (Expert Bookings) before changing the slot.");
+        }
+
         $request->validate([
             'expert_id'  => ['required', 'exists:experts,id'],
             'date'       => ['required', 'date'],
             'start_time' => ['required'],
-            'end_time'   => ['required'],
-            'status'     => ['required', 'in:available,booked,blocked'],
+            'end_time'   => ['required', 'after:start_time'],
+            'status'     => ['required', 'in:available,blocked'],
             'mode'       => ['required', 'in:video,audio,chat'],
             'cost'       => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        if ($clash = ExpertSlot::overlapping((int) $request->expert_id, $request->date, $request->start_time, $request->end_time, $slot->id)) {
+            return back()->with('error', 'This overlaps another slot of this expert, ' . substr($clash->start_time, 0, 5) . '-' . substr($clash->end_time, 0, 5) . ' on that day.');
+        }
 
         $slot->update([
             'expert_id'  => $request->expert_id,
@@ -147,7 +156,8 @@ class SlotController extends Controller
             'end_time'   => $request->end_time,
             'status'     => $request->status,
             'mode'       => $request->mode,
-            'cost'       => $request->cost ?? 0,
+            'cost'       => $request->filled('cost') && (float) $request->cost > 0 ? $request->cost
+                : round(max(0, (strtotime($request->end_time) - strtotime($request->start_time)) / 60) * (float) (Expert::find($request->expert_id)->price_per_min ?? 10), 2),
         ]);
 
         return redirect()->back()->with('success', 'Expert slot updated successfully.');
@@ -156,6 +166,9 @@ class SlotController extends Controller
     public function destroy($id)
     {
         $slot = ExpertSlot::findOrFail($id);
+        if ($booking = $slot->activeBooking()) {
+            return back()->with('error', "This slot has booking {$booking->booking_id} ({$booking->status}). Cancel that booking first.");
+        }
         $slot->delete();
 
         return redirect()->back()->with('success', 'Expert slot deleted successfully.');

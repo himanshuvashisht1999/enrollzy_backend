@@ -157,6 +157,7 @@ class PublicPresenter
         $payload['fees'] = $this->rows(CnsRow::forScope('fees', $cycle->id), fn ($r) => $this->fee($r));
         $payload['documents'] = $this->rows(CnsRow::forScope('documents', $cycle->id), fn ($r) => $this->document($r));
         $payload['rules'] = $this->rows(CnsRow::forScope('rules', $cycle->id), fn ($r) => $this->rule($r));
+        $payload['extra'] = $this->extra($c, $cycle);
         $payload['rounds'] = $rounds->map(fn ($r) => $this->round($c, $cycle, $r))->all();
         $payload['institutes'] = [
             'count' => Participant::where('cycle_id', $cycle->id)->count(),
@@ -396,7 +397,7 @@ class PublicPresenter
         return $events->map(function (CycleEvent $e) {
             $s = $e->displayStatus();
             return [
-                'id' => $e->id, 'type' => ['slug' => $e->type->slug, 'name' => $e->type->name], 'label' => $e->label, 'quota' => $e->quota?->name,
+                'id' => $e->id, 'type' => ['slug' => $e->type->slug, 'name' => $e->type->name, 'group' => $e->type->date_group], 'label' => $e->label, 'quota' => $e->quota?->name,
                 'start_at' => $e->start_at?->toIso8601String(), 'end_at' => $e->end_at?->toIso8601String(), 'extended_end_at' => $e->extended_end_at?->toIso8601String(),
                 'date_precision' => $e->date_precision, 'date_text' => $e->dateText(),
                 'status' => $e->status, 'status_text' => $s['label'], 'link_url' => $this->safeUrl($e->link_url), 'source_url' => $this->safeUrl($e->source_url),
@@ -878,6 +879,45 @@ class PublicPresenter
     public function file(?string $path): ?string
     {
         return $path ? asset('storage/' . $path) : null;
+    }
+
+    /**
+     * One Schema Builder value (exam or counselling) as display text. Values are stored JSON-encoded (CustomValue casts to array).
+     * Plain text is returned as is (the site escapes it); generated HTML escapes its own content.
+     */
+    public function customValue(object $r): ?string
+    {
+        $v = json_decode((string) $r->value, true);
+        if ($v === null && $r->value !== 'null') $v = $r->value;   // a raw, non-JSON value
+        $e = fn ($s) => e((string) $s);
+
+        return match (true) {
+            $v === null || $v === [] => null,
+            $r->type === 'file' && is_string($v) => '<a href="' . $e($this->file($v)) . '">Download</a>',
+            $r->type === 'url' && is_string($v) => ($url = $this->safeUrl($v)) ? '<a href="' . $e($url) . '">' . $e($url) . '</a>' : null,
+            $r->type === 'group' && is_array($v) => (function () use ($r, $v, $e) {
+                $labels = json_decode((string) $r->options, true) ?: [];
+                $keys = array_map(fn ($l) => Str::snake(Str::ascii($l)), $labels);
+                $head = '<tr>' . implode('', array_map(fn ($l) => '<th>' . $e($l) . '</th>', $labels)) . '</tr>';
+                $body = implode('', array_map(fn ($row) => '<tr>' . implode('', array_map(fn ($k) => '<td>' . $e($row[$k] ?? '') . '</td>', $keys)) . '</tr>', $v));
+                return '<table><thead>' . $head . '</thead><tbody>' . $body . '</tbody></table>';
+            })(),
+            is_array($v) => implode(', ', array_map('strval', $v)),
+            default => (string) $v,
+        };
+    }
+
+    /** The counselling's own extra tabs that have a value: "whole counselling" ones (no cycle) and this cycle's. */
+    private function extra(Counselling $c, CounsellingCycle $cycle): array
+    {
+        return DB::table('cns_custom_fields')->where('cns_custom_fields.counselling_id', $c->id)->whereNull('cns_custom_fields.deleted_at')
+            ->join('cns_custom_values', fn ($j) => $j->on('cns_custom_values.field_id', '=', 'cns_custom_fields.id')
+                ->where(fn ($w) => $w->where(fn ($cy) => $cy->where('cns_custom_fields.scope', 'cycle')->where('cns_custom_values.cycle_id', $cycle->id))
+                    ->orWhere(fn ($all) => $all->where('cns_custom_fields.scope', 'counselling')->whereNull('cns_custom_values.cycle_id'))))
+            ->orderBy('cns_custom_fields.sort_order')
+            ->get(['cns_custom_fields.key', 'cns_custom_fields.label', 'cns_custom_fields.type', 'cns_custom_fields.options', 'cns_custom_values.value'])
+            ->map(fn ($r) => ['key' => $r->key, 'label' => $r->label, 'type' => $r->type, 'value' => $this->customValue($r)])
+            ->filter(fn ($x) => trim(strip_tags((string) $x['value'])) !== '')->values()->all();
     }
 
     /** Only absolute external http(s) links are ever returned. */

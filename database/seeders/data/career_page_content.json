@@ -1,0 +1,137 @@
+{
+    "meta_title": "All career roadmaps · Exams, courses & careers | Enrollzy",
+    "meta_description": "Free career roadmaps: the stream, exam, counselling, course and years each step takes, for doctor, engineer, CA, lawyer, civil servant and more. Download any roadmap as a PDF.",
+    "trust": [
+        "Counselling is free",
+        "DPIIT-recognised platform",
+        "Real counsellors on call"
+    ],
+    "lead_badge": "Free · takes 30 seconds",
+    "lead_title": "Get your personal roadmap from a career expert",
+    "lead_text": "Tell us your class. A counsellor calls you with two or three paths that fit your marks and budget.",
+    "faq_title": "Career roadmap FAQs",
+    "faqs": [
+        {
+            "q": "When should I start planning my career?",
+            "a": "Class 9 or 10 is the best time to start, because the stream you pick after Class 10 decides which entrance exams you can take. Earlier classes are for exploring interests."
+        },
+        {
+            "q": "Can I become a doctor if I took PCM?",
+            "a": "Not through NEET UG unless you add Biology. NEET needs Physics, Chemistry and Biology in Class 12. Some boards let you take Biology as an additional subject."
+        },
+        {
+            "q": "Is commerce only for CA?",
+            "a": "No. Commerce also leads to B.Com, BBA, economics, banking, company secretary and management. CA, CS and CMA are the professional routes."
+        },
+        {
+            "q": "How accurate are these durations?",
+            "a": "They are typical durations for full-time study in India. Your actual time can be longer if you take a drop year, repeat an exam or study part-time."
+        }
+    ],
+    "learn_title": "Read, ask and discuss",
+    "learn_sub": "Guides from our counsellors and questions from students like you on Ask Enrollzy.",
+    "topics": [
+        {
+            "label": "Stream selection",
+            "keywords": [
+                "stream",
+                "class 10",
+                "class 11",
+                "PCM",
+                "PCB",
+                "humanities",
+                "after 10th"
+            ]
+        },
+        {
+            "label": "NEET and medicine",
+            "keywords": [
+                "NEET",
+                "MBBS",
+                "medical",
+                "medicine",
+                "doctor",
+                "nursing",
+                "pharmacy"
+            ]
+        },
+        {
+            "label": "JEE and engineering",
+            "keywords": [
+                "JEE",
+                "engineering",
+                "B.Tech",
+                "BTech",
+                "IIT",
+                "NIT"
+            ]
+        },
+        {
+            "label": "CA and commerce",
+            "keywords": [
+                "CA",
+                "chartered",
+                "commerce",
+                "B.Com",
+                "BCom",
+                "BBA",
+                "CMA"
+            ]
+        },
+        {
+            "label": "MBA and management",
+            "keywords": [
+                "MBA",
+                "CAT",
+                "management",
+                "PGDM"
+            ]
+        },
+        {
+            "label": "AI, data and tech",
+            "keywords": [
+                "AI",
+                "artificial intelligence",
+                "data",
+                "BCA",
+                "python",
+                "coding"
+            ]
+        },
+        {
+            "label": "Law",
+            "keywords": [
+                "law",
+                "CLAT",
+                "LLB",
+                "lawyer"
+            ]
+        },
+        {
+            "label": "Government jobs",
+            "keywords": [
+                "UPSC",
+                "IAS",
+                "civil services",
+                "government job",
+                "SSC",
+                "NDA"
+            ]
+        },
+        {
+            "label": "Design",
+            "keywords": [
+                "design",
+                "NID",
+                "NIFT",
+                "UCEED"
+            ]
+        }
+    ],
+    "ask_label": "Ask the community or a counsellor",
+    "ask_placeholder": "e.g. Can I do BCA after Commerce without Maths?",
+    "ask_note": "Counsellors usually answer here, and you can get a call if you want one.",
+    "list_title": "All career roadmaps,",
+    "list_title_em": "stage by stage",
+    "list_lede": "Pick your stage and class, then the path that interests you. Each roadmap shows the exams, courses, scholarships and careers it opens, step by step, with a free PDF."
+}

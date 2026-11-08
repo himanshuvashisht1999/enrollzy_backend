@@ -32,7 +32,7 @@ class Masters
                     ['name' => 'status', 'label' => 'Active', 'type' => 'bool', 'default' => true, 'col' => 4],
                 ],
                 'columns' => ['name', 'short_name', 'scope'],
-                'in_use' => fn ($m) => DB::table('exm_fees')->where('category_id', $m->id)->exists(),
+                'in_use' => fn ($m) => DB::table('exm_fees')->where(fn ($q) => $q->where('category_id', $m->id)->orWhereJsonContains('category_ids', (int) $m->id))->exists(),
             ],
             'quotas' => [
                 'title' => 'Quotas', 'singular' => 'Quota', 'model' => Quota::class,

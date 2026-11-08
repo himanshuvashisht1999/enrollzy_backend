@@ -118,6 +118,7 @@
                             <th>Stream</th>
                             <th>Discipline</th>
                             <th>Type</th>
+                            <th>Programme Mode</th>
                             <th>Status</th>
                             <th>Show on Website</th>
                             <th>Sort Order</th>
@@ -143,6 +144,14 @@
                                 <td class="small">{{ $course->streamOffered->title ?? '-' }}</td>
                                 <td class="small">{{ $course->discipline->title ?? '-' }}</td>
                                 <td class="small">{{ $course->courseType->title ?? '-' }}</td>
+                                {{-- programme modes (program types): Regular, Online, Hybrid, Distance Learning... a course can have several --}}
+                                <td>
+                                    @forelse($course->programTypes as $mode)
+                                        <span class="badge bg-light text-primary border fw-normal mb-1">{{ $mode->title }}</span>
+                                    @empty
+                                        <span class="text-muted small">-</span>
+                                    @endforelse
+                                </td>
                                 <td>
                                     @if($course->status)
                                         <span class="badge bg-success">Active</span>
@@ -179,7 +188,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center py-5 text-muted">@if($activeFilters) No course matches these filters. <a href="{{ route('admin.courses.index') }}">Clear all</a> @else No courses found in the master list. @endif</td>
+                                <td colspan="12" class="text-center py-5 text-muted">@if($activeFilters) No course matches these filters. <a href="{{ route('admin.courses.index') }}">Clear all</a> @else No courses found in the master list. @endif</td>
                             </tr>
                         @endforelse
                     </tbody>

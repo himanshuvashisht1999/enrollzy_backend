@@ -29,6 +29,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('organisations/{organisation}/admission-through', [OrganisationBlockApiController::class, 'show'])->name('organisations.admission');
     });
 
+    // ---- Expert documents for the website (signed requests only; App\Support\Experts\Bridge) ----
+    Route::middleware('throttle:120,1,expert-docs')->controller(\App\Http\Controllers\Api\V1\ExpertDocsBridgeController::class)->group(function () {
+        Route::get('expert-docs', 'show')->name('expert-docs.show');
+        Route::post('expert-docs', 'store')->name('expert-docs.store');
+        Route::delete('expert-docs', 'destroy')->name('expert-docs.destroy');
+    });
+
     // ---- Follow and alerts: never cached ----
     Route::middleware('throttle:cns-follow')->post('follow', [FollowApiController::class, 'follow'])->name('follow');
     Route::middleware('throttle:cns-public')->group(function () {

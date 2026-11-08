@@ -68,6 +68,30 @@ class RecordController extends Controller
         ]);
     }
 
+    // ---------- the same checks for rows found by AI (Services\Quality\QualityAiService) ----------
+
+    public function checkedRanking(array $input, string $type, string $id, ?EntityRanking $row = null): array
+    {
+        return $this->rankingData(Request::create('/', 'POST', $this->blankNulls($input)), $type, $id, $row);
+    }
+
+    public function checkedAccreditation(array $input, string $type, string $id, ?EntityAccreditation $row = null): array
+    {
+        return $this->accreditationData(Request::create('/', 'POST', $this->blankNulls($input)), $type, $id, $row);
+    }
+
+    public function checkedApproval(array $input, string $type, string $id, ?EntityApproval $row = null): array
+    {
+        return $this->approvalData(Request::create('/', 'POST', $this->blankNulls($input)), $type, $id, $row);
+    }
+
+    private function blankNulls(array $input): array
+    {
+        $input = array_filter($input, fn ($v) => $v !== null && $v !== '');
+        if (isset($input['notes'])) $input['notes'] = mb_substr((string) $input['notes'], -2000);
+        return $input;
+    }
+
     // ---------- rankings ----------
 
     public function storeRanking(Request $request, string $type, string $id)

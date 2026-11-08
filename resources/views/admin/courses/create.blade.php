@@ -24,8 +24,8 @@
                             <div class="col-md-6">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <label class="form-label fw-bold mb-0">Course Name <span class="text-danger">*</span></label>
-                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" id="btn-fetch-course-bot" title="Auto-fill all course fields using AI Bot">
-                                        <i class="fas fa-robot me-1"></i> Fetch Data By bot
+                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" id="btn-fetch-course-bot" title="Auto-fill all course fields using Gemini">
+                                        <i class="fas fa-robot me-1"></i> Fetch Data By Gemini
                                     </button>
                                 </div>
                                 <input type="text"
@@ -429,7 +429,7 @@
             }
         }
 
-        // Fetch Data By Bot logic
+        // Fetch Data By Gemini logic
         $('#btn-fetch-course-bot').on('click', function () {
             const courseName = $('#course_name_input').val().trim();
             if (!courseName) {
@@ -447,7 +447,7 @@
 
             const btn = $(this);
             const originalHtml = btn.html();
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Fetching by bot...');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Fetching by Gemini...');
             $('#bot-fetch-status').show().html('<div class="alert alert-info py-2 px-3 small mb-0"><i class="fas fa-robot me-1"></i> Researching course curriculum, eligibility, salary & FAQs via Google Gemini... Please wait a moment.</div>');
 
             $.ajax({
@@ -527,7 +527,7 @@
                 },
                 error: function (xhr) {
                     btn.prop('disabled', false).html(originalHtml);
-                    let msg = 'Failed to fetch course data from AI bot.';
+                    let msg = 'Failed to fetch course data from Gemini.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }

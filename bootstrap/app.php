@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // behind Cloudflare: trust its forwarded visitor IP, from its own addresses only (config/cloudflare.php)
+        $middleware->trustProxies(at: (require __DIR__.'/../config/cloudflare.php')['ips']);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);

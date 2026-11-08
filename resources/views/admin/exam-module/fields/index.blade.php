@@ -6,16 +6,16 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-0 fw-bold">Schema Builder <span class="text-muted fs-6">{{ $exam->name }}</span></h4>
-        <p class="text-muted mb-0">Extra details unique to this exam. Eligibility, fees, dates, pattern and syllabus have their own structured tabs and cannot be created here.</p>
+        <p class="text-muted mb-0">Extra tabs unique to this exam (e.g. Medical requirements, Typing test). Each one appears on the cycle page next to Eligibility, Syllabus and the other tabs. Eligibility, fees, dates, pattern and syllabus have their own structured tabs and cannot be created here.</p>
     </div>
-    <a href="{{ route('admin.exam-module.exams.show', $exam) }}" class="btn btn-light border"><i class="fas fa-arrow-left me-1"></i> Back</a>
+    <a href="{{ $cycle ? route('admin.exam-module.cycles.show', $cycle) : route('admin.exam-module.exams.show', $exam) }}" class="btn btn-light border"><i class="fas fa-arrow-left me-1"></i> {{ $cycle ? 'Back to ' . $cycle->title . ' cycle' : 'Back' }}</a>
 </div>
 
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
-    <h6 class="fw-bold mb-3">Add a field</h6>
+    <h6 class="fw-bold mb-3">Add a tab</h6>
     <form action="{{ route('admin.exam-module.fields.store', $exam) }}" method="POST" class="row g-3">
         @csrf
-        <div class="col-md-4"><label class="form-label fw-bold">Label *</label><input type="text" name="label" class="form-control" value="{{ old('label') }}" required></div>
+        <div class="col-md-4"><label class="form-label fw-bold">Tab title *</label><input type="text" name="label" class="form-control" value="{{ old('label') }}" placeholder="e.g. Medical requirements" required></div>
         <div class="col-md-3"><label class="form-label fw-bold">Key</label><input type="text" name="key" class="form-control" value="{{ old('key') }}" placeholder="auto from label">
             <div class="form-text">Never changes once created.</div></div>
         <div class="col-md-3"><label class="form-label fw-bold">Type *</label>
@@ -25,13 +25,13 @@
         <div class="col-12" id="newOptions" style="display:none"><label class="form-label fw-bold">Options / group columns</label>
             <textarea name="options" rows="3" class="form-control" placeholder="One per line">{{ old('options') }}</textarea>
             <div class="form-text">Dropdown and multi-select: the choices. Repeatable group: the column names.</div></div>
-        <div class="col-12"><button class="btn btn-primary">Add field</button></div>
+        <div class="col-12"><button class="btn btn-primary">Add tab</button></div>
     </form>
 </div></div>
 
 <div class="card border-0 shadow-sm rounded-4"><div class="table-responsive">
     <table class="table align-middle mb-0">
-        <thead class="bg-light"><tr><th class="ps-4">Label</th><th>Key</th><th>Type</th><th>Applies to</th><th>Options</th><th>Order</th><th>Values</th><th class="text-end pe-4">Actions</th></tr></thead>
+        <thead class="bg-light"><tr><th class="ps-4">Tab title</th><th>Key</th><th>Type</th><th>Applies to</th><th>Options</th><th>Order</th><th>Values</th><th class="text-end pe-4">Actions</th></tr></thead>
         <tbody>
         @forelse($fields as $f)
             <tr>
@@ -53,7 +53,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="8" class="text-center text-muted py-5">No extra fields yet.</td></tr>
+            <tr><td colspan="8" class="text-center text-muted py-5">No extra tabs yet.</td></tr>
         @endforelse
         </tbody>
     </table>

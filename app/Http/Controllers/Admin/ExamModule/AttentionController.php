@@ -52,6 +52,10 @@ class AttentionController extends Controller
             // 4. Public exams with no current cycle for the coming year.
             'noCurrent' => Exam::where('visibility', 'public')->where('status', true)->where('is_archived', false)
                 ->whereDoesntHave('cycles', fn ($q) => $q->where('is_current', true)->where('year', '>=', now()->year))->get(),
+
+            // 5. Public exams whose cycles are all admin only: the exam page shows no dates, eligibility, pattern or papers.
+            'noPublicCycle' => Exam::with('cycles')->where('visibility', 'public')->where('status', true)->where('is_archived', false)
+                ->whereHas('cycles')->whereDoesntHave('cycles', fn ($q) => $q->where('is_public', true))->get(),
         ];
     }
 

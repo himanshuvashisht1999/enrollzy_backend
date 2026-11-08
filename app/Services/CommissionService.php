@@ -27,7 +27,7 @@ class CommissionService
             ->first();
 
         if ($expertCommission) {
-            return $this->compute($amount, $expertCommission->commission_type, $expertCommission->commission_value, 'expert');
+            return $this->compute($amount, $expertCommission->commission_type, $expertCommission->commission_value, 'expert', $this->taxes());
         }
 
         // 3. Category Specific Commission
@@ -45,9 +45,7 @@ class CommissionService
         // Keeping legacy logic as backup? No, let's switch to new logic as primary.
         
         if ($categoryPolicy) {
-             // Pass the category name for logging purposes from relationship or legacy
-             $catName = $categoryPolicy->expertCategory->name ?? 'Unknown Category';
-            return $this->compute($amount, $categoryPolicy->commission_type, $categoryPolicy->commission_value, 'category', $categoryPolicy);
+            return $this->compute($amount, $categoryPolicy->commission_type, $categoryPolicy->commission_value, 'category', $this->taxes());
         }
 
         // 4. Global Platform Default
@@ -61,6 +59,21 @@ class CommissionService
 
         // Fallback if no policy found (Safe Default: 10%)
         return $this->compute($amount, 'percentage', 10, 'fallback');
+    }
+
+    /** what a rate means on an amount (the Commission Rules page shows it on ₹1,000) */
+    public function example(float $amount, string $type, float $value): array
+    {
+        return $this->compute($amount, $type, $value, 'example', $this->taxes());
+    }
+
+    /**
+     * GST and TDS are platform-wide: the global policy's switches apply whichever rate is used (before Nov 2026 a
+     * category or expert rate always charged both).
+     */
+    private function taxes(): ?CommissionPolicy
+    {
+        return CommissionPolicy::where('policy_type', 'global')->first();
     }
 
     private function compute($totalAmount, $type, $value, $source, $policy = null)
@@ -112,6 +125,7 @@ class CommissionService
             'tds_deduction' => round($tdsAmount, 2),
             'net_expert_earning' => round($netExpertEarning, 2),
             'applied_type' => $source, // global, category, etc
+            'commission_type' => $type, // percentage or flat_fee
             'applied_rate' => $value,
             'applied_gst_rate' => $gstRate,
             'applied_tds_rate' => $tdsRate,

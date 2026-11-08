@@ -41,7 +41,8 @@ class ImportController extends Controller
             'cycle' => $cycle,
             'round' => $cycle ? $cycle->rounds->firstWhere('id', (int) $request->round) : null,
             'type' => in_array($request->type, array_keys(ImportBatch::TYPES)) ? $request->type : 'participants',
-            'cycles' => CounsellingCycle::with(['counselling:id,name', 'rounds:id,cycle_id,name'])->orderByDesc('year')->get(),
+            // only cycles of a counselling that still exists (a deleted counselling keeps its cycles in the database)
+            'cycles' => CounsellingCycle::with(['counselling:id,name', 'rounds:id,cycle_id,name'])->whereHas('counselling')->orderByDesc('year')->get(),
         ]);
     }
 

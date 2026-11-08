@@ -36,14 +36,29 @@ class BlogController extends Controller
         return view('admin.blogs.create', compact('categories'));
     }
 
+    /**
+     * The featured image shows in 16:9 landscape boxes (homepage, blog list, blog page), so it must be a horizontal
+     * image, at least 800 px wide and at least 3:2 (1200 x 675 recommended); square or portrait posters get cropped.
+     */
+    private function imageRules(): array
+    {
+        return ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048', 'dimensions:min_width=800',
+            function ($attribute, $file, $fail) {
+                [$w, $h] = @getimagesize($file->getRealPath()) ?: [0, 0];
+                if ($w && $h && $w / $h < 1.5) {
+                    $fail("Upload a horizontal (landscape) image, 1200 × 675 px recommended. This one is {$w} × {$h} px.");
+                }
+            }];
+    }
+
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|max:255',
             'category_id' => 'nullable|exists:categories,id',
             'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+            'image' => $this->imageRules(),
+        ], ['image.dimensions' => 'The image must be at least 800 px wide (1200 × 675 px recommended).']);
 
         $data = $request->all();
 
@@ -70,8 +85,8 @@ class BlogController extends Controller
             'title' => 'required|max:255',
             'category_id' => 'nullable|exists:categories,id',
             'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+            'image' => $this->imageRules(),
+        ], ['image.dimensions' => 'The image must be at least 800 px wide (1200 × 675 px recommended).']);
 
         $data = $request->all();
 

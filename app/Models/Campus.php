@@ -58,7 +58,19 @@ class Campus extends Model
         'notable_alumni' => 'array',
         'clubs_and_committees' => 'array',
         'faqs' => 'array',
+        // coaching branch details (InstituteFields)
+        'working_days' => 'array',
+        'nearby_accommodations' => 'array',
+        'reading_room_available' => 'boolean',
+        'test_centre_available' => 'boolean',
+        'average_rating' => 'decimal:2',
     ];
+
+    /** this branch's photos and videos (organisation_media rows with its id) */
+    public function media()
+    {
+        return $this->hasMany(OrganisationMedia::class, 'campus_id', 'id')->orderBy('sort_order')->orderBy('id');
+    }
 
     protected static function boot()
     {

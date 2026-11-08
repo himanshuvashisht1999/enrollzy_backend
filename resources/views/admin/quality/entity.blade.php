@@ -25,6 +25,10 @@
     <div class="alert alert-danger py-2"><ul class="mb-0 small">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
 @endif
 
+@if($canEdit)
+    @include('admin.quality.partials.ai_fill')
+@endif
+
 @foreach($inherited as $inh)
     @if($inh['accreditations']->isNotEmpty() || $inh['approvals']->isNotEmpty() || $inh['rankings']->isNotEmpty())
         <div class="alert alert-light border small">

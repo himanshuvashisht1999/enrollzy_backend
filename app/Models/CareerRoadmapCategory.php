@@ -9,7 +9,7 @@ class CareerRoadmapCategory extends Model
 {
     protected $table = 'career_roadmap_categories';
 
-    protected $fillable = ['name', 'slug', 'status'];
+    protected $fillable = ['name', 'slug', 'description', 'sort_order', 'status'];
 
     protected static function boot()
     {

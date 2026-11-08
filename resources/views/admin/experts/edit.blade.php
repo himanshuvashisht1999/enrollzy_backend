@@ -5,6 +5,17 @@
 @section('content')
     <div class="row justify-content-center">
         <div class="col-md-11">
+            @php $docCounts = \App\Models\ExpertDocument::where('expert_id', $expert->id)->selectRaw('count(*) n, sum(status = \'pending\') p')->first(); @endphp
+            <div class="d-flex justify-content-end mb-2">
+                <a href="{{ route('experts.documents', $expert->id) }}" class="btn btn-sm btn-light border"><i class="fas fa-file-alt me-1 text-success"></i> Documents ({{ (int) $docCounts->n }})@if($docCounts->p)<span class="badge bg-warning text-dark ms-1">{{ (int) $docCounts->p }} to check</span>@endif</a>
+            </div>
+            @php $waitingChange = \App\Models\ExpertProfileChange::where('expert_id', $expert->id)->where('status', 'pending')->latest('id')->first(); @endphp
+            @if($waitingChange)
+                <div class="alert alert-warning d-flex justify-content-between align-items-center py-2">
+                    <span><i class="fas fa-user-edit me-1"></i> This expert has sent profile changes for approval ({{ $waitingChange->updated_at->format('d M Y') }}). Saving this form does not cancel them.</span>
+                    <a href="{{ route('expert-profile-changes.show', $waitingChange) }}" class="btn btn-sm btn-warning">Review</a>
+                </div>
+            @endif
             <form action="{{ route('experts.update', $expert->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
@@ -14,21 +25,18 @@
                         <ul class="nav nav-tabs card-header-tabs" id="expertTabs" role="tablist">
                             <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#ex-basic">1.
                                     Identity</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-career">Career pages</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-listing">Experts page</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-profile">Profile page</a></li>
                             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-credentials">2.
                                     Credentials</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-institute">3.
-                                    Institute</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-teaching">4.
-                                    Teaching</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-performance">5.
-                                    Performance</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-content">6. Content</a>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-content">3. Content</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-ratings">7. Ratings</a>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-ratings">4. Ratings</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-contact">8. Contact &
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-contact">5. Contact &
                                     SEO</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-admin">9. Admin</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-admin">6. Admin</a></li>
                         </ul>
                     </div>
 
@@ -59,25 +67,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Designation</label>
-                                        <select name="designation" class="form-select">
-                                            <option value="">Select Designation</option>
-                                            @foreach(['Senior Faculty', 'Faculty', 'HOD', 'Mentor'] as $desig)
-                                                <option value="{{ $desig }}" {{ $expert->designation == $desig ? 'selected' : '' }}>{{ $desig }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Gender</label>
-                                        <select name="gender" class="form-select">
-                                            <option value="">Select</option>
-                                            @foreach(['Male', 'Female', 'Other'] as $gender)
-                                                <option value="{{ $gender }}" {{ $expert->gender == $gender ? 'selected' : '' }}>
-                                                    {{ $gender }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    @include('admin.experts._identity', ['expert' => $expert])
                                     <div class="col-md-6">
                                         <label class="form-label">Password (Leave empty to keep current)</label>
                                         <input type="password" class="form-control" name="password">
@@ -96,13 +86,7 @@
                                             <option value="1" {{ old('is_featured', $expert->is_featured ?? 0) == 1 ? 'selected' : '' }}>Yes</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Date of Birth</label>
-                                        <input type="text" class="form-control" name="date_of_birth"
-                                            value="{{ old('date_of_birth', $expert->date_of_birth?->format('Y-m-d')) }}"
-                                            placeholder="YYYY-MM-DD">
-                                    </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-12">
                                         <label class="form-label">Profile Photo</label>
                                         @if($expert->img)
                                             <div class="mb-2">
@@ -113,20 +97,6 @@
                                         @endif
                                         <input type="file" class="form-control" name="img">
                                         <div class="form-text text-muted">Image size should not exceed 2MB.</div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Subject Specialization</label>
-                                        <select class="form-control select2-tags" name="subject_specialization[]" multiple>
-                                            @if($expert->subject_specialization)
-                                                @foreach($expert->subject_specialization as $spec)
-                                                    <option value="{{ $spec }}" selected>{{ $spec }}</option>
-                                                @endforeach
-                                            @endif
-                                            <option value="Physics">Physics</option>
-                                            <option value="Chemistry">Chemistry</option>
-                                            <option value="Biology">Biology</option>
-                                            <option value="Maths">Maths</option>
-                                        </select>
                                     </div>
                                     <div class="col-md-12">
                                         <label class="form-label">Short Bio</label>
@@ -141,6 +111,41 @@
                                 </div>
                             </div>
 
+                            <!-- CAREER ROADMAP: where the expert shows on the career pages -->
+                            <div class="tab-pane fade" id="ex-career">
+                                @php
+                                    $ccats = \App\Models\CareerCategory::orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+                                    $cclasses = \App\Models\CareerRoadmapStage::orderBy('sort_order')->orderBy('id')->get(['id', 'title']);
+                                    $selCats = collect(old('career_category_ids', $expert->career_category_ids ?? []))->map(fn ($x) => (int) $x)->all();
+                                    $selCls = collect(old('career_class_ids', $expert->career_class_ids ?? []))->map(fn ($x) => (int) $x)->all();
+                                @endphp
+                                <h5 class="mb-1 text-primary">Career roadmap pages</h5>
+                                <p class="text-muted small">The website shows experts on the career roadmap, careers and roadmap pages, matched to the page's career category and class. Leave a list empty to cover all.</p>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="show_on_career_pages" id="show_on_career_pages" value="1" {{ old('show_on_career_pages', $expert->show_on_career_pages ?? true) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="show_on_career_pages">Show on the career pages</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Career categories they advise on</label>
+                                        <select name="career_category_ids[]" class="form-select" multiple>
+                                            @foreach($ccats as $cc)<option value="{{ $cc->id }}" {{ in_array($cc->id, $selCats, true) ? 'selected' : '' }}>{{ $cc->name }}</option>@endforeach
+                                        </select>
+                                        <small class="text-muted">Empty: a general adviser, shown for every category.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Classes they counsel</label>
+                                        <select name="career_class_ids[]" class="form-select" multiple>
+                                            @foreach($cclasses as $cl)<option value="{{ $cl->id }}" {{ in_array($cl->id, $selCls, true) ? 'selected' : '' }}>{{ $cl->title }}</option>@endforeach
+                                        </select>
+                                        <small class="text-muted">Empty: every class.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            @include('admin.experts._listing', ['expert' => $expert ?? null])
+                            @include('admin.experts._profile', ['expert' => $expert])
                             <!-- 2. CREDENTIALS -->
                             <div class="tab-pane fade" id="ex-credentials">
                                 <h5 class="mb-3 text-primary">Professional Credentials</h5>
@@ -276,192 +281,7 @@
                                 </div>
                             </div>
 
-                            <!-- 3. INSTITUTE -->
-                            <div class="tab-pane fade" id="ex-institute">
-                                <h5 class="mb-3 text-primary">Institute Association</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Current Institute Name</label>
-                                        <input type="text" class="form-control" name="current_institute_name"
-                                            value="{{ $expert->current_institute_name }}">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Faculty Type</label>
-                                        <select name="faculty_type" class="form-select">
-                                            @foreach(['Full-time', 'Part-time', 'Visiting'] as $ft)
-                                                <option value="{{ $ft }}" {{ $expert->faculty_type == $ft ? 'selected' : '' }}>
-                                                    {{ $ft }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Joining Year</label>
-                                        <input type="number" class="form-control" name="joining_year"
-                                            value="{{ $expert->joining_year }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Courses Taught</label>
-                                        <select class="form-control select2-tags" name="courses_taught[]" multiple>
-                                            @if($expert->courses_taught)
-                                                @foreach($expert->courses_taught as $ct)
-                                                    <option value="{{ $ct }}" selected>{{ $ct }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Target Batches</label>
-                                        <select class="form-control select2-tags" name="target_batches[]" multiple>
-                                            @if($expert->target_batches)
-                                                @foreach($expert->target_batches as $tb)
-                                                    <option value="{{ $tb }}" selected>{{ $tb }}</option>
-                                                @endforeach
-                                            @endif
-                                            <option value="Class 11">Class 11</option>
-                                            <option value="Class 12">Class 12</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Avg. Batch Size</label>
-                                        <input type="number" class="form-control" name="average_batch_size_handled"
-                                            value="{{ $expert->average_batch_size_handled }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 4. TEACHING -->
-                            <div class="tab-pane fade" id="ex-teaching">
-                                <h5 class="mb-3 text-primary">Teaching Profile</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Teaching Style</label>
-                                        <select name="teaching_style" class="form-select">
-                                            <option value="">Select</option>
-                                            @foreach(['Conceptual', 'Exam-oriented', 'Application-based'] as $style)
-                                                <option value="{{ $style }}" {{ $expert->teaching_style == $style ? 'selected' : '' }}>{{ $style }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Language</label>
-                                        <select class="form-control select2-tags" name="language_of_teaching[]" multiple>
-                                            @if($expert->language_of_teaching)
-                                                @foreach($expert->language_of_teaching as $lang)
-                                                    <option value="{{ $lang }}" selected>{{ $lang }}</option>
-                                                @endforeach
-                                            @endif
-                                            <option value="English">English</option>
-                                            <option value="Hindi">Hindi</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Lecture Mode</label>
-                                        <select name="lecture_mode" class="form-select">
-                                            @foreach(['Offline', 'Online', 'Hybrid'] as $mode)
-                                                <option value="{{ $mode }}" {{ $expert->lecture_mode == $mode ? 'selected' : '' }}>{{ $mode }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Weekly Classes</label>
-                                        <input type="number" class="form-control" name="weekly_classes_count"
-                                            value="{{ $expert->weekly_classes_count }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch p-2 border rounded">
-                                            <input class="form-check-input" type="checkbox" name="doubt_solving_sessions"
-                                                value="1" {{ $expert->doubt_solving_sessions ? 'checked' : '' }}>
-                                            <label class="form-check-label px-2">Doubt Solving Sessions</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch p-2 border rounded">
-                                            <input class="form-check-input" type="checkbox" name="one_to_one_mentoring"
-                                                value="1" {{ $expert->one_to_one_mentoring ? 'checked' : '' }}>
-                                            <label class="form-check-label px-2">One-to-One Mentoring</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 5. PERFORMANCE -->
-                            <div class="tab-pane fade" id="ex-performance">
-                                <h5 class="mb-3 text-primary">Performance & Impact</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Students Selected Count</label>
-                                        <input type="number" class="form-control" name="students_selected_count"
-                                            value="{{ $expert->students_selected_count }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Best Result Year</label>
-                                        <input type="number" class="form-control" name="best_result_year"
-                                            value="{{ $expert->best_result_year }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Verification Source</label>
-                                        <input type="text" class="form-control" name="result_verification_source"
-                                            value="{{ $expert->result_verification_source }}">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Top Rank Students (JSON)</label>
-                                        <textarea class="form-control" name="top_rank_students"
-                                            rows="3">{{ is_array($expert->top_rank_students) ? json_encode($expert->top_rank_students) : $expert->top_rank_students }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 6. CONTENT -->
-                            <div class="tab-pane fade" id="ex-content">
-                                <h5 class="mb-3 text-primary">Content & Digital</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Intro Video URL</label>
-                                        <input type="url" class="form-control" name="intro_video_url"
-                                            value="{{ $expert->intro_video_url }}">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Demo Lecture Videos (URL Array)</label>
-                                        <select class="form-control select2-tags" name="demo_lecture_videos[]" multiple>
-                                            @if($expert->demo_lecture_videos)
-                                                @foreach($expert->demo_lecture_videos as $vid)
-                                                    <option value="{{ $vid }}" selected>{{ $vid }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Articles Written (URL Array)</label>
-                                        <select class="form-control select2-tags" name="articles_written[]" multiple>
-                                            @if($expert->articles_written)
-                                                @foreach($expert->articles_written as $art)
-                                                    <option value="{{ $art }}" selected>{{ $art }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">YouTube URL</label>
-                                        <input type="url" class="form-control" name="youtube_channel_url"
-                                            value="{{ $expert->youtube_channel_url }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">LinkedIn</label>
-                                        <input type="url" class="form-control" name="linkedin_profile_url"
-                                            value="{{ $expert->linkedin_profile_url }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Instagram</label>
-                                        <input type="url" class="form-control" name="instagram_profile_url"
-                                            value="{{ $expert->instagram_profile_url }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Telegram</label>
-                                        <input type="url" class="form-control" name="telegram_channel_url"
-                                            value="{{ $expert->telegram_channel_url }}">
-                                    </div>
-                                </div>
-                            </div>
+                            @include('admin.experts._content', ['expert' => $expert ?? null])
 
                             <!-- 7. RATINGS -->
                             <div class="tab-pane fade" id="ex-ratings">
@@ -492,9 +312,9 @@
                                 <h5 class="mb-3 text-primary">Contact & SEO</h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Phone (Private)</label>
-                                        <input type="text" class="form-control" name="contact_number"
-                                            value="{{ $expert->contact_number }}">
+                                        <label class="form-label">Mobile number <span class="text-danger">*</span> <small class="text-muted">(private; the expert signs in on the website with OTP to it)</small></label>
+                                        <input type="tel" class="form-control" name="contact_number" value="{{ old('contact_number', $expert->contact_number) }}" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile" required>
+                                        @if($expert->user_id)<small class="text-success d-block">Linked to a website account: this expert has signed in on the website.</small>@else<small class="text-muted d-block">Not signed in on the website yet.</small>@endif
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Visibility</label>
@@ -720,6 +540,12 @@
                 placeholder: "Type and enter to add",
                 width: '100%'
             });
+
+            // Article repeater (title + link)
+            let artIndex = {{ is_array($expert->articles_written) ? count($expert->articles_written) : 0 }};
+            const artTpl = document.getElementById('article-row-template').innerHTML;
+            $('#add-article-btn').click(function () { $('#articles-container').append(artTpl.replace(/INDEX/g, artIndex++)); });
+            $(document).on('click', '.remove-article-btn', function () { $(this).closest('.article-row').remove(); });
 
             // Qualification Repeater Logic
             let qualIndex = {{ is_array($expert->other_qualifications) ? count($expert->other_qualifications) : 0 }};

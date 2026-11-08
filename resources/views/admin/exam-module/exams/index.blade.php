@@ -41,7 +41,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
-                <tr><th class="ps-4">Exam</th><th>Type</th><th>Conducted by</th><th>Current cycle</th><th>Visibility</th><th class="text-end pe-4">Actions</th></tr>
+                <tr><th class="ps-4">Exam</th><th>Type</th><th>Conducted by</th><th>Cycles</th><th>Visibility</th><th class="text-end pe-4">Actions</th></tr>
             </thead>
             <tbody>
             @forelse($exams as $exam)
@@ -52,7 +52,47 @@
                     </td>
                     <td>{{ \App\Models\ExamModule\Exam::TYPES[$exam->exam_type] ?? '-' }}</td>
                     <td>{{ $exam->conductingBody->name ?? ($exam->source_type === 'internal' ? 'Owning organisation' : '-') }}</td>
-                    <td>{{ $exam->currentCycle?->title ?? '-' }}</td>
+                    <td class="exm-cycles">
+                        @php $main = $exam->cycles->firstWhere('is_current', true) ?? $exam->cycles->first(); @endphp
+                        @if($main)
+                            <div class="d-flex align-items-center gap-1 flex-nowrap">
+                                <span class="fw-semibold text-nowrap">{{ $main->title }}</span>
+                                @if($main->is_current)<span class="badge bg-primary-subtle text-primary">Current</span>@endif
+                                @unless($main->is_public)<span class="badge bg-warning-subtle text-warning" title="Admin only: this cycle's dates and details are not on the website">Not on website</span>@endunless
+                            </div>
+                        @endif
+                        @can('exm-cycles-manage')
+                        <div class="d-flex gap-1 mt-1">
+                            @if($main)
+                                <a href="{{ route('admin.exam-module.cycles.show', $main) }}" class="btn btn-sm btn-light border text-nowrap" title="Dates, events, eligibility, pattern, papers..."><i class="fas fa-calendar-alt text-primary me-1"></i>Dates &amp; content</a>
+                                <a href="{{ route('admin.exam-module.cycles.edit', $main) }}" class="btn btn-sm btn-light border" title="Edit cycle settings (year, status, registration, result mode)"><i class="fas fa-sliders-h text-secondary"></i></a>
+                            @endif
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border dropdown-toggle text-nowrap" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}'>
+                                    {{ $exam->cycles->count() > 1 ? 'All ' . $exam->cycles->count() : ($main ? 'Cycles' : 'Add cycle') }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:300px">
+                                    @foreach($exam->cycles as $c)
+                                        <li class="d-flex align-items-center gap-2 px-3 py-1">
+                                            <div class="flex-grow-1">
+                                                <span class="fw-semibold">{{ $c->title }}</span>
+                                                @if($c->is_current)<span class="badge bg-primary-subtle text-primary">Current</span>@endif
+                                                <span class="badge {{ $c->is_public ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }}">{{ $c->is_public ? 'Public' : 'Not on website' }}</span>
+                                                <div class="small text-muted">{{ \App\Models\ExamModule\Cycle::STATUSES[$c->cycle_status] ?? $c->cycle_status }} · {{ $c->events_count }} {{ Str::plural('event', $c->events_count) }}</div>
+                                            </div>
+                                            <a href="{{ route('admin.exam-module.cycles.show', $c) }}" class="btn btn-sm btn-light border" title="Dates & content"><i class="fas fa-calendar-alt text-primary"></i></a>
+                                            <a href="{{ route('admin.exam-module.cycles.edit', $c) }}" class="btn btn-sm btn-light border" title="Edit cycle settings"><i class="fas fa-sliders-h text-secondary"></i></a>
+                                        </li>
+                                    @endforeach
+                                    @if($exam->cycles->count())<li><hr class="dropdown-divider"></li>@endif
+                                    <li><a class="dropdown-item" href="{{ route('admin.exam-module.cycles.create', $exam) }}"><i class="fas fa-plus text-primary me-1"></i> Add cycle</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        @else
+                            @unless($main)<span class="text-muted">-</span>@endunless
+                        @endcan
+                    </td>
                     <td>
                         <span class="badge {{ $exam->visibility === 'public' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">{{ ucfirst($exam->visibility) }}</span>
                         @unless($exam->status)<span class="badge bg-danger-subtle text-danger">Inactive</span>@endunless

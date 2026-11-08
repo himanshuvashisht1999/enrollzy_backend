@@ -119,6 +119,25 @@ class OrganisationCourse extends Model
         'scholarship_available',
         'refund_policy_available',
 
+        // Coaching programmes (App\Support\Institutes\ProgramFields)
+        'product_type',
+        'target_classes',
+        'access_validity_months',
+        'demo_class_available',
+        'demo_video_url',
+        'total_tests',
+        'sectional_tests_count',
+        'all_india_rank_available',
+        'performance_analysis_available',
+        'early_bird_discount_percent',
+        'scholarship_discount_max_percent',
+        'emi_amount',
+        'emi_tenure_months',
+        'gst_included',
+        'fee_includes',
+        'fee_min',
+        'fee_max',
+
         // Admin
         'verified_reviews_only',
         'meta_title',
@@ -194,12 +213,29 @@ class OrganisationCourse extends Model
                 });
                 $orgCourse->documents()->delete();
             }
+            \App\Support\Institutes\ProgramFields::deleteFor([$orgCourse->id]);
         });
     }
 
     public function documents()
     {
         return $this->hasMany(OrganisationCourseDocument::class)->orderBy('sort_order', 'asc');
+    }
+
+    /** coaching programmes: batches, year-wise results (newest first) and toppers */
+    public function batches()
+    {
+        return $this->hasMany(CourseBatch::class)->orderBy('sort_order');
+    }
+
+    public function results()
+    {
+        return $this->hasMany(CourseResult::class)->orderByDesc('year');
+    }
+
+    public function toppers()
+    {
+        return $this->hasMany(CourseTopper::class)->orderBy('sort_order');
     }
 
     protected $casts = [
@@ -237,5 +273,11 @@ class OrganisationCourse extends Model
         'verified_reviews_only' => 'boolean',
         'status' => 'boolean',
         'provisional_admission' => 'boolean',
+        'target_classes' => 'array',
+        'fee_includes' => 'array',
+        'demo_class_available' => 'boolean',
+        'all_india_rank_available' => 'boolean',
+        'performance_analysis_available' => 'boolean',
+        'gst_included' => 'boolean',
     ];
 }

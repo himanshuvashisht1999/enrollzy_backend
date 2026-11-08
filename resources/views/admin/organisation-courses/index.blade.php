@@ -3,6 +3,7 @@
 @section('title', 'Manage Courses - ' . $organisation->name)
 
 @section('content')
+    @if(!empty($organisation))@include('admin.partials.org_breadcrumb', ['bcOrg' => $organisation, 'bcCampus' => $campus ?? null, 'bcDept' => $department ?? null, 'bcHere' => 'courses'])@endif
 
     {{-- ===================== PAGE HEADING ===================== --}}
     <h3 class="fw-bold mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -175,7 +176,8 @@
                                             @endif
                                         </td>
                                     @endif
-                                    <td>{{ $course->mode }}</td>
+                                    {{-- a coaching institute's programme has one mode: Delivery Mode (Offline / Online / Hybrid / Recorded) --}}
+                                    <td>{{ $organisationTypeId == 3 ? ($course->delivery_mode ?: $course->mode) : $course->mode }}</td>
                                     <td class="text-primary fw-bold">{{ $course->total_fees ?? $course->fees }}</td>
                                     <td>{{ $course->duration ?? ($course->course->duration ?? 'N/A') }}</td>
                                     <td>

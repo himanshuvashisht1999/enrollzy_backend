@@ -20,7 +20,8 @@ class CallingStatus extends Model
         'comment_require',
         'is_more_details',
         'current_academic_details',
-        'calling_action_id'
+        'calling_action_id',
+        'is_connected',   // the person was reached: counts toward the connect rate (calling command center)
     ];
 
     public function callingAction()

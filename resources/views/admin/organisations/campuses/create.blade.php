@@ -93,6 +93,8 @@
 
     @php
         $isSchool = ($organisation->organisation_type_id == 4) || strtolower($organisation->organisationType->title ?? '') === 'school';
+        // Brand type (independent / chain / franchise) does not apply to a university or college campus
+        $isUniOrCollege = in_array((int) $organisation->organisation_type_id, [1, 2], true);
     @endphp
 
     <div class="row">
@@ -167,6 +169,7 @@
                                 <li class="nav-item"><a class="nav-link" href="#faqs"
                                         role="tab"><i class="fas fa-question-circle text-primary me-1"></i> FAQs</a></li>
                             @endif
+                            @include('admin.organisations.campuses.partials.branch_tabs_nav')
                             <li class="nav-item"><a class="nav-link" href="#documents-tab"
                                     role="tab"><i class="fas fa-file-pdf text-danger me-1"></i> Documents</a></li>
                         </ul>
@@ -233,6 +236,7 @@
                                         <input type="number" name="established_year" class="form-control" min="1900"
                                             max="2100">
                                     </div>
+                                    @unless($isUniOrCollege)
                                     <div class="col-md-6">
                                         <label class="form-label">Brand Type</label>
                                         <select name="brand_type" id="brand_type" class="form-select">
@@ -242,6 +246,7 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    @endunless
                                     <div class="col-md-6">
                                         <div class="form-check form-switch mt-4">
                                             <input type="hidden" name="status" value="0">
@@ -316,6 +321,7 @@
                                         <label class="form-label">Google Maps URL</label>
                                         <input type="url" name="google_map_url" class="form-control">
                                     </div>
+                                    @include('admin.organisations.campuses.partials.branch_location_fields', ['campus' => null])
                                 </div>
                             </div>
 
@@ -417,6 +423,7 @@
                                         </select>
                                     </div>
                                     @endif
+                                    @if($isSchool)
                                     <div class="col-md-6">
                                         <label class="form-label">Target Classes</label>
                                         <select name="target_classes[]" class="form-select select2" multiple>
@@ -433,6 +440,7 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    @endif
                                     <div class="col-12">
                                         <label class="form-label">About Campus</label>
                                         <textarea name="about_institute" id="about_institute" class="editor"></textarea>
@@ -605,7 +613,7 @@
                                             value="{{ old('campus_contact_numbers') }}" placeholder="e.g. +91 9876543210, 011-23456789">
                                     </div>
 
-                                    @if($isSchool)
+                                    {{-- social media profiles: every campus (school, college, university...) --}}
                                     <div class="col-12 mt-4">
                                         <h6 class="text-primary fw-bold mb-2 border-bottom pb-2">
                                             <i class="fas fa-share-alt me-1"></i> Social Media Profiles
@@ -656,7 +664,6 @@
                                                 placeholder="https://x.com/your-school">
                                         </div>
                                     </div>
-                                    @endif
                                 </div>
                             </div>
                             <!-- 9. Class Profile -->
@@ -1179,6 +1186,8 @@
                             @endif
 
                             <!-- 10. Documents -->
+                            @include('admin.organisations.campuses.partials.branch_details_tabs', ['campus' => $campus ?? null])
+
                             <div class="tab-pane" id="documents-tab" role="tabpanel">
                                 @include('admin.organisations.campuses.partials.documents')
                             </div>

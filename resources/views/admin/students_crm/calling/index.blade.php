@@ -128,7 +128,7 @@
                     <tbody>
                         @foreach($data as $item)
                         <tr>
-                            <td><b>{{ $item->name }}</b><br><small class="text-muted">{{ $item->phone }}</small></td>
+                            <td><b>{{ $item->name }}</b>@include('admin.calling._star', ['id' => $item->id])<br><small class="text-muted">{{ $item->phone }}</small></td>
                             <td>{{ $item->category->name ?? '<span class="text-muted small">No Category</span>' }}</td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-soft-primary open-calling-modal" 
@@ -358,6 +358,7 @@
                         </div>
                     </div>
                 </div>
+                @include('admin.calling._lead_flags')
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-5">Save Log</button>

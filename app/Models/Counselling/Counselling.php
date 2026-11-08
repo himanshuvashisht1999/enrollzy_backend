@@ -117,4 +117,10 @@ class Counselling extends Model
     {
         return $this->hasOne(CounsellingCycle::class, 'counselling_id')->where('is_current', true);
     }
+
+    /** Schema Builder: extra tabs unique to this counselling */
+    public function customFields()
+    {
+        return $this->hasMany(CustomField::class, 'counselling_id')->orderBy('sort_order');
+    }
 }

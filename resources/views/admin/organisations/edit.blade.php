@@ -2,6 +2,7 @@
 
 @section('content')
 <div class="container-fluid">
+    @include('admin.partials.org_breadcrumb', ['bcOrg' => $organisation, 'bcHere' => 'organisation'])
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -245,39 +246,9 @@
                                                     <label class="form-check-label" for="degree_awarding_authority">Degree Awarding Authority</label>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="ugc_recognized" id="ugc_recognized" {{ old('ugc_recognized', $organisation->ugc_recognized) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="ugc_recognized">UGC Recognized</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">UGC Approval Number</label>
-                                                <input type="text" name="ugc_approval_number" class="form-control" value="{{ old('ugc_approval_number', $organisation->ugc_approval_number) }}">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="aicte_approved" id="aicte_approved" {{ old('aicte_approved', $organisation->aicte_approved) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="aicte_approved">AICTE Approved</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="naac_accredited" id="naac_accredited" {{ old('naac_accredited', $organisation->naac_accredited) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="naac_accredited">NAAC Accredited</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NAAC Grade</label>
-                                                <input type="text" name="naac_grade" class="form-control" value="{{ old('naac_grade', $organisation->naac_grade) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NIRF Rank (Overall)</label>
-                                                <input type="number" name="nirf_rank_overall" class="form-control" value="{{ old('nirf_rank_overall', $organisation->nirf_rank_overall) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NIRF Rank (Category)</label>
-                                                <input type="number" name="nirf_rank_category" class="form-control" value="{{ old('nirf_rank_category', $organisation->nirf_rank_category) }}">
+                                            <div class="col-md-9">
+                                                <div class="alert alert-info py-2 mb-0 mt-3 small">UGC, AICTE, NAAC, NIRF and other approvals, accreditations and rankings are kept on the
+                                                    @can('quality-browse')<a href="{{ route('admin.quality.entity', ['organisation', $organisation->id]) }}"><b>Rankings &amp; Accreditation</b></a>@else<b>Rankings &amp; Accreditation</b>@endcan page.</div>
                                             </div>
                                             <div class="col-md-12">
                                                 <label class="form-label">Recognition Documents (Multiple)</label>
@@ -305,14 +276,6 @@
                                                     </div>
                                                     <button type="button" class="btn btn-sm btn-outline-primary add-file-item">+ Add More Document</button>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">International Accreditations (Comma separated)</label>
-                                                <input type="text" name="international_accreditations[]" class="form-control" value="{{ implode(',', is_array($organisation->international_accreditations) ? $organisation->international_accreditations : []) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Statutory Approvals (Comma separated)</label>
-                                                <input type="text" name="statutory_approvals[]" class="form-control" value="{{ implode(',', is_array($organisation->statutory_approvals) ? $organisation->statutory_approvals : []) }}">
                                             </div>
                                         </div>
                                     </div>
@@ -403,6 +366,7 @@
                             </div>
                             </div>
                             <!-- Institute Specific Fields Section -->
+                            @include('admin.organisations.partials.college_fields')
                             <div id="institute-fields" class="col-12" style="display: none;">
                                 <hr class="my-4">
                                 <h5 class="mb-3 text-secondary">Institute Details</h5>
@@ -414,6 +378,7 @@
                                     <li class="nav-item" role="presentation">
                                         <button class="nav-link" id="inst-legal-tab" data-bs-toggle="tab" data-bs-target="#inst-legal" type="button" role="tab" aria-controls="inst-legal" aria-selected="false">Ownership & Legal</button>
                                     </li>
+                                    @include('admin.organisations.partials.institute_brand_tabs')
                                 </ul>
 
                                 <div class="tab-content" id="instTabContent">
@@ -472,12 +437,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label">Ownership Type</label>
-                                                <select name="ownership_type" class="form-select" id="inst_ownership_type">
-                                                    <option value="">Select Ownership</option>
-                                                    @foreach(['Private', 'Trust', 'LLP', 'Partnership'] as $opt)
-                                                        <option value="{{ $opt }}" {{ old('ownership_type', $organisation->ownership_type) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                                                    @endforeach
-                                                </select>
+                                                @include('admin.organisations.partials.institute_ownership_select', ['organisation' => $organisation])
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Registered Entity Name</label>
@@ -496,6 +456,14 @@
                                                 <input type="text" name="pan_number" class="form-control" value="{{ old('pan_number', $organisation->pan_number) }}">
                                             </div>
                                             <div class="col-md-6">
+                                                <label class="form-label">CIN</label>
+                                                <input type="text" name="cin_number" class="form-control text-uppercase" value="{{ old('cin_number', $organisation->cin_number) }}" placeholder="e.g. U80903MH2015PTC123456" maxlength="21">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Udyam Registration Number</label>
+                                                <input type="text" name="udyam_number" class="form-control text-uppercase" value="{{ old('udyam_number', $organisation->udyam_number) }}" placeholder="e.g. UDYAM-MH-12-1234567" maxlength="19">
+                                            </div>
+                                            <div class="col-md-6">
                                                 <div class="form-check form-switch mt-4">
                                                     <input class="form-check-input" type="checkbox" name="gst_registered" id="gst_registered" {{ old('gst_registered', $organisation->gst_registered) ? 'checked' : '' }}>
                                                     <label class="form-check-label" for="gst_registered">GST Registered</label>
@@ -503,6 +471,8 @@
                                             </div>
                                             <div class="col-md-12">
                                                 <label class="form-label">Legal Documents (Multiple)</label>
+                                                {{-- the documents still listed below stay on save; removed ones go (InstituteFields::legalDocuments) --}}
+                                                <input type="hidden" name="legal_documents_form" value="1">
                                                 <div class="file-repeater-container" data-name="legal_documents_urls[]">
                                                     @if($organisation->legal_documents_urls)
                                                         @foreach($organisation->legal_documents_urls as $doc)
@@ -518,7 +488,7 @@
                                                     @endif
                                                     <div class="file-repeater-item mb-2">
                                                         <div class="input-group">
-                                                            <input type="file" name="legal_documents_urls[]" class="form-control file-preview-input">
+                                                            <input type="file" name="legal_documents_urls[]" class="form-control file-preview-input no-autosave">
                                                             <div class="form-text text-muted">Image size should not exceed 2MB.</div>
                                                             <button type="button" class="btn btn-outline-danger remove-file-item" style="display:none;">x</button>
                                                         </div>
@@ -529,6 +499,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    @include('admin.organisations.partials.institute_brand_fields', ['organisation' => $organisation])
                             </div>
 
                             </div>
@@ -1037,9 +1008,9 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label">Status</label>
                                                     <select name="status" class="form-select">
-                                                        <option value="Active" {{ old('status', $organisation->status) == 'Active' ? 'selected' : '' }}>Active</option>
-                                                        <option value="Inactive" {{ old('status', $organisation->status) == 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                                                        <option value="Archived" {{ old('status', $organisation->status) == 'Archived' ? 'selected' : '' }}>Archived</option>
+                                                        <option value="Active" {{ old('status', $organisation->status_label) == 'Active' ? 'selected' : '' }}>Active</option>
+                                                        <option value="Inactive" {{ old('status', $organisation->status_label) == 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                                                        <option value="Archived" {{ old('status', $organisation->status_label) == 'Archived' ? 'selected' : '' }}>Archived</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -1566,7 +1537,7 @@
                                             <div class="col-md-3"><div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="rb_claimed" {{ old('claimed_by_authority', $organisation->claimed_by_authority) ? 'checked' : '' }}><label class="form-check-label" for="rb_claimed">Claimed</label></div></div>
                                             <div class="col-md-3"><label class="form-label">Status</label><select name="status" class="form-select">
                                                     @foreach(['Active', 'Inactive', 'Archived'] as $opt)
-                                                        <option value="{{ $opt }}" {{ old('status', $organisation->status) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                                        <option value="{{ $opt }}" {{ old('status', $organisation->status_label) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
                                                 </select></div>
                                         </div>
@@ -1629,7 +1600,8 @@
             
             // Containers to toggle
             const containers = {
-                'university-fields': [1, 2],
+                'university-fields': [1],
+                'college-fields': [2],
                 'institute-fields': [3],
                 'school-fields': [4],
                 'exam-conducting-body-fields': [5],

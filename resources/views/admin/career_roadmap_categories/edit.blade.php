@@ -26,6 +26,18 @@
                         @enderror
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-9">
+                            <label for="description" class="form-label fw-bold">What this stage is about</label>
+                            <textarea class="form-control no-editor" id="description" name="description" rows="2" maxlength="300" placeholder="e.g. The stream decision: exams, scholarships and what each stream opens after Class 10.">{{ old('description', $careerRoadmapCategory->description) }}</textarea>
+                            <small class="text-muted">One line, shown in the stage heading on the website.</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sort_order" class="form-label fw-bold">Order</label>
+                            <input type="number" class="form-control" id="sort_order" name="sort_order" value="{{ old('sort_order', $careerRoadmapCategory->sort_order) }}">
+                        </div>
+                    </div>
+
                     <div class="mb-4 form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch" id="status" name="status" {{ old('status', $careerRoadmapCategory->status) ? 'checked' : '' }} value="1">
                         <label class="form-check-label" for="status">Active Status</label>

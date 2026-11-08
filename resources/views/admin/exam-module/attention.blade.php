@@ -59,6 +59,20 @@
 </div></div>
 
 <div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
+    <h6 class="fw-bold">Public exams whose cycles are not on the website <span class="badge {{ $noPublicCycle->count() ? 'bg-warning text-dark' : 'bg-secondary' }}">{{ $noPublicCycle->count() }}</span></h6>
+    <p class="small text-muted mb-1">Every cycle is admin only, so the exam page has no dates, eligibility, pattern, papers or extra tabs. Open the cycle and press "Show on website".</p>
+    @forelse($noPublicCycle as $e)
+        @php $c = $e->cycles->firstWhere('is_current', true) ?? $e->cycles->first(); @endphp
+        <div class="d-flex justify-content-between border-top py-2">
+            <span class="fw-semibold">{{ $e->name }} <span class="text-muted fw-normal">· {{ $c->title }}</span></span>
+            <a href="{{ route('admin.exam-module.cycles.show', $c) }}" class="btn btn-sm btn-light border">Open cycle</a>
+        </div>
+    @empty
+        <p class="text-muted small mb-0">Nothing to do.</p>
+    @endforelse
+</div></div>
+
+<div class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body">
     <h6 class="fw-bold">Public exams with no current cycle for this year or later <span class="badge bg-secondary">{{ $noCurrent->count() }}</span></h6>
     @forelse($noCurrent as $e)
         <div class="d-flex justify-content-between border-top py-2">

@@ -13,7 +13,7 @@ class OrganisationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Organisation::query()->withCount(['campuses', 'departments', 'courses']);
+        $query = Organisation::query()->with('affiliatingOrganisation:id,name')->withCount(['campuses', 'departments', 'courses']);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -69,8 +69,6 @@ class OrganisationController extends Controller
                 'cover_image_url' => 'nullable|image|max:2048',
                 'established_year' => 'nullable|integer',
                 'core_values' => 'nullable|array',
-                'international_accreditations' => 'nullable|array',
-                'statutory_approvals' => 'nullable|array',
                 'recognition_documents' => 'nullable|array',
                 'levels_offered' => 'nullable|array',
             ];
@@ -86,7 +84,7 @@ class OrganisationController extends Controller
                 'gst_registered' => 'nullable|boolean',
                 'legal_documents_urls' => 'nullable|array',
                 'legal_documents_urls.*' => 'file|max:5120',
-            ];
+            ] + \App\Support\Institutes\InstituteFields::rules();
         }
 
         // Type 4: School
@@ -294,10 +292,13 @@ class OrganisationController extends Controller
             ];
         }
 
-        $messages = [
+        // College: its university, status, ownership and location (overrides the shared optional rules)
+        $rules = array_merge($rules, $this->collegeRules($request, $organisation ?? Organisation::find($request->organisation_id)));
+
+        $messages = self::COLLEGE_MESSAGES + [
             'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
             'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
-        ];
+        ] + \App\Support\Institutes\InstituteFields::messages();
         $request->validate($rules, $messages);
 
         $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', 'documents', 'has_documents_form', '_token', 'organisation_id']);
@@ -389,6 +390,10 @@ class OrganisationController extends Controller
 
         
 
+        if ($request->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE) {
+            $data = \App\Support\Institutes\InstituteFields::prepare($request, $data);
+        }
+
         if ($request->filled('organisation_id') && ($existingOrg = Organisation::find($request->organisation_id))) {
             $existingOrg->update($data);
             $organisation = $existingOrg;
@@ -397,6 +402,10 @@ class OrganisationController extends Controller
         }
         $this->syncElearningDetails($request, $organisation);
         $this->syncDocuments($request, $organisation);
+        if ($request->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE) {
+            \App\Support\Institutes\InstituteFields::syncMedia($request, $organisation);
+        }
+        $this->ensureMainCampus($request, $organisation);
 
         return redirect()->route('admin.organisations.edit', $organisation->id)->with('success', 'Organisation added successfully.');
     }
@@ -441,8 +450,6 @@ class OrganisationController extends Controller
                 'cover_image_url' => 'nullable|image|max:2048',
                 'established_year' => 'nullable|integer',
                 'core_values' => 'nullable|array',
-                'international_accreditations' => 'nullable|array',
-                'statutory_approvals' => 'nullable|array',
                 'recognition_documents' => 'nullable|array',
                 'levels_offered' => 'nullable|array',
             ];
@@ -457,7 +464,7 @@ class OrganisationController extends Controller
                 'gst_registered' => 'nullable|boolean',
                 'legal_documents_urls' => 'nullable|array',
                 'legal_documents_urls.*' => 'file|max:5120',
-            ];
+            ] + \App\Support\Institutes\InstituteFields::rules();
         }
 
         if ($request->organisation_type_id == 4) {
@@ -664,10 +671,13 @@ class OrganisationController extends Controller
             ];
         }
 
-        $messages = [
+        // College: its university, status, ownership and location (overrides the shared optional rules)
+        $rules = array_merge($rules, $this->collegeRules($request, $organisation ?? Organisation::find($request->organisation_id)));
+
+        $messages = self::COLLEGE_MESSAGES + [
             'documents.*.file.mimes' => 'Each uploaded document must be a PDF file.',
             'documents.*.file.max' => 'Each uploaded document must not exceed 20MB.',
-        ];
+        ] + \App\Support\Institutes\InstituteFields::messages();
         $request->validate($rules, $messages);
 
         $data = $request->except(['logo_url', 'cover_image_url', 'legal_documents_urls', 'recognition_documents', 'documents', 'has_documents_form', '_token', '_method']);
@@ -763,9 +773,22 @@ class OrganisationController extends Controller
             }
         }
 
+        if ($request->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE) {
+            // the legal documents still listed on the form stay, removed ones go, uploads are added
+            $uploaded = array_slice($data['legal_documents_urls'] ?? [], count($organisation->legal_documents_urls ?? []));
+            if ($request->hasFile('legal_documents_urls') || $request->has('legal_documents_form')) {
+                $data['legal_documents_urls'] = \App\Support\Institutes\InstituteFields::legalDocuments($request, $organisation, $request->hasFile('legal_documents_urls') ? $uploaded : []);
+            }
+            $data = \App\Support\Institutes\InstituteFields::prepare($request, $data);
+        }
+
         $organisation->update($data);
         $this->syncElearningDetails($request, $organisation);
         $this->syncDocuments($request, $organisation);
+        if ($request->organisation_type_id == \App\Support\Institutes\InstituteFields::TYPE) {
+            \App\Support\Institutes\InstituteFields::syncMedia($request, $organisation);
+        }
+        $this->ensureMainCampus($request, $organisation);
 
         return redirect()->route('admin.organisations.index')->with('success', 'Organisation updated successfully.');
     }
@@ -862,7 +885,7 @@ class OrganisationController extends Controller
 
         // Handle Array Fields for Autosave
         $casts = [
-            'core_values', 'international_accreditations', 'statutory_approvals', 'recognition_documents',
+            'core_values', 'recognition_documents',
             'levels_offered', 'legal_documents_urls', 'education_boards_supported',
             'medium_of_instruction_supported', 'education_levels_supported', 'streams_supported',
             'focus_areas', 'cities_present_in', 'states_present_in', 'flagship_schools',
@@ -871,7 +894,8 @@ class OrganisationController extends Controller
             'official_notifications_urls', 'anti_malpractice_measures', 'awards_or_recognition',
             'media_mentions', 'focus_keywords', 'jurisdiction_states', 'counselling_functions',
             'counselling_types_supported', 'education_domains_supported', 'counselling_levels_supported',
-            'exams_used_for_counselling_ids', 'quota_types_managed', 'round_types'
+            'exams_used_for_counselling_ids', 'quota_types_managed', 'round_types',
+            'coaching_category_ids', 'exams_prepared_for', 'teaching_modes'
         ];
 
         if (in_array($field, $casts) && is_string($value)) {
@@ -913,10 +937,59 @@ class OrganisationController extends Controller
         return back()->with('success', "Organisation {$statusMessage} successfully.");
     }
 
+    private const COLLEGE_MESSAGES = [
+        'affiliating_organisation_id.required' => 'Pick the university this college is affiliated to.',
+        'affiliating_organisation_id.exists' => 'Pick a university from the list.',
+        'legal_entity_type.required' => 'Pick the college status: affiliated, autonomous or constituent.',
+        'ownership_type.required' => 'Pick the ownership of the college.',
+        'campus_city.required' => "Enter the college's city.",
+        'campus_state.required' => "Pick the college's state.",
+    ];
+
+    /** College (type 2): the university it belongs to, its status and ownership, and where it is (for its main campus). */
+    private function collegeRules(Request $request, ?Organisation $organisation): array
+    {
+        if ((int) $request->organisation_type_id !== 2) {
+            return [];
+        }
+        // the location is needed once, to create the main campus
+        $where = $organisation && $organisation->campuses()->exists() ? 'nullable' : 'required';
+        return [
+            'affiliating_organisation_id' => ['required', 'integer', \Illuminate\Validation\Rule::exists('organisations', 'id')->where('organisation_type_id', 1)],
+            'legal_entity_type' => ['required', \Illuminate\Validation\Rule::in(['affiliated_college', 'autonomous_college', 'constituent_college'])],
+            'ownership_type' => 'required|string|max:50',
+            'official_website' => 'nullable|url|max:255',
+            'campus_city' => $where . '|string|max:100',
+            'campus_state' => $where . '|string|max:100',
+            'campus_pincode' => 'nullable|digits:6',
+            'campus_address' => 'nullable|string|max:500',
+        ];
+    }
+
+    /** A college's main campus comes from the City / State / Address on its form: created once, then kept in step. */
+    private function ensureMainCampus(Request $request, Organisation $organisation): void
+    {
+        if ((int) $organisation->organisation_type_id !== 2) {
+            return;
+        }
+        $place = array_filter([
+            'city' => trim((string) $request->input('campus_city')),
+            'state' => trim((string) $request->input('campus_state')),
+            'pincode' => trim((string) $request->input('campus_pincode')),
+            'full_address' => trim((string) $request->input('campus_address')),
+        ], fn ($v) => $v !== '');
+        $main = \App\Models\Campus::where('organisation_id', $organisation->id)->orderByRaw("campus_role = 'main' desc")->orderBy('created_at')->first();
+        if (!$main) {
+            \App\Models\Campus::create(['organisation_id' => $organisation->id, 'campus_name' => $organisation->name, 'campus_role' => 'main', 'campus_type' => 'Main', 'status' => 1] + $place);
+        } elseif ($place) {
+            $main->update($place);
+        }
+    }
+
     protected function preprocessBooleans(Request $request)
     {
         $booleans = [
-            'degree_awarding_authority', 'ugc_recognized', 'aicte_approved', 'naac_accredited',
+            'degree_awarding_authority',
             'autonomous_status', 'gst_registered', 'minority_status', 'international_curriculum_supported',
             'centralized_curriculum_framework', 'centralized_teacher_training', 'centralized_assessment_policy',
             'centralized_lms_available', 'centralized_parent_communication_system', 'child_safety_policy_available',
@@ -930,7 +1003,7 @@ class OrganisationController extends Controller
             'seat_upgradation_allowed', 'counselling_fee_collection_supported', 'security_deposit_handling',
             'candidate_login_system_available', 'choice_filling_system_available', 'auto_seat_allocation_engine',
             'api_integration_supported', 'institution_reporting_interface_available',
-            'has_enterprise_offering'
+            'has_enterprise_offering', 'franchise_available'
         ];
 
         foreach ($booleans as $field) {

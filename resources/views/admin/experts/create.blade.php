@@ -13,21 +13,18 @@
                         <ul class="nav nav-tabs card-header-tabs" id="expertTabs" role="tablist">
                             <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#ex-basic">1.
                                     Identity</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-career">Career pages</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-listing">Experts page</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-profile">Profile page</a></li>
                             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-credentials">2.
                                     Credentials</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-institute">3.
-                                    Institute</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-teaching">4.
-                                    Teaching</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-performance">5.
-                                    Performance</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-content">6. Content</a>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-content">3. Content</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-ratings">7. Ratings</a>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-ratings">4. Ratings</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-contact">8. Contact &
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-contact">5. Contact &
                                     SEO</a></li>
-                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-admin">9. Admin</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ex-admin">6. Admin</a></li>
                         </ul>
                     </div>
 
@@ -57,25 +54,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Designation</label>
-                                        <select name="designation" class="form-select">
-                                            <option value="">Select Designation</option>
-                                            <option value="Senior Faculty">Senior Faculty</option>
-                                            <option value="Faculty">Faculty</option>
-                                            <option value="HOD">HOD</option>
-                                            <option value="Mentor">Mentor</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Gender (Optional)</label>
-                                        <select name="gender" class="form-select">
-                                            <option value="">Select</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
+                                    @include('admin.experts._identity', ['expert' => null])
                                     <div class="col-md-6">
                                         <label class="form-label">Password <span class="text-danger">*</span></label>
                                         <input type="password" class="form-control" name="password" required>
@@ -93,24 +72,10 @@
                                             <option value="1" {{ old('is_featured') === '1' ? 'selected' : '' }}>Yes</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Date of Birth (Private)</label>
-                                        <input type="date" class="form-control" name="date_of_birth">
-                                    </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-12">
                                         <label class="form-label">Profile Photo <span class="text-danger">*</span></label>
                                         <input type="file" class="form-control" name="img" required>
                                         <div class="form-text text-muted">Image size should not exceed 2MB.</div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Subject Specialization (Select Multiple)</label>
-                                        <select class="form-control select2-tags" name="subject_specialization[]" multiple>
-                                            <option value="Physics">Physics</option>
-                                            <option value="Chemistry">Chemistry</option>
-                                            <option value="Biology">Biology</option>
-                                            <option value="Maths">Maths</option>
-                                            <option value="English">English</option>
-                                        </select>
                                     </div>
                                     <div class="col-md-12">
                                         <label class="form-label">Short Bio (150-200 chars)</label>
@@ -122,6 +87,42 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- CAREER ROADMAP: where the expert shows on the career pages -->
+                            <div class="tab-pane fade" id="ex-career">
+                                @php
+                                    $ccats = \App\Models\CareerCategory::orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+                                    $cclasses = \App\Models\CareerRoadmapStage::orderBy('sort_order')->orderBy('id')->get(['id', 'title']);
+                                    $selCats = collect(old('career_category_ids', []))->map(fn ($x) => (int) $x)->all();
+                                    $selCls = collect(old('career_class_ids', []))->map(fn ($x) => (int) $x)->all();
+                                @endphp
+                                <h5 class="mb-1 text-primary">Career roadmap pages</h5>
+                                <p class="text-muted small">The website shows experts on the career roadmap, careers and roadmap pages, matched to the page's career category and class. Leave a list empty to cover all.</p>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="show_on_career_pages" id="show_on_career_pages" value="1" {{ old('show_on_career_pages', true) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="show_on_career_pages">Show on the career pages</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Career categories they advise on</label>
+                                        <select name="career_category_ids[]" class="form-select" multiple>
+                                            @foreach($ccats as $cc)<option value="{{ $cc->id }}" {{ in_array($cc->id, $selCats, true) ? 'selected' : '' }}>{{ $cc->name }}</option>@endforeach
+                                        </select>
+                                        <small class="text-muted">Empty: a general adviser, shown for every category.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Classes they counsel</label>
+                                        <select name="career_class_ids[]" class="form-select" multiple>
+                                            @foreach($cclasses as $cl)<option value="{{ $cl->id }}" {{ in_array($cl->id, $selCls, true) ? 'selected' : '' }}>{{ $cl->title }}</option>@endforeach
+                                        </select>
+                                        <small class="text-muted">Empty: every class.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            @include('admin.experts._listing', ['expert' => null])
+                            @include('admin.experts._profile', ['expert' => null])
 
                             <!-- 2. PROFESSIONAL CREDENTIALS -->
                             <div class="tab-pane fade" id="ex-credentials">
@@ -215,156 +216,7 @@
                                 </div>
                             </div>
 
-                            <!-- 3. INSTITUTE ASSOCIATION -->
-                            <div class="tab-pane fade" id="ex-institute">
-                                <h5 class="mb-3 text-primary">Institute Association</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Current Institute Name</label>
-                                        <input type="text" class="form-control" name="current_institute_name">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Faculty Type</label>
-                                        <select name="faculty_type" class="form-select">
-                                            <option value="Full-time">Full-time</option>
-                                            <option value="Part-time">Part-time</option>
-                                            <option value="Visiting">Visiting</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Joining Year</label>
-                                        <input type="number" class="form-control" name="joining_year" placeholder="YYYY">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Courses Taught (Array)</label>
-                                        <select class="form-control select2-tags" name="courses_taught[]" multiple></select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Target Batches (Select)</label>
-                                        <select class="form-control select2-tags" name="target_batches[]" multiple>
-                                            <option value="Class 11">Class 11</option>
-                                            <option value="Class 12">Class 12</option>
-                                            <option value="Dropper">Dropper</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Avg. Batch Size Handled</label>
-                                        <input type="number" class="form-control" name="average_batch_size_handled">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 4. TEACHING PROFILE -->
-                            <div class="tab-pane fade" id="ex-teaching">
-                                <h5 class="mb-3 text-primary">Teaching Profile</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Teaching Style</label>
-                                        <select name="teaching_style" class="form-select">
-                                            <option value="Conceptual">Conceptual</option>
-                                            <option value="Exam-oriented">Exam-oriented</option>
-                                            <option value="Application-based">Application-based</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Language of Teaching</label>
-                                        <select class="form-control select2-tags" name="language_of_teaching[]" multiple>
-                                            <option value="English">English</option>
-                                            <option value="Hindi">Hindi</option>
-                                            <option value="Hinglish">Hinglish</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Lecture Mode</label>
-                                        <select name="lecture_mode" class="form-select">
-                                            <option value="Offline">Offline</option>
-                                            <option value="Online">Online</option>
-                                            <option value="Hybrid">Hybrid</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Weekly Classes Count</label>
-                                        <input type="number" class="form-control" name="weekly_classes_count">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch p-2 border rounded">
-                                            <input class="form-check-input" type="checkbox" name="doubt_solving_sessions"
-                                                value="1">
-                                            <label class="form-check-label px-2">Doubt Solving Sessions</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch p-2 border rounded">
-                                            <input class="form-check-input" type="checkbox" name="one_to_one_mentoring"
-                                                value="1">
-                                            <label class="form-check-label px-2">One-to-One Mentoring</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 5. PERFORMANCE -->
-                            <div class="tab-pane fade" id="ex-performance">
-                                <h5 class="mb-3 text-primary">Performance & Impact</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Students Selected Count</label>
-                                        <input type="number" class="form-control" name="students_selected_count">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Best Result Year</label>
-                                        <input type="number" class="form-control" name="best_result_year"
-                                            placeholder="YYYY">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Result Verification Source</label>
-                                        <input type="text" class="form-control" name="result_verification_source">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Top Rank Students (JSON Input)</label>
-                                        <textarea class="form-control" name="top_rank_students" rows="3"
-                                            placeholder='[{"name": "Student A", "rank": "AIR 1"}, ...]'></textarea>
-                                        <small class="text-muted">Enter valid JSON or leave empty.</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 6. CONTENT -->
-                            <div class="tab-pane fade" id="ex-content">
-                                <h5 class="mb-3 text-primary">Content & Digital Presence</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Intro Video URL</label>
-                                        <input type="url" class="form-control" name="intro_video_url">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Demo Lecture Videos (URL Array)</label>
-                                        <select class="form-control select2-tags" name="demo_lecture_videos[]"
-                                            multiple></select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Articles Written (URL Array)</label>
-                                        <select class="form-control select2-tags" name="articles_written[]"
-                                            multiple></select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">YouTube Channel URL</label>
-                                        <input type="url" class="form-control" name="youtube_channel_url">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">LinkedIn URL</label>
-                                        <input type="url" class="form-control" name="linkedin_profile_url">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Instagram URL</label>
-                                        <input type="url" class="form-control" name="instagram_profile_url">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Telegram URL</label>
-                                        <input type="url" class="form-control" name="telegram_channel_url">
-                                    </div>
-                                </div>
-                            </div>
+                            @include('admin.experts._content', ['expert' => null])
 
                             <!-- 7. RATINGS -->
                             <div class="tab-pane fade" id="ex-ratings">
@@ -393,8 +245,8 @@
                                 <h5 class="mb-3 text-primary">Contact & Visibility</h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Phone Number (Private)</label>
-                                        <input type="text" class="form-control" name="contact_number">
+                                        <label class="form-label">Mobile number <span class="text-danger">*</span> <small class="text-muted">(private; the expert signs in on the website with OTP to it)</small></label>
+                                        <input type="tel" class="form-control" name="contact_number" value="{{ old('contact_number') }}" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Profile Visibility</label>
@@ -517,6 +369,12 @@
                 placeholder: "Type and enter to add",
                 width: '100%'
             });
+
+            // Article repeater (title + link)
+            let artIndex = 0;
+            const artTpl = document.getElementById('article-row-template').innerHTML;
+            $('#add-article-btn').click(function () { $('#articles-container').append(artTpl.replace(/INDEX/g, artIndex++)); });
+            $(document).on('click', '.remove-article-btn', function () { $(this).closest('.article-row').remove(); });
 
             // Qualification Repeater Logic
             let qualIndex = 0;

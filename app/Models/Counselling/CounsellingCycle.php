@@ -141,6 +141,16 @@ class CounsellingCycle extends Model
 
             $new->examCycles()->sync($this->nextExamCycleIds($year));
 
+            // Schema Builder values kept per cycle ("whole counselling" ones are shared and need no copy)
+            $fields = CustomField::where('counselling_id', $this->counselling_id)->where('scope', 'cycle')->get()->keyBy('id');
+            foreach (CustomValue::where('cycle_id', $this->id)->whereIn('field_id', $fields->keys())->get() as $v) {
+                $value = $v->value;
+                if ($fields[$v->field_id]->type === 'file' && is_string($value)) {
+                    $value = $this->copyFile($value);
+                }
+                CustomValue::create(['field_id' => $v->field_id, 'cycle_id' => $new->id, 'value' => $value]);
+            }
+
             // Participating institutes (optional): same colleges, courses and quotas; the import link is not carried over.
             if ($withParticipants) {
                 $now = now();

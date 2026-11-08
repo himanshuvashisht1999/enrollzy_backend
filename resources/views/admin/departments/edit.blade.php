@@ -78,6 +78,7 @@
 
     <div class="row">
         <div class="col-12">
+            @include('admin.partials.org_breadcrumb', ['bcDept' => $department])
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                 <h4 class="mb-sm-0">Edit Department</h4>
                 @can('quality-browse')<a href="{{ route('admin.quality.entity', ['department', $department->id]) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-medal me-1"></i> Rankings & Accreditation</a>@endcan

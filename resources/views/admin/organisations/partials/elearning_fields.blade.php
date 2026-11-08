@@ -887,7 +887,7 @@
                     <label class="form-label fw-bold">Status</label>
                     <select name="status" class="form-select">
                         @foreach(['Active', 'Inactive', 'Archived'] as $opt)
-                            <option value="{{ $opt }}" {{ old('status', $org->status) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                            <option value="{{ $opt }}" {{ old('status', $org->status_label) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                         @endforeach
                     </select>
                 </div>

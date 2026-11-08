@@ -55,6 +55,19 @@
                         @enderror
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-9">
+                            <label for="key_points" class="form-label fw-bold">Key points of this class</label>
+                            <textarea class="form-control" id="key_points" name="key_points" rows="4" placeholder="One per line, e.g.&#10;Choose your stream for Class 11&#10;Board exams in February–March">{{ old('key_points', '') }}</textarea>
+                            <small class="text-muted">Shown under the class heading on the website: what this year is about, its decisions and dates. One point per line.</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sort_order" class="form-label fw-bold">Order</label>
+                            <input type="number" class="form-control" id="sort_order" name="sort_order" value="{{ old('sort_order', 0) }}">
+                            <small class="text-muted">Lower comes first.</small>
+                        </div>
+                    </div>
+
                     <div class="mb-4 form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch" id="status" name="status" checked value="1">
                         <label class="form-check-label" for="status">Active Status</label>

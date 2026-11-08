@@ -32,6 +32,8 @@ class Organisation extends Model
         'is_top',
         // University Specific (Core)
         'university_id',
+        'affiliating_organisation_id', // a college's university
+        'legal_entity_type',           // affiliated / autonomous / constituent college, or the university's legal type
         'brand_name',
         'short_name',
         'logo_url',
@@ -44,15 +46,6 @@ class Organisation extends Model
         'core_values',
         // Legal & Regulatory
         'degree_awarding_authority',
-        'ugc_recognized',
-        'ugc_approval_number',
-        'aicte_approved',
-        'naac_accredited',
-        'naac_grade',
-        'nirf_rank_overall',
-        'nirf_rank_category',
-        'international_accreditations',
-        'statutory_approvals',
         'recognition_documents',
         // Governance
         'governing_body_name',
@@ -207,7 +200,29 @@ class Organisation extends Model
         'years_of_operation',
         'annual_candidate_volume',
         'institutions_covered_count',
-        'states_covered_count'
+        'states_covered_count',
+        // Coaching institute (type 3), brand level
+        'coaching_category_ids',
+        'exams_prepared_for',
+        'teaching_modes',
+        'whatsapp_number',
+        'facebook_url',
+        'instagram_url',
+        'youtube_url',
+        'telegram_url',
+        'play_store_url',
+        'app_store_url',
+        'founder_name',
+        'director_name',
+        'scholarship_test_name',
+        'scholarship_test_dates',
+        'scholarship_test_url',
+        'franchise_available',
+        'franchise_contact_name',
+        'franchise_contact_phone',
+        'franchise_contact_email',
+        'cin_number',
+        'udyam_number',
     ];
 
     public const BRAND_TYPES = [
@@ -258,6 +273,11 @@ class Organisation extends Model
         'awards_and_recognition' => 'array',
         'claimed_by_organization' => 'boolean',
         'average_rating' => 'decimal:2',
+        // Coaching institute (type 3)
+        'coaching_category_ids' => 'array',
+        'exams_prepared_for' => 'array',
+        'teaching_modes' => 'array',
+        'franchise_available' => 'boolean',
         // Exam Conducting Body Casts
         'functions' => 'array',
         'exam_types_conducted' => 'array',
@@ -423,9 +443,23 @@ class Organisation extends Model
         return $this->hasMany(OrganisationDocument::class)->orderBy('sort_order', 'asc');
     }
 
+    /** the institute's own photos and videos (a branch's carry its campus_id) */
+    public function media()
+    {
+        return $this->hasMany(OrganisationMedia::class)->where('campus_id', '')->orderBy('sort_order')->orderBy('id');
+    }
+
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
+    }
+
+    /** the status as the edit forms' select shows it: saved as 1 / 0 / 2 (OrganisationController maps the words back) */
+    public function getStatusLabelAttribute(): string
+    {
+        $raw = $this->attributes['status'] ?? null; // the saved number (the boolean cast would read Archived, 2, as true)
+        if ($raw === null) return 'Active'; // a new organisation: the forms' default, as before
+        return [0 => 'Inactive', 1 => 'Active', 2 => 'Archived'][(int) $raw] ?? 'Inactive';
     }
 
     public function departments()
@@ -486,6 +520,12 @@ class Organisation extends Model
     public function admissionRoutes()
     {
         return $this->hasMany(AdmissionRoute::class);
+    }
+
+    /** A college's university (Affiliated to, on the college form). */
+    public function affiliatingOrganisation()
+    {
+        return $this->belongsTo(Organisation::class, 'affiliating_organisation_id');
     }
 
     public function campuses()

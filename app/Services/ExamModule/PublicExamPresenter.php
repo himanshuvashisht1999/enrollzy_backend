@@ -83,7 +83,12 @@ class PublicExamPresenter
         if (!empty($f['mode']) && isset(self::MODE_GROUPS[$f['mode']])) {
             $modes = self::MODE_GROUPS[$f['mode']];
             $q->whereExists(fn ($e) => $e->select(DB::raw(1))->from('exm_patterns as p')->join('exm_cycles as c', 'c.id', '=', 'p.cycle_id')
-                ->whereColumn('c.exam_id', 'exm_exams.id')->where('c.is_public', true)->whereNull('c.deleted_at')->whereIn('p.mode', $modes));
+                ->whereColumn('c.exam_id', 'exm_exams.id')->where('c.is_public', true)->whereNull('c.deleted_at')
+                // a paper's mode, or a section held another way (JEE Main Paper 2A's pen and paper drawing test)
+                ->where(function ($w) use ($modes) {
+                    $w->whereIn('p.mode', $modes);
+                    foreach ($modes as $m) $w->orWhere('p.sections', 'like', '%"mode":"' . $m . '"%');
+                }));
         }
         if (!empty($f['vacancy'])) {
             // recruitment (vacancy-based) exams: by category, or by a recruitment word in the name
@@ -196,6 +201,12 @@ class PublicExamPresenter
         return ['matches' => $out];
     }
 
+    /** One extra-tab value as display text (shared with counselling's Schema Builder). */
+    private function extraValue(object $r): ?string
+    {
+        return $this->cns->customValue($r);
+    }
+
     private function categoryNames(): array
     {
         static $names = null;
@@ -225,7 +236,8 @@ class PublicExamPresenter
         ];
 
         if ($cycle) {
-            $events = $cycle->events()->with(['type', 'quota', 'stage'])->orderByRaw('start_at is null')->orderBy('start_at')->get();
+            // in the order set on the cycle page
+            $events = $cycle->events()->with(['type', 'quota', 'stage'])->orderBy('sort_order')->orderBy('id')->get();
             $payload['cycle'] = ['id' => $cycle->id, 'year' => $cycle->year, 'session_label' => $cycle->session_label, 'title' => $cycle->title,
                 'status' => $cycle->cycle_status, 'status_note' => $cycle->status_note, 'timezone' => $cycle->timezone, 'is_current' => (bool) $cycle->is_current];
             $payload['status_card'] = collect(self::STATUS_CARD)->map(function ($label, $slug) use ($cycle, $events) {
@@ -246,28 +258,39 @@ class PublicExamPresenter
             $list = fn ($v) => is_array($v) ? $v : (json_decode((string) $v, true) ?: []);
             $num = fn ($v) => $v !== null ? (float) $v : null;
             $categories = ContentBlocks::categories();
+            // [{category_id, <key>}] rows -> [{category, <key>}], dropping rows whose category no longer exists
+            $byCategory = fn ($v, string $key) => collect($list($v))->map(fn ($a) => ['category' => $categories[$a['category_id'] ?? 0] ?? null, $key => $a[$key] ?? null])
+                ->filter(fn ($a) => $a['category'])->values()->all();
 
             $payload['eligibility'] = $rows('exm_eligibilities')->map(fn ($r) => [
                 'stage' => $stage($r),
                 'qualification' => $r->min_qualification_id ? DB::table('program_levels')->where('id', $r->min_qualification_id)->value('title') : null,
                 'subjects' => $list($r->subjects), 'nationality' => $r->nationality,
-                'min_percentage_general' => $num($r->min_percentage_general), 'min_percentage_reserved' => $num($r->min_percentage_reserved),
+                'min_percentage' => collect($byCategory($r->min_percentage_by_category, 'percentage'))->filter(fn ($a) => $a['percentage'] !== null)
+                    ->map(fn ($a) => ['category' => $a['category'], 'percentage' => (float) $a['percentage']])->values()->all(),
                 'age' => ['min' => $r->age_min, 'max' => $r->age_max, 'as_of' => $r->age_as_of],
-                'age_relaxation' => collect($list($r->age_relaxation))->map(fn ($a) => ['category' => $categories[$a['category_id'] ?? 0] ?? null, 'years' => $a['years'] ?? null])->filter(fn ($a) => $a['category'])->values()->all(),
-                'max_attempts' => $r->max_attempts, 'appearing_allowed' => $r->appearing_allowed !== null ? (bool) $r->appearing_allowed : null,
+                'age_relaxation' => $byCategory($r->age_relaxation, 'years'),
+                'max_attempts' => $r->max_attempts,
+                'attempts_by_category' => $byCategory($r->attempts_by_category, 'attempts'),   // attempts null = unlimited for that category
+                'appearing_allowed' => $r->appearing_allowed !== null ? (bool) $r->appearing_allowed : null,
                 'other_conditions' => $r->other_conditions,
             ])->all();
             $payload['pattern'] = $rows('exm_patterns')->map(fn ($r) => [
-                'stage' => $stage($r), 'mode' => ContentBlocks::MODES[$r->mode] ?? null, 'duration_minutes' => $r->duration_minutes,
-                'total_questions' => $r->total_questions, 'total_marks' => $num($r->total_marks),
+                'stage' => $stage($r), 'paper' => $r->paper_name, 'mode' => ContentBlocks::MODES[$r->mode] ?? null, 'duration_minutes' => $r->duration_minutes,
+                'total_questions' => $r->total_questions, 'total_marks' => $num($r->total_marks), 'marks_per_correct' => $num($r->marks_per_correct),
                 'negative_marking' => (bool) $r->negative_marking, 'negative_marks' => $num($r->negative_marks),
                 'question_types' => $list($r->question_types),
-                'sections' => collect($list($r->sections))->map(fn ($s) => ['name' => $s['name'] ?? null, 'questions' => $s['questions'] ?? null, 'marks' => $s['marks'] ?? null])->values()->all(),
+                'sections' => collect($list($r->sections))->map(fn ($s) => ['name' => $s['name'] ?? null, 'mode' => ContentBlocks::MODES[$s['mode'] ?? ''] ?? null, 'questions' => $s['questions'] ?? null, 'marks' => $s['marks'] ?? null,
+                    'correct_marks' => $s['correct_marks'] ?? null, 'negative_marks' => $s['negative_marks'] ?? null, 'duration_minutes' => $s['duration_minutes'] ?? null])->values()->all(),
+                'notes' => $r->notes,
             ])->all();
             $payload['syllabus'] = $rows('exm_syllabus')->map(fn ($r) => ['stage' => $stage($r), 'subject' => $r->subject, 'topics' => $list($r->topics), 'pdf_url' => $this->cns->file($r->pdf)])->all();
-            $payload['fees'] = $rows('exm_fees')->map(fn ($r) => ['stage' => $stage($r), 'category' => $categories[$r->category_id] ?? null,
-                'gender' => ContentBlocks::GENDERS[$r->gender] ?? null, 'amount' => (float) $r->amount, 'currency' => $r->currency])->all();
-            $payload['documents'] = $rows('exm_documents')->map(fn ($r) => ['stage' => $stage($r), 'name' => $r->name, 'is_mandatory' => (bool) $r->is_mandatory, 'notes' => $r->notes])->all();
+            // a fee row can cover several categories (empty = every candidate); older rows only have category_id
+            $feeCats = fn ($r) => collect($list($r->category_ids ?? null) ?: array_filter([$r->category_id]))->map(fn ($id) => $categories[$id] ?? null)->filter()->values()->all();
+            $payload['fees'] = $rows('exm_fees')->map(fn ($r) => ['stage' => $stage($r), 'categories' => $feeCats($r), 'category' => implode(', ', $feeCats($r)) ?: null,
+                'gender' => ContentBlocks::GENDERS[$r->gender] ?? null, 'amount' => (float) $r->amount, 'currency' => $r->currency, 'note' => $r->note])->all();
+            $payload['documents'] = $rows('exm_documents')->map(fn ($r) => ['stage' => $stage($r), 'name' => $r->name, 'is_mandatory' => (bool) $r->is_mandatory, 'notes' => $r->notes,
+                'categories' => collect($list($r->category_ids))->map(fn ($id) => $categories[$id] ?? null)->filter()->values()->all()])->all();   // empty = every candidate
             $payload['faqs'] = DB::table('exm_faqs')->where('cycle_id', $cycle->id)->orderBy('sort_order')->orderBy('id')->get()
                 ->map(fn ($r) => ['question' => $r->question, 'answer' => $r->answer])->all();
             // exam cities, by state (abroad listed by country)
@@ -276,12 +299,16 @@ class PublicExamPresenter
                 ->groupBy(fn ($r) => $r->country && strcasecmp($r->country, 'India') !== 0 ? 'Outside India' : ($r->state ?: 'Other'))
                 ->map(fn ($g, $state) => ['state' => $state, 'cities' => $g->pluck('name')->filter()->unique()->values()->all()])
                 ->sortByDesc(fn ($s) => count($s['cities']))->values()->all();
-            // the exam's own extra fields (admit card, exam day rules, helpline...), only the filled ones
+            // the exam's own extra tabs (medical requirements, exam day rules, helpline...), only the filled ones.
+            // "Whole exam" values are stored without a cycle; "this cycle" values with this cycle.
             $payload['extra'] = DB::table('exm_custom_fields')->where('exm_custom_fields.exam_id', $exam->id)->whereNull('exm_custom_fields.deleted_at')
-                ->join('exm_custom_values', fn ($j) => $j->on('exm_custom_values.field_id', '=', 'exm_custom_fields.id')->where('exm_custom_values.cycle_id', $cycle->id))
-                ->orderBy('exm_custom_fields.sort_order')->get(['exm_custom_fields.key', 'exm_custom_fields.label', 'exm_custom_fields.type', 'exm_custom_values.value'])
-                ->filter(fn ($r) => trim(strip_tags((string) $r->value)) !== '')
-                ->map(fn ($r) => ['key' => $r->key, 'label' => $r->label, 'type' => $r->type, 'value' => $r->value])->values()->all();
+                ->join('exm_custom_values', fn ($j) => $j->on('exm_custom_values.field_id', '=', 'exm_custom_fields.id')
+                    ->where(fn ($w) => $w->where(fn ($c) => $c->where('exm_custom_fields.scope', 'cycle')->where('exm_custom_values.cycle_id', $cycle->id))
+                        ->orWhere(fn ($e) => $e->where('exm_custom_fields.scope', 'exam')->whereNull('exm_custom_values.cycle_id'))))
+                ->orderBy('exm_custom_fields.sort_order')
+                ->get(['exm_custom_fields.key', 'exm_custom_fields.label', 'exm_custom_fields.type', 'exm_custom_fields.options', 'exm_custom_values.value'])
+                ->map(fn ($r) => ['key' => $r->key, 'label' => $r->label, 'type' => $r->type, 'value' => $this->extraValue($r)])
+                ->filter(fn ($x) => trim(strip_tags((string) $x['value'])) !== '')->values()->all();
             $payload['papers'] = DB::table('exm_papers')->where('cycle_id', $cycle->id)->orderByDesc('year')->orderBy('id')->get()
                 ->map(fn ($r) => ['title' => $r->title, 'year' => $r->year, 'shift' => $r->shift, 'url' => $this->cns->file($r->file)])->all();
         }

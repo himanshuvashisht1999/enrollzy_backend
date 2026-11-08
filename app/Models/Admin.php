@@ -61,6 +61,14 @@ class Admin extends Authenticatable
         return $this->role === 'superadmin';
     }
 
+    /** an admin (role admin / superadmin) only monitors calling: leads are never assigned to them */
+    public function isAdminRole(): bool
+    {
+        return in_array(strtolower($this->role ?? ''), ['superadmin', 'admin'])
+            || ($this->is_admin ?? false)
+            || $this->hasRole('superadmin') || $this->hasRole('admin');
+    }
+
     // Work Management Relations
     public function teams()
     {

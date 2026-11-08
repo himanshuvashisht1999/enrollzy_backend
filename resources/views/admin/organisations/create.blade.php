@@ -53,7 +53,9 @@
                                                 $category = 'other';
                                                 if (str_contains($title, 'university')) {
                                                     $category = 'university';
-                                                } elseif (str_contains($title, 'college') || str_contains($title, 'institute')) {
+                                                } elseif (str_contains($title, 'college')) {
+                                                    $category = 'college';
+                                                } elseif (str_contains($title, 'institute')) {
                                                     $category = 'institute';
                                                 } elseif (str_contains($title, 'school')) {
                                                     $category = 'school';
@@ -228,49 +230,8 @@
                                                             Authority</label>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-3">
-                                                    <div class="form-check form-switch mt-4">
-                                                        <input class="form-check-input" type="checkbox"
-                                                            name="ugc_recognized" id="ugc_recognized" {{ old('ugc_recognized') ? 'checked' : '' }}>
-                                                        <label class="form-check-label" for="ugc_recognized">UGC
-                                                            Recognized</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">UGC Approval Number</label>
-                                                    <input type="text" name="ugc_approval_number" class="form-control"
-                                                        value="{{ old('ugc_approval_number') }}">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="form-check form-switch mt-4">
-                                                        <input class="form-check-input" type="checkbox"
-                                                            name="aicte_approved" id="aicte_approved" {{ old('aicte_approved') ? 'checked' : '' }}>
-                                                        <label class="form-check-label" for="aicte_approved">AICTE
-                                                            Approved</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="form-check form-switch mt-4">
-                                                        <input class="form-check-input" type="checkbox"
-                                                            name="naac_accredited" id="naac_accredited" {{ old('naac_accredited') ? 'checked' : '' }}>
-                                                        <label class="form-check-label" for="naac_accredited">NAAC
-                                                            Accredited</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">NAAC Grade</label>
-                                                    <input type="text" name="naac_grade" class="form-control"
-                                                        value="{{ old('naac_grade') }}">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">NIRF Rank (Overall)</label>
-                                                    <input type="number" name="nirf_rank_overall" class="form-control"
-                                                        value="{{ old('nirf_rank_overall') }}">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">NIRF Rank (Category)</label>
-                                                    <input type="number" name="nirf_rank_category" class="form-control"
-                                                        value="{{ old('nirf_rank_category') }}">
+                                                <div class="col-md-9">
+                                                    <div class="alert alert-info py-2 mb-0 mt-3 small">UGC, AICTE, NAAC, NIRF and other approvals, accreditations and rankings are added on the organisation's <b>Rankings &amp; Accreditation</b> page (after saving).</div>
                                                 </div>
                                                 <div class="col-md-12">
                                                     <label class="form-label">Recognition Documents (Multiple)</label>
@@ -293,17 +254,6 @@
                                                     </div>
                                                     <small class="text-muted">Upload recognition documents one by
                                                         one</small>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">International Accreditations (Comma
-                                                        separated)</label>
-                                                    <input type="text" name="international_accreditations[]"
-                                                        class="form-control" placeholder="e.g. ABET, AACSB">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Statutory Approvals (Comma separated)</label>
-                                                    <input type="text" name="statutory_approvals[]" class="form-control"
-                                                        placeholder="e.g. BCI, PCI, COA">
                                                 </div>
                                             </div>
                                         </div>
@@ -402,6 +352,7 @@
                                 </div>
 
                                 <!-- Institute Specific Fields Section -->
+                                @include('admin.organisations.partials.college_fields')
                                 <div id="institute-fields" class="col-12" style="display: none;">
                                     <hr class="my-4">
                                     <h5 class="mb-3 text-secondary">Institute Details</h5>
@@ -417,6 +368,7 @@
                                                 data-bs-target="#inst-legal" type="button" role="tab"
                                                 aria-controls="inst-legal" aria-selected="false">Ownership & Legal</button>
                                         </li>
+                                        @include('admin.organisations.partials.institute_brand_tabs')
                                     </ul>
 
                                     <div class="tab-content" id="instTabContent">
@@ -481,15 +433,7 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <label class="form-label">Ownership Type</label>
-                                                    <!-- Reusing ownership_type column -->
-                                                    <select name="ownership_type" class="form-select"
-                                                        id="inst_ownership_type">
-                                                        <option value="">Select Ownership</option>
-                                                        <option value="Private">Private</option>
-                                                        <option value="Trust">Trust</option>
-                                                        <option value="LLP">LLP</option>
-                                                        <option value="Partnership">Partnership</option>
-                                                    </select>
+                                                    @include('admin.organisations.partials.institute_ownership_select', ['organisation' => null])
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">Registered Entity Name</label>
@@ -510,6 +454,14 @@
                                                     <label class="form-label">PAN Number</label>
                                                     <input type="text" name="pan_number" class="form-control"
                                                         value="{{ old('pan_number') }}">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">CIN</label>
+                                                    <input type="text" name="cin_number" class="form-control text-uppercase" value="{{ old('cin_number') }}" placeholder="e.g. U80903MH2015PTC123456" maxlength="21">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Udyam Registration Number</label>
+                                                    <input type="text" name="udyam_number" class="form-control text-uppercase" value="{{ old('udyam_number') }}" placeholder="e.g. UDYAM-MH-12-1234567" maxlength="19">
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check form-switch mt-4">
@@ -542,6 +494,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        @include('admin.organisations.partials.institute_brand_fields', ['organisation' => null])
                                     </div>
                                 </div>
 
@@ -1703,6 +1656,7 @@
                     // Map categories to IDs
                     const activeIdMap = {
                         'university': 'university-fields',
+                        'college': 'college-fields',
                         'institute': 'institute-fields',
                         'school': 'school-fields',
                         'ecb': 'exam-conducting-body-fields',
@@ -1715,7 +1669,8 @@
                     let activeSectionId = activeIdMap[category];
                     if (!activeSectionId) {
                         if (title.includes('university')) activeSectionId = 'university-fields';
-                        else if (title.includes('college') || title.includes('institute')) activeSectionId = 'institute-fields';
+                        else if (title.includes('college')) activeSectionId = 'college-fields';
+                        else if (title.includes('institute')) activeSectionId = 'institute-fields';
                         else if (title.includes('school')) activeSectionId = 'school-fields';
                         else if (title.includes('exam') || title.includes('conducting')) activeSectionId = 'exam-conducting-body-fields';
                         else if (title.includes('counselling') || val == '6') activeSectionId = 'counselling-body-fields';
@@ -1725,6 +1680,7 @@
 
                     const sections = [
                         'university-fields',
+                        'college-fields',
                         'institute-fields',
                         'school-fields',
                         'exam-conducting-body-fields',

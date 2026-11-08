@@ -11,7 +11,7 @@ class CareerRoadmapCategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CareerRoadmapCategory::latest();
+        $query = CareerRoadmapCategory::orderBy('sort_order')->orderBy('id');
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
@@ -34,6 +34,7 @@ class CareerRoadmapCategoryController extends Controller
         CareerRoadmapCategory::create([
             'name' => $request->name,
             'description' => $request->description,
+            'sort_order' => (int) $request->input('sort_order', 0),
             'status' => $request->has('status') ? 1 : 0,
         ]);
 
@@ -55,6 +56,7 @@ class CareerRoadmapCategoryController extends Controller
         $careerRoadmapCategory->update([
             'name' => $request->name,
             'description' => $request->description,
+            'sort_order' => (int) $request->input('sort_order', 0),
             'status' => $request->has('status') ? 1 : 0,
         ]);
 

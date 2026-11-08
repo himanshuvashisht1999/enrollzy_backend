@@ -309,6 +309,22 @@
     .lead-table tbody tr:hover td {
         background-color: #f8fafc;
     }
+    /* bulk reassign tick boxes (admins): big, with a clear border, and the ticked row tinted */
+    .lead-table .bulk-pick, .lead-table .bulk-all {
+        width: 1.35rem;
+        height: 1.35rem;
+        margin: 0;
+        border: 2px solid #64748b;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        box-shadow: none;
+    }
+    .lead-table .bulk-pick:hover, .lead-table .bulk-all:hover { border-color: #2563eb; }
+    .lead-table .bulk-pick:checked, .lead-table .bulk-all:checked, .lead-table .bulk-all:indeterminate {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+    .lead-table tbody tr:has(.bulk-pick:checked) td { background-color: #eff6ff; }
     .lead-table tbody tr:last-child td {
         border-bottom: none;
     }
@@ -705,6 +721,11 @@
     <div class="container-fluid px-4">
 
         <!-- 2. Enterprise KPI Deck -->
+        @php
+            // admins have no leads of their own: the boxes count the whole team, or the one person picked in the staff filter
+            $kpiPick = $isTopLevel && request('staff_id') && request('staff_id') !== 'all' && request('staff_id') != auth()->id() ? $staffs->firstWhere('id', request('staff_id')) : null;
+            $kpiWho = !$isTopLevel ? null : ($kpiPick ? $kpiPick->name . "'s" : 'Team');
+        @endphp
         <div class="row g-3 mb-3">
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card kpi-card-blue">
@@ -715,7 +736,7 @@
                         </span>
                     </div>
                     <div class="kpi-val">{{ $pendingInQueueCount }}</div>
-                    <div class="kpi-sub">Leads waiting in personal queue</div>
+                    <div class="kpi-sub">{{ $kpiWho ? $kpiWho . ' leads not called yet' : 'Leads waiting in personal queue' }}</div>
                 </div>
             </div>
 
@@ -728,7 +749,7 @@
                         </span>
                     </div>
                     <div class="kpi-val text-danger">{{ $followUpsDueTodayCount }}</div>
-                    <div class="kpi-sub">Scheduled callbacks / overdue</div>
+                    <div class="kpi-sub">{{ $kpiWho ? $kpiWho . ' callbacks due in the selected range' : 'Scheduled callbacks / overdue' }}</div>
                 </div>
             </div>
 
@@ -741,7 +762,7 @@
                         </span>
                     </div>
                     <div class="kpi-val" style="color: #3730a3;">{{ $leadsAssignedTodayCount }}</div>
-                    <div class="kpi-sub">Assigned in selected range</div>
+                    <div class="kpi-sub">{{ $kpiWho ? $kpiWho . ' leads assigned in the selected range' : 'Assigned in selected range' }}</div>
                 </div>
             </div>
 
@@ -829,10 +850,16 @@
                 <!-- Date Range Group -->
                 <div class="filter-date-badge">
                     <i class="far fa-calendar-alt text-muted small"></i>
-                    <input type="date" name="start_date" id="start_date" class="filter-date-input" value="{{ request('start_date', $startDate) }}" required title="Start Date">
+                    <input type="date" name="start_date" id="start_date" class="filter-date-input" value="{{ $startDate }}" required title="Start Date">
                     <span class="text-muted small px-0.5">→</span>
-                    <input type="date" name="end_date" id="end_date" class="filter-date-input" value="{{ request('end_date', $endDate) }}" required title="End Date">
+                    <input type="date" name="end_date" id="end_date" class="filter-date-input" value="{{ $endDate }}" required title="End Date">
                 </div>
+
+                <!-- Only the leads marked important (call form) -->
+                <label class="filter-date-badge mb-0" style="cursor:pointer;{{ request('important') ? 'background:#fff7e0;border-color:#f5d27a;' : '' }}" title="Show only leads marked important">
+                    <input type="checkbox" name="important" value="1" class="form-check-input m-0" {{ request('important') ? 'checked' : '' }} onchange="this.form.submit()">
+                    <i class="fas fa-star" style="color:#f5a524"></i><span class="small fw-semibold">Important only</span>
+                </label>
 
                 <!-- Action Buttons -->
                 <div class="d-flex align-items-center gap-2 ms-auto">
@@ -894,8 +921,13 @@
                     <div class="col">
                         <label class="filter-micro-label">Assigned Staff</label>
                         <select name="staff_id" class="form-select filter-select-pro" id="staffFilter">
+                            @if($isTopLevel)
+                                {{-- an admin has no leads of their own: All Staff is their default --}}
+                                <option value="all" {{ !request('staff_id') || in_array(request('staff_id'), ['all', auth()->id()]) ? 'selected' : '' }}>All Staff</option>
+                            @else
                             <option value="{{ auth()->id() }}">Me ({{ auth()->user()->name }})</option>
                             <option value="all" {{ request('staff_id') == 'all' ? 'selected' : '' }}>All Staff</option>
+                            @endif
                             @foreach($staffs as $staff)
                                 @if($staff->id != auth()->id())
                                     <option value="{{ $staff->id }}" {{ request('staff_id') == $staff->id ? 'selected' : '' }}>
@@ -967,22 +999,28 @@
             
             <!-- Clean Segmented Navigation Header -->
             <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3">
+                @php
+                    // admins only monitor and allocate: no calling queue of their own; they open on the team's leads
+                    $firstTab = !$isTopLevel ? 'my-queue-tab' : (count($staffs) > 0 ? 'delegated-queue-tab' : 'history-queue-tab');
+                @endphp
                 <div class="segmented-control" role="tablist">
+                    @unless($isTopLevel)
                     <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#my-queue-tab" type="button">
                         <i class="fas fa-phone-volume"></i> Your Calling Queue
-                        <span class="pill-count">{{ $queue->count() }}</span>
+                        <span class="pill-count">{{ number_format($listTotals['queue']) }}</span>
                     </button>
-                    
+                    @endunless
+
                     @if(count($staffs) > 0)
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#delegated-queue-tab" type="button">
+                    <button class="nav-link {{ $firstTab === 'delegated-queue-tab' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#delegated-queue-tab" type="button">
                         <i class="fas fa-users"></i> Team Assigned Leads
-                        <span class="pill-count">{{ count($delegatedLeads) }}</span>
+                        <span class="pill-count">{{ number_format($listTotals['team']) }}</span>
                     </button>
                     @endif
 
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#history-queue-tab" type="button">
+                    <button class="nav-link {{ $firstTab === 'history-queue-tab' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#history-queue-tab" type="button">
                         <i class="fas fa-history"></i> Completed Calls
-                        <span class="pill-count">{{ count($workedHistory) }}</span>
+                        <span class="pill-count">{{ number_format($listTotals['done']) }}</span>
                     </button>
                 </div>
 
@@ -998,7 +1036,8 @@
             <!-- Tab Contents -->
             <div class="tab-content">
 
-                <!-- TAB 1: Your Calling Queue -->
+                <!-- TAB 1: Your Calling Queue (not for admins) -->
+                @unless($isTopLevel)
                 <div class="tab-pane fade show active" id="my-queue-tab">
                     <div class="table-responsive">
                         <table class="table lead-table align-middle">
@@ -1014,107 +1053,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($queue as $item)
-                                    @php 
-                                        $customer = $item['customer'];
-                                        $history = $item['history'];
-                                        $type = $item['type'];
-                                        
-                                        $statusTag = '<span class="status-tag tag-new"><i class="fas fa-sparkles"></i> New Lead</span>';
-                                        if ($type === 'overdue') {
-                                            $statusTag = '<span class="status-tag tag-overdue"><i class="fas fa-exclamation-circle"></i> Overdue Call</span>';
-                                        } elseif ($type === 'due_today') {
-                                            $statusTag = '<span class="status-tag tag-due"><i class="fas fa-clock"></i> Due Today</span>';
-                                        } elseif ($type === 'reassigned') {
-                                            $statusTag = '<span class="status-tag tag-reassigned"><i class="fas fa-random"></i> Reassigned Lead</span>';
-                                        }
-                                        
-                                        $maskedPhone = substr($customer->phone, 0, 2) . 'XXXXX' . substr($customer->phone, -3);
-                                        $isUnlocked = (isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
-                                    @endphp
-                                    <tr>
-                                        <td class="text-muted fw-bold small" style="width: 40px;">
-                                             #{{ $loop->iteration }}
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-dark fs-6">{{ $customer->name }} <span class="badge bg-light text-secondary border fw-normal ms-1" style="font-size: 0.7rem;">ID #{{ $customer->id }}</span></div>
-                                            <div class="text-muted small mt-0.5">
-                                                @if(!empty($customer->interested_in_course))
-                                                    <span class="text-primary fw-semibold">{{ $customer->interested_in_course }}</span>
-                                                @endif
-                                                @if(!empty($customer->city))
-                                                    &middot; {{ $customer->city }}
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="phone-container-{{ $customer->id }}">
-                                                @if($isUnlocked)
-                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 fw-bold fs-7">
-                                                        <i class="fas fa-phone-alt me-1"></i> {{ $customer->phone }}
-                                                    </span>
-                                                @else
-                                                    <span class="text-dark fw-bold">{{ $maskedPhone }}</span>
-                                                    <a href="javascript:void(0);" class="unlock-phone-btn ms-2 text-primary fw-bold text-decoration-none small" data-id="{{ $customer->id }}">
-                                                        <i class="fas fa-eye me-0.5"></i> Show
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {!! $statusTag !!}
-                                            @if($history && $history->calling_status)
-                                                <div class="text-muted small mt-1 fw-medium">
-                                                    @if($type === 'reassigned')
-                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-history me-1 opacity-75"></i>Last: {{ $history->calling_status->name }}</span>
-                                                    @else
-                                                        {{ $history->calling_status->name }}
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($history && $history->date_required)
-                                                <div class="fw-bold {{ $type === 'overdue' ? 'text-danger' : 'text-dark' }}">
-                                                    <i class="far fa-calendar-alt me-1"></i> {{ \Carbon\Carbon::parse($history->date_required)->format('d M, Y') }}
-                                                </div>
-                                                @if(!empty($item['called_today']) && !empty($item['last_called_at']))
-                                                    <div class="text-muted small mt-0.5" style="font-size: 0.72rem;">
-                                                        <i class="fas fa-redo-alt text-warning me-0.5"></i> Call again (Last: {{ \Carbon\Carbon::parse($item['last_called_at'])->format('h:i A') }})
-                                                    </div>
-                                                @endif
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="fw-semibold text-dark small">{{ $assignmentsLookup[$customer->id]->assigner->name ?? 'System' }}</div>
-                                            @if(isset($assignmentsLookup[$customer->id]->updated_at))
-                                                <div class="text-muted small" style="font-size: 0.72rem;">
-                                                    <i class="far fa-clock me-0.5"></i> {{ \Carbon\Carbon::parse($assignmentsLookup[$customer->id]->updated_at)->format('d M, Y h:i A') }}
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($assignmentsLookup[$customer->id]) && ($assignmentsLookup[$customer->id]->assigned_by == auth()->id() || ($isTopLevel ?? false) || auth()->user()->is_admin || auth()->user()->hasRole('superadmin') || auth()->user()->can('customer-edit')))
-                                                    <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign Lead">
-                                                        <i class="fas fa-user-edit"></i>
-                                                    </button>
-                                                @endif
-
-                                                <button type="button" class="btn btn-call-action open-calling-modal call-btn-{{ $customer->id }}" 
-                                                    data-id="{{ $customer->id }}" 
-                                                    data-name="{{ $customer->name }}" 
-                                                    data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" 
-                                                    data-category="{{ $customer->category_id }}" 
-                                                    data-lead-quality="{{ $customer->lead_quality_id }}">
-                                                    <i class="fas fa-phone-alt"></i> Call Student
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
+                                @if(count($queue))
+                                    @include('admin.students_crm.calling._rows_queue', ['rows' => $queue, 'offset' => 0])
+                                @else
                                     <tr>
                                         <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="fas fa-check-circle text-success fs-1 mb-3 d-block"></i>
@@ -1122,19 +1063,25 @@
                                             <p class="mb-0">There are no leads pending in your personal call queue right now.</p>
                                         </td>
                                     </tr>
-                                @endforelse
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                    @include('admin.students_crm.calling._see_more', ['part' => 'queue', 'shown' => count($queue), 'total' => $listTotals['queue'], 'noun' => 'leads'])
                 </div>
+                @endunless
 
                 <!-- TAB 2: Team Assigned Leads -->
                 @if(count($staffs) > 0)
-                <div class="tab-pane fade" id="delegated-queue-tab">
+                <div class="tab-pane fade {{ $firstTab === 'delegated-queue-tab' ? 'show active' : '' }}" id="delegated-queue-tab">
+                    @if($isTopLevel && count($delegatedLeads))
+                        @include('admin.students_crm.calling._bulk_bar', ['hint' => 'They stay here, with the new person, until that person calls them.'])
+                    @endif
                     <div class="table-responsive">
                         <table class="table lead-table align-middle">
                             <thead>
                                 <tr>
+                                    @if($isTopLevel)<th style="width:44px"><input type="checkbox" class="form-check-input bulk-all" title="Select all shown"></th>@endif
                                     <th>#</th>
                                     <th>Student Lead</th>
                                     <th>Assigned Staff</th>
@@ -1144,75 +1091,34 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($delegatedLeads as $assignment)
-                                    @php 
-                                        $customer = $assignment->customer;
-                                        $leadType = $assignment->lead_type ?? 'new';
-                                        
-                                        $statusTag = '<span class="status-tag tag-new"><i class="fas fa-sparkles"></i> New Lead</span>';
-                                        if ($leadType === 'overdue') {
-                                            $statusTag = '<span class="status-tag tag-overdue"><i class="fas fa-exclamation-circle"></i> Overdue</span>';
-                                        } elseif ($leadType === 'due_today') {
-                                            $statusTag = '<span class="status-tag tag-due"><i class="fas fa-clock"></i> Due Today</span>';
-                                        } elseif ($leadType === 'reassigned') {
-                                            $statusTag = '<span class="status-tag tag-reassigned"><i class="fas fa-random"></i> Reassigned Lead</span>';
-                                        }
-                                    @endphp
-                                    @if($customer)
+                                @if(count($delegatedLeads))
+                                    @include('admin.students_crm.calling._rows_team', ['rows' => $delegatedLeads, 'offset' => 0])
+                                @else
                                     <tr>
-                                        <td class="text-muted fw-bold small" style="width: 40px;">
-                                            #{{ $loop->iteration }}
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-dark fs-6">{{ $customer->name }} <span class="badge bg-light text-secondary border fw-normal ms-1" style="font-size: 0.7rem;">ID #{{ $customer->id }}</span></div>
-                                            <div class="text-muted small">{{ $customer->city ?? 'Unknown' }}</div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-primary">{{ $assignment->staff->name ?? 'Unknown' }}</div>
-                                        </td>
-                                        <td>
-                                            {!! $statusTag !!}
-                                            @if(isset($assignment->latest_history) && $assignment->latest_history && $assignment->latest_history->calling_status)
-                                                <div class="text-muted small mt-1 fw-medium">
-                                                    @if($leadType === 'reassigned')
-                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-history me-1 opacity-75"></i>Last: {{ $assignment->latest_history->calling_status->name }}</span>
-                                                    @else
-                                                        {{ $assignment->latest_history->calling_status->name }}
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="text-muted small">
-                                            {{ \Carbon\Carbon::parse($assignment->updated_at)->format('d M Y, h:i A') }}
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}">
-                                                <i class="fas fa-user-edit me-1"></i> Reassign Lead
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
+                                        <td colspan="{{ $isTopLevel ? 7 : 6 }}" class="text-center py-5 text-muted">
                                             <i class="fas fa-users text-primary fs-1 mb-3 d-block"></i>
                                             <h5 class="fw-bold text-dark">No Delegated Leads</h5>
                                             <p class="mb-0">You have not assigned any leads to your team in this date range.</p>
                                         </td>
                                     </tr>
-                                @endforelse
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                    @include('admin.students_crm.calling._see_more', ['part' => 'team', 'shown' => count($delegatedLeads), 'total' => $listTotals['team'], 'noun' => 'leads'])
                 </div>
                 @endif
 
                 <!-- TAB 3: Completed Calls History -->
-                <div class="tab-pane fade" id="history-queue-tab">
+                <div class="tab-pane fade {{ $firstTab === 'history-queue-tab' ? 'show active' : '' }}" id="history-queue-tab">
+                    @if($isTopLevel && count($workedHistory))
+                        @include('admin.students_crm.calling._bulk_bar', ['hint' => 'Reassigned leads leave Completed Calls and go to the new person\'s calling queue (you see them under Team Assigned Leads).'])
+                    @endif
                     <div class="table-responsive">
                         <table class="table lead-table align-middle">
                             <thead>
                                 <tr>
+                                    @if($isTopLevel)<th style="width:44px"><input type="checkbox" class="form-check-input bulk-all" title="Select all shown"></th>@endif
                                     <th>#</th>
                                     <th>Student Lead</th>
                                     <th>Call Result</th>
@@ -1223,71 +1129,21 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($workedHistory as $hItem)
-                                    @php 
-                                        $customer = $hItem->customer;
-                                        $maskedPhone = $customer ? substr($customer->phone, 0, 2) . 'XXXXX' . substr($customer->phone, -3) : '';
-                                        $isUnlocked = ($customer && isset($unlocked_lead_id) && $unlocked_lead_id == $customer->id);
-                                    @endphp
-                                    @if($customer)
+                                @if(count($workedHistory))
+                                    @include('admin.students_crm.calling._rows_done', ['rows' => $workedHistory, 'offset' => 0])
+                                @else
                                     <tr>
-                                        <td class="text-muted fw-bold small" style="width: 40px;">
-                                            #{{ $loop->iteration }}
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-dark fs-6">{{ $customer->name }} <span class="badge bg-light text-secondary border fw-normal ms-1" style="font-size: 0.7rem;">ID #{{ $customer->id }}</span></div>
-                                            <div class="text-muted small">{{ $customer->city ?? 'Unknown' }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="status-tag tag-completed">
-                                                <i class="fas fa-check-circle"></i> {{ $hItem->calling_status->name ?? 'Contacted' }}
-                                            </span>
-                                        </td>
-                                        <td class="fw-bold text-dark">
-                                            {{ $hItem->staff->name ?? 'System' }}
-                                        </td>
-                                        <td>
-                                            <div class="fw-semibold text-dark small">{{ $historyAssignmentsLookup[$customer->id]->assigner->name ?? '—' }}</div>
-                                            @if(isset($historyAssignmentsLookup[$customer->id]->updated_at))
-                                                <div class="text-muted small" style="font-size: 0.72rem;">
-                                                    <i class="far fa-clock me-0.5"></i> {{ \Carbon\Carbon::parse($historyAssignmentsLookup[$customer->id]->updated_at)->format('d M, Y h:i A') }}
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="text-muted small">
-                                            <i class="far fa-clock me-1"></i> {{ \Carbon\Carbon::parse($hItem->created_at)->format('d M Y, h:i A') }}
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <div class="d-flex align-items-center justify-content-end gap-2">
-                                                @if(isset($historyAssignmentsLookup[$customer->id]) && ($historyAssignmentsLookup[$customer->id]->assigned_by == auth()->id() || ($isTopLevel ?? false) || auth()->user()->is_admin || auth()->user()->hasRole('superadmin') || auth()->user()->can('customer-edit')))
-                                                    <button type="button" class="btn btn-reassign-action open-reassign-modal" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}" title="Reassign">
-                                                        <i class="fas fa-user-edit"></i>
-                                                    </button>
-                                                @endif
-                                                <button type="button" class="btn btn-call-action open-calling-modal call-btn-{{ $customer->id }}" 
-                                                    data-id="{{ $customer->id }}" 
-                                                    data-name="{{ $customer->name }}" 
-                                                    data-phone="{{ $isUnlocked ? $customer->phone : $maskedPhone }}" 
-                                                    data-category="{{ $customer->category_id }}" 
-                                                    data-lead-quality="{{ $customer->lead_quality_id }}">
-                                                    <i class="fas fa-phone-alt"></i> Call Again
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
+                                        <td colspan="{{ $isTopLevel ? 8 : 7 }}" class="text-center py-5 text-muted">
                                             <i class="fas fa-history text-secondary fs-1 mb-3 d-block"></i>
                                             <h5 class="fw-bold text-dark">No History Recorded</h5>
                                             <p class="mb-0">No calls have been logged in the selected date range.</p>
                                         </td>
                                     </tr>
-                                @endforelse
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                    @include('admin.students_crm.calling._see_more', ['part' => 'done', 'shown' => count($workedHistory), 'total' => $listTotals['done'], 'noun' => 'calls'])
                 </div>
 
             </div>
@@ -1318,7 +1174,7 @@
                         <label class="filter-label">Assign To Staff <span class="text-danger">*</span></label>
                         <select name="staff_id" class="form-select filter-select" required>
                             <option value="">Choose Staff Member</option>
-                            @foreach($staffs as $staff)
+                            @foreach($assignableStaffs as $staff)
                                 <option value="{{ $staff->id }}">{{ $staff->name }}</option>
                             @endforeach
                         </select>
@@ -1672,6 +1528,7 @@
                                 </div>
                             </div>
 
+                            @include('admin.calling._lead_flags')
                             <!-- DOCKED STICKY FOOTER -->
                             <div class="cockpit-sticky-footer px-4 py-3 bg-white border-top d-flex justify-content-between align-items-center">
                                 <div class="text-muted small d-flex align-items-center gap-1.5">
@@ -1826,6 +1683,66 @@
                     btn.prop('disabled', false).html(originalText);
                     Swal.fire('Error', 'Something went wrong', 'error');
                 }
+            });
+        });
+
+        // Bulk reassign (admins): each tab (Team Assigned Leads, Completed Calls) has its own bar and tick boxes
+        function bulkPicked($pane) { return $pane.find('.bulk-pick:checked').map(function() { return this.value; }).get(); }
+        function bulkRefresh($pane) {
+            var n = bulkPicked($pane).length, all = $pane.find('.bulk-pick').length;
+            $pane.find('.bulk-count').text(n);
+            $pane.find('.bulk-submit').prop('disabled', n === 0);
+            $pane.find('.bulk-all').prop('checked', all > 0 && n === all).prop('indeterminate', n > 0 && n < all);
+        }
+        $(document).on('change', '.bulk-all', function() { var $p = $(this).closest('.tab-pane'); $p.find('.bulk-pick').prop('checked', this.checked); bulkRefresh($p); });
+        $(document).on('change', '.bulk-pick', function() { bulkRefresh($(this).closest('.tab-pane')); });
+        $(document).on('submit', '.bulk-form', function(e) {
+            e.preventDefault();
+            var form = this, $pane = $(form).closest('.tab-pane'), ids = bulkPicked($pane), to = $(form).find('select[name="staff_id"] option:selected').text();
+            if (!ids.length) return;
+            Swal.fire({ title: 'Reassign ' + ids.length + (ids.length === 1 ? ' lead' : ' leads') + '?', text: 'They will move to ' + to + ' and show in their calling queue.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, reassign' }).then(function(r) {
+                if (!r.isConfirmed) return;
+                var btn = $(form).find('.bulk-submit'), html = btn.html();
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Reassigning...');
+                $.ajax({
+                    url: "{{ route('admin.students-crm.calling-dashboard.bulk-reassign') }}",
+                    type: 'POST',
+                    data: { _token: $(form).find('[name=_token]').val(), staff_id: $(form).find('[name=staff_id]').val(), customer_ids: ids },
+                    success: function(res) {
+                        btn.html(html);
+                        if (res.status == 1) {
+                            Swal.fire('Done', res.message, 'success').then(function() { window.location.reload(); });
+                        } else {
+                            bulkRefresh($pane);
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.html(html); bulkRefresh($pane);
+                        Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.message) || 'Something went wrong', 'error');
+                    }
+                });
+            });
+        });
+
+        // See more: the next batch of rows for a list, with the page's current filters
+        $(document).on('click', '.see-more', function() {
+            var btn = $(this), $wrap = btn.closest('.see-more-wrap'), $pane = btn.closest('.tab-pane'), html = btn.html();
+            var shown = parseInt(btn.data('shown')), total = parseInt(btn.data('total'));
+            var params = new URLSearchParams(window.location.search);
+            params.set('part', btn.data('part'));
+            params.set('offset', shown);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Loading...');
+            $.getJSON(window.location.pathname + '?' + params.toString()).done(function(res) {
+                $pane.find('table.lead-table > tbody').append(res.html);
+                btn.data('shown', res.shown).data('total', res.total);
+                $wrap.find('.see-more-shown').text(Number(res.shown).toLocaleString('en-IN'));
+                if (res.shown >= res.total) $wrap.find('.see-more').remove();
+                else btn.prop('disabled', false).html(html);
+                bulkRefresh($pane);
+            }).fail(function() {
+                btn.prop('disabled', false).html(html);
+                Swal.fire('Error', 'Could not load more rows. Please try again.', 'error');
             });
         });
 
@@ -2511,14 +2428,15 @@
         $('#start_date').on('change', function() {
             var startDateVal = $(this).val();
             if (startDateVal) {
+                // the range can run up to three months: end at most 3 months after the start (less a day),
+                // e.g. 30 Nov → 27 Feb; same rule as the server (Carbon addMonthsNoOverflow)
                 var parts = startDateVal.split('-');
-                var year = parts[0];
-                var month = parts[1];
-                
-                var lastDay = new Date(year, parseInt(month), 0).getDate();
-                var firstDayStr = year + "-" + month + "-01";
-                var lastDayStr = year + "-" + month + "-" + (lastDay < 10 ? '0' + lastDay : lastDay);
-                
+                var y = parseInt(parts[0]), m = parseInt(parts[1]) - 1 + 3, d = parseInt(parts[2]);
+                var monthEnd = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+                var last = new Date(Date.UTC(y, m, Math.min(d, monthEnd)));
+                last.setUTCDate(last.getUTCDate() - 1);
+                var lastDayStr = last.toISOString().slice(0, 10);
+
                 $('#end_date').attr('min', startDateVal);
                 $('#end_date').attr('max', lastDayStr);
                 

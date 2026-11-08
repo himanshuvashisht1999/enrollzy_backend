@@ -42,7 +42,8 @@ class CallingStatusController extends Controller
                     $btn .= '</div>';
                     return $btn;
                 })
-                ->rawColumns(['date_require', 'comment_require', 'is_more_details', 'current_academic_details', 'action'])
+                ->addColumn('is_connected', fn ($row) => $row->is_connected ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>')
+                ->rawColumns(['date_require', 'comment_require', 'is_more_details', 'current_academic_details', 'is_connected', 'action'])
                 ->make(true);
         }
         $actions = CallingAction::where('organization_id', auth()->user()->organization_id)->where('status', 1)->get();
@@ -58,6 +59,7 @@ class CallingStatusController extends Controller
             'is_more_details' => 'required|in:yes,no',
             'current_academic_details' => 'required|in:yes,no',
             'calling_action_id' => 'nullable|integer',
+            'is_connected' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -72,6 +74,7 @@ class CallingStatusController extends Controller
                 'is_more_details' => $request->is_more_details,
                 'current_academic_details' => $request->current_academic_details,
                 'calling_action_id' => $request->calling_action_id,
+                'is_connected' => $request->boolean('is_connected'),
                 'organization_id' => auth()->user()->organization_id,
             ]);
 
@@ -98,6 +101,7 @@ class CallingStatusController extends Controller
             'is_more_details' => 'required|in:yes,no',
             'current_academic_details' => 'required|in:yes,no',
             'calling_action_id' => 'nullable|integer',
+            'is_connected' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -112,6 +116,7 @@ class CallingStatusController extends Controller
                 'is_more_details' => $request->is_more_details,
                 'current_academic_details' => $request->current_academic_details,
                 'calling_action_id' => $request->calling_action_id,
+                'is_connected' => $request->boolean('is_connected'),
             ]);
 
             return response()->json(['status' => 1, 'message' => 'Status updated successfully']);

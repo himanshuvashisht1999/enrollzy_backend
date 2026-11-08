@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // private files are never served by URL: /storage/... is the public disk (StorageFileController)
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -43,6 +44,10 @@ return [
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
+            // Not Laravel's open-to-all file route: /storage/{path} is StorageFileController (routes/web.php), which
+            // opens only the website's folders to visitors and keeps attendance photos, receipts etc. for CRM admins.
+            // Do not create the public/storage link on the server: the web server would then serve every file to anyone.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

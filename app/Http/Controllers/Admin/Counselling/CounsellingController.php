@@ -56,7 +56,9 @@ class CounsellingController extends Controller
         return view('admin.counselling.counsellings.show', [
             'counselling' => $counselling, 'logs' => $logs, 'missing' => $counselling->missingForPublish(),
             'levelNames' => ProgramLevel::pluck('title', 'id'), 'categoryNames' => ExamCategory::pluck('title', 'id'),
-            'mappable' => Exam::whereNotIn('id', $counselling->mappings->pluck('exam_id'))->orderBy('name')->get(['id', 'name']),
+            // every exam; the ones already mapped stay in the list, greyed out, so nobody thinks an exam is missing
+            'mappable' => Exam::orderBy('name')->get(['id', 'name']),
+            'mappedIds' => $counselling->mappings->pluck('exam_id')->map(fn ($id) => (int) $id)->all(),
         ]);
     }
 

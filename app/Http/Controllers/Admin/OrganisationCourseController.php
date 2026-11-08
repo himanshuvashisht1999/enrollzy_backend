@@ -109,6 +109,8 @@ class OrganisationCourseController extends Controller
             'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
             'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
             'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
+            'total_selections_all_time' => 'nullable|integer|min:0|max:4294967295', 'selections_last_year' => 'nullable|integer|min:0|max:4294967295',
+            'highest_rank_achieved' => 'nullable|integer|min:0|max:4294967295', 'average_selection_rate' => 'nullable|numeric|min:0|max:100',
             'documents' => 'nullable|array',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
@@ -118,7 +120,7 @@ class OrganisationCourseController extends Controller
         if (in_array($typeId, [1, 2])) {
             // University / College
             $rules['course_id'] = 'required|exists:courses,id';
-            $rules['sort_order'] = 'required|integer';
+            $rules['sort_order'] = 'nullable|integer';
         } elseif ($typeId == 3) {
             // Institute
             $rules['academic_unit_name'] = 'required|string|max:255';
@@ -132,9 +134,17 @@ class OrganisationCourseController extends Controller
             $rules['sort_order'] = 'required|integer';
         }
 
-        $request->validate($rules);
+        // coaching institute programmes: product type, test series, fee details, batches, results, toppers
+        $messages = $attributes = [];
+        if ($typeId == 3) {
+            $rules += \App\Support\Institutes\ProgramFields::rules();
+            $messages = \App\Support\Institutes\ProgramFields::messages();
+            $attributes = \App\Support\Institutes\ProgramFields::attributes();
+        }
+        $request->validate($rules, $messages, $attributes);
 
         $data = $request->all();
+        if (array_key_exists('sort_order', $data) && $data['sort_order'] === null) $data['sort_order'] = 0;
 
         // Boolean handling
         $booleans = [
@@ -163,7 +173,8 @@ class OrganisationCourseController extends Controller
             'refund_policy_available',
             'verified_reviews_only',
             'transport_fee',
-            'hostel_fee'
+            'hostel_fee',
+            ...\App\Support\Institutes\ProgramFields::BOOLEANS,
         ];
 
         // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
@@ -178,6 +189,7 @@ class OrganisationCourseController extends Controller
         }
 
         unset($data['documents'], $data['has_documents_form']);
+        $data = \App\Support\Institutes\ProgramFields::prepare($data); // batches, results and toppers are saved after the programme
 
         // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
         foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
@@ -186,9 +198,14 @@ class OrganisationCourseController extends Controller
         foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
             if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
         }
+        // multi-choice fields: the ticked choices as one line ("Annual, Semester"), none = NULL
+        foreach (\App\Support\OrganisationFields\CourseFields::LIST_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = implode(', ', \App\Support\OrganisationFields\CourseFields::listValues($data[$field])) ?: null;
+        }
 
         $course = OrganisationCourse::create($data);
         $this->syncDocuments($request, $course);
+        if ($typeId == 3) \App\Support\Institutes\ProgramFields::sync($request, $course);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $request->organisation_id,
@@ -258,6 +275,8 @@ class OrganisationCourseController extends Controller
             'total_batches' => 'nullable|integer|min:0', 'average_batch_size' => 'nullable|integer|min:0', 'total_faculty_count' => 'nullable|integer|min:0',
             'senior_faculty_count' => 'nullable|integer|min:0', 'average_faculty_experience_years' => 'nullable|integer|min:0', 'tests_per_month' => 'nullable|integer|min:0',
             'meta_title' => 'nullable|string|max:255', 'meta_description' => 'nullable|string|max:5000',
+            'total_selections_all_time' => 'nullable|integer|min:0|max:4294967295', 'selections_last_year' => 'nullable|integer|min:0|max:4294967295',
+            'highest_rank_achieved' => 'nullable|integer|min:0|max:4294967295', 'average_selection_rate' => 'nullable|numeric|min:0|max:100',
             'documents' => 'nullable|array',
             'documents.*.title' => 'nullable|string|max:255',
             'documents.*.file' => 'nullable|file|mimes:pdf|max:20480',
@@ -266,7 +285,7 @@ class OrganisationCourseController extends Controller
         // Type Specific Rules
         if (in_array($typeId, [1, 2])) {
             $rules['course_id'] = 'required|exists:courses,id';
-            $rules['sort_order'] = 'required|integer';
+            $rules['sort_order'] = 'nullable|integer';
         } elseif ($typeId == 3) {
             $rules['academic_unit_name'] = 'required|string|max:255';
             $rules['course_id'] = 'required|exists:courses,id';
@@ -277,9 +296,17 @@ class OrganisationCourseController extends Controller
             $rules['sort_order'] = 'required|integer';
         }
 
-        $request->validate($rules);
+        // coaching institute programmes: product type, test series, fee details, batches, results, toppers
+        $messages = $attributes = [];
+        if ($typeId == 3) {
+            $rules += \App\Support\Institutes\ProgramFields::rules();
+            $messages = \App\Support\Institutes\ProgramFields::messages();
+            $attributes = \App\Support\Institutes\ProgramFields::attributes();
+        }
+        $request->validate($rules, $messages, $attributes);
 
         $data = $request->all();
+        if (array_key_exists('sort_order', $data) && $data['sort_order'] === null) $data['sort_order'] = 0;
 
         // Multi-select fields: when user removes ALL selections, browser sends nothing.
         // Explicitly set to null so the DB value is cleared.
@@ -316,7 +343,8 @@ class OrganisationCourseController extends Controller
             'refund_policy_available',
             'verified_reviews_only',
             'transport_fee',
-            'hostel_fee'
+            'hostel_fee',
+            ...\App\Support\Institutes\ProgramFields::BOOLEANS,
         ];
 
         // Only the switches this form showed: each one sends a hidden 0 when unticked, so a switch that is not on this type's form is left alone.
@@ -330,6 +358,7 @@ class OrganisationCourseController extends Controller
         }
 
         unset($data['documents'], $data['has_documents_form']);
+        $data = \App\Support\Institutes\ProgramFields::prepare($data); // batches, results and toppers are saved after the programme
 
         // A blank number box or master dropdown means "not set": NULL, never an empty string the integer column would reject.
         foreach (\App\Support\OrganisationFields\CourseFields::INT_COLUMNS as $field) {
@@ -338,9 +367,14 @@ class OrganisationCourseController extends Controller
         foreach (\App\Support\OrganisationFields\CourseFields::NULLABLE_BLANK as $field) {
             if (array_key_exists($field, $data) && $data[$field] === '') $data[$field] = null;
         }
+        // multi-choice fields: the ticked choices as one line ("Annual, Semester"), none = NULL
+        foreach (\App\Support\OrganisationFields\CourseFields::LIST_COLUMNS as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = implode(', ', \App\Support\OrganisationFields\CourseFields::listValues($data[$field])) ?: null;
+        }
 
         $organisationCourse->update($data);
         $this->syncDocuments($request, $organisationCourse);
+        if ($typeId == 3) \App\Support\Institutes\ProgramFields::sync($request, $organisationCourse);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $organisation->id,
@@ -393,6 +427,7 @@ class OrganisationCourseController extends Controller
         }
 
         DB::transaction(function () use ($ids) {
+            \App\Support\Institutes\ProgramFields::deleteFor(array_values(array_filter(array_map('intval', $ids))));
             OrganisationCourse::whereIn('id', $ids)->delete();
             if (\Illuminate\Support\Facades\Schema::hasTable('organisation_school_courses')) {
                 \Illuminate\Support\Facades\DB::table('organisation_school_courses')->whereIn('id', $ids)->delete();
@@ -414,6 +449,7 @@ class OrganisationCourseController extends Controller
         }
 
         $newCourse->save();
+        \App\Support\Institutes\ProgramFields::copy($originalCourse, $newCourse);
 
         return redirect()->route('admin.organisation-courses.index', [
             'organisation_id' => $originalCourse->organisation_id,

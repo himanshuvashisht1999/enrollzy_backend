@@ -27,6 +27,18 @@
     </div>
 </div>
 
+@unless($cycle->is_public)
+{{-- an admin-only cycle sends nothing to the website: no dates, eligibility, pattern, papers or extra tabs --}}
+<div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><i class="fas fa-eye-slash me-1"></i> <strong>Not on the website.</strong> This cycle is admin only, so the exam page shows none of its dates, eligibility, pattern, papers or other tabs.
+        @if($cycle->exam->visibility !== 'public')<br><span class="small">The exam itself is a draft too: publish it on the exam page.</span>@endif</div>
+    @can('exm-exams-publish')
+    <form action="{{ route('admin.exam-module.cycles.public', $cycle) }}" method="POST" data-confirm="Show this cycle's dates and details on the website?">@csrf @method('PATCH')
+        <button class="btn btn-sm btn-success"><i class="fas fa-globe me-1"></i> Show on website</button></form>
+    @endcan
+</div>
+@endunless
+
 {{-- Calculated student-facing status --}}
 @php
     $usesStages = $cycle->usesStages();
@@ -91,16 +103,24 @@
 
 {{-- Events --}}
 <div class="card border-0 shadow-sm rounded-4"><div class="card-body">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
         <h6 class="fw-bold mb-0">Important dates & events</h6>
-        <button class="btn btn-sm btn-primary" onclick="openEventModal()"><i class="fas fa-plus me-1"></i> Add Event</button>
+        <div class="d-flex gap-2">
+            @if($cycle->events->count() > 1)
+            <form action="{{ route('admin.exam-module.events.order', $cycle) }}" method="POST" data-confirm="Put the events in date order? Undated events go to the end.">@csrf<input type="hidden" name="by" value="date">
+                <button class="btn btn-sm btn-light border"><i class="fas fa-sort-amount-down me-1"></i> Sort by date</button></form>
+            @endif
+            <button class="btn btn-sm btn-primary" onclick="openEventModal()"><i class="fas fa-plus me-1"></i> Add Event</button>
+        </div>
     </div>
+    <p class="small text-muted mb-3">The website shows the events in this order. Drag <i class="fas fa-grip-vertical"></i> to change it; it saves at once.</p>
     <div class="table-responsive">
     <table class="table align-middle">
-        <thead class="bg-light"><tr><th>Event</th><th>Date</th><th>Status</th><th>Verified</th><th class="text-end">Actions</th></tr></thead>
-        <tbody>
+        <thead class="bg-light"><tr><th style="width:34px"></th><th>Event</th><th>Date</th><th>Status</th><th>Verified</th><th class="text-end">Actions</th></tr></thead>
+        <tbody id="eventRows">
         @forelse($cycle->events as $ev)
-            <tr>
+            <tr data-id="{{ $ev->id }}">
+                <td class="ev-grip text-muted" title="Drag to reorder" style="cursor:grab"><i class="fas fa-grip-vertical"></i></td>
                 <td>
                     <div class="fw-semibold">{{ $ev->type->name }}@if($usesStages && $ev->stageLabel()) <span class="text-muted">· {{ $ev->stageLabel() }}</span>@endif@if($ev->label) <span class="text-muted">· {{ $ev->label }}</span>@endif</div>
                     @if($usesStages)
@@ -135,7 +155,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="5" class="text-center text-muted py-4">No events yet.</td></tr>
+            <tr><td colspan="6" class="text-center text-muted py-4">No events yet.</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -152,10 +172,24 @@
         <input type="hidden" name="_dialog" value="event"><input type="hidden" name="_dialog_id" id="f_dialog_id">
         <div class="modal-header"><h5 class="modal-title" id="eventTitle">Add Event</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body"><div class="alert alert-danger small d-none dialog-errors"></div><div class="row g-3">
-            <div class="col-md-6"><label class="form-label fw-bold">Event Type *</label>
+            <div class="col-md-6"><label class="form-label fw-bold d-flex justify-content-between">Event Type *
+                    @can('exm-event-types-manage')<a href="#" class="fw-normal small" onclick="$('#newTypeBox').toggleClass('d-none'); $('#nt_name').trigger('focus'); return false;"><i class="fas fa-plus"></i> New type</a>@endcan</label>
                 <select name="event_type_id" id="f_event_type_id" class="form-select custom-select2" required>
                     @foreach($eventTypes as $t)<option value="{{ $t->id }}" data-manual="{{ $t->status_source === 'manual' ? 1 : 0 }}">{{ $t->name }}{{ $t->status_source === 'manual' ? ' (manual status)' : '' }}</option>@endforeach
                 </select></div>
+            @can('exm-event-types-manage')
+            {{-- a kind of date the list does not have yet: added to the Event Types master and picked here --}}
+            <div class="col-12 d-none" id="newTypeBox"><div class="border rounded-3 p-3 bg-light">
+                <div class="fw-bold small mb-2">New event type <span class="fw-normal text-muted">(saved to <a href="{{ route('admin.exam-module.event-types.index') }}" target="_blank">Event Types</a>, so every exam can use it)</span></div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4"><label class="form-label small mb-1">Name</label><input type="text" id="nt_name" class="form-control form-control-sm" placeholder="e.g. Exam city slip, Re-exam"></div>
+                    <div class="col-md-3"><label class="form-label small mb-1">Status</label><select id="nt_source" class="form-select form-select-sm"><option value="dates">From dates</option><option value="manual">Set by hand (results)</option></select></div>
+                    <div class="col-md-3"><label class="form-label small mb-1">Shows under</label><select id="nt_group" class="form-select form-select-sm">@foreach(\App\Models\ExamModule\EventType::GROUPS as $k => $v)@continue($k === 'counselling')<option value="{{ $k }}" @selected($k === 'other')>{{ $v }}</option>@endforeach</select></div>
+                    <div class="col-md-2"><button type="button" class="btn btn-sm btn-primary w-100" onclick="addEventType()">Add type</button></div>
+                </div>
+                <div class="small text-danger mt-1" id="nt_err"></div>
+            </div></div>
+            @endcan
             <div class="col-md-6"><label class="form-label fw-bold">Label</label><input type="text" name="label" id="f_label" class="form-control" placeholder="Phase 2, Shift 1"></div>
             @if($usesStages)
             <div class="col-md-6"><label class="form-label fw-bold">Stage <span class="text-danger">*</span></label>
@@ -200,7 +234,41 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
+    // drag events into the order the website shows; each drop saves the whole order
+    $(function () {
+        const rows = document.getElementById('eventRows');
+        if (!window.Sortable || !rows || rows.querySelectorAll('tr[data-id]').length < 2) return;
+        Sortable.create(rows, {
+            handle: '.ev-grip', animation: 150, draggable: 'tr[data-id]',
+            onEnd: function (e) {
+                if (e.oldIndex === e.newIndex) return;
+                $.ajax({
+                    url: @json(route('admin.exam-module.events.order', $cycle)), method: 'POST', dataType: 'json',
+                    data: {_token: @json(csrf_token()), ids: [...rows.querySelectorAll('tr[data-id]')].map(r => r.dataset.id)},
+                }).done(() => window.toastr && toastr.success('Order saved.'))
+                  .fail(x => { (window.toastr ? toastr.error : alert)((x.responseJSON && x.responseJSON.message) || 'Could not save the order. Reload and try again.'); });
+            },
+        });
+    });
+
+    @can('exm-event-types-manage')
+    function addEventType() {
+        const name = $('#nt_name').val().trim();
+        $('#nt_err').text('');
+        if (!name) { $('#nt_err').text('Enter a name.'); return; }
+        $.ajax({url: @json(route('admin.exam-module.event-types.store')), method: 'POST', dataType: 'json',
+            data: {_token: @json(csrf_token()), name: name, status_source: $('#nt_source').val(), applies_to: 'exam', date_group: $('#nt_group').val()}})
+            .done(t => {
+                $('#f_event_type_id').append($('<option>', {value: t.id, text: t.name + (t.manual ? ' (manual status)' : '')}).attr('data-manual', t.manual ? 1 : 0)).val(String(t.id)).trigger('change');
+                $('#nt_name').val(''); $('#newTypeBox').addClass('d-none');
+                window.toastr && toastr.success('Event type "' + t.name + '" added and selected.');
+            })
+            .fail(x => $('#nt_err').text(Object.values((x.responseJSON && x.responseJSON.errors) || {}).flat().join(' ') || 'Could not add the type.'));
+    }
+    @endcan
+
     const storeUrl = @json(route('admin.exam-module.events.store', $cycle));
     const updateUrl = @json(url('admin/exam-module/events'));
     const fields = ['event_type_id','stage_id','label','date_precision','manual_status','on_demand_text','link_url','note','source_url','start_at','end_at','extended_end_at'];

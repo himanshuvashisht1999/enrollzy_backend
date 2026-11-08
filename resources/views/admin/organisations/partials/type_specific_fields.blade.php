@@ -38,7 +38,7 @@
                                                 <label class="form-label">University Type</label>
                                                 <select name="university_type" class="form-select">
                                                     <option value="">Select Type</option>
-                                                    @foreach(['Central', 'State', 'Deemed', 'Private', 'International'] as $opt)
+                                                    @foreach(\App\Models\Organisation::UNIVERSITY_TYPES as $opt)
                                                         <option value="{{ $opt }}" {{ old('university_type', $organisation->university_type) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
                                                 </select>
@@ -92,39 +92,30 @@
                                                     <label class="form-check-label" for="degree_awarding_authority">Degree Awarding Authority</label>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="ugc_recognized" id="ugc_recognized" {{ old('ugc_recognized', $organisation->ugc_recognized) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="ugc_recognized">UGC Recognized</label>
+                                            <div class="col-md-9">
+                                                <div class="alert alert-info py-2 mb-0 mt-3 small">UGC, AICTE, NAAC and other approvals and accreditations are added on the institute's <b>Rankings &amp; Accreditation</b> page after saving. The year-wise NIRF list below is saved there too.</div>
+                                            </div>
+                                            {{-- Year-wise NIRF (filled by Create by Gemini / Claude): saved as Quality ranking records, one per year and category --}}
+                                            @php
+                                                try {
+                                                    $nirfCategoryNames = \Illuminate\Support\Facades\DB::table('ranking_categories as c')->join('ranking_bodies as b', 'b.id', '=', 'c.ranking_body_id')
+                                                        ->where('b.short_name', 'NIRF')->where('c.status', 1)->where('c.name', '!=', 'Unspecified category')
+                                                        ->orderBy('c.sort_order')->orderBy('c.name')->pluck('c.name')->all();
+                                                } catch (\Throwable $e) {
+                                                    $nirfCategoryNames = [];
+                                                }
+                                            @endphp
+                                            <div class="col-md-12" id="aiNirfBox" data-no-highlight data-categories='@json($nirfCategoryNames ?: ['Overall'])'>
+                                                <label class="form-label">NIRF Rankings (year-wise)</label>
+                                                <input type="hidden" name="nirf_rankings_json" id="aiNirfJson" value="[]">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered align-middle mb-1">
+                                                        <thead class="table-light"><tr><th style="width:110px">Year</th><th>Category</th><th style="width:130px">Exact rank</th><th style="width:150px">Or band (e.g. 101-150)</th><th style="width:44px"></th></tr></thead>
+                                                        <tbody id="aiNirfRows"></tbody>
+                                                    </table>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">UGC Approval Number</label>
-                                                <input type="text" name="ugc_approval_number" class="form-control" value="{{ old('ugc_approval_number', $organisation->ugc_approval_number) }}">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="aicte_approved" id="aicte_approved" {{ old('aicte_approved', $organisation->aicte_approved) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="aicte_approved">AICTE Approved</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-check form-switch mt-4">
-                                                    <input class="form-check-input" type="checkbox" name="naac_accredited" id="naac_accredited" {{ old('naac_accredited', $organisation->naac_accredited) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="naac_accredited">NAAC Accredited</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NAAC Grade</label>
-                                                <input type="text" name="naac_grade" class="form-control" value="{{ old('naac_grade', $organisation->naac_grade) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NIRF Rank (Overall)</label>
-                                                <input type="number" name="nirf_rank_overall" class="form-control" value="{{ old('nirf_rank_overall', $organisation->nirf_rank_overall) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">NIRF Rank (Category)</label>
-                                                <input type="number" name="nirf_rank_category" class="form-control" value="{{ old('nirf_rank_category', $organisation->nirf_rank_category) }}">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="aiNirfAdd"><i class="fas fa-plus me-1"></i>Add year / category</button>
+                                                <div class="form-text">Saved as unverified NIRF rankings under Quality records for this institute, where they can be verified.</div>
                                             </div>
                                             <div class="col-md-12">
                                                 <label class="form-label">Recognition Documents (Multiple)</label>
@@ -152,14 +143,6 @@
                                                     </div>
                                                     <button type="button" class="btn btn-sm btn-outline-primary add-file-item">+ Add More Document</button>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">International Accreditations (Comma separated)</label>
-                                                <input type="text" name="international_accreditations[]" class="form-control" value="{{ implode(',', is_array($organisation->international_accreditations) ? $organisation->international_accreditations : []) }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Statutory Approvals (Comma separated)</label>
-                                                <input type="text" name="statutory_approvals[]" class="form-control" value="{{ implode(',', is_array($organisation->statutory_approvals) ? $organisation->statutory_approvals : []) }}">
                                             </div>
                                         </div>
                                     </div>
@@ -884,9 +867,9 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label">Status</label>
                                                     <select name="status" class="form-select">
-                                                        <option value="Active" {{ old('status', $organisation->status) == 'Active' ? 'selected' : '' }}>Active</option>
-                                                        <option value="Inactive" {{ old('status', $organisation->status) == 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                                                        <option value="Archived" {{ old('status', $organisation->status) == 'Archived' ? 'selected' : '' }}>Archived</option>
+                                                        <option value="Active" {{ old('status', $organisation->status_label) == 'Active' ? 'selected' : '' }}>Active</option>
+                                                        <option value="Inactive" {{ old('status', $organisation->status_label) == 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                                                        <option value="Archived" {{ old('status', $organisation->status_label) == 'Archived' ? 'selected' : '' }}>Archived</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -1408,7 +1391,7 @@
                                             <div class="col-md-3"><div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="claimed_by_authority" id="rb_claimed"><label class="form-check-label" for="rb_claimed">Claimed</label></div></div>
                                             <div class="col-md-3"><label class="form-label">Status</label><select name="status" class="form-select">
                                                     @foreach(['Active', 'Inactive', 'Archived'] as $opt)
-                                                        <option value="{{ $opt }}" {{ old('status', $organisation->status) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                                        <option value="{{ $opt }}" {{ old('status', $organisation->status_label) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                                     @endforeach
                                                 </select></div>
                                         </div>

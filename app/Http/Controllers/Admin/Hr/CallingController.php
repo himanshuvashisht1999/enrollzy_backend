@@ -29,8 +29,81 @@ class CallingController extends Controller
             'customer_id' => 'required',
             'staff_id' => 'required'
         ]);
+        if ($this->isAdminStaff($request->staff_id)) {
+            return response()->json(['status' => 0, 'message' => self::NO_ADMIN_LEADS]);
+        }
 
+        $this->reassignLead($request->customer_id, $request->staff_id, auth()->user());
+
+        return response()->json(['status' => 1, 'message' => 'Lead reassigned successfully!']);
+    }
+
+    private const NO_ADMIN_LEADS = 'Leads cannot be assigned to an admin. Choose a team lead or telecaller.';
+
+    /** list order on the calling dashboard: today's follow-ups always on top, then overdue, reassigned, new, later follow-ups */
+    private const FOLLOW_PRIORITY = ['due_today' => 1, 'overdue' => 2, 'reassigned' => 3, 'new' => 4, 'upcoming' => 5];
+
+    /** admins only monitor calling: no lead is ever assigned to someone with the admin role */
+    private function isAdminStaff($staffId): bool
+    {
+        $staff = \App\Models\Admin::find($staffId);
+        return $staff && $staff->isAdminRole();
+    }
+
+    /** Calling dashboard, Team Assigned Leads tab: an admin moves the ticked leads to one staff member. */
+    public function bulkReassign(Request $request)
+    {
         $user = auth()->user();
+        if (!$this->isTopLevelUser($user)) {
+            return response()->json(['status' => 0, 'message' => 'Only an admin can reassign leads in bulk.'], 403);
+        }
+        $request->validate([
+            'staff_id' => 'required|integer',
+            'customer_ids' => 'required|array|min:1|max:2000',
+            'customer_ids.*' => 'integer',
+        ]);
+        $staff = \App\Models\Admin::where('id', $request->staff_id)->where('status', 1)
+            ->when($user->organization_id, fn ($q) => $q->where('organization_id', $user->organization_id))->first();
+        if (!$staff) {
+            return response()->json(['status' => 0, 'message' => 'Choose an active staff member.']);
+        }
+        if ($staff->isAdminRole()) {
+            return response()->json(['status' => 0, 'message' => self::NO_ADMIN_LEADS]);
+        }
+
+        $moved = 0;
+        $same = 0;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $staff, $user, &$moved, &$same) {
+            foreach (array_unique(array_map('intval', $request->customer_ids)) as $customerId) {
+                $current = \App\Models\LeadAssignment::where('customer_id', $customerId)->orderBy('id', 'desc')->first();
+                if ($current && $current->staff_id == $staff->id) {
+                    // already theirs (e.g. picked from Completed Calls): send it back to their calling queue
+                    $current->forceFill(['assigned_by' => $user->id, 'is_reassigned' => 1, 'created_at' => now(), 'updated_at' => now()])->save();
+                    \App\Models\LeadActivityLog::create([
+                        'customer_id' => $customerId,
+                        'admin_id' => $user->id,
+                        'action_type' => 'requeued',
+                        'description' => 'Sent back to the calling queue of staff ID ' . $staff->id,
+                        'properties' => ['staff_id' => $staff->id],
+                    ]);
+                    $same++;
+                    continue;
+                }
+                $this->reassignLead($customerId, $staff->id, $user);
+                $moved++;
+            }
+        });
+
+        $parts = [];
+        if ($moved) $parts[] = $moved . ' ' . ($moved === 1 ? 'lead' : 'leads') . ' reassigned to ' . $staff->name;
+        if ($same) $parts[] = $same . ' already with ' . $staff->name . ' sent back to their calling queue';
+        return response()->json(['status' => 1, 'message' => ucfirst(implode('; ', $parts)) . '.']);
+    }
+
+    /** move a lead to a staff member (latest assignment updated, older duplicates removed, activity logged) */
+    private function reassignLead($customerId, $staffId, $user): void
+    {
+        $request = (object) ['customer_id' => $customerId, 'staff_id' => $staffId];
 
         $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $request->customer_id)
             ->orderBy('id', 'desc')
@@ -91,8 +164,6 @@ class CallingController extends Controller
         }
 
         \App\Models\Admin::where('unlocked_lead_id', $request->customer_id)->update(['unlocked_lead_id' => null]);
-
-        return response()->json(['status' => 1, 'message' => 'Lead reassigned successfully!']);
     }
 
     public function bulkAssign(Request $request)
@@ -101,6 +172,9 @@ class CallingController extends Controller
             'staff_id' => 'required',
             'queue_customer_ids' => 'required',
         ]);
+        if ($this->isAdminStaff($request->staff_id)) {
+            return redirect()->back()->with('error', self::NO_ADMIN_LEADS);
+        }
 
         $customerIds = json_decode($request->queue_customer_ids, true);
         if (!is_array($customerIds) || empty($customerIds)) {
@@ -128,7 +202,8 @@ class CallingController extends Controller
         $skippedCount = 0;
 
         foreach ($customerIds as $customerId) {
-            $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $customerId)->first();
+            // the lead's current (newest) assignment: one per lead (unique customer_id)
+            $existingAssignment = \App\Models\LeadAssignment::where('customer_id', $customerId)->orderBy('id', 'desc')->first();
             $hasPastCallingHistory = \App\Models\CallingHistory::where('user_id', $customerId)->exists();
 
             if ($existingAssignment) {
@@ -311,8 +386,13 @@ class CallingController extends Controller
         $is_viewing_all = false;
         $target_staff_ids = [];
 
-        if ($request->filled('staff_id')) {
-            $reqStaffId = $request->staff_id;
+        // an admin has no leads of their own: their dashboard counts the whole team unless they pick one person
+        $reqStaffId = $request->input('staff_id');
+        if ($isTopLevel && (!$reqStaffId || $reqStaffId == $staff_id)) {
+            $reqStaffId = 'all';
+        }
+
+        if ($reqStaffId) {
             if ($reqStaffId == 'all') {
                 $is_viewing_all = true;
                 $query_staff_ids = array_merge([$staff_id], $staffs->pluck('id')->toArray());
@@ -342,7 +422,16 @@ class CallingController extends Controller
 
         $startDate = $request->input('start_date', $defaultStartDate);
         $endDate = $request->input('end_date', $defaultEndDate);
-        
+        // the range may run up to three months (the date pickers enforce the same)
+        try {
+            $rangeEnd = \Carbon\Carbon::parse($startDate)->addMonthsNoOverflow(3)->subDay()->format('Y-m-d');
+            if ($endDate > $rangeEnd) $endDate = $rangeEnd;
+            if ($endDate < $startDate) $endDate = $startDate;
+        } catch (\Throwable $e) {
+            $startDate = $defaultStartDate;
+            $endDate = $defaultEndDate;
+        }
+
         $currentMonth = \Carbon\Carbon::parse($startDate)->format('F');
         $currentYear = \Carbon\Carbon::parse($startDate)->format('Y');
 
@@ -384,6 +473,11 @@ class CallingController extends Controller
         }
         if ($request->filled('session_id')) {
             $customerFilterQuery->whereJsonContains('session_ids', (string)$request->session_id);
+            $hasCustomerFilter = true;
+        }
+        // "Important only": the leads marked important on the call form (App\Support\Calling\LeadFlags)
+        if ($request->boolean('important')) {
+            $customerFilterQuery->whereIn('id', \Illuminate\Support\Facades\DB::table('important_leads')->select('customer_id'));
             $hasCustomerFilter = true;
         }
 
@@ -434,7 +528,8 @@ class CallingController extends Controller
 
         $latestHistoriesIds = $latestHistoriesSub->pluck('id')->toArray();
 
-        $latestHistoriesQuery = \App\Models\CallingHistory::with(['customer', 'calling_status', 'staff'])
+        // (an admin only needs the counts: no queue rows, so no student records)
+        $latestHistoriesQuery = \App\Models\CallingHistory::with($isTopLevel ? ['calling_status', 'staff'] : ['customer', 'calling_status', 'staff'])
             ->whereIn('id', $latestHistoriesIds);
 
         if ($request->filled('call_status_id')) {
@@ -616,7 +711,19 @@ class CallingController extends Controller
         }
         // --- END TEAM METRICS ---
 
-        // Build the Queue List
+        // a follow-up date against the range, as the queue counts them: before it overdue, in it due, after it upcoming
+        $followType = function ($date) use ($startDate, $endDate) {
+            if (empty($date)) return null;
+            $d = substr((string) $date, 0, 10);
+            return $d < $startDate ? 'overdue' : ($d <= $endDate ? 'due_today' : 'upcoming');
+        };
+
+        // admins have no calling queue (their boxes above count the whole team): build no queue rows for them
+        if ($isTopLevel) {
+            $overdueFollowUps = collect();
+            $followUpsDueToday = collect();
+        }
+
         // Build the Queue List
         $queue = collect();
         
@@ -648,7 +755,7 @@ class CallingController extends Controller
             }
         }
         
-        $unattemptedIds = array_diff($assignedToday, $workedOnCustomerIds);
+        $unattemptedIds = $isTopLevel ? [] : array_diff($assignedToday, $workedOnCustomerIds);
         if ($request->filled('call_status_id') && !in_array($request->call_status_id, ['new', 'unattempted', 'reassigned'])) {
             $unattemptedIds = [];
         }
@@ -693,12 +800,16 @@ class CallingController extends Controller
                         }
                     }
 
+                    // a reassigned lead keeps its follow-up: due in the range or overdue, it sits with the follow-ups
+                    $follow = $latestPastHistory ? $followType($latestPastHistory->date_required) : null;
+                    $keepsFollowUp = in_array($follow, ['due_today', 'overdue'], true);
                     $queue->push([
-                        'type' => $isReassigned ? 'reassigned' : 'new',
+                        'type' => $keepsFollowUp ? $follow : ($isReassigned ? 'reassigned' : 'new'),
+                        'was_reassigned' => $keepsFollowUp && $isReassigned,
                         'customer' => $unattemptedCustomers[$cid],
                         'history' => $latestPastHistory,
                         'has_past_history' => $hasPastHistory,
-                        'sort_date' => $asgn ? $asgn->updated_at : $startDate,
+                        'sort_date' => $keepsFollowUp ? $latestPastHistory->date_required : ($asgn ? $asgn->updated_at : $startDate),
                         'assignment_id' => $asgn ? $asgn->id : $cid,
                         'called_today' => false,
                         'last_called_at' => null,
@@ -707,21 +818,16 @@ class CallingController extends Controller
             }
         }
         
-        // Sort queue: Priority (Overdue -> Due Today -> Reassigned Leads -> New Leads)
+        // Sort queue: Priority (Due Today -> Overdue -> Reassigned Leads -> New Leads); today's follow-ups always on top
         // Follow-up order requirement:
-        // 1. Overdue (uncontacted today)
-        // 2. Overdue (contacted today)
-        // 3. Due Today (uncontacted today - pending initial call today)
-        // 4. Due Today (contacted today & snoozed for today, e.g. "call back in 30 mins" - moved to bottom of follow-up list, sorted ascending so newly called goes to the very bottom)
+        // 1. Due Today (uncontacted today - pending initial call today)
+        // 2. Due Today (contacted today & snoozed for today, e.g. "call back in 30 mins" - moved to bottom of its group, sorted ascending so newly called goes to the very bottom)
+        // 3. Overdue (uncontacted today)
+        // 4. Overdue (contacted today)
         // 5. Reassigned Leads (unattempted)
         // 6. New Leads (unattempted)
         $queue = $queue->sort(function($a, $b) {
-            $typePriority = [
-                'overdue' => 1,
-                'due_today' => 2,
-                'reassigned' => 3,
-                'new' => 4,
-            ];
+            $typePriority = self::FOLLOW_PRIORITY;
             $pA = $typePriority[$a['type']] ?? 5;
             $pB = $typePriority[$b['type']] ?? 5;
 
@@ -778,7 +884,7 @@ class CallingController extends Controller
             ->groupBy('customer_id')
             ->pluck('id')->toArray();
 
-        $delegatedQuery = \App\Models\LeadAssignment::with(['customer', 'staff', 'assigner'])
+        $delegatedQuery = \App\Models\LeadAssignment::with(['staff', 'assigner'])   // the student is loaded after the list is cut (below)
             ->whereIn('id', $latestAssignmentsIds)
             ->whereDate('updated_at', '>=', $startDate)
             ->whereDate('updated_at', '<=', $endDate)
@@ -786,10 +892,9 @@ class CallingController extends Controller
             ->orderBy('id', 'desc');
 
         if ($isTopLevel) {
+            // admins have no calling queue of their own, so leads sitting with them show here too (to reassign)
             if ($is_filtering_subordinate) {
                 $delegatedQuery->whereIn('staff_id', $target_staff_ids);
-            } else {
-                $delegatedQuery->where('staff_id', '!=', $staff_id);
             }
         } else {
             $mySubIds = $this->getSubordinateStaffIds($staff_id, $organization_id);
@@ -840,17 +945,21 @@ class CallingController extends Controller
             } else {
                 $latestHistory = $customerHistories->sortByDesc('id')->first();
                 $assignment->latest_history = $latestHistory;
-                if ($latestHistory && $latestHistory->date_required) {
-                    if ($latestHistory->date_required < $startDate) {
-                        $assignment->lead_type = 'overdue';
-                    } else {
-                        $assignment->lead_type = 'due_today';
-                    }
-                } else {
-                    $assignment->lead_type = 'reassigned';
-                }
+                // its follow-up: overdue, due (in the range), or upcoming (later: shown with its date, not as "Due Today")
+                $assignment->lead_type = ($latestHistory ? $followType($latestHistory->date_required) : null) ?? 'reassigned';
             }
         }
+
+        // today's follow-ups on top, then overdue, reassigned, new, later follow-ups; follow-ups by date, the rest newest first
+        $delegatedLeads = $delegatedLeads->sort(function ($a, $b) {
+            $p = (self::FOLLOW_PRIORITY[$a->lead_type] ?? 9) <=> (self::FOLLOW_PRIORITY[$b->lead_type] ?? 9);
+            if ($p) return $p;
+            if (in_array($a->lead_type, ['due_today', 'overdue', 'upcoming'], true)) {
+                $d = substr((string) $a->latest_history->date_required, 0, 10) <=> substr((string) $b->latest_history->date_required, 0, 10);
+                if ($d) return $d;
+            }
+            return [strtotime((string) $b->updated_at), $b->id] <=> [strtotime((string) $a->updated_at), $a->id];
+        })->values();
 
         if ($request->filled('call_status_id')) {
             $statusFilter = $request->call_status_id;
@@ -872,7 +981,7 @@ class CallingController extends Controller
         }
 
         // 5. Worked Leads History Queue
-        $historyQuery = \App\Models\CallingHistory::with(['customer', 'calling_status', 'staff'])
+        $historyQuery = \App\Models\CallingHistory::with(['calling_status', 'staff'])   // the student is loaded after the list is cut (below)
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate);
             
@@ -954,6 +1063,15 @@ class CallingController extends Controller
 
         $historyAssignmentsLookup = $latestAssignmentsLookup;
 
+        // long date ranges hold thousands of rows: the tabs count them all, the page shows the first 500 of each list and
+        // "See more" (?part=queue|team|done&offset=N, answered below) adds the next 500, so the page stays within memory
+        $listTotals = ['queue' => $queue->count(), 'team' => $delegatedLeads->count(), 'done' => $workedHistory->count()];
+        $listLimit = 500;
+        $fullLists = $request->filled('part') ? ['queue' => $queue, 'team' => $delegatedLeads, 'done' => $workedHistory] : null;
+        $queue = $queue->take($listLimit)->values();
+        $delegatedLeads = $delegatedLeads->take($listLimit)->values()->load('customer');
+        $workedHistory = $workedHistory->take($listLimit)->values()->load('customer');
+
         $statuses = \App\Models\CallingStatus::when($organization_id, function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);
             })->where('status', 1)->get();
@@ -966,8 +1084,10 @@ class CallingController extends Controller
         $templates = \App\Models\WhatsappTemplate::when($organization_id, function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);
             })->get();
-        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
-        $courses = \App\Models\Course::where('status', 1)->get();
+        // only the columns the call form's options use (all columns of every course and university ran the page out of memory)
+        $universities = \App\Models\Organisation::with('campuses:id,organisation_id,campus_type_new_id,sort_order,campus_name')
+            ->where('status', 1)->get(['id', 'name', 'organisation_type_id', 'campus_type_new_id']);
+        $courses = \App\Models\Course::where('status', 1)->get(['id', 'name']);
 
         $program_levels = \App\Models\ProgramLevel::where('status', 1)->get();
         $program_types = \App\Models\ProgramType::where('status', 1)->get();
@@ -1001,6 +1121,25 @@ class CallingController extends Controller
         }
 
         $unlocked_lead_id = $user ? $user->unlocked_lead_id : null;
+
+        // "See more": the next batch of one list's rows
+        if ($fullLists) {
+            $part = $request->input('part');
+            abort_unless(isset($fullLists[$part]), 404);
+            $offset = max(0, (int) $request->input('offset'));
+            $rows = $fullLists[$part]->slice($offset, $listLimit)->values();
+            if ($part !== 'queue') {
+                $rows->load('customer');
+            }
+            return response()->json([
+                'html' => view('admin.students_crm.calling._rows_' . $part, compact('rows', 'offset', 'isTopLevel', 'assignmentsLookup', 'historyAssignmentsLookup', 'unlocked_lead_id'))->render(),
+                'shown' => $offset + $rows->count(),
+                'total' => $listTotals[$part],
+            ]);
+        }
+
+        // who leads can be (re)assigned to: never an admin (admins only monitor and have no calling queue)
+        $assignableStaffs = $staffs->reject(fn ($s) => $s->isAdminRole())->values();
 
         $dbCountries = \App\Models\Customer::when($organization_id, function($q) use ($organization_id) {
                 $q->where('organization_id', $organization_id);
@@ -1049,7 +1188,7 @@ class CallingController extends Controller
             'workedHistory',
             'historyAssignmentsLookup',
             'query_staff_id',
-            'isTopLevel',
+            'isTopLevel', 'listTotals', 'assignableStaffs',
             'statuses', 'actions', 'categories', 'templates', 'universities', 'courses', 'staffs', 'program_levels', 'program_types', 'sessions', 'school_types', 'course_program_types', 'lead_qualities',
             'dbCountries', 'dbStates', 'dbCities'
         ));
@@ -1430,8 +1569,10 @@ class CallingController extends Controller
         $templates = WhatsappTemplate::where('organization_id', $organization_id)->get();
         
         $user_with_out_status = request('user_with_out_status', 0);
-        $universities = \App\Models\Organisation::with('campuses')->where('status', 1)->get();
-        $courses = Course::where('status', 1)->get();
+        // only the columns the call form's options use (all columns of every course and university ran the page out of memory)
+        $universities = \App\Models\Organisation::with('campuses:id,organisation_id,campus_type_new_id,sort_order,campus_name')
+            ->where('status', 1)->get(['id', 'name', 'organisation_type_id', 'campus_type_new_id']);
+        $courses = Course::where('status', 1)->get(['id', 'name']);
         
         $staffs = \App\Models\Admin::where('status', 1)->where('organization_id', $organization_id)->get();
         
@@ -1547,8 +1688,20 @@ class CallingController extends Controller
 
                     return $select . $infoIcon . $viewIcon;
                 })
-                ->addColumn('staff_info', function ($row) {
-                    return $row->staff->name ?? 'N/A';
+                // who made the call, and who has the lead now when that is someone else (a lead has one owner; its
+                // calls by earlier owners stay in the history)
+                ->addColumn('staff_info', function ($row) use (&$owners) {
+                    $owners ??= [];
+                    if (!array_key_exists($row->user_id, $owners)) {
+                        $owners[$row->user_id] = \App\Models\LeadAssignment::with('staff')->where('customer_id', $row->user_id)->first();
+                    }
+                    $owner = $owners[$row->user_id];
+                    $html = e($row->staff->name ?? 'N/A');
+                    if ($owner && $owner->staff_id != $row->updated_by) {
+                        $html .= "<div><span class='badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold mt-1' style='font-size:0.7rem' title='The lead is with this person now'>"
+                            . "<i class='fas fa-share me-1'></i>Now with " . ($owner->staff_id == auth()->id() ? 'you' : e($owner->staff->name ?? 'another staff member')) . '</span></div>';
+                    }
+                    return $html;
                 })
                 ->addColumn('call_date', function ($row) {
                     return $row->created_at->format('Y-m-d H:i');
@@ -1805,7 +1958,10 @@ class CallingController extends Controller
 
             \App\Models\Admin::where('unlocked_lead_id', $request->customer_id)->update(['unlocked_lead_id' => null]);
 
-            return response()->json(['status' => 1, 'message' => 'Calling record saved successfully']);
+            // escalate to the team lead / mark important (call form), and close an escalation the team lead just called
+            $flags = app(\App\Support\Calling\LeadFlags::class)->afterCall($request, (int) $request->customer_id, auth()->user());
+
+            return response()->json(['status' => 1, 'message' => 'Calling record saved successfully' . ($flags ? ' (' . $flags . ')' : '')]);
         } catch (\Exception $e) {
             return response()->json(['status' => 0, 'message' => $e->getMessage()]);
         }

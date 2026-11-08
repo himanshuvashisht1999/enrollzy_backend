@@ -15,7 +15,8 @@ class CustomField extends Model
     protected $fillable = ['exam_id', 'key', 'label', 'type', 'options', 'scope', 'sort_order'];
     protected $casts = ['options' => 'array'];
 
-    public const TYPES = ['text' => 'Text', 'rich_text' => 'Rich text', 'number' => 'Number', 'date' => 'Date',
+    /** Rich text comes first: a new tab defaults to the text editor. */
+    public const TYPES = ['rich_text' => 'Text editor (rich text)', 'text' => 'Short text', 'number' => 'Number', 'date' => 'Date',
         'dropdown' => 'Dropdown', 'multi_select' => 'Multi-select', 'file' => 'File', 'url' => 'URL', 'group' => 'Repeatable group'];
 
     /** Words that belong to structured fields, so they can never be a custom field. */

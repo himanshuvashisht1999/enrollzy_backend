@@ -21,9 +21,13 @@ class DashboardController extends Controller
     /**
      * Display the admin dashboard.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
+        // the calling team (admins, team leads, telecallers) get their role's command-center home; ?view=classic keeps this one
+        if ($user instanceof Admin && $request->query('view') !== 'classic' && app(\App\Support\Calling\CommandCenter::class)->role($user)) {
+            return app(\App\Http\Controllers\Admin\Calling\CommandCenterController::class)->home($request);
+        }
         $orgId = $user->organization_id;
 
         $stats = [

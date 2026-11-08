@@ -24,7 +24,7 @@ class GeminiCourseBotService
     }
 
     /**
-     * Fetch exhaustive course profile and details via Gemini AI Bot
+     * Fetch exhaustive course profile and details via Gemini
      */
     public function fetchCourseData(string $courseName): array
     {
@@ -250,7 +250,7 @@ PROMPT;
             }
         }
 
-        throw new \Exception('Failed to fetch course data from AI Bot: ' . ($lastError ?? 'No valid response received from AI models.'));
+        throw new \Exception('Failed to fetch course data from Gemini: ' . ($lastError ?? 'No valid response received from AI models.'));
     }
 
     /**

@@ -66,12 +66,12 @@
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h4 class="mb-1">AI Targeted Incremental Add</h4>
+                <h4 class="mb-1">Missing Info (Gemini / Claude)</h4>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('admin.organisations.index') }}">Organisations</a></li>
-                        <li class="breadcrumb-item active">Add via AI</li>
+                        <li class="breadcrumb-item active">Missing Info</li>
                     </ol>
                 </nav>
             </div>
@@ -90,7 +90,7 @@
     <div id="aiStepInput" class="card shadow-sm mb-4 border-0">
         <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0 fw-bold">
-                <i class="fas fa-layer-group text-success me-2"></i>Add Campuses, Departments, or Courses via AI
+                <i class="fas fa-layer-group text-success me-2"></i>Add Missing Campuses, Departments or Courses
             </h5>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-7">
                 <i class="fas fa-check-circle me-1"></i>Targeted Incremental Mode
@@ -272,9 +272,14 @@
             </div>
 
             <!-- Action Button -->
-            <div class="text-end pt-2 border-top">
-                <button type="button" id="btnRunAiExtraction" class="btn btn-success px-4 py-2 fw-bold shadow-sm">
-                    <i class="fas fa-bolt me-1"></i> Fetch & Create Details
+            {{-- Missing Info by Gemini or Missing Info by Claude: the same command runs on the chosen AI --}}
+            <div class="pt-2 border-top d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                <span class="small text-muted me-1">Fetch & create with:</span>
+                <button type="button" id="btnRunAiExtraction" class="btn btn-success px-4 py-2 fw-bold shadow-sm" title="Missing Info by Gemini">
+                    <i class="fas fa-robot me-1"></i> Missing Info by Gemini
+                </button>
+                <button type="button" id="btnRunClaudeExtraction" class="btn px-4 py-2 fw-bold shadow-sm text-white" style="background:#c96442;border-color:#c96442" title="Missing Info by Claude (uses your Claude API credit)">
+                    <i class="fas fa-asterisk me-1"></i> Missing Info by Claude
                 </button>
             </div>
         </div>
@@ -301,6 +306,7 @@
                 <div>
                     <h5 class="card-title mb-0" id="previewOrgHeaderTitle">Targeted Review Workspace</h5>
                     <small class="text-muted" id="previewOrgNameBadge"></small>
+                    <div class="small mt-1" id="aiEngineUsage"></div>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="button" id="btnRestartExtraction" class="btn btn-outline-secondary btn-sm">
@@ -1029,6 +1035,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const aiStepLoading = document.getElementById('aiStepLoading');
     const aiStepPreview = document.getElementById('aiStepPreview');
 
+    // Missing Info by Claude: the same extraction, with the engine set to Claude for this one click
+    window.aiEngine = 'gemini';
+    document.getElementById('btnRunClaudeExtraction')?.addEventListener('click', function () {
+        window.aiEngine = 'claude';
+        try { btnRunAiExtraction.click(); } finally { window.aiEngine = 'gemini'; }
+        const el = document.getElementById('aiLoadingStatusText');
+        if (el && !document.getElementById('aiStepLoading').classList.contains('d-none')) el.innerText = 'Claude is researching (this can take 1 to 3 minutes). ' + el.innerText;
+    });
+    window.showAiEngineUsage = function (result) {
+        const box = document.getElementById('aiEngineUsage');
+        if (!box) return;
+        const u = result && result.usage;
+        box.innerHTML = (result && result.engine === 'claude' && u) ? '<span class="badge text-white" style="background:#c96442">Claude</span> <span class="text-muted">' + (u.model || '') + ' · ' + Number(u.input_tokens || 0).toLocaleString('en-IN') + ' tokens in, ' + Number(u.output_tokens || 0).toLocaleString('en-IN') + ' out' + (u.web_searches ? ' · ' + u.web_searches + ' web searches' : '') + '</span>' : (result && result.engine === 'gemini' ? '<span class="badge bg-success">Gemini</span>' : '');
+    };
+
     btnRunAiExtraction.addEventListener('click', function () {
         const mode = getSelectedEntityMode();
         const url = document.getElementById('aiInputUrl').value.trim();
@@ -1135,7 +1156,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 target_department_id: targetDeptId || null,
                 target_names: targetNames,
                 reference_urls: referenceUrls,
-                search_google: searchGoogle
+                search_google: searchGoogle,
+                engine: window.aiEngine || 'gemini'
             })
         })
         .then(async response => {
@@ -1155,6 +1177,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(result => {
             if (result.success && result.data) {
+                if (window.showAiEngineUsage) window.showAiEngineUsage(result);
                 currentExtractedData = result.data;
                 currentExtractionMode = result.mode || mode;
                 currentTargetOrgId = result.target_organisation_id || targetOrgId;
@@ -1279,6 +1302,45 @@ document.addEventListener('DOMContentLoaded', function () {
     // ----------------------------------------------------
     // Card Rendering Functions (Campus, Department, Course)
     // ----------------------------------------------------
+    // University / College campus: the fields the master command asks for beyond the basic card (about, facilities, routes,
+    // counts, food, website and social pages). Same shape as on the Missing Info page.
+    function campusExtraFieldsHtml(c) {
+        const e = v => String(v ?? '').replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
+        const list = v => Array.isArray(v) ? v.join(', ') : (v || '');
+        const num = v => (v === null || v === undefined || v === 0 || v === '0') ? '' : e(v);
+        const url = (cls, label, key, ph) => `<div class="col-md-4"><label class="form-label fw-bold small">${label}</label><input type="url" class="form-control ${cls}" value="${e(c[key])}" placeholder="${ph}"></div>`;
+        return `
+            <div class="col-12"><label class="form-label fw-bold small">About Campus</label><textarea class="form-control c-about" rows="4">${e(c.about_institute)}</textarea></div>
+            <div class="col-md-6"><label class="form-label fw-bold small">Facilities (comma separated)</label><input type="text" class="form-control c-facilities" value="${e(list(c.facilities))}" placeholder="Library, Wifi, Cafeteria, Auditorium..."></div>
+            <div class="col-md-6"><label class="form-label fw-bold small">Bus Routes (comma separated)</label><input type="text" class="form-control c-bus-routes" value="${e(list(c.bus_routes))}" placeholder="Route 1 - City Centre, Route 2 - ..."></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Research Centres</label><input type="number" class="form-control c-research" value="${num(c.research_centers_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Library Books</label><input type="number" class="form-control c-lib-books" value="${num(c.library_books_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Bus Routes Count</label><input type="number" class="form-control c-bus-routes-count" value="${num(c.bus_routes_count)}"></div>
+            <div class="col-md-3"><label class="form-label fw-bold small">Security Staff</label><input type="number" class="form-control c-security" value="${num(c.security_staff_count)}"></div>
+            <div class="col-12"><label class="form-label fw-bold small">Food Facility</label><input type="text" class="form-control c-food" value="${e(c.food_facility)}" placeholder="Mess, canteen, food court..."></div>
+            ${url('c-website', 'Campus Website', 'campus_website', 'https://...')}
+            ${url('c-facebook', 'Facebook', 'facebook_url', 'https://facebook.com/...')}
+            ${url('c-instagram', 'Instagram', 'instagram_url', 'https://instagram.com/...')}
+            ${url('c-linkedin', 'LinkedIn', 'linkedin_url', 'https://linkedin.com/...')}
+            ${url('c-youtube', 'YouTube', 'youtube_url', 'https://youtube.com/@...')}
+            ${url('c-twitter', 'X / Twitter', 'twitter_url', 'https://x.com/...')}`;
+    }
+
+    function campusExtraFieldsData(el) {
+        const v = cls => el.querySelector(cls)?.value.trim() || null;
+        const list = cls => (el.querySelector(cls)?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+        const on = cls => el.querySelector(cls)?.checked || false;
+        return {
+            about_institute: v('.c-about'), facilities: list('.c-facilities'), bus_routes: list('.c-bus-routes'),
+            campus_area_unit: v('.c-area-unit') || 'Acres',
+            research_centers_count: v('.c-research'), library_books_count: v('.c-lib-books'),
+            bus_routes_count: v('.c-bus-routes-count'), security_staff_count: v('.c-security'),
+            food_facility: v('.c-food'), parking_available: on('.c-parking'), disaster_management_plan: on('.c-disaster'),
+            campus_website: v('.c-website'), facebook_url: v('.c-facebook'), instagram_url: v('.c-instagram'),
+            linkedin_url: v('.c-linkedin'), youtube_url: v('.c-youtube'), twitter_url: v('.c-twitter'),
+        };
+    }
+
     function appendCampusCard(c = {}, idx = Date.now()) {
         const isSchool = isCurrentEntitySchool();
         const div = document.createElement('div');
@@ -1309,8 +1371,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="number" class="form-control c-est" value="${c.established_year || ''}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label fw-bold small">Area (Acres)</label>
-                        <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                        <label class="form-label fw-bold small">Campus Area</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control c-acres" value="${c.campus_area_acres || ''}">
+                            <select class="form-select c-area-unit" style="max-width: 110px">
+                                <option value="Acres" ${(c.campus_area_unit || 'Acres') === 'Acres' ? 'selected' : ''}>Acres</option>
+                                <option value="Square Yard" ${c.campus_area_unit === 'Square Yard' ? 'selected' : ''}>Sq Yard</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="col-md-3">
@@ -1411,21 +1479,46 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <input class="form-check-input c-cctv" type="checkbox" ${c.cctv_coverage ? 'checked' : ''}>
                                 <label class="form-check-label small fw-bold">CCTV Coverage</label>
                             </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input c-fire" type="checkbox" ${c.fire_safety_certified ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Fire Safety Certified</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input c-digital-lib" type="checkbox" ${c.digital_library_access ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Digital Library</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input c-medical" type="checkbox" ${c.medical_facility_available ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Medical Facility</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input c-parking" type="checkbox" ${c.parking_available ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Parking Available</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input c-disaster" type="checkbox" ${c.disaster_management_plan ? 'checked' : ''}>
+                                <label class="form-check-label small fw-bold">Disaster Management Plan</label>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Bus Fleet Size</label>
+                        <input type="number" class="form-control c-bus-fleet" value="${c.bus_fleet_size || ''}" placeholder="e.g. 25">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label fw-bold small">Sports Facilities</label>
                         <input type="text" class="form-control c-sports" value="${toCsv(c.sports_facilities)}" placeholder="Cricket, Football, Badminton...">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold small">Campus Email</label>
                         <input type="email" class="form-control c-email" value="${c.campus_email || ''}">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold small">Campus Contact Numbers</label>
                         <input type="text" class="form-control c-phones" value="${toCsv(c.campus_contact_numbers)}">
                     </div>
+                    ${campusExtraFieldsHtml(c)}
                 </div>
             </div>
         `;
@@ -1511,6 +1604,65 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="col-md-3">
                         <label class="form-label fw-bold small">Labs Count</label>
                         <input type="number" class="form-control d-labs" value="${d.department_labs_count || ''}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">${isSchool ? 'Classes / Grades Covered' : 'Education Levels'}</label>
+                        <input type="text" class="form-control d-levels" value="${toCsv(d.education_levels_supported)}" placeholder="UG, PG, PhD">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Publications</label>
+                        <input type="number" class="form-control d-pubs" value="${d.research_publications_count || ''}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Funded Projects</label>
+                        <input type="number" class="form-control d-projects" value="${d.funded_projects_count || ''}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Patents Filed</label>
+                        <input type="number" class="form-control d-patents" value="${d.patents_filed_count || ''}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">HOD Appointment</label>
+                        <select class="form-select d-hod-appt">
+                            <option value="">Not stated</option>
+                            <option value="Permanent" ${d.hod_appointment_type === 'Permanent' ? 'selected' : ''}>Permanent</option>
+                            <option value="Acting" ${d.hod_appointment_type === 'Acting' ? 'selected' : ''}>Acting / In-charge</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Department Email</label>
+                        <input type="email" class="form-control d-email" value="${d.department_email || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Office Phone</label>
+                        <input type="text" class="form-control d-office" value="${d.department_office_contact || ''}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Department Website</label>
+                        <input type="url" class="form-control d-website" value="${d.department_website_url || ''}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold small">Centres</label>
+                        <input type="number" class="form-control d-centres" value="${d.research_centers_under_department || ''}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold small">Ind. Projects</label>
+                        <input type="number" class="form-control d-ind-projects" value="${d.industry_projects_count || ''}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold small">Classrooms</label>
+                        <input type="number" class="form-control d-classrooms" value="${d.classrooms_count || ''}">
+                    </div>
+                    <div class="col-12 py-2 px-3 border rounded bg-light">
+                        <div class="d-flex flex-wrap gap-4">
+                            <div class="form-check form-switch"><input class="form-check-input d-phd" type="checkbox" ${d.phd_supervision_available ? 'checked' : ''}><label class="form-check-label small fw-bold">PhD Supervision</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input d-research-prog" type="checkbox" ${d.research_programs_managed ? 'checked' : ''}><label class="form-check-label small fw-bold">Research Programmes</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input d-industry" type="checkbox" ${d.industry_collaboration_supported ? 'checked' : ''}><label class="form-check-label small fw-bold">Industry Collaboration</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input d-interdisc" type="checkbox" ${d.is_interdisciplinary ? 'checked' : ''}><label class="form-check-label small fw-bold">Interdisciplinary</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input d-spec-labs" type="checkbox" ${d.specialized_labs_available ? 'checked' : ''}><label class="form-check-label small fw-bold">Specialized Labs</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input d-library" type="checkbox" ${d.department_library_section ? 'checked' : ''}><label class="form-check-label small fw-bold">Department Library</label></div>
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -1883,9 +2035,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             hostel_available: el.querySelector('.c-hostel-avail')?.checked || false,
                             transport_available: el.querySelector('.c-transport')?.checked || false,
                             cctv_coverage: el.querySelector('.c-cctv')?.checked || false,
+                            fire_safety_certified: el.querySelector('.c-fire')?.checked || false,
                             sports_facilities: el.querySelector('.c-sports')?.value.split(',').map(s => s.trim()).filter(Boolean),
                             campus_email: el.querySelector('.c-email')?.value.trim(),
-                            campus_contact_numbers: el.querySelector('.c-phones')?.value.split(',').map(s => s.trim()).filter(Boolean)
+                            campus_contact_numbers: el.querySelector('.c-phones')?.value.split(',').map(s => s.trim()).filter(Boolean),
+                            digital_library_access: el.querySelector('.c-digital-lib')?.checked || false,
+                            medical_facility_available: el.querySelector('.c-medical')?.checked || false,
+                            bus_fleet_size: el.querySelector('.c-bus-fleet')?.value.trim() || 0,
+                            // about, facilities, routes, counts, food, area unit, parking, disaster plan, website and social pages
+                            ...campusExtraFieldsData(el)
                         });
                     }
                 });
@@ -1905,6 +2063,23 @@ document.addEventListener('DOMContentLoaded', function () {
                             discipline_area: el.querySelector('.d-discipline-area')?.value.trim(),
                             specializations_supported: el.querySelector('.d-specs')?.value.split(',').map(s => s.trim()).filter(Boolean),
                             department_labs_count: el.querySelector('.d-labs')?.value.trim(),
+                            education_levels_supported: el.querySelector('.d-levels')?.value.split(',').map(s => s.trim()).filter(Boolean),
+                            research_publications_count: el.querySelector('.d-pubs')?.value.trim(),
+                            funded_projects_count: el.querySelector('.d-projects')?.value.trim(),
+                            patents_filed_count: el.querySelector('.d-patents')?.value.trim(),
+                            hod_appointment_type: el.querySelector('.d-hod-appt')?.value || null,
+                            department_email: el.querySelector('.d-email')?.value.trim(),
+                            department_office_contact: el.querySelector('.d-office')?.value.trim(),
+                            department_website_url: el.querySelector('.d-website')?.value.trim(),
+                            research_centers_under_department: el.querySelector('.d-centres')?.value.trim(),
+                            industry_projects_count: el.querySelector('.d-ind-projects')?.value.trim(),
+                            classrooms_count: el.querySelector('.d-classrooms')?.value.trim(),
+                            phd_supervision_available: el.querySelector('.d-phd')?.checked || false,
+                            research_programs_managed: el.querySelector('.d-research-prog')?.checked || false,
+                            industry_collaboration_supported: el.querySelector('.d-industry')?.checked || false,
+                            is_interdisciplinary: el.querySelector('.d-interdisc')?.checked || false,
+                            specialized_labs_available: el.querySelector('.d-spec-labs')?.checked || false,
+                            department_library_section: el.querySelector('.d-library')?.checked || false,
                             about_department: el.querySelector('.d-about')?.value.trim()
                         });
                     }

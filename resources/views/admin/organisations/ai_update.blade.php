@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Update Organisation by Bot')
+@section('title', 'Update Organisation by Gemini / Claude')
 
 @section('content')
 <div class="container-fluid">
@@ -9,7 +9,7 @@
         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h4 class="mb-1 text-dark fw-bold">
-                    <i class="fas fa-robot text-primary me-2"></i>Update Organisation by Bot
+                    <i class="fas fa-robot text-primary me-2"></i>Update Organisation by Gemini / Claude
                 </h4>
                 <p class="text-muted small mb-0">
                     Fetch live institutional updates strictly for fields configured in <strong>Organisation Fields</strong>, review side-by-side (Old vs New), and approve updates.
@@ -63,8 +63,12 @@
                 </div>
 
                 <div class="col-lg-2 col-md-12">
-                    <button type="button" id="btnFetchBotUpdates" class="btn btn-primary w-100 py-2 shadow-sm" disabled>
-                        <i class="fas fa-bolt me-1"></i> <span id="btnFetchText">Fetch Updates</span>
+                    {{-- Update by Gemini or by Claude: the same command runs on the chosen AI --}}
+                    <button type="button" id="btnFetchBotUpdates" data-engine="gemini" class="btn btn-primary w-100 py-2 shadow-sm btn-fetch-updates" disabled>
+                        <i class="fas fa-robot me-1"></i> <span id="btnFetchText">Update by Gemini</span>
+                    </button>
+                    <button type="button" id="btnFetchClaudeUpdates" data-engine="claude" class="btn w-100 py-2 shadow-sm text-white mt-2 btn-fetch-updates" style="background:#c96442;border-color:#c96442" title="Uses your Claude API credit" disabled>
+                        <i class="fas fa-asterisk me-1"></i> Update by Claude
                     </button>
                 </div>
             </div>
@@ -95,7 +99,7 @@
             <div class="spinner-border text-primary mb-3" style="width: 3.5rem; height: 3.5rem;" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <h4 class="fw-bold mb-2 text-dark">Bot is Researching & Comparing Data...</h4>
+            <h4 class="fw-bold mb-2 text-dark">Gemini is Researching & Comparing Data...</h4>
             <p class="text-muted mb-0 mx-auto" style="max-width: 650px;" id="botLoadingStatusText">
                 Fetching latest institutional website pages, querying Google search grounding, and calculating Old vs New diffs strictly for your enabled fields. Please wait...
             </p>
@@ -109,10 +113,10 @@
             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h5 class="card-title mb-0 fw-bold text-dark">
-                        <span class="badge bg-success rounded-pill me-2">2</span> Review & Approve Bot Updates
+                        <span class="badge bg-success rounded-pill me-2">2</span> Review & Approve AI Updates
                     </h5>
                     <small class="text-muted">
-                        Comparing current database values with latest bot findings. Review items below before applying.
+                        Comparing current database values with latest AI findings. Review items below before applying.
                     </small>
                 </div>
                 <div class="d-flex align-items-center flex-wrap gap-2">
@@ -184,7 +188,7 @@
                                         <th style="width: 50px;" class="text-center">Apply</th>
                                         <th style="width: 25%;">Field</th>
                                         <th style="width: 35%;">Current DB Value (OLD)</th>
-                                        <th style="width: 40%;">Bot Fetched Value (NEW)</th>
+                                        <th style="width: 40%;">AI Fetched Value (NEW)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyOrgDiff">
@@ -312,13 +316,13 @@ $(document).ready(function () {
     $('#selectOrganisation').on('change', function () {
         const orgId = $(this).val();
         if (!orgId) {
-            $('#btnFetchBotUpdates').prop('disabled', true);
+            $('.btn-fetch-updates').prop('disabled', true);
             $('#orgInfoAlert').addClass('d-none');
             $('#badgeConfiguredFields').addClass('d-none');
             return;
         }
 
-        $('#btnFetchBotUpdates').prop('disabled', false);
+        $('.btn-fetch-updates').prop('disabled', false);
 
         // Fetch details & configured fields via AJAX
         $.ajax({
@@ -354,9 +358,10 @@ $(document).ready(function () {
         $('#selectOrganisation').trigger('change');
     }
 
-    // Trigger Bot Fetch
-    $('#btnFetchBotUpdates').on('click', function (e) {
+    // Trigger Gemini Fetch
+    $('.btn-fetch-updates').on('click', function (e) {
         e.preventDefault();
+        const engine = $(this).data('engine') === 'claude' ? 'claude' : 'gemini';
         const orgId = $('#selectOrganisation').val();
         const url = $('#inputOrgUrl').val();
 
@@ -376,14 +381,17 @@ $(document).ready(function () {
         $('#cardOrgSelector').addClass('d-none');
         $('#cardDiffWorkspace').addClass('d-none');
         $('#cardBotLoading').removeClass('d-none');
+        $('#cardBotLoading h4').text(engine === 'claude' ? 'Claude is Researching & Comparing Data... (1 to 3 minutes)' : 'Gemini is Researching & Comparing Data...');
 
         $.ajax({
             url: "{{ route('admin.ai-organisations.fetch-updates') }}",
             type: "POST",
             data: JSON.stringify({
                 organisation_id: orgId,
-                url: url
+                url: url,
+                engine: engine
             }),
+            timeout: engine === 'claude' ? 600000 : 0,
             contentType: "application/json",
             headers: {
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -397,6 +405,7 @@ $(document).ready(function () {
                     $('#cardDiffWorkspace').removeClass('d-none');
                     if (typeof toastr !== 'undefined') {
                         toastr.success(res.message || 'Updates fetched!');
+                        if (res.engine === 'claude' && res.usage) toastr.info('Claude used ' + Number(res.usage.input_tokens || 0).toLocaleString('en-IN') + ' tokens in, ' + Number(res.usage.output_tokens || 0).toLocaleString('en-IN') + ' out' + (res.usage.web_searches ? ', ' + res.usage.web_searches + ' web searches' : '') + '.');
                     }
                 } else {
                     if (typeof toastr !== 'undefined') {

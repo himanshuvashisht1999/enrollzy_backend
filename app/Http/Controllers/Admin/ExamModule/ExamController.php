@@ -16,7 +16,8 @@ class ExamController extends Controller
 {
     public function index(Request $request)
     {
-        $exams = Exam::with(['conductingBody', 'currentCycle'])
+        // every cycle, newest first: the list opens or edits any cycle without going through the exam page
+        $exams = Exam::with(['conductingBody', 'cycles' => fn ($q) => $q->withCount('events')])
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")->orWhere('short_name', 'like', "%{$s}%")
                     ->orWhere('slug', 'like', "%{$s}%")->orWhere('aliases', 'like', "%{$s}%");

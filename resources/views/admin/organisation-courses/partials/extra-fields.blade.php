@@ -1,10 +1,14 @@
-{{-- Programme inputs that the type's own block above does not draw. Which ones, and how, comes from App\Support\OrganisationFields\CourseFields. --}}
+{{-- Programme inputs that the type's own block above does not draw. Which ones, and how, comes from App\Support\OrganisationFields\CourseFields.
+     $only: draw just these of them; $bare: only the inputs (for a tab of the university / college form, inside its row). --}}
 @php
     $extraNames = \App\Support\OrganisationFields\CourseFields::extra((int) $typeId);
+    if (isset($only)) $extraNames = array_values(array_intersect($extraNames, $only));
+    $bare = !empty($bare);
     $labels = app(\App\Services\OrganisationFieldCatalogService::class)->getFieldLabels('course', (int) $typeId);
     $defs = \App\Support\OrganisationFields\CourseFields::DEFS;
 @endphp
 @if(count($extraNames))
+    @unless($bare)
     <div class="col-12">
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-header bg-white border-bottom-0 py-3">
@@ -13,6 +17,7 @@
             </div>
             <div class="card-body p-4">
                 <div class="row g-4">
+    @endunless
                     @foreach($extraNames as $name)
                         @php
                             $def = $defs[$name];
@@ -33,7 +38,18 @@
                                 @if($kind === 'textarea')
                                     <textarea name="{{ $name }}" id="cx_{{ $name }}" class="form-control" rows="3">{{ $value }}</textarea>
                                 @elseif($kind === 'number')
-                                    <input type="number" min="0" name="{{ $name }}" id="cx_{{ $name }}" class="form-control" value="{{ $value }}">
+                                    <input type="number" min="0" name="{{ $name }}" id="cx_{{ $name }}" class="form-control" value="{{ $value }}"
+                                        @if(!empty($def['step'])) step="{{ $def['step'] }}" @endif @if(isset($def['max'])) max="{{ $def['max'] }}" @endif @if(!empty($def['ph'])) placeholder="{{ $def['ph'] }}" @endif>
+                                @elseif($kind === 'multiselect')
+                                    @php $picked = \App\Support\OrganisationFields\CourseFields::listValues($value); @endphp
+                                    {{-- the empty value first: with nothing ticked the field is still sent, so it can be cleared --}}
+                                    <input type="hidden" name="{{ $name }}" value="">
+                                    <select name="{{ $name }}[]" id="cx_{{ $name }}" class="form-select select2" multiple style="width:100%" data-placeholder="Select one or more">
+                                        @foreach(array_unique(array_merge($def['options'], $picked)) as $opt)
+                                            <option value="{{ $opt }}" @selected(in_array($opt, $picked, true))>{{ $opt }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">Pick all that apply.</div>
                                 @elseif($kind === 'select')
                                     <select name="{{ $name }}" id="cx_{{ $name }}" class="form-select">
                                         <option value="">Select</option>
@@ -58,8 +74,10 @@
                             @endif
                         </div>
                     @endforeach
+    @unless($bare)
                 </div>
             </div>
         </div>
     </div>
+    @endunless
 @endif

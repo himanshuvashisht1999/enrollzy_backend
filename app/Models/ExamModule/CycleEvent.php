@@ -14,7 +14,7 @@ class CycleEvent extends Model
     protected $table = 'exm_cycle_events';
 
     protected $fillable = [
-        'cycle_id', 'counselling_cycle_id', 'round_id', 'quota_id', 'stage_id', 'applies_to_all_stages', 'event_type_id', 'label', 'start_at', 'end_at', 'extended_end_at',
+        'cycle_id', 'counselling_cycle_id', 'round_id', 'quota_id', 'stage_id', 'applies_to_all_stages', 'event_type_id', 'label', 'sort_order', 'start_at', 'end_at', 'extended_end_at',
         'date_precision', 'manual_status', 'on_demand_text', 'link_url', 'note', 'source_url',
         'last_verified_at', 'verified_by',
     ];
