@@ -22,3 +22,14 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Never commit secrets, cookies or database dumps (18 Nov 2026: such files were public on GitHub)
+/env
+/env.*
+*.env
+cookie*.txt
+cookies*.txt
+/*.sql
+*.sql.gz
+*.sql.zip
+*.dump
